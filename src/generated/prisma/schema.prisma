@@ -1,0 +1,41 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model Discipline {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.NVarChar(100)
+  description String?   @db.NVarChar(4000)
+  createdAt   DateTime  @default(now()) @map("CreatedAt")
+  updatedAt   DateTime  @default(now()) @map("UpdatedAt")
+  subjects    Subject[]
+
+  @@map("Disciplines")
+}
+
+model Subject {
+  id             Int        @id @default(autoincrement())
+  disciplineId   Int        @map("DisciplineId")
+  name           String     @db.NVarChar(100)
+  description    String?    @db.NVarChar(4000)
+  difficulty     String     @db.NVarChar(20)
+  importance     String     @db.NVarChar(20)
+  estimatedHours Float?     @map("EstimatedHours")
+  createdAt      DateTime   @default(now()) @map("CreatedAt")
+  updatedAt      DateTime   @default(now()) @map("UpdatedAt")
+  discipline     Discipline @relation(fields: [disciplineId], references: [id])
+
+  @@map("Subjects")
+}

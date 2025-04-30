@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MedJourney - Plataforma de Estudos para Medicina
 
-## Getting Started
+MedJourney é uma aplicação web projetada para ajudar estudantes de medicina a organizar seus estudos de forma eficiente, com recursos de planejamento inteligente, análise de desempenho e gerenciamento de conteúdo.
 
-First, run the development server:
+## Características Principais
+
+- **Planejamento Inteligente**: Algoritmo de repetição espaçada para otimizar a retenção de conteúdo
+- **Sincronização Offline/Online**: Funcionamento mesmo sem conexão com a internet, com sincronização automática quando online
+- **Organização por Disciplinas**: Gerenciamento de disciplinas, assuntos e níveis de importância
+- **Acompanhamento de Progresso**: Métricas e estatísticas detalhadas sobre o desempenho nos estudos
+- **Simulados**: Ferramenta de criação e execução de simulados para praticar
+
+## Tecnologias Utilizadas
+
+- [Next.js](https://nextjs.org) - Framework React
+- [TypeScript](https://www.typescriptlang.org/) - Tipagem estática
+- [TailwindCSS](https://tailwindcss.com/) - Estilização
+- [Azure SQL Database](https://azure.microsoft.com/pt-br/products/azure-sql/) - Banco de dados
+- [Lucide Icons](https://lucide.dev/) - Ícones
+
+## Como Instalar
 
 ```bash
+# Clonar o repositório
+git clone https://github.com/seu-usuario/medjourney-app.git
+cd medjourney-app
+
+# Instalar dependências
+npm install
+
+# Criar arquivo .env.local com as configurações de banco de dados
+# Exemplo:
+# AZURE_SQL_SERVER=seu-servidor.database.windows.net
+# AZURE_SQL_DATABASE=MedJourney
+# AZURE_SQL_USER=seu-usuario
+# AZURE_SQL_PASSWORD=sua-senha
+# AZURE_SQL_PORT=1433
+# DB_UPDATE_KEY=sua-chave-de-atualizacao
+
+# Iniciar o servidor de desenvolvimento
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Configuração do Banco de Dados
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+O projeto utiliza o SQL Server da Microsoft Azure. Antes de executar a aplicação pela primeira vez:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Certifique-se de ter criado um banco de dados SQL no Azure ou ter um SQL Server local configurado
+2. Execute os scripts de criação de tabelas disponíveis em `/src/app/api/sql/`
+3. Configure as variáveis de ambiente no arquivo `.env.local`
 
-## Learn More
+## Funcionalidades
 
-To learn more about Next.js, take a look at the following resources:
+- **Dashboard**: Visão geral dos estudos e métricas de desempenho
+- **Disciplinas**: Gerenciamento de disciplinas e assuntos
+- **Planejamento Inteligente**: Criação de planos de estudo otimizados
+- **Simulados**: Criação e execução de simulados com questões personalizadas
+- **Estatísticas**: Análise detalhada do desempenho e progresso
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Modo Offline
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+A aplicação foi projetada para funcionar offline, armazenando dados localmente até que uma conexão com a internet esteja disponível para sincronização com o servidor.
 
-## Deploy on Vercel
+## Contribuição
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou enviar pull requests.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Licença
+
+[MIT](LICENSE)
