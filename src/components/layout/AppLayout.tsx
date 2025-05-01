@@ -102,18 +102,28 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             {isSidebarOpen && <span>Painel de Estudos</span>}
           </Link>
           
+          <Link href="/planejamento" className={getNavLinkClasses("/planejamento")}>
+            <Calendar className="h-5 w-5 flex-shrink-0" />
+            {isSidebarOpen && <span>Planejamento</span>}
+          </Link>
+          
+          <Link href="/planejamento/inteligente" className={getNavLinkClasses("/planejamento/inteligente")}>
+            <Brain className="h-5 w-5 flex-shrink-0" />
+            {isSidebarOpen && <span>Plano Inteligente</span>}
+          </Link>
+          
+          <Link href="/planejamento/calendario" className={getNavLinkClasses("/planejamento/calendario")}>
+            <Calendar className="h-5 w-5 flex-shrink-0" />
+            {isSidebarOpen && <span>Calendário</span>}
+          </Link>
+          
           <Link href="/disciplinas" className={getNavLinkClasses("/disciplinas")}>
             <Book className="h-5 w-5 flex-shrink-0" />
             {isSidebarOpen && <span>Disciplinas</span>}
           </Link>
           
-          <Link href="/planejamento" className={getNavLinkClasses("/planejamento")}>
-            <Brain className="h-5 w-5 flex-shrink-0" />
-            {isSidebarOpen && <span>Planejamento Inteligente</span>}
-          </Link>
-          
           <Link href="/simulados" className={getNavLinkClasses("/simulados")}>
-            <ClipboardList className="h-5 w-5 flex-shrink-0" />
+            <BookOpen className="h-5 w-5 flex-shrink-0" />
             {isSidebarOpen && <span>Simulados</span>}
           </Link>
           
@@ -181,18 +191,28 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             <span>Painel de Estudos</span>
           </Link>
           
+          <Link href="/planejamento" className={getNavLinkClasses("/planejamento", true)}>
+            <Calendar className="h-5 w-5" />
+            <span>Planejamento</span>
+          </Link>
+          
+          <Link href="/planejamento/inteligente" className={getNavLinkClasses("/planejamento/inteligente", true)}>
+            <Brain className="h-5 w-5" />
+            <span>Plano Inteligente</span>
+          </Link>
+          
+          <Link href="/planejamento/calendario" className={getNavLinkClasses("/planejamento/calendario", true)}>
+            <Calendar className="h-5 w-5" />
+            <span>Calendário</span>
+          </Link>
+          
           <Link href="/disciplinas" className={getNavLinkClasses("/disciplinas", true)}>
             <Book className="h-5 w-5" />
             <span>Disciplinas</span>
           </Link>
           
-          <Link href="/planejamento" className={getNavLinkClasses("/planejamento", true)}>
-            <Brain className="h-5 w-5" />
-            <span>Planejamento Inteligente</span>
-          </Link>
-          
           <Link href="/simulados" className={getNavLinkClasses("/simulados", true)}>
-            <ClipboardList className="h-5 w-5" />
+            <BookOpen className="h-5 w-5" />
             <span>Simulados</span>
           </Link>
           

@@ -3,40 +3,21 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ToastContainer } from "../components/ui/Toast";
 import { Toaster } from 'react-hot-toast';
+import { StartupProvider } from './providers';
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
   subsets: ["latin"],
+  variable: "--font-geist-sans",
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
   subsets: ["latin"],
+  variable: "--font-geist-mono",
 });
 
 export const metadata: Metadata = {
-  title: "MedJourney - Seu Assistente de Estudos",
-  description: "Uma aplicação para organizar e otimizar seus estudos na área médica",
-  manifest: "/manifest.json",
-  themeColor: "#3b82f6",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "MedJourney",
-  },
-  formatDetection: {
-    telephone: false,
-  },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
-  icons: {
-    icon: "/icons/icon-192x192.png",
-    apple: "/icons/apple-icon-180x180.png",
-  },
+  title: "MedJourney - Sua jornada de estudos médicos",
+  description: "Uma plataforma inteligente para estudantes de medicina",
 };
 
 export default function RootLayout({
@@ -59,7 +40,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#3b82f6" />
 
         {/* PWA Icons */}
-        <link rel="apple-touch-icon" href="/icons/apple-icon-180x180.png" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-icon-152x152.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-icon-180x180.png" />
         <link rel="apple-touch-icon" sizes="167x167" href="/icons/apple-icon-167x167.png" />
@@ -117,7 +98,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gradient-to-br from-blue-100 to-indigo-100 min-h-screen`}
       >
-        {children}
+        <StartupProvider>
+          {children}
+        </StartupProvider>
         {/* Componente de Toast para notificações */}
         <ToastContainer position="top-right" />
         <Toaster 

@@ -312,4 +312,40 @@ export async function isServerAvailable(): Promise<boolean> {
     console.error('Erro ao verificar disponibilidade do servidor:', error);
     return false;
   }
+}
+
+/**
+ * Função para garantir a URL correta do servidor
+ * Resolve problemas com IPs locais incorretos em requisições
+ */
+export function getCorrectServerUrl(path: string = '/'): string {
+  try {
+    // Verificar se estamos em um ambiente de navegador
+    if (typeof window === 'undefined') {
+      return path;
+    }
+
+    // Obter a URL atual do window.location
+    const currentHost = window.location.host;
+    const currentOrigin = window.location.origin;
+    
+    // Verificar se estamos tentando usar IP local em vez de hostname
+    const isIpAddress = /^(http|https):\/\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/.test(currentOrigin);
+    
+    // Se a URL contiver um IP local específico que não corresponde ao host atual, corrigi-la
+    if (isIpAddress) {
+      console.warn(`Detectado uso de IP (${currentOrigin}) em vez de hostname. Usando window.location.origin para garantir consistência.`);
+    }
+    
+    // Garantir que o caminho comece com /
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    
+    // Construir a URL completa com o origin atual
+    return new URL(normalizedPath, currentOrigin).toString();
+  } catch (error) {
+    console.error('Erro ao normalizar URL do servidor:', error);
+    
+    // Retornar uma URL relativa como fallback
+    return path.startsWith('/') ? path : `/${path}`;
+  }
 } 

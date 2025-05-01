@@ -77,51 +77,6 @@ END
 ELSE
     PRINT 'Tabela Notes já existe.';
 
--- Tabela de planos de estudo
-IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'StudyPlans')
-BEGIN
-    CREATE TABLE StudyPlans (
-        Id INT IDENTITY(1,1) PRIMARY KEY,
-        UserId INT NOT NULL,
-        Name NVARCHAR(255) NOT NULL,
-        Description NVARCHAR(MAX) NULL,
-        StartDate DATE NULL,
-        EndDate DATE NULL,
-        Status NVARCHAR(50) DEFAULT 'ativo',
-        MetaData NVARCHAR(MAX) NULL,
-        CreatedAt DATETIME2 DEFAULT GETDATE(),
-        UpdatedAt DATETIME2 DEFAULT GETDATE(),
-        FOREIGN KEY (UserId) REFERENCES Users(Id)
-    );
-    PRINT 'Tabela StudyPlans criada com sucesso.';
-END
-ELSE
-    PRINT 'Tabela StudyPlans já existe.';
-
--- Tabela de sessões de estudo
-IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'StudySessions')
-BEGIN
-    CREATE TABLE StudySessions (
-        Id INT IDENTITY(1,1) PRIMARY KEY,
-        UserId INT NOT NULL,
-        StudyPlanId INT NULL,
-        Title NVARCHAR(255) NOT NULL,
-        DisciplineName NVARCHAR(255) NULL,
-        SubjectName NVARCHAR(255) NULL,
-        ScheduledDate DATETIME2 NOT NULL,
-        Duration INT NOT NULL, -- em minutos
-        Completed BIT DEFAULT 0,
-        ActualDuration INT NULL, -- em minutos
-        Notes NVARCHAR(MAX) NULL,
-        CreatedAt DATETIME2 DEFAULT GETDATE(),
-        FOREIGN KEY (UserId) REFERENCES Users(Id),
-        FOREIGN KEY (StudyPlanId) REFERENCES StudyPlans(Id)
-    );
-    PRINT 'Tabela StudySessions criada com sucesso.';
-END
-ELSE
-    PRINT 'Tabela StudySessions já existe.';
-
 -- Tabela de simulados
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'SimulatedTests')
 BEGIN

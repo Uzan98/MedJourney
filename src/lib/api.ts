@@ -1,4 +1,5 @@
 import { StudyMetrics, StudySession, Task, Note } from './types/dashboard';
+import { StudyPlan, StudyPlanCreate, StudyPlanUpdate } from './types/planning';
 
 // Interface para resposta da API
 interface ApiResponse<T> {
@@ -203,23 +204,93 @@ const getLocalSessions = (): StudySession[] => {
   }
 };
 
-// Função para verificar se o servidor está acessível
-async function isServerAvailable(): Promise<boolean> {
+/**
+ * Verifica se o servidor e o banco de dados estão disponíveis 
+ * @param endpoint Endpoint específico para testar (opcional)
+ * @param timeout Tempo máximo para aguardar resposta em ms
+ * @param cache Usar cache para evitar múltiplas chamadas à API em curto período
+ */
+async function isServerAvailable(
+  endpoint: string = '/api/health', 
+  timeout: number = 5000, 
+  cache: boolean = true
+): Promise<boolean> {
   try {
-    // Usar o nosso novo endpoint de health check
+    // Verificar cache se habilitado
+    if (cache) {
+      const CACHE_DURATION = 60 * 1000; // 1 minuto
+      const cacheKey = '@medjourney:server_availability';
+      const cachedValue = localStorage.getItem(cacheKey);
+      
+      if (cachedValue) {
+        const { status, timestamp } = JSON.parse(cachedValue);
+        const now = Date.now();
+        
+        // Se o cache ainda é válido, retornar o valor armazenado
+        if (now - timestamp < CACHE_DURATION) {
+          return status === 'available';
+        }
+      }
+    }
+    
+    // Criar um controller para o timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000); // timeout mais curto
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
     
-    const response = await fetch(`${window.location.origin}/api/health`, {
-      method: 'HEAD',
-      signal: controller.signal,
-      cache: 'no-store'
-    });
-    
-    clearTimeout(timeoutId);
-    return response.ok;
+    // Realizar a requisição
+    try {
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        cache: 'no-store',
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      // Verificar se a resposta da API indica que o banco de dados está conectado
+      if (response.ok) {
+        const data = await response.json();
+        const isAvailable = data.status === 'ok' && data.database === 'connected';
+        
+        // Atualizar cache se habilitado
+        if (cache) {
+          localStorage.setItem('@medjourney:server_availability', JSON.stringify({
+            status: isAvailable ? 'available' : 'unavailable',
+            timestamp: Date.now()
+          }));
+        }
+        
+        return isAvailable;
+      }
+      
+      return false;
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      
+      // Se o erro foi por timeout, registrar isso especificamente
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+        console.warn('Timeout ao verificar disponibilidade do servidor');
+      } else {
+        console.warn('Erro na requisição ao verificar disponibilidade:', fetchError);
+      }
+      
+      // Atualizar cache como indisponível se habilitado
+      if (cache) {
+        localStorage.setItem('@medjourney:server_availability', JSON.stringify({
+          status: 'unavailable',
+          timestamp: Date.now()
+        }));
+      }
+      
+      return false;
+    }
   } catch (error) {
-    console.warn('Servidor não está acessível:', error);
+    console.error('Erro ao verificar disponibilidade do servidor:', error);
     return false;
   }
 }
@@ -727,139 +798,6 @@ export async function getNote(noteId: number): Promise<ApiResponse<Note>> {
   return fetchApi<Note>(`/api/notes/${noteId}`);
 }
 
-// ==============================
-// Plano de Estudos
-// ==============================
-
-interface StudyPlanCreate {
-  name: string;
-  description?: string;
-  startDate?: string;
-  endDate?: string;
-  status?: string;
-  metaData?: string; // JSON stringificado com dados detalhados do plano
-}
-
-interface StudyPlanUpdate {
-  id: number;
-  name?: string;
-  description?: string;
-  startDate?: string;
-  endDate?: string;
-  status?: string;
-  metaData?: string; // JSON stringificado com dados detalhados do plano
-}
-
-export async function getStudyPlans(
-  params: { 
-    status?: 'ativo' | 'pausado' | 'concluido';
-    limit?: number;
-  } = {}
-): Promise<ApiResponse<any>> {
-  try {
-    // Verificar conexão com o servidor
-    const isOnline = await isServerAvailable();
-    if (!isOnline) {
-      return { success: false, error: 'Sem conexão com o servidor' };
-    }
-    
-    // Construir URL com parâmetros de consulta
-    const url = new URL('/api/study-plans', window.location.origin);
-    
-    // Adicionar parâmetros à URL
-    if (params.status) {
-      url.searchParams.append('status', params.status);
-    }
-    
-    if (params.limit !== undefined) {
-      url.searchParams.append('limit', params.limit.toString());
-    }
-    
-    return await fetchApi(url.toString());
-  } catch (error) {
-    console.error('Erro ao obter planos de estudo:', error);
-    return { success: false, error: 'Erro ao obter planos de estudo' };
-  }
-}
-
-export async function getStudyPlanDetails(planId: number): Promise<ApiResponse<any>> {
-  try {
-    // Verificar conexão com o servidor
-    const isOnline = await isServerAvailable();
-    if (!isOnline) {
-      return { success: false, error: 'Sem conexão com o servidor' };
-    }
-    
-    return await fetchApi(`/api/study-plans/${planId}`);
-  } catch (error) {
-    console.error('Erro ao obter detalhes do plano de estudo:', error);
-    return { success: false, error: 'Erro ao obter detalhes do plano de estudo' };
-  }
-}
-
-export async function createStudyPlan(plan: StudyPlanCreate): Promise<ApiResponse<any>> {
-  try {
-    // Verificar conexão com o servidor
-    const isOnline = await isServerAvailable();
-    if (!isOnline) {
-      return { success: false, error: 'Sem conexão com o servidor' };
-    }
-    
-    return await fetchApi('/api/study-plans', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(plan)
-    });
-  } catch (error) {
-    console.error('Erro ao criar plano de estudo:', error);
-    return { success: false, error: 'Erro ao criar plano de estudo' };
-  }
-}
-
-export async function updateStudyPlan(plan: StudyPlanUpdate): Promise<ApiResponse<any>> {
-  try {
-    // Verificar conexão com o servidor
-    const isOnline = await isServerAvailable();
-    if (!isOnline) {
-      return { success: false, error: 'Sem conexão com o servidor' };
-    }
-    
-    return await fetchApi('/api/study-plans', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(plan)
-    });
-  } catch (error) {
-    console.error('Erro ao atualizar plano de estudo:', error);
-    return { success: false, error: 'Erro ao atualizar plano de estudo' };
-  }
-}
-
-export async function deleteStudyPlan(planId: number): Promise<ApiResponse<any>> {
-  try {
-    // Verificar conexão com o servidor
-    const isOnline = await isServerAvailable();
-    if (!isOnline) {
-      return { success: false, error: 'Sem conexão com o servidor' };
-    }
-    
-    // Construir URL com ID como parâmetro de consulta
-    const url = new URL('/api/study-plans', window.location.origin);
-    url.searchParams.append('id', planId.toString());
-    
-    return await fetchApi(url.toString(), {
-      method: 'DELETE'
-    });
-  } catch (error) {
-    console.error('Erro ao excluir plano de estudo:', error);
-    return { success: false, error: 'Erro ao excluir plano de estudo' };
-  }
-}
-
 // Função para recalcular métricas com base nas sessões e tarefas armazenadas localmente
 export async function recalcularMetricas(): Promise<ApiResponse<StudyMetrics>> {
   try {
@@ -1028,5 +966,164 @@ export async function recalcularMetricas(): Promise<ApiResponse<StudyMetrics>> {
       success: false,
       error: 'Erro ao recalcular métricas'
     };
+  }
+}
+
+// ==============================
+// Planos de Estudo
+// ==============================
+
+/**
+ * Obtém todos os planos de estudo do usuário
+ * @param params Parâmetros opcionais para filtrar os resultados
+ * @returns Resposta da API com os planos de estudo
+ */
+export async function getStudyPlans(
+  params: { 
+    status?: 'ativo' | 'pausado' | 'concluido';
+    limit?: number;
+  } = {}
+): Promise<ApiResponse<StudyPlan[]>> {
+  try {
+    // Verificar conexão com o servidor
+    const isOnline = await isServerAvailable();
+    if (!isOnline) {
+      return { success: false, error: 'Sem conexão com o servidor' };
+    }
+    
+    // Construir URL com parâmetros de consulta
+    const url = new URL('/api/study-plans', window.location.origin);
+    
+    // Adicionar parâmetros à URL
+    if (params.status) {
+      url.searchParams.append('status', params.status);
+    }
+    
+    if (params.limit !== undefined) {
+      url.searchParams.append('limit', params.limit.toString());
+    }
+    
+    const response = await fetchApi<{ plans: StudyPlan[] }>(url.toString());
+    
+    // Se a resposta for bem-sucedida, extrair e retornar os planos
+    if (response.success && response.plans) {
+      return {
+        success: true,
+        plans: response.plans
+      };
+    }
+    
+    return response;
+  } catch (error) {
+    console.error('Erro ao obter planos de estudo:', error);
+    return { success: false, error: 'Erro ao obter planos de estudo' };
+  }
+}
+
+/**
+ * Obtém detalhes de um plano específico pelo ID
+ * @param planId ID do plano a ser obtido
+ * @returns Resposta da API com os detalhes do plano
+ */
+export async function getStudyPlanDetails(planId: number): Promise<ApiResponse<StudyPlan>> {
+  try {
+    // Verificar conexão com o servidor
+    const isOnline = await isServerAvailable();
+    if (!isOnline) {
+      return { success: false, error: 'Sem conexão com o servidor' };
+    }
+    
+    const response = await fetchApi<{ plan: StudyPlan }>(`/api/study-plans/${planId}`);
+    
+    // Se a resposta for bem-sucedida, extrair e retornar o plano
+    if (response.success && response.plan) {
+      return {
+        success: true,
+        plan: response.plan
+      };
+    }
+    
+    return response;
+  } catch (error) {
+    console.error('Erro ao obter detalhes do plano de estudo:', error);
+    return { success: false, error: 'Erro ao obter detalhes do plano de estudo' };
+  }
+}
+
+/**
+ * Cria um novo plano de estudos
+ * @param plan Dados do plano a ser criado
+ * @returns Resposta da API com o resultado da criação
+ */
+export async function createStudyPlan(plan: StudyPlanCreate): Promise<ApiResponse<{ planId: number }>> {
+  try {
+    // Verificar conexão com o servidor
+    const isOnline = await isServerAvailable();
+    if (!isOnline) {
+      return { success: false, error: 'Sem conexão com o servidor' };
+    }
+    
+    return await fetchApi<{ planId: number }>('/api/study-plans', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(plan)
+    });
+  } catch (error) {
+    console.error('Erro ao criar plano de estudo:', error);
+    return { success: false, error: 'Erro ao criar plano de estudo' };
+  }
+}
+
+/**
+ * Atualiza um plano existente
+ * @param plan Dados do plano a ser atualizado
+ * @returns Resposta da API com o resultado da atualização
+ */
+export async function updateStudyPlan(plan: StudyPlanUpdate): Promise<ApiResponse<any>> {
+  try {
+    // Verificar conexão com o servidor
+    const isOnline = await isServerAvailable();
+    if (!isOnline) {
+      return { success: false, error: 'Sem conexão com o servidor' };
+    }
+    
+    return await fetchApi('/api/study-plans', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(plan)
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar plano de estudo:', error);
+    return { success: false, error: 'Erro ao atualizar plano de estudo' };
+  }
+}
+
+/**
+ * Exclui um plano de estudos
+ * @param planId ID do plano a ser excluído
+ * @returns Resposta da API com o resultado da exclusão
+ */
+export async function deleteStudyPlan(planId: number): Promise<ApiResponse<any>> {
+  try {
+    // Verificar conexão com o servidor
+    const isOnline = await isServerAvailable();
+    if (!isOnline) {
+      return { success: false, error: 'Sem conexão com o servidor' };
+    }
+    
+    // Construir URL com ID como parâmetro de consulta
+    const url = new URL('/api/study-plans', window.location.origin);
+    url.searchParams.append('id', planId.toString());
+    
+    return await fetchApi(url.toString(), {
+      method: 'DELETE'
+    });
+  } catch (error) {
+    console.error('Erro ao excluir plano de estudo:', error);
+    return { success: false, error: 'Erro ao excluir plano de estudo' };
   }
 } 
