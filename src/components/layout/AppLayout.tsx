@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -18,38 +18,272 @@ import {
   ChevronLeft,
   ChevronRight,
   Book,
-  Brain
+  Brain,
+  ChevronDown,
+  ChevronUp,
+  ListTodo,
+  GraduationCap
 } from 'lucide-react';
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
+interface Submenu {
+  path: string;
+  label: string;
+  icon: React.ReactNode;
+}
+
+interface MenuItem {
+  path: string;
+  label: string;
+  icon: React.ReactNode;
+  submenu?: Submenu[];
+}
+
 const AppLayout = ({ children }: AppLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const pathname = usePathname();
+
+  // Definição dos menus e submenus
+  const menuItems: MenuItem[] = [
+    {
+      path: "/",
+      label: "Dashboard",
+      icon: <LayoutDashboard className="h-5 w-5 flex-shrink-0" />
+    },
+    {
+      path: "/estudos",
+      label: "Painel de Estudos",
+      icon: <BookOpen className="h-5 w-5 flex-shrink-0" />,
+      submenu: [
+        {
+          path: "/disciplinas",
+          label: "Disciplinas",
+          icon: <Book className="h-5 w-5 flex-shrink-0" />
+        },
+        {
+          path: "/planejamento",
+          label: "Planejamento",
+          icon: <Calendar className="h-5 w-5 flex-shrink-0" />
+        },
+        {
+          path: "/planejamento/inteligente",
+          label: "Plano Inteligente",
+          icon: <Brain className="h-5 w-5 flex-shrink-0" />
+        },
+        {
+          path: "/planejamento/calendario",
+          label: "Calendário",
+          icon: <Calendar className="h-5 w-5 flex-shrink-0" />
+        }
+      ]
+    },
+    {
+      path: "/simulados",
+      label: "Simulados",
+      icon: <ClipboardList className="h-5 w-5 flex-shrink-0" />
+    },
+    {
+      path: "/estatisticas",
+      label: "Estatísticas",
+      icon: <BarChart2 className="h-5 w-5 flex-shrink-0" />
+    }
+  ];
+
+  // Efeito para expandir automaticamente o menu pai quando um item de submenu está ativo
+  useEffect(() => {
+    const activeMenus: string[] = [];
+    
+    // Verifica quais menus devem ficar abertos com base no caminho atual
+    menuItems.forEach(item => {
+      if (item.submenu) {
+        // Verifica se algum submenu está ativo
+        const hasActiveSubmenu = item.submenu.some(subItem => 
+          pathname === subItem.path || pathname.startsWith(`${subItem.path}/`)
+        );
+        
+        // Se tiver um submenu ativo, adiciona o menu pai à lista de menus expandidos
+        if (hasActiveSubmenu) {
+          activeMenus.push(item.path);
+        }
+      }
+    });
+    
+    // Atualiza os menus expandidos
+    setExpandedMenus(activeMenus);
+  }, [pathname]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  const toggleSubmenu = (path: string) => {
+    if (expandedMenus.includes(path)) {
+      setExpandedMenus(expandedMenus.filter(item => item !== path));
+    } else {
+      setExpandedMenus([...expandedMenus, path]);
+    }
+  };
+
   // Verifica se o caminho atual corresponde ao link fornecido
   const isActive = (path: string) => {
-    return pathname === path;
+    // Verificação simples para caminho exato
+    if (pathname === path) return true;
+    
+    // Verificação especial para submenus
+    // Evita que "/planejamento" seja considerado ativo quando estamos em "/planejamento/inteligente"
+    if (path === "/planejamento" && 
+        (pathname.startsWith("/planejamento/inteligente") || 
+         pathname.startsWith("/planejamento/calendario"))) {
+      return false;
+    }
+    
+    // Verificação para URLs que começam com o mesmo path
+    // mas apenas se for uma página filha direta (ex: /planejamento/[id])
+    const pathParts = path.split('/').filter(Boolean);
+    const pathnameParts = pathname.split('/').filter(Boolean);
+    
+    // Se o path é exatamente igual, retorna true
+    if (pathParts.length === pathnameParts.length && path === pathname) {
+      return true;
+    }
+    
+    // Se o caminho atual começa com o path do item e tem mais um nível apenas
+    // Por exemplo, /planejamento/123 é filho de /planejamento, mas /planejamento/inteligente/abc não é
+    if (pathname.startsWith(path + '/') && pathnameParts.length === pathParts.length + 1) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  // Verifica se o caminho atual está em um submenu específico
+  const isActiveSubmenu = (parentPath: string, submenu?: Submenu[]) => {
+    if (!submenu) return false;
+    
+    // Verifica se algum item do submenu está ativo
+    return submenu.some(item => {
+      // Verifica se o caminho atual corresponde exatamente ao item do submenu
+      if (pathname === item.path) return true;
+      
+      // Verifica se o caminho atual é filho direto do item do submenu
+      const itemParts = item.path.split('/').filter(Boolean);
+      const pathnameParts = pathname.split('/').filter(Boolean);
+      
+      if (pathname.startsWith(item.path + '/') && pathnameParts.length === itemParts.length + 1) {
+        return true;
+      }
+      
+      return false;
+    });
+  };
+
+  // Verifica se o submenu está expandido
+  const isSubmenuExpanded = (path: string) => {
+    return expandedMenus.includes(path);
   };
 
   // Aplica a classe de estilo correto com base no estado ativo do link
-  const getNavLinkClasses = (path: string, isMobile = false) => {
+  const getNavLinkClasses = (path: string, isSubmenuItem = false, isMobile = false, isParentWithActiveChild = false) => {
     const baseClasses = isMobile
       ? "flex items-center space-x-3"
       : `flex items-center ${isSidebarOpen ? 'space-x-3 justify-start px-3' : 'justify-center'}`;
     
-    const activeClasses = "text-white bg-blue-700";
-    const inactiveClasses = "text-blue-100 hover:bg-blue-700";
+    // Classes específicas baseadas no estado do item
+    let stateClasses = "";
     
-    const stateClasses = isActive(path) ? activeClasses : inactiveClasses;
+    if (isActive(path)) {
+      // Item está ativo
+      stateClasses = isSubmenuItem 
+        ? "text-white bg-blue-800" 
+        : "text-white bg-blue-700 font-medium";
+    } else if (isParentWithActiveChild) {
+      // Para item pai com filho ativo
+      stateClasses = "text-white bg-blue-600";
+    } else {
+      // Estado padrão inativo
+      stateClasses = isSubmenuItem 
+        ? "text-blue-200 hover:bg-blue-800 hover:text-white" 
+        : "text-blue-100 hover:bg-blue-700 hover:text-white";
+    }
     
-    return `${baseClasses} ${stateClasses} ${isMobile ? 'px-3' : ''} py-2 rounded-md`;
+    const paddingClasses = isSubmenuItem ? 'py-1.5' : 'py-2';
+    
+    return `${baseClasses} ${stateClasses} ${isMobile ? 'px-3' : ''} ${paddingClasses} rounded-md transition-colors duration-200`;
+  };
+
+  const renderMenuItem = (item: MenuItem, isMobile = false, level = 0) => {
+    const isParentActive = isActiveSubmenu(item.path, item.submenu);
+    const linkClasses = getNavLinkClasses(item.path, false, isMobile, isParentActive);
+
+    if (item.submenu) {
+      return (
+        <div className="py-1" key={item.path}>
+          <div className="flex items-center justify-between pr-1">
+            <Link
+              href={item.path}
+              className={`${linkClasses} whitespace-nowrap flex-grow`}
+              onClick={(e) => {
+                if (isSubmenuExpanded(item.path)) {
+                  e.preventDefault();
+                  toggleSubmenu(item.path);
+                }
+              }}
+            >
+              <div className={`min-w-8 ${isMobile ? '' : 'pl-2'}`}>
+                {item.icon}
+              </div>
+              <span className="whitespace-nowrap pr-2">{item.label}</span>
+            </Link>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                toggleSubmenu(item.path);
+              }}
+              className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
+              aria-label={isSubmenuExpanded(item.path) ? "Collapse submenu" : "Expand submenu"}
+            >
+              <ChevronDown 
+                className={`h-4 w-4 transition-transform ${isSubmenuExpanded(item.path) ? 'rotate-180' : ''}`} 
+              />
+            </button>
+          </div>
+          
+          {isSubmenuExpanded(item.path) && (
+            <div className="mt-1 pl-4 ml-4 border-l border-gray-200 dark:border-gray-700 space-y-1">
+              {item.submenu.map((subItem) => (
+                <Link
+                  key={subItem.path}
+                  href={subItem.path}
+                  className={getNavLinkClasses(subItem.path, true, isMobile)}
+                >
+                  <div className="min-w-8">
+                    {subItem.icon}
+                  </div>
+                  <span className="truncate">{subItem.label}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    return (
+      <Link
+        key={item.path}
+        href={item.path}
+        className={linkClasses}
+      >
+        <div className={`min-w-8 ${isMobile ? '' : 'pl-2'}`}>
+          {item.icon}
+        </div>
+        <span className="truncate">{item.label}</span>
+      </Link>
+    );
   };
 
   return (
@@ -92,45 +326,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             </p>
           )}
 
-          <Link href="/" className={getNavLinkClasses("/")}>
-            <LayoutDashboard className="h-5 w-5 flex-shrink-0" />
-            {isSidebarOpen && <span>Dashboard</span>}
-          </Link>
-          
-          <Link href="/estudos" className={getNavLinkClasses("/estudos")}>
-            <BookOpen className="h-5 w-5 flex-shrink-0" />
-            {isSidebarOpen && <span>Painel de Estudos</span>}
-          </Link>
-          
-          <Link href="/planejamento" className={getNavLinkClasses("/planejamento")}>
-            <Calendar className="h-5 w-5 flex-shrink-0" />
-            {isSidebarOpen && <span>Planejamento</span>}
-          </Link>
-          
-          <Link href="/planejamento/inteligente" className={getNavLinkClasses("/planejamento/inteligente")}>
-            <Brain className="h-5 w-5 flex-shrink-0" />
-            {isSidebarOpen && <span>Plano Inteligente</span>}
-          </Link>
-          
-          <Link href="/planejamento/calendario" className={getNavLinkClasses("/planejamento/calendario")}>
-            <Calendar className="h-5 w-5 flex-shrink-0" />
-            {isSidebarOpen && <span>Calendário</span>}
-          </Link>
-          
-          <Link href="/disciplinas" className={getNavLinkClasses("/disciplinas")}>
-            <Book className="h-5 w-5 flex-shrink-0" />
-            {isSidebarOpen && <span>Disciplinas</span>}
-          </Link>
-          
-          <Link href="/simulados" className={getNavLinkClasses("/simulados")}>
-            <BookOpen className="h-5 w-5 flex-shrink-0" />
-            {isSidebarOpen && <span>Simulados</span>}
-          </Link>
-          
-          <Link href="/estatisticas" className={getNavLinkClasses("/estatisticas")}>
-            <BarChart2 className="h-5 w-5 flex-shrink-0" />
-            {isSidebarOpen && <span>Estatísticas</span>}
-          </Link>
+          {menuItems.map(item => renderMenuItem(item))}
         </div>
         
         {/* Bottom links */}
@@ -163,12 +359,12 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         {/* Logo area - Mobile */}
         <div className="flex items-center justify-between px-4 mb-10 pt-4">
           <div className="flex items-center space-x-3">
-          <div className="bg-blue-400 p-2 rounded-md">
-            <div className="h-8 w-8 bg-blue-200 rounded-md flex items-center justify-center">
-              <BookOpen className="h-5 w-5 text-blue-600" />
+            <div className="bg-blue-400 p-2 rounded-md">
+              <div className="h-8 w-8 bg-blue-200 rounded-md flex items-center justify-center">
+                <BookOpen className="h-5 w-5 text-blue-600" />
+              </div>
             </div>
-          </div>
-          <span className="text-xl font-bold">MedJourney</span>
+            <span className="text-xl font-bold">MedJourney</span>
           </div>
           <button onClick={toggleSidebar} className="text-blue-100 hover:text-white">
             <X className="h-5 w-5" />
@@ -181,50 +377,12 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             Menu Principal
           </p>
 
-          <Link href="/" className={getNavLinkClasses("/", true)}>
-            <LayoutDashboard className="h-5 w-5" />
-            <span>Dashboard</span>
-          </Link>
-          
-          <Link href="/estudos" className={getNavLinkClasses("/estudos", true)}>
-            <BookOpen className="h-5 w-5" />
-            <span>Painel de Estudos</span>
-          </Link>
-          
-          <Link href="/planejamento" className={getNavLinkClasses("/planejamento", true)}>
-            <Calendar className="h-5 w-5" />
-            <span>Planejamento</span>
-          </Link>
-          
-          <Link href="/planejamento/inteligente" className={getNavLinkClasses("/planejamento/inteligente", true)}>
-            <Brain className="h-5 w-5" />
-            <span>Plano Inteligente</span>
-          </Link>
-          
-          <Link href="/planejamento/calendario" className={getNavLinkClasses("/planejamento/calendario", true)}>
-            <Calendar className="h-5 w-5" />
-            <span>Calendário</span>
-          </Link>
-          
-          <Link href="/disciplinas" className={getNavLinkClasses("/disciplinas", true)}>
-            <Book className="h-5 w-5" />
-            <span>Disciplinas</span>
-          </Link>
-          
-          <Link href="/simulados" className={getNavLinkClasses("/simulados", true)}>
-            <BookOpen className="h-5 w-5" />
-            <span>Simulados</span>
-          </Link>
-          
-          <Link href="/estatisticas" className={getNavLinkClasses("/estatisticas", true)}>
-            <BarChart2 className="h-5 w-5" />
-            <span>Estatísticas</span>
-          </Link>
+          {menuItems.map(item => renderMenuItem(item, true))}
         </div>
         
         {/* Bottom links */}
         <div className="pt-4 border-t border-blue-500 mt-6 px-4">
-          <Link href="/configuracoes" className={getNavLinkClasses("/configuracoes", true)}>
+          <Link href="/configuracoes" className={getNavLinkClasses("/configuracoes", false, true)}>
             <Settings className="h-5 w-5" />
             <span>Configurações</span>
           </Link>
