@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Card } from '../ui/Card';
-import { FileText, Edit, Calendar, Bookmark } from 'lucide-react';
+import { FileText, Edit, Calendar, Bookmark, ExternalLink, Tag } from 'lucide-react';
 import { Note } from '../../lib/types/dashboard';
 import { formatDate } from '../../lib/utils';
 
@@ -15,13 +15,16 @@ const RecentNote = ({ note }: RecentNoteProps) => {
     return (
       <Card 
         title="Última Nota" 
-        className="h-full"
-        icon={<Bookmark className="h-5 w-5" />}
+        className="h-full bg-gradient-to-br from-teal-50 to-emerald-50 border-0 shadow-md"
+        icon={<Bookmark className="h-5 w-5 text-teal-600" />}
         showOptions
       >
         <div className="flex flex-col items-center justify-center py-6 text-center">
-          <FileText className="h-12 w-12 text-blue-200 mb-2" />
-          <p className="text-gray-500">Nenhuma nota encontrada</p>
+          <div className="p-4 bg-white rounded-full shadow-sm mb-3">
+            <FileText className="h-10 w-10 text-teal-300" />
+          </div>
+          <p className="text-gray-600 font-medium">Sem notas recentes</p>
+          <p className="text-sm text-gray-500 mt-1">Capture suas ideias com anotações</p>
         </div>
       </Card>
     );
@@ -30,43 +33,46 @@ const RecentNote = ({ note }: RecentNoteProps) => {
   return (
     <Card 
       title="Última Nota" 
-      className="h-full"
-      icon={<Bookmark className="h-5 w-5" />}
+      className="h-full bg-gradient-to-br from-teal-50 to-emerald-50 border-0 shadow-md"
+      icon={<Bookmark className="h-5 w-5 text-teal-600" />}
       showOptions
     >
-      <div className="space-y-3">
-        <div className="flex justify-between">
-          <h3 className="font-medium text-gray-800 text-lg">{note.title}</h3>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm">
+          <h3 className="font-semibold text-gray-800 text-lg">{note.title}</h3>
           <button 
-            className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-full transition-colors"
+            className="text-teal-600 hover:text-teal-700 p-1.5 hover:bg-teal-50 rounded-full transition-colors"
             aria-label="Editar nota"
-            tabIndex={0}
           >
             <Edit className="h-4 w-4" />
           </button>
         </div>
         
-        <div className="text-sm text-gray-500 flex items-center">
-          <Calendar className="h-4 w-4 mr-1 text-gray-400" />
-          <span>{formatDate(note.createdAt)}</span>
+        <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex items-center gap-1 text-xs bg-white px-2.5 py-1 rounded-full shadow-sm text-gray-700">
+            <Calendar className="h-3.5 w-3.5 text-teal-500" />
+            <span>{formatDate(note.createdAt)}</span>
+          </div>
+          
           {note.disciplineName && (
-            <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
-              {note.disciplineName}
-            </span>
+            <div className="flex items-center gap-1 text-xs bg-teal-100 text-teal-800 px-2.5 py-1 rounded-full shadow-sm">
+              <Tag className="h-3.5 w-3.5" />
+              <span>{note.disciplineName}</span>
+            </div>
           )}
         </div>
         
-        <div className="mt-2 bg-gray-50 p-3 rounded-lg">
-          <p className="text-gray-700 text-sm line-clamp-3">{note.content}</p>
+        <div className="bg-white p-4 rounded-lg shadow-sm">
+          <p className="text-gray-700 text-sm line-clamp-4 leading-relaxed">{note.content}</p>
         </div>
         
         <div className="pt-2 flex justify-end">
           <button 
-            className="text-sm text-blue-600 hover:text-blue-800 transition-colors font-medium"
+            className="flex items-center gap-1.5 text-sm bg-teal-100 hover:bg-teal-200 text-teal-700 px-3 py-1.5 rounded-md transition-colors font-medium shadow-sm"
             aria-label="Ver nota completa"
-            tabIndex={0}
           >
             Ver nota completa
+            <ExternalLink className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>

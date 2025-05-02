@@ -1126,4 +1126,41 @@ export async function deleteStudyPlan(planId: number): Promise<ApiResponse<any>>
     console.error('Erro ao excluir plano de estudo:', error);
     return { success: false, error: 'Erro ao excluir plano de estudo' };
   }
+}
+
+/**
+ * Deleta uma disciplina pelo ID
+ * @param disciplineId ID da disciplina a ser deletada
+ */
+export async function deleteDiscipline(disciplineId: number): Promise<ApiResponse<any>> {
+  try {
+    return await fetchApi(`/api/disciplines/${disciplineId}`, {
+      method: 'DELETE',
+    });
+  } catch (error) {
+    console.error('Erro ao excluir disciplina:', error);
+    return {
+      success: false,
+      error: 'Erro ao excluir disciplina'
+    };
+  }
+}
+
+/**
+ * Deleta um assunto de uma disciplina
+ * @param disciplineId ID da disciplina 
+ * @param subjectId ID do assunto a ser deletado
+ */
+export async function deleteSubject(disciplineId: number, subjectId: number): Promise<ApiResponse<any>> {
+  try {
+    return await fetchApi(`/api/disciplines/${disciplineId}/subjects/${subjectId}`, {
+      method: 'DELETE',
+    });
+  } catch (error) {
+    console.error('Erro ao excluir assunto:', error);
+    return {
+      success: false,
+      error: 'Erro ao excluir assunto'
+    };
+  }
 } 

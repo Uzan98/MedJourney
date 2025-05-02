@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 
 // Adicionar importação da API
-import { getDisciplines, getDisciplineSubjects, createDiscipline, createSubject } from '../../lib/api';
+import { getDisciplines, getDisciplineSubjects, createDiscipline, createSubject, deleteDiscipline, deleteSubject } from '../../lib/api';
 import { toast } from '../../components/ui/Toast';
 // Importar definições de tema
 import { DISCIPLINE_THEMES, getThemesMap, getThemeById } from '../../constants/themes';
@@ -300,19 +300,25 @@ export default function DisciplinasPage() {
   
   // Função para adicionar disciplina com o modal
   const abrirModalNovaDisciplina = () => {
+    // Limpar os estados antes de abrir o modal
     setNovaDisciplina('');
     setDescricaoDisciplina('');
+    setCorTemaAtual('azul');
     setErrorMsg('');
+    
+    // Abrir o modal
     setShowModal(true);
   };
   
   // Função para salvar nova disciplina
   const salvarNovaDisciplina = async () => {
+    // Verificar se o nome da disciplina está preenchido
     if (!novaDisciplina.trim()) {
       setErrorMsg('O nome da disciplina é obrigatório');
       return;
     }
     
+    // Iniciar processo de salvamento
     setIsLoading(true);
     setErrorMsg('');
     
@@ -332,7 +338,7 @@ export default function DisciplinasPage() {
       
         // Criar nova disciplina local
         const novaDisciplinaObj: Disciplina = {
-          id: novaId,
+          id: response.disciplineId || novaId, // Usar ID da API se disponível
           nome: novaDisciplina,
           corTema: corTemaAtual, // Salvar a cor escolhida
           assuntos: []
@@ -350,7 +356,7 @@ export default function DisciplinasPage() {
         toast.success(`Disciplina "${novaDisciplina}" adicionada com sucesso!`);
     
     // Colocar em modo de edição
-    setDisciplinaEmEdicao(novaId);
+        setDisciplinaEmEdicao(novaDisciplinaObj.id);
       } else {
         throw new Error(response.error || 'Erro ao criar disciplina');
       }
@@ -371,36 +377,71 @@ export default function DisciplinasPage() {
   
   // Função para abrir o modal de adicionar assunto
   const abrirModalNovoAssunto = (disciplinaId: number) => {
-    setDisciplinaAtualId(disciplinaId);
+    // Verificar se a disciplina existe
+    const disciplina = disciplinas.find(d => d.id === disciplinaId);
+    if (!disciplina) {
+      toast.error('Disciplina não encontrada!');
+      return;
+    }
+    
+    // Limpar completamente os estados antes de abrir o modal
     setAssuntoAtual('');
+    setDisciplinaAtualId(disciplinaId);
     setDificuldadeAtual('média');
     setImportanciaAtual('média');
     setHorasEstimadas(1);
+    
+    // Log para depuração
+    console.log("Abrindo modal para novo assunto na disciplina:", disciplina.nome);
+    
+    // Abrir o modal
     setShowAssuntoModal(true);
   };
 
   // Função para abrir o modal de editar assunto
   const abrirModalEditarAssunto = (disciplinaId: number, assunto: Assunto) => {
-    setDisciplinaAtualId(disciplinaId);
+    // Verificar se o assunto existe
+    if (!assunto) {
+      toast.error('Assunto não encontrado!');
+      return;
+    }
+    
+    // Definir os estados com base no assunto selecionado
     setAssuntoAtual(assunto.nome || '');
-    setDificuldadeAtual(assunto.dificuldade);
-    setImportanciaAtual(assunto.importancia);
-    setHorasEstimadas(assunto.horasEstimadas);
+    setDificuldadeAtual(assunto.dificuldade || 'média');
+    setImportanciaAtual(assunto.importancia || 'média');
+    setHorasEstimadas(assunto.horasEstimadas || 1);
+    
+    // Definir a disciplina atual
+    setDisciplinaAtualId(disciplinaId);
+    
+    // Abrir o modal
     setShowAssuntoModal(true);
   };
 
   // Função para salvar assunto (novo ou editado)
   const salvarAssunto = async () => {
-    if (!assuntoAtual.trim() || disciplinaAtualId === null) return;
-
     try {
       setIsLoading(true);
     
-    // Verificar se é uma edição ou adição
-      const isEdicao = disciplinas.some(d => 
-        d.id === disciplinaAtualId && 
-        d.assuntos.some(a => a.nome === assuntoAtual)
-      );
+      // Verificar se a disciplina existe
+      const disciplina = disciplinas.find(d => d.id === disciplinaAtualId);
+      
+      if (!disciplina) {
+        toast.error('Disciplina não encontrada!');
+        return;
+      }
+      
+      // Verificar se está editando um assunto existente ou criando um novo
+      // Procurar pelo ID do assunto ao invés do nome
+      const assuntoExistente = disciplina.assuntos.find(a => a.nome.trim().toLowerCase() === assuntoAtual.trim().toLowerCase());
+      const isEdicao = !!assuntoExistente;
+      
+      console.log("Salvando assunto:", {
+        nome: assuntoAtual,
+        modoEdicao: isEdicao,
+        disciplinaId: disciplinaAtualId
+      });
     
       // Atualizar estado local primeiro para UI responsiva
     const novasDisciplinas = disciplinas.map(disciplina => {
@@ -410,12 +451,14 @@ export default function DisciplinasPage() {
         return {
           ...disciplina,
             assuntos: disciplina.assuntos.map(assunto => 
-                assunto.nome === assuntoAtual ? { 
+                assunto.nome.trim().toLowerCase() === assuntoAtual.trim().toLowerCase() 
+                  ? { 
                   ...assunto, 
                   horasEstimadas,
                   dificuldade: dificuldadeAtual,
                   importancia: importanciaAtual 
-                } : assunto
+                    } 
+                  : assunto
             )
           };
         } else {
@@ -449,7 +492,7 @@ export default function DisciplinasPage() {
     localStorage.setItem('disciplinas', JSON.stringify(novasDisciplinas));
       
       // Tentar salvar na API (se for um novo assunto)
-      if (!isEdicao) {
+      if (!isEdicao && disciplinaAtualId !== null) {
         try {
           const response = await createSubject(disciplinaAtualId, {
             name: assuntoAtual,
@@ -484,25 +527,18 @@ export default function DisciplinasPage() {
     abrirModalNovoAssunto(disciplinaId);
   };
   
-  // Função para remover uma disciplina
-  const removerDisciplina = (disciplinaId: number) => {
-    if (confirm('Tem certeza que deseja remover esta disciplina?')) {
-      // Criar novo estado com a disciplina removida
-      const novasDisciplinas = disciplinas.filter(d => d.id !== disciplinaId);
-      
-      // Atualizar estado
-      setDisciplinas(novasDisciplinas);
-      
-      // Salvar no localStorage para persistência imediata
-      localStorage.setItem('disciplinas', JSON.stringify(novasDisciplinas));
-      
-      // Mostrar mensagem de confirmação
-      toast.success('Disciplina removida com sucesso!', 1500);
-    }
-  };
-  
   // Função para remover um assunto
-  const removerAssunto = (disciplinaId: number, assuntoId: number) => {
+  const removerAssunto = async (disciplinaId: number, assuntoId: number) => {
+    try {
+      setIsLoading(true);
+      
+      // Chamar a API para excluir o assunto
+      const response = await deleteSubject(disciplinaId, assuntoId);
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Erro ao excluir assunto');
+      }
+      
     // Criar novo estado com o assunto removido
     const novasDisciplinas: Disciplina[] = disciplinas.map(disciplina => {
       if (disciplina.id === disciplinaId) {
@@ -519,6 +555,80 @@ export default function DisciplinasPage() {
     
     // Salvar no localStorage para persistência imediata
     localStorage.setItem('disciplinas', JSON.stringify(novasDisciplinas));
+      
+      // Mostrar mensagem de sucesso
+      toast.success('Assunto removido com sucesso!', 1500);
+    } catch (error) {
+      console.error('Erro ao remover assunto:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao excluir assunto';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Função para remover uma disciplina
+  const removerDisciplina = async (disciplinaId: number) => {
+    if (confirm('Tem certeza que deseja remover esta disciplina?')) {
+      try {
+        setIsLoading(true);
+        
+        // Obter o objeto disciplina
+        const disciplina = disciplinas.find(d => d.id === disciplinaId);
+        
+        if (!disciplina) {
+          toast.error('Disciplina não encontrada.');
+          return;
+        }
+        
+        // Se a disciplina tem assuntos, excluir todos primeiro
+        if (disciplina.assuntos && disciplina.assuntos.length > 0) {
+          // Perguntar ao usuário se deseja excluir todos os assuntos junto com a disciplina
+          if (!confirm(`Esta disciplina possui ${disciplina.assuntos.length} assuntos. Deseja excluir todos os assuntos junto com a disciplina?`)) {
+            toast.error('Você precisa excluir todos os assuntos antes de excluir a disciplina.');
+          return;
+        }
+        
+          // Excluir cada assunto um a um
+          for (const assunto of disciplina.assuntos) {
+            const response = await deleteSubject(disciplinaId, assunto.id);
+            if (!response.success) {
+              console.error(`Erro ao excluir assunto ${assunto.id}:`, response.error);
+            }
+          }
+        }
+        
+        // Após excluir todos os assuntos, excluir a disciplina
+        const response = await deleteDiscipline(disciplinaId);
+        
+        if (!response.success) {
+          // Verificar mensagens específicas de erro
+          if (response.error?.includes('assuntos relacionados')) {
+            toast.error('Ainda existem assuntos vinculados a esta disciplina no banco de dados. Verifique e tente novamente.');
+            return;
+          }
+          throw new Error(response.error || 'Erro ao excluir disciplina');
+        }
+        
+        // Criar novo estado com a disciplina removida
+        const novasDisciplinas = disciplinas.filter(d => d.id !== disciplinaId);
+        
+        // Atualizar estado
+        setDisciplinas(novasDisciplinas);
+        
+        // Salvar no localStorage para persistência imediata
+        localStorage.setItem('disciplinas', JSON.stringify(novasDisciplinas));
+        
+        // Mostrar mensagem de confirmação
+        toast.success('Disciplina removida com sucesso!', 1500);
+      } catch (error) {
+        console.error('Erro ao remover disciplina:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Erro ao excluir disciplina';
+        toast.error(errorMessage);
+      } finally {
+        setIsLoading(false);
+      }
+    }
   };
   
   // Função para atualizar o nome de uma disciplina
@@ -638,20 +748,31 @@ export default function DisciplinasPage() {
 
   // Componente do Modal
   const DisciplinaModal = () => {
-    // Estado para seleção de cor do tema
+    // Estado local para o modal
+    const [localNovaDisciplina, setLocalNovaDisciplina] = useState('');
+    const [localDescricaoDisciplina, setLocalDescricaoDisciplina] = useState('');
     const [corSelecionada, setCorSelecionada] = useState('azul');
 
-    // Resetar cor ao abrir modal
+    // Resetar estados quando o modal abrir
     useEffect(() => {
       if (showModal) {
+        setLocalNovaDisciplina(novaDisciplina);
+        setLocalDescricaoDisciplina(descricaoDisciplina);
         setCorSelecionada('azul');
       }
-    }, [showModal]);
+    }, [showModal, novaDisciplina, descricaoDisciplina]);
 
-    // Atualizar o estado global quando o modal confirmar
+    // Atualizar o estado global apenas quando o modal confirmar
     const confirmarNovaDisciplina = () => {
+      setNovaDisciplina(localNovaDisciplina);
+      setDescricaoDisciplina(localDescricaoDisciplina);
       setCorTemaAtual(corSelecionada);
       salvarNovaDisciplina();
+    };
+
+    // Fechar modal
+    const fecharModal = () => {
+      setShowModal(false);
     };
 
     // Não renderizar nada se o modal não estiver visível
@@ -661,7 +782,7 @@ export default function DisciplinasPage() {
       <div
         className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/30"
       >
-        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-fadeIn">
+        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-fadeIn" onClick={(e) => e.stopPropagation()}>
           <div className="p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-800 flex items-center">
@@ -671,7 +792,7 @@ export default function DisciplinasPage() {
                 Nova Disciplina
               </h2>
               <button 
-                onClick={() => setShowModal(false)}
+                onClick={fecharModal}
                 className="text-gray-400 hover:text-gray-600 transition-colors bg-gray-100 p-2 rounded-full"
                 aria-label="Fechar"
               >
@@ -698,12 +819,8 @@ export default function DisciplinasPage() {
                   <input
                     type="text"
                     id="nome"
-                    value={novaDisciplina}
-                    onChange={(e) => {
-                      e.preventDefault();
-                      setNovaDisciplina(e.target.value);
-                    }}
-                    onBlur={(e) => e.preventDefault()}
+                    value={localNovaDisciplina}
+                    onChange={(e) => setLocalNovaDisciplina(e.target.value)}
                     className="w-full pl-10 px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
                     placeholder="Ex: Anatomia"
                     required
@@ -731,12 +848,8 @@ export default function DisciplinasPage() {
                   </div>
                   <textarea
                     id="descricao"
-                    value={descricaoDisciplina}
-                    onChange={(e) => {
-                      e.preventDefault();
-                      setDescricaoDisciplina(e.target.value);
-                    }}
-                    onBlur={(e) => e.preventDefault()}
+                    value={localDescricaoDisciplina}
+                    onChange={(e) => setLocalDescricaoDisciplina(e.target.value)}
                     className="w-full pl-10 px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
                     rows={3}
                     placeholder="Descreva a disciplina e seus tópicos principais"
@@ -749,7 +862,7 @@ export default function DisciplinasPage() {
               <div className="flex gap-4 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={fecharModal}
                   className="w-1/2 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
                 >
                   Cancelar
@@ -757,7 +870,7 @@ export default function DisciplinasPage() {
                 <button
                   type="button"
                   onClick={confirmarNovaDisciplina}
-                  disabled={isLoading || !novaDisciplina.trim()}
+                  disabled={isLoading || !localNovaDisciplina.trim()}
                   className="w-1/2 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-blue-300"
                 >
                   {isLoading ? (
@@ -777,13 +890,63 @@ export default function DisciplinasPage() {
 
   // Componente do Modal de Assunto
   const AssuntoModal = () => {
+    // Estados locais para o modal
+    const [localAssuntoAtual, setLocalAssuntoAtual] = useState('');
+    const [localDificuldadeAtual, setLocalDificuldadeAtual] = useState<'baixa' | 'média' | 'alta'>('média');
+    const [localImportanciaAtual, setLocalImportanciaAtual] = useState<'baixa' | 'média' | 'alta'>('média');
+    const [localHorasEstimadas, setLocalHorasEstimadas] = useState<number>(1);
+
+    // Resetar estados quando o modal abrir
+    useEffect(() => {
+      if (showAssuntoModal) {
+        setLocalAssuntoAtual(assuntoAtual);
+        setLocalDificuldadeAtual(dificuldadeAtual);
+        setLocalImportanciaAtual(importanciaAtual);
+        setLocalHorasEstimadas(horasEstimadas);
+      }
+    }, [showAssuntoModal, assuntoAtual, dificuldadeAtual, importanciaAtual, horasEstimadas]);
+
+    // Fechar modal
+    const fecharModal = () => {
+      setShowAssuntoModal(false);
+    };
+
+    // Salvar assunto com os estados locais
+    const confirmarSalvarAssunto = () => {
+      if (!localAssuntoAtual.trim()) {
+        toast.error('Preencha o nome do assunto!');
+        return;
+      }
+      
+      if (disciplinaAtualId === null) {
+        toast.error('Ocorreu um erro: Disciplina não selecionada!');
+        return;
+      }
+      
+      // Atualizar os estados globais com os locais
+      setAssuntoAtual(localAssuntoAtual);
+      setDificuldadeAtual(localDificuldadeAtual);
+      setImportanciaAtual(localImportanciaAtual);
+      setHorasEstimadas(localHorasEstimadas);
+      
+      // Chamar a função de salvar
+      salvarAssunto();
+    };
+
+    // Não renderizar nada se o modal não estiver visível
     if (!showAssuntoModal) return null;
     
-    const isEdicao = assuntoAtual.trim() !== '';
+    // Determinar se estamos editando um assunto existente
+    // Usamos o estado da disciplina atual ao invés de verificar o estado do assunto
+    const disciplina = disciplinas.find(d => d.id === disciplinaAtualId);
+    const assuntoExistente = disciplina?.assuntos.find(a => 
+      a.nome.trim().toLowerCase() === localAssuntoAtual.trim().toLowerCase()
+    );
+    const isEdicao = !!assuntoExistente;
     
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/30">
-        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-fadeIn">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/30" onClick={fecharModal}>
+        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-fadeIn" onClick={(e) => e.stopPropagation()}>
           <div className="p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-800 flex items-center">
@@ -793,7 +956,7 @@ export default function DisciplinasPage() {
                 {isEdicao ? 'Editar Assunto' : 'Adicionar Novo Assunto'}
               </h2>
               <button 
-                onClick={() => setShowAssuntoModal(false)}
+                onClick={fecharModal}
                 className="text-gray-400 hover:text-gray-600 transition-colors bg-gray-100 p-2 rounded-full"
                 aria-label="Fechar"
               >
@@ -810,8 +973,8 @@ export default function DisciplinasPage() {
                 <input
                   type="text"
                   id="nome-assunto"
-                  value={assuntoAtual}
-                  onChange={(e) => setAssuntoAtual(e.target.value)}
+                  value={localAssuntoAtual}
+                  onChange={(e) => setLocalAssuntoAtual(e.target.value)}
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
                   placeholder="Ex: Sistema Circulatório"
                   required
@@ -823,8 +986,8 @@ export default function DisciplinasPage() {
                 {/* Dificuldade */}
                 <div>
                   <DifficultyStars 
-                    value={dificuldadeAtual} 
-                    onChange={(val) => setDificuldadeAtual(val as 'baixa' | 'média' | 'alta')} 
+                    value={localDificuldadeAtual} 
+                    onChange={(val) => setLocalDificuldadeAtual(val as 'baixa' | 'média' | 'alta')} 
                     label="Dificuldade"
                     type="dificuldade"
                   />
@@ -833,8 +996,8 @@ export default function DisciplinasPage() {
                 {/* Importância */}
                 <div>
                   <DifficultyStars 
-                    value={importanciaAtual} 
-                    onChange={(val) => setImportanciaAtual(val as 'baixa' | 'média' | 'alta')} 
+                    value={localImportanciaAtual} 
+                    onChange={(val) => setLocalImportanciaAtual(val as 'baixa' | 'média' | 'alta')} 
                     label="Importância"
                     type="importancia"
                   />
@@ -850,8 +1013,8 @@ export default function DisciplinasPage() {
                   <input
                     type="number"
                     id="horas-estimadas"
-                    value={horasEstimadas}
-                    onChange={(e) => setHorasEstimadas(Number(e.target.value))}
+                    value={localHorasEstimadas}
+                    onChange={(e) => setLocalHorasEstimadas(Number(e.target.value))}
                     min="1"
                     max="100"
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
@@ -864,15 +1027,15 @@ export default function DisciplinasPage() {
               <div className="flex gap-3 pt-3">
                 <button
                   type="button"
-                  onClick={() => setShowAssuntoModal(false)}
+                  onClick={fecharModal}
                   className="flex-1 py-2.5 px-4 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 font-medium transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="button"
-                  onClick={salvarAssunto}
-                  disabled={!assuntoAtual.trim() || isLoading}
+                  onClick={confirmarSalvarAssunto}
+                  disabled={!localAssuntoAtual.trim() || isLoading}
                   className="flex-1 py-2.5 px-4 border border-transparent rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed font-medium transition-colors"
                 >
                   {isLoading ? (

@@ -12,6 +12,9 @@ export interface StudyMetrics {
   efficiencyRate: number;
 }
 
+// Alias para compatibilidade com componentes que usam PerformanceMetrics
+export interface PerformanceMetrics extends StudyMetrics {}
+
 export interface Task {
   id: string;
   title: string;
@@ -28,7 +31,8 @@ export interface StudySession {
   disciplineName: string;
   scheduledDate: Date | string;
   duration: number; // in minutes
-  completed: boolean;
+  completed?: boolean;
+  type?: 'new-content' | 'revision' | 'practice' | 'exam-prep' | 'revisão' | 'novo conteúdo' | 'prática' | 'aplicação';
   actualDuration?: number;
   notes?: string;
 }
@@ -40,6 +44,9 @@ export interface Note {
   createdAt: Date;
   disciplineName?: string;
 }
+
+// Alias para compatibilidade com componentes que usam StudyNote
+export interface StudyNote extends Note {}
 
 export interface StudyData {
   date: string;

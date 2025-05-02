@@ -197,55 +197,55 @@ const PerformanceCharts = ({ studyData, testData }: PerformanceChartsProps) => {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       <Card 
         title="Tempo de Estudo" 
-        className="col-span-1"
-        icon={<BarChart2 className="h-5 w-5" />}
+        className="col-span-1 overflow-hidden border-0 shadow-md bg-gradient-to-br from-blue-50 to-indigo-50"
+        icon={<BarChart2 className="h-5 w-5 text-blue-600" />}
         showOptions
       >
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h4 className="text-sm font-medium text-gray-500">Últimos 7 dias</h4>
-            <p className="text-2xl font-bold text-gray-800">
-              {totalMinutes} min
+            <h4 className="text-sm font-medium text-blue-600">Últimos 7 dias</h4>
+            <p className="text-3xl font-bold text-gray-800">
+              {totalMinutes} <span className="text-lg font-medium text-gray-600">min</span>
             </p>
           </div>
           
-          <div className="bg-blue-50 text-blue-600 py-1 px-3 rounded-full text-sm font-medium">
-            {avgMinutes} min / dia
+          <div className="bg-blue-100 text-blue-600 py-1.5 px-4 rounded-full text-sm font-medium shadow-sm border border-blue-200">
+            <span className="font-bold">{avgMinutes}</span> min / dia
           </div>
         </div>
         
-        <div style={{ height: '250px' }}>
+        <div style={{ height: '250px' }} className="mt-4 p-2 bg-white rounded-lg shadow-sm">
           <Bar data={studyChartData} options={studyChartOptions} />
         </div>
       </Card>
       
       <Card 
         title="Desempenho em Simulados" 
-        className="col-span-1"
-        icon={<LineChart className="h-5 w-5" />}
+        className="col-span-1 overflow-hidden border-0 shadow-md bg-gradient-to-br from-green-50 to-teal-50"
+        icon={<LineChart className="h-5 w-5 text-green-600" />}
         showOptions
       >
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h4 className="text-sm font-medium text-gray-500">Média de acertos</h4>
-            <p className="text-2xl font-bold text-gray-800">
-              {avgPerformance}%
+            <h4 className="text-sm font-medium text-green-600">Média de acertos</h4>
+            <p className="text-3xl font-bold text-gray-800">
+              {avgPerformance}<span className="text-lg font-medium text-gray-600">%</span>
             </p>
           </div>
           
-          <div className="bg-green-50 text-green-600 py-1 px-3 rounded-full text-sm font-medium">
-            {testData.length} simulados
+          <div className="bg-green-100 text-green-600 py-1.5 px-4 rounded-full text-sm font-medium shadow-sm border border-green-200">
+            <span className="font-bold">{testData.length}</span> simulados
           </div>
         </div>
         
         {testData.length > 0 ? (
-          <div style={{ height: '250px' }}>
+          <div style={{ height: '250px' }} className="mt-4 p-2 bg-white rounded-lg shadow-sm">
             <Line data={testChartData} options={testChartOptions} />
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center p-8 text-center h-[250px] bg-gray-50 rounded-lg">
+          <div className="flex flex-col items-center justify-center p-8 text-center h-[250px] bg-white rounded-lg shadow-sm border border-gray-100">
             <LineChart className="h-12 w-12 text-gray-300 mb-3" />
-            <p className="text-gray-500 font-medium">Sem dados de simulados</p>
+            <p className="text-gray-600 font-medium">Sem dados de simulados</p>
             <p className="text-sm text-gray-400 mt-1">Faça seu primeiro simulado para visualizar estatísticas</p>
           </div>
         )}

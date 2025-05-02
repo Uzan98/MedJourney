@@ -31,4 +31,14 @@ export {
 // Simulados
 export {
   // Exportações do simulados vão aqui quando necessário
-} from './simulados'; 
+} from './simulados';
+
+// Serviço de sincronização de dados
+export {
+  inicializarSincronizacao,
+  sincronizarDados,
+  obterDisciplinasSincronizadas,
+  obterDadosEstatisticas
+} from './data-sync';
+
+// Outros serviços podem ser adicionados aqui 

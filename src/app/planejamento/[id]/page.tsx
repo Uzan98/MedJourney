@@ -27,7 +27,8 @@ import {
   Heart,
   Filter,
   Search,
-  Clock8
+  Clock8,
+  CalendarClock
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -110,6 +111,7 @@ export default function PlanDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSynchronizing, setIsSynchronizing] = useState(false);
+  const [showTip, setShowTip] = useState(true);
   
   const [editForm, setEditForm] = useState({
     name: '',
@@ -168,9 +170,9 @@ export default function PlanDetailPage() {
       // Mapear disciplinas do usuário por ID para acesso rápido
       const userDisciplinesMap = userDisciplines.reduce((acc: any, d: any) => {
         acc[d.id] = d;
-        return acc;
-      }, {});
-      
+      return acc;
+    }, {});
+
       let precisaAtualizar = false;
       const disciplinasAtualizadas = plano.disciplines.map(disc => {
         // Verificar apenas disciplinas personalizadas (ID > 8)
@@ -356,6 +358,99 @@ export default function PlanDetailPage() {
     return totalSubjects === 0 ? 0 : Math.round((completedSubjects / totalSubjects) * 100);
   };
 
+  // Função para lidar com conclusão do assunto
+  const toggleSubjectCompletion = (disciplineId: number, subjectId: number) => {
+    if (!plano) return;
+    
+    // Cria uma cópia profunda do plano atual
+    const updatedPlan = JSON.parse(JSON.stringify(plano)) as StudyPlan;
+    
+    // Encontra a disciplina e o assunto
+    const discipline = updatedPlan.disciplines.find(d => d.id === disciplineId);
+    if (!discipline || !discipline.subjects) return;
+    
+    const subject = discipline.subjects.find(s => s.id === subjectId);
+    if (!subject) return;
+    
+    // Alterna o status de conclusão
+    subject.completed = !subject.completed;
+    
+    // Se marcar como concluído, definir progresso como 100%
+    if (subject.completed) {
+      subject.progress = 100;
+    }
+    
+    // Atualiza o plano no armazenamento local
+    try {
+      const updatedPlanFromStorage = atualizarPlano({
+        id: updatedPlan.id,
+        disciplines: updatedPlan.disciplines
+      });
+      
+      if (updatedPlanFromStorage) {
+        setPlano(updatedPlanFromStorage);
+        toast.success(subject.completed ? `${subject.name} marcado como concluído` : `${subject.name} marcado como pendente`);
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar status do assunto:', error);
+      toast.error('Não foi possível atualizar o status do assunto');
+    }
+  };
+
+  // Função para marcar todos os assuntos de uma disciplina como concluídos ou pendentes
+  const toggleAllSubjectsCompletion = (disciplineId: number, markAsCompleted: boolean) => {
+    if (!plano) return;
+    
+    // Cria uma cópia profunda do plano atual
+    const updatedPlan = JSON.parse(JSON.stringify(plano)) as StudyPlan;
+    
+    // Encontra a disciplina
+    const discipline = updatedPlan.disciplines.find(d => d.id === disciplineId);
+    if (!discipline || !discipline.subjects || discipline.subjects.length === 0) return;
+    
+    // Atualiza todos os assuntos
+    discipline.subjects.forEach(subject => {
+      subject.completed = markAsCompleted;
+      if (markAsCompleted) {
+        subject.progress = 100;
+      }
+    });
+    
+    // Atualiza o plano no armazenamento local
+    try {
+      const updatedPlanFromStorage = atualizarPlano({
+        id: updatedPlan.id,
+        disciplines: updatedPlan.disciplines
+      });
+      
+      if (updatedPlanFromStorage) {
+        setPlano(updatedPlanFromStorage);
+        toast.success(markAsCompleted 
+          ? `Todos os assuntos de ${discipline.name} marcados como concluídos` 
+          : `Todos os assuntos de ${discipline.name} marcados como pendentes`
+        );
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar status dos assuntos:', error);
+      toast.error('Não foi possível atualizar o status dos assuntos');
+    }
+  };
+
+  // Função para fechar a dica
+  const closeTip = () => {
+    setShowTip(false);
+    // Opcionalmente, salvar no localStorage para não mostrar novamente
+    localStorage.setItem('assuntoDicaVista', 'true');
+  };
+
+  // Verificar se a dica já foi vista
+  useEffect(() => {
+    const tipAlreadySeen = localStorage.getItem('assuntoDicaVista');
+    if (tipAlreadySeen) {
+      setShowTip(false);
+    }
+  }, []);
+
   // Renderizar conteúdo principal
   if (isLoading) {
     return (
@@ -411,27 +506,41 @@ export default function PlanDetailPage() {
 
   return (
     <AppLayout>
+      <div className="overflow-x-hidden">
       <div className="container mx-auto px-4 py-6">
-        {/* Cabeçalho com navegação */}
-        <div className="mb-8">
-          <Link href="/planejamento" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6 transition-colors duration-200">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            <span>Voltar para planejamento</span>
+        {/* Hero Section com Visual Aprimorado */}
+          <div className="mb-8 overflow-hidden">
+          {/* Navegação com breadcrumbs */}
+          <div className="flex items-center text-sm text-gray-500 mb-6">
+            <Link href="/dashboard" className="hover:text-blue-600 transition-colors">
+              Dashboard
           </Link>
+            <ChevronRight className="h-4 w-4 mx-2" />
+            <Link href="/planejamento" className="hover:text-blue-600 transition-colors">
+              Planejamento
+            </Link>
+            <ChevronRight className="h-4 w-4 mx-2" />
+            <span className="text-blue-600 font-medium">Detalhes do Plano</span>
+          </div>
           
-          {/* Header do plano */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 mb-6">
-            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+          {/* Header do plano com visual moderno */}
+          <div className="bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow-md border border-blue-100 overflow-hidden">
+            {/* Elementos decorativos */}
+            <div className="absolute top-0 right-0 w-56 h-56 bg-blue-200 rounded-full opacity-10 transform translate-x-20 -translate-y-20"></div>
+            <div className="absolute bottom-0 left-0 w-40 h-40 bg-indigo-300 rounded-full opacity-10 transform -translate-x-20 translate-y-10"></div>
+            
+            <div className="relative p-8">
+              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
               {/* Título e informações */}
-              <div className="flex-1">
+                <div className="flex-1 z-10">
             {isEditing ? (
-                  <div className="space-y-3 max-w-2xl">
+                    <div className="space-y-4 max-w-2xl">
                 <input
                   type="text"
                   name="name"
                   value={editForm.name}
                   onChange={handleInputChange}
-                  className="text-2xl font-bold border-b border-gray-300 bg-transparent focus:outline-none focus:border-blue-500 w-full"
+                        className="text-3xl font-bold border-b-2 border-blue-300 bg-transparent focus:outline-none focus:border-blue-500 w-full px-1 py-1"
                   placeholder="Nome do plano"
                 />
                     <textarea
@@ -439,17 +548,19 @@ export default function PlanDetailPage() {
                       value={editForm.description}
                       onChange={handleInputChange}
                       rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-3 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50 backdrop-blur-sm"
                       placeholder="Descrição do plano"
                     />
-                    <div className="flex items-center space-x-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                            Status
+                          </label>
                   <select
                     name="status"
                     value={editForm.status}
                     onChange={handleInputChange}
-                          className="text-sm border border-gray-300 rounded p-1.5 bg-white"
+                            className="w-full text-sm border border-blue-200 rounded-xl p-3 bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="ativo">Ativo</option>
                     <option value="pausado">Pausado</option>
@@ -457,38 +568,42 @@ export default function PlanDetailPage() {
                   </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Início</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                            Data de Início
+                          </label>
                         <input
                           type="date"
                           name="startDate"
                           value={editForm.startDate}
                           onChange={handleInputChange}
-                          className="w-full px-2 py-1.5 border border-gray-300 rounded-md"
+                            className="w-full px-3 py-2.5 border border-blue-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Término</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                            Data de Término
+                          </label>
                         <input
                           type="date"
                           name="endDate"
                           value={editForm.endDate}
                           onChange={handleInputChange}
-                          className="w-full px-2 py-1.5 border border-gray-300 rounded-md"
+                            className="w-full px-3 py-2.5 border border-blue-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
           </div>
         </div>
               </div>
             ) : (
                   <>
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                <h1 className="text-2xl font-bold">{plano.name}</h1>
-                      <div className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor()} inline-flex items-center`}>
+                      <div className="flex flex-wrap items-center gap-3 mb-3">
+                        <h1 className="text-3xl font-bold text-gray-800">{plano.name}</h1>
+                        <div className={`px-3 py-1.5 rounded-full text-sm font-medium ${getStatusColor()} shadow-sm border border-opacity-20 inline-flex items-center gap-1.5`}>
                         {plano.status === 'ativo' ? (
-                          <><Clock className="h-3 w-3 mr-1" /> Ativo</>
+                            <><Clock className="h-4 w-4" /> Ativo</>
                         ) : plano.status === 'pausado' ? (
-                          <><AlertCircle className="h-3 w-3 mr-1" /> Pausado</>
+                            <><AlertCircle className="h-4 w-4" /> Pausado</>
                         ) : (
-                          <><CheckCircle2 className="h-3 w-3 mr-1" /> Concluído</>
+                            <><CheckCircle2 className="h-4 w-4" /> Concluído</>
                         )}
               </div>
                       <div className="ml-auto">
@@ -497,26 +612,26 @@ export default function PlanDetailPage() {
               </div>
 
                     {plano.description && (
-                      <p className="text-gray-600 mb-3 max-w-3xl">{plano.description}</p>
+                        <p className="text-gray-600 mb-4 max-w-3xl text-lg">{plano.description}</p>
                     )}
 
-                    <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                      <div className="flex flex-wrap gap-4 text-sm text-gray-600 bg-white/60 backdrop-blur-sm p-3 rounded-xl border border-blue-100 shadow-sm">
                       {plano.startDate && (
                         <div className="flex items-center">
-                          <CalendarDays className="h-4 w-4 mr-1.5 text-blue-500" />
+                            <CalendarDays className="h-4 w-4 mr-2 text-blue-500" />
                           <span>Início: <strong>{formatDate(plano.startDate)}</strong></span>
                         </div>
                       )}
                       
                       {plano.endDate && (
                         <div className="flex items-center">
-                          <CalendarCheck className="h-4 w-4 mr-1.5 text-green-500" />
+                            <CalendarCheck className="h-4 w-4 mr-2 text-green-500" />
                           <span>Término: <strong>{formatDate(plano.endDate)}</strong></span>
                         </div>
                       )}
                       
                       <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-1.5 text-purple-500" />
+                          <Clock className="h-4 w-4 mr-2 text-purple-500" />
                         <span>Atualizado: <strong>{formatDate(plano.updatedAt)}</strong></span>
                       </div>
                     </div>
@@ -525,19 +640,21 @@ export default function PlanDetailPage() {
             </div>
               
               {/* Ações */}
-              <div className="flex flex-wrap gap-2 mt-4 lg:mt-0">
+                <div className="z-10">
             {isEditing ? (
-              <>
+                    <div className="flex flex-wrap gap-3">
                 <Button 
                   variant="outline" 
                   onClick={() => setIsEditing(false)}
                   disabled={isSubmitting}
+                        className="bg-white border-gray-300 hover:bg-gray-50 shadow-sm"
                 >
                   Cancelar
                 </Button>
                 <Button 
                   onClick={handleSaveEdit}
                   disabled={isSubmitting}
+                        className="bg-blue-600 hover:bg-blue-700 shadow-sm"
                 >
                   {isSubmitting ? (
                     <>
@@ -547,17 +664,18 @@ export default function PlanDetailPage() {
                   ) : (
                     <>
                       <Save className="h-4 w-4 mr-2" />
-                      Salvar
+                            Salvar Mudanças
                     </>
                   )}
                 </Button>
-              </>
+                    </div>
             ) : (
-              <>
+                    <div className="flex flex-col gap-3">
                 <Button 
                   variant="outline" 
                   onClick={handleSynchronize}
                   disabled={isSynchronizing}
+                        className="bg-white hover:bg-blue-50 border-blue-200 hover:border-blue-300 shadow-sm"
                 >
                       {isSynchronizing ? (
                         <>
@@ -566,70 +684,89 @@ export default function PlanDetailPage() {
                         </>
                       ) : (
                         <>
-                          <RefreshCw className="h-4 w-4 mr-2" />
-                          Sincronizar
+                            <RefreshCw className="h-4 w-4 mr-2 text-blue-500" />
+                            Sincronizar Plano
                         </>
                       )}
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => setIsEditing(true)}
+                        className="bg-white hover:bg-indigo-50 border-indigo-200 hover:border-indigo-300 shadow-sm text-indigo-700"
                 >
                   <Edit className="h-4 w-4 mr-2" />
-                  Editar
+                        Editar Plano
                 </Button>
                 <Button 
-                  variant="danger" 
+                        variant="outline" 
                   onClick={handleDelete}
+                        className="bg-white hover:bg-red-50 border-red-200 hover:border-red-300 shadow-sm text-red-600"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Excluir
+                        Excluir Plano
                 </Button>
-              </>
+                    </div>
             )}
           </div>
         </div>
             
+              {/* Métricas */}
             {!isEditing && (
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {/* Progresso */}
-                  <div className="bg-blue-50 rounded-lg p-4 relative overflow-hidden">
-                    <div 
-                      className="absolute bottom-0 left-0 h-1 bg-blue-500" 
+                <div className="mt-8 z-10 relative">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    {/* Progresso Geral */}
+                    <div className="bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl p-5 border border-blue-200 shadow-sm overflow-hidden relative group hover:shadow-md transition-all duration-200 transform hover:-translate-y-1">
+                      <div className="absolute inset-0 bg-blue-600 opacity-0 group-hover:opacity-5 transition-opacity duration-300"></div>
+                      <div 
+                        className="absolute bottom-0 left-0 h-1 bg-blue-500 animate-pulse group-hover:h-1.5 transition-all duration-300" 
                       style={{ width: `${overallProgress}%` }}
                     ></div>
                     <div className="flex flex-col">
-                      <span className="text-sm text-blue-700 mb-1">Progresso Geral</span>
-                      <span className="text-2xl font-bold">{overallProgress}%</span>
+                        <span className="text-sm text-blue-700 mb-1.5 flex items-center">
+                          <BarChart2 className="h-4 w-4 mr-1.5 text-blue-600" />
+                          Progresso Geral
+                        </span>
+                        <span className="text-2xl font-bold text-blue-900">{overallProgress}%</span>
                     </div>
                   </div>
                   
                   {/* Disciplinas */}
-                  <div className="bg-purple-50 rounded-lg p-4">
+                    <div className="bg-gradient-to-br from-indigo-100 to-indigo-50 rounded-xl p-5 border border-indigo-200 shadow-sm overflow-hidden relative group hover:shadow-md transition-all duration-200 transform hover:-translate-y-1">
+                      <div className="absolute inset-0 bg-indigo-600 opacity-0 group-hover:opacity-5 transition-opacity duration-300"></div>
                     <div className="flex flex-col">
-                      <span className="text-sm text-purple-700 mb-1">Disciplinas</span>
-                      <span className="text-2xl font-bold">{totalDisciplines}</span>
+                        <span className="text-sm text-indigo-700 mb-1.5 flex items-center">
+                          <BookOpen className="h-4 w-4 mr-1.5 text-indigo-600" />
+                          Disciplinas
+                        </span>
+                        <span className="text-2xl font-bold text-indigo-900">{totalDisciplines}</span>
                       </div>
               </div>
                   
                   {/* Assuntos */}
-                  <div className="bg-green-50 rounded-lg p-4">
+                    <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-xl p-5 border border-green-200 shadow-sm overflow-hidden relative group hover:shadow-md transition-all duration-200 transform hover:-translate-y-1">
+                      <div className="absolute inset-0 bg-green-600 opacity-0 group-hover:opacity-5 transition-opacity duration-300"></div>
                     <div className="flex flex-col">
-                      <span className="text-sm text-green-700 mb-1">Assuntos</span>
+                        <span className="text-sm text-green-700 mb-1.5 flex items-center">
+                          <BookCheck className="h-4 w-4 mr-1.5 text-green-600" />
+                          Assuntos
+                        </span>
                       <div className="flex items-end gap-2">
-                        <span className="text-2xl font-bold">{completedSubjects}</span>
+                          <span className="text-2xl font-bold text-green-900">{completedSubjects}</span>
                         <span className="text-gray-500 text-sm">/ {totalSubjects}</span>
               </div>
             </div>
                       </div>
                   
                   {/* Sessões */}
-                  <div className="bg-amber-50 rounded-lg p-4">
+                    <div className="bg-gradient-to-br from-amber-100 to-amber-50 rounded-xl p-5 border border-amber-200 shadow-sm overflow-hidden relative group hover:shadow-md transition-all duration-200 transform hover:-translate-y-1">
+                      <div className="absolute inset-0 bg-amber-600 opacity-0 group-hover:opacity-5 transition-opacity duration-300"></div>
                     <div className="flex flex-col">
-                      <span className="text-sm text-amber-700 mb-1">Sessões Pendentes</span>
+                        <span className="text-sm text-amber-700 mb-1.5 flex items-center">
+                          <CalendarCheck className="h-4 w-4 mr-1.5 text-amber-600" />
+                          Sessões Pendentes
+                        </span>
                       <div className="flex items-end gap-2">
-                        <span className="text-2xl font-bold">{pendingSessions}</span>
+                          <span className="text-2xl font-bold text-amber-900">{pendingSessions}</span>
                         <span className="text-gray-500 text-sm">/ {totalSessions}</span>
                         </div>
             </div>
@@ -638,89 +775,161 @@ export default function PlanDetailPage() {
               </div>
                   )}
               </div>
+            </div>
+          </div>
+              </div>
           
-          {/* Cards de acesso rápido */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <Link href={`/planejamento/${plano.id}/sessoes`} className="block">
-              <div className="bg-white rounded-lg border border-gray-100 p-4 hover:border-blue-200 hover:bg-blue-50 transition-colors duration-200">
+        {/* Dica de como concluir assuntos */}
+        {showTip && (
+          <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="flex items-start justify-between p-5">
+              <div className="flex gap-4">
+                <div className="bg-blue-100 p-3 rounded-xl">
+                  <CheckCircle2 className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-medium text-gray-900 mb-1">Dica: Gerencie seu progresso</h3>
+                  <p className="text-gray-600">
+                    Agora você pode <strong>clicar diretamente nos assuntos</strong> ou no <strong>checkbox</strong> para marcar como concluído. 
+                    Também adicionamos botões para marcar todos os assuntos de uma disciplina como concluídos ou pendentes de uma só vez.
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={closeTip}
+                className="p-1 text-gray-500 hover:text-gray-700"
+                title="Fechar dica"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Cards de acesso rápido com visual melhorado */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 overflow-hidden">
+          <Link href={`/planejamento/${plano.id}/sessoes`} className="group block rounded-xl overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+            <div className="bg-gradient-to-br from-white to-blue-50 border border-blue-100 h-full relative overflow-hidden">
+              {/* Elemento decorativo */}
+              <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-blue-200 rounded-full opacity-20 transition-transform duration-500 group-hover:scale-150"></div>
+              
+              <div className="p-6 relative">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h3 className="font-medium text-gray-900 mb-1">Sessões de Estudo</h3>
-                    <p className="text-sm text-gray-500">Gerencie suas sessões de estudo</p>
+                    <h3 className="font-semibold text-lg text-gray-800 mb-1 group-hover:text-blue-700 transition-colors">Sessões de Estudo</h3>
+                    <p className="text-sm text-gray-500 max-w-[80%]">Organize e acompanhe seu cronograma de sessões</p>
+                    
+                    {/* Mini estatística */}
+                    <div className="mt-3 inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-100/80 text-blue-700 text-sm font-medium">
+                      <CalendarClock className="h-4 w-4 mr-1.5" />
+                      {pendingSessions} sessões pendentes
                   </div>
-                  <div className="flex-shrink-0 bg-blue-100 p-3 rounded-full">
-                    <Calendar className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm p-3.5 rounded-full shadow-sm border border-blue-100 transform transition-all group-hover:scale-110 group-hover:shadow-md group-hover:bg-blue-500 group-hover:border-blue-400 group-hover:text-white duration-300">
+                    <Calendar className="h-6 w-6 text-blue-600 group-hover:text-white transition-colors" />
+                  </div>
+                </div>
+                
+                <div className="mt-4 flex">
+                  <div className="text-sm text-blue-700 font-medium flex items-center group-hover:translate-x-1 transition-transform">
+                    Ver sessões <ChevronRight className="h-4 w-4 ml-1 transition-transform group-hover:translate-x-1" />
+                  </div>
             </div>
             </div>
           </div>
             </Link>
           
-            <Link href={`/planejamento/${plano.id}/estatisticas`} className="block">
-              <div className="bg-white rounded-lg border border-gray-100 p-4 hover:border-purple-200 hover:bg-purple-50 transition-colors duration-200">
+          <Link href={`/planejamento/${plano.id}/estatisticas`} className="group block rounded-xl overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+            <div className="bg-gradient-to-br from-white to-purple-50 border border-purple-100 h-full relative overflow-hidden">
+              {/* Elemento decorativo */}
+              <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-purple-200 rounded-full opacity-20 transition-transform duration-500 group-hover:scale-150"></div>
+              
+              <div className="p-6 relative">
                 <div className="flex justify-between items-center">
               <div>
-                    <h3 className="font-medium text-gray-900 mb-1">Estatísticas</h3>
-                    <p className="text-sm text-gray-500">Acompanhe seu progresso</p>
+                    <h3 className="font-semibold text-lg text-gray-800 mb-1 group-hover:text-purple-700 transition-colors">Estatísticas</h3>
+                    <p className="text-sm text-gray-500 max-w-[80%]">Visualize seu desempenho e progresso detalhado</p>
+                    
+                    {/* Mini estatística */}
+                    <div className="mt-3 inline-flex items-center px-3 py-1.5 rounded-lg bg-purple-100/80 text-purple-700 text-sm font-medium">
+                      <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                      {overallProgress}% concluído
               </div>
-                  <div className="flex-shrink-0 bg-purple-100 p-3 rounded-full">
-                    <BarChart2 className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm p-3.5 rounded-full shadow-sm border border-purple-100 transform transition-all group-hover:scale-110 group-hover:shadow-md group-hover:bg-purple-500 group-hover:border-purple-400 group-hover:text-white duration-300">
+                    <BarChart2 className="h-6 w-6 text-purple-600 group-hover:text-white transition-colors" />
+                  </div>
+                </div>
+                
+                <div className="mt-4 flex">
+                  <div className="text-sm text-purple-700 font-medium flex items-center group-hover:translate-x-1 transition-transform">
+                    Ver estatísticas <ChevronRight className="h-4 w-4 ml-1 transition-transform group-hover:translate-x-1" />
+                  </div>
               </div>
             </div>
           </div>
             </Link>
           
-            <Link href={`/planejamento/${plano.id}/editar-disciplinas`} className="block">
-              <div className="bg-white rounded-lg border border-gray-100 p-4 hover:border-green-200 hover:bg-green-50 transition-colors duration-200">
+          <Link href={`/planejamento/${plano.id}/editar-disciplinas`} className="group block rounded-xl overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+            <div className="bg-gradient-to-br from-white to-green-50 border border-green-100 h-full relative overflow-hidden">
+              {/* Elemento decorativo */}
+              <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-green-200 rounded-full opacity-20 transition-transform duration-500 group-hover:scale-150"></div>
+              
+              <div className="p-6 relative">
                 <div className="flex justify-between items-center">
               <div>
-                    <h3 className="font-medium text-gray-900 mb-1">Gerenciar Conteúdo</h3>
-                    <p className="text-sm text-gray-500">Editar disciplinas e assuntos</p>
+                    <h3 className="font-semibold text-lg text-gray-800 mb-1 group-hover:text-green-700 transition-colors">Gerenciar Conteúdo</h3>
+                    <p className="text-sm text-gray-500 max-w-[80%]">Edite disciplinas, assuntos e organize seu material</p>
+                    
+                    {/* Mini estatística */}
+                    <div className="mt-3 inline-flex items-center px-3 py-1.5 rounded-lg bg-green-100/80 text-green-700 text-sm font-medium">
+                      <BookOpen className="h-4 w-4 mr-1.5" />
+                      {totalDisciplines} disciplinas
               </div>
-                  <div className="flex-shrink-0 bg-green-100 p-3 rounded-full">
-                    <BookOpen className="h-5 w-5 text-green-600" />
             </div>
+                  <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm p-3.5 rounded-full shadow-sm border border-green-100 transform transition-all group-hover:scale-110 group-hover:shadow-md group-hover:bg-green-500 group-hover:border-green-400 group-hover:text-white duration-300">
+                    <BookCheck className="h-6 w-6 text-green-600 group-hover:text-white transition-colors" />
           </div>
         </div>
-            </Link>
+                
+                <div className="mt-4 flex">
+                  <div className="text-sm text-green-700 font-medium flex items-center group-hover:translate-x-1 transition-transform">
+                    Editar conteúdo <ChevronRight className="h-4 w-4 ml-1 transition-transform group-hover:translate-x-1" />
           </div>
+                </div>
+              </div>
+            </div>
+          </Link>
           </div>
           
-        {/* Lista de disciplinas */}
-        <Card className="mb-6">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        {/* Lista de disciplinas com design aprimorado */}
+        <div className="bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-xl border border-gray-200 shadow-md overflow-hidden mb-8">
+          <div className="bg-white p-6 border-b border-gray-200">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-              <CardTitle className="text-xl">Disciplinas e Assuntos</CardTitle>
-              <CardDescription>
+                <h2 className="text-xl font-bold text-gray-800 mb-1 flex items-center">
+                  <BookOpen className="h-5 w-5 mr-2 text-blue-600" />
+                  Disciplinas e Assuntos
+                </h2>
+                <p className="text-gray-500">
                 Conteúdo do plano de estudos organizado por disciplinas
-              </CardDescription>
+                </p>
                 </div>
             <Link href={`/planejamento/${plano.id}/editar-disciplinas`}>
-              <Button variant="outline" size="sm">
-                <Edit className="h-4 w-4 mr-2" />
+                <Button className="bg-blue-600 hover:bg-blue-700 shadow-sm transition-all duration-300 flex items-center gap-2">
+                  <Edit className="h-4 w-4" />
                 Editar Conteúdo
                   </Button>
                 </Link>
-              </CardHeader>
-              <CardContent>
-                {!plano.disciplines || plano.disciplines.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 rounded-lg">
-                <div className="bg-white p-3 rounded-full inline-flex items-center justify-center mb-4 shadow-sm">
-                  <BookOpen className="h-8 w-8 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-700 mb-2">Nenhuma disciplina adicionada</h3>
-                <p className="text-gray-500 max-w-md mx-auto mb-6">
-                  Este plano ainda não possui disciplinas. Adicione disciplinas e assuntos para organizar seu estudo.
-                </p>
-                <Link href={`/planejamento/${plano.id}/editar-disciplinas`}>
-                  <Button>
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    Adicionar Disciplinas
-                  </Button>
-                </Link>
                   </div>
-                ) : (
-                  <div className="space-y-6">
-                {plano.disciplines.map((discipline) => {
+          
+          <div className="p-6 overflow-hidden">
+            <div className="space-y-8 overflow-hidden">
+              {plano.disciplines && plano.disciplines.length > 0 ? (
+                plano.disciplines.map((discipline) => {
                   // Calcular progresso da disciplina
                   const totalAssuntos = discipline.subjects?.length || 0;
                   const assuntosConcluidos = discipline.subjects?.filter(a => a.completed)?.length || 0;
@@ -731,102 +940,184 @@ export default function PlanDetailPage() {
                   // Determinar cor da prioridade
                   const getPriorityColor = (priority?: string) => {
                     switch (priority) {
-                      case 'alta': return 'text-red-700 bg-red-50 border-red-200';
-                      case 'média': return 'text-yellow-700 bg-yellow-50 border-yellow-200';
-                      case 'baixa': return 'text-blue-700 bg-blue-50 border-blue-200';
-                      default: return 'text-gray-700 bg-gray-50 border-gray-200';
+                      case 'alta': return 'text-red-700 bg-red-50 border border-red-200';
+                      case 'média': return 'text-yellow-700 bg-yellow-50 border border-yellow-200';
+                      case 'baixa': return 'text-blue-700 bg-blue-50 border border-blue-200';
+                      default: return 'text-gray-700 bg-gray-50 border border-gray-200';
                     }
                   };
                 
+                  // Cores personalizadas com base no ID da disciplina
+                  const getDisciplineColors = (id: number) => {
+                    const colors = disciplinasColors[id];
+                    if (colors) return colors;
+                    
+                    // Para disciplinas sem cor definida, usei um esquema baseado no ID
+                    const baseColors = [
+                      { bg: 'bg-blue-100', text: 'text-blue-600' },
+                      { bg: 'bg-green-100', text: 'text-green-600' },
+                      { bg: 'bg-purple-100', text: 'text-purple-600' },
+                      { bg: 'bg-red-100', text: 'text-red-600' },
+                      { bg: 'bg-amber-100', text: 'text-amber-600' },
+                      { bg: 'bg-teal-100', text: 'text-teal-600' },
+                      { bg: 'bg-indigo-100', text: 'text-indigo-600' },
+                      { bg: 'bg-sky-100', text: 'text-sky-600' },
+                    ];
+                    
+                    return baseColors[id % baseColors.length] || { bg: 'bg-gray-100', text: 'text-gray-600' };
+                  };
+                  
+                  const colors = getDisciplineColors(discipline.id);
+                
                 return (
-                    <div key={discipline.id} className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-                      <div className={`flex items-center justify-between p-4 ${disciplinasColors[discipline.id]?.bg || 'bg-gray-100'}`}>
-                        <div className="flex-1">
-                        <div className="flex items-center">
-                            <span className={`p-1.5 rounded-full bg-white mr-3 ${disciplinasColors[discipline.id]?.text || 'text-gray-600'}`}>
+                    <div key={discipline.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden group hover:shadow-md transition-all duration-300">
+                      {/* Cabeçalho da disciplina com layout melhorado */}
+                      <div className={`overflow-hidden border-b border-gray-100 ${colors.bg}`}>
+                        <div className="p-6">
+                          <div className="flex flex-wrap items-center justify-between gap-4">
+                            <div className="flex items-start gap-3 flex-grow">
+                              <div className="p-3 rounded-xl bg-white shadow-sm border border-gray-100 shrink-0">
+                              <div className={colors.text}>
                               {getDisciplineIcon(discipline.id)}
-                            </span>
-                            <h3 className="font-medium text-lg mr-3">
+                              </div>
+                            </div>
+                              <div className="min-w-0 flex-1">
+                                <h3 className="font-semibold text-xl text-gray-800 mb-1 group-hover:text-blue-700 transition-colors truncate">
                               {discipline.name || (discipline.id ? `Disciplina ${discipline.id}` : 'Disciplina')}
                             </h3>
+                              <div className="flex flex-wrap items-center gap-3">
                             {discipline.priority && (
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(discipline.priority)}`}>
+                                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getPriorityColor(discipline.priority)}`}>
                                 Prioridade {discipline.priority}
                               </span>
                             )}
-                          </div>
-                          
-                          <div className="flex items-center mt-2 text-sm text-gray-500">
+                                <span className="text-sm text-gray-500 flex items-center">
                             <BookCheck className="h-4 w-4 mr-1.5" />
-                            <span>{assuntosConcluidos} de {totalAssuntos} assuntos concluídos</span>
+                                  {assuntosConcluidos} de {totalAssuntos} assuntos concluídos
+                                </span>
+                            </div>
                           </div>
                         </div>
                         
-                        <div className="flex-shrink-0 flex items-center">
-                          <div className="text-right mr-4">
-                            <div className="text-lg font-semibold">{progressoDisciplina}%</div>
-                            <div className="text-xs text-gray-500">concluído</div>
+                        <div className="flex items-center">
+                              <div className="flex flex-col items-end mr-4">
+                            <div className="text-2xl font-bold">
+                              {progressoDisciplina}%
                           </div>
-                          <div className="w-12 h-12 rounded-full bg-white relative flex items-center justify-center">
-                            <div className="absolute inset-0 rounded-full border-4 border-transparent" style={{
-                              background: `conic-gradient(#3b82f6 ${progressoDisciplina}%, #e5e7eb ${progressoDisciplina}% 100%)`,
-                              clipPath: 'circle(50%)'
-                            }}></div>
-                            <div className="absolute inset-1 bg-white rounded-full"></div>
-                            {getDisciplineIcon(discipline.id)}
+                            <div className="text-xs text-gray-500">
+                              progresso
                           </div>
+                          </div>
+                          
+                          <div className="flex flex-col items-center gap-2">
+                                <div className="w-16 h-16 rounded-full relative flex items-center justify-center shrink-0">
+                            <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 100 100">
+                              {/* Fundo cinza */}
+                              <circle 
+                                cx="50" cy="50" r="45" 
+                                className="stroke-current text-gray-200" 
+                                strokeWidth="8" 
+                                fill="none"
+                              />
+                              {/* Progresso colorido */}
+                              <circle 
+                                cx="50" cy="50" r="45" 
+                                className={`stroke-current ${colors.text.replace('text', 'text')}`}
+                                strokeWidth="8" 
+                                strokeLinecap="round"
+                                strokeDasharray={`${progressoDisciplina * 2.83} 283`}
+                                fill="none"
+                              />
+                            </svg>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              {getDisciplineIcon(discipline.id)}
                         </div>
                       </div>
                       
-                      {/* Barra de progresso da disciplina */}
-                      <div className="h-1.5 bg-gray-100 w-full">
-                        <div 
-                          className="h-full bg-blue-500" 
-                          style={{ width: `${progressoDisciplina}%` }}
-                        ></div>
+                                {/* Botões para marcar todos assuntos - layout mais compacto */}
+                            {discipline.subjects && discipline.subjects.length > 0 && (
+                              <div className="flex gap-1">
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleAllSubjectsCompletion(discipline.id, true);
+                                  }}
+                                  className="p-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-md text-xs font-medium transition-colors"
+                                  title="Marcar todos como concluídos"
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                </button>
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleAllSubjectsCompletion(discipline.id, false);
+                                  }}
+                                  className="p-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-md text-xs font-medium transition-colors"
+                                  title="Marcar todos como pendentes"
+                                >
+                                  <AlertCircle className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                     </div>
                         
+                      {/* Lista de assuntos com layout melhorado */}
                         {discipline.subjects && discipline.subjects.length > 0 ? (
-                        <div className="divide-y divide-gray-100 bg-white">
+                        <div className="divide-y divide-gray-100 bg-white p-2 overflow-hidden">
                               {discipline.subjects.map((subject) => (
-                            <div key={subject.id} className="p-3 hover:bg-gray-50 transition-colors">
-                                  <div className="flex items-center justify-between">
-                                <div className="flex items-center flex-1">
-                                      <div 
-                                    className={`w-3 h-3 rounded-full mr-3 flex-shrink-0 ${
+                            <div 
+                              key={subject.id} 
+                              className="p-3 hover:bg-gray-50 transition-colors rounded-lg my-1 group/subject cursor-pointer overflow-hidden"
+                              onClick={() => toggleSubjectCompletion(discipline.id, subject.id)}
+                              title={subject.completed ? "Clique para marcar como pendente" : "Clique para marcar como concluído"}
+                            >
+                              <div className="flex flex-wrap sm:flex-nowrap items-start justify-between gap-2">
+                                <div className="flex items-center min-w-0 flex-1">
+                                  <div 
+                                    className={`w-5 h-5 rounded-md mr-3 flex-shrink-0 flex items-center justify-center transition-all duration-200 border ${
                                           subject.completed 
-                                ? 'bg-green-500' 
-                                            : subject.progress && subject.progress > 0 
-                                              ? 'bg-yellow-500' 
-                                              : 'bg-gray-300'
-                                        }`}
-                                      ></div>
-                                  <span className="font-medium text-gray-900 mr-2">
+                                        ? 'bg-green-500 border-green-600 text-white' 
+                                        : 'bg-white border-gray-300 hover:border-blue-400'
+                                    }`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleSubjectCompletion(discipline.id, subject.id);
+                                    }}
+                                  >
+                                    {subject.completed && <CheckCircle2 className="h-4 w-4" />}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <span className={`font-medium text-gray-900 mr-2 group-hover/subject:text-blue-700 transition-colors ${subject.completed ? 'line-through text-gray-500' : ''} block truncate`}>
                                         {subject.name || (subject.id ? `Assunto ${subject.id}` : 'Assunto')}
                                       </span>
                                   
                                   {subject.priority && (
-                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(subject.priority)}`}>
+                                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1 ${getPriorityColor(subject.priority)}`}>
                                       {subject.priority}
                                     </span>
                                   )}
+                                  </div>
                                     </div>
                                 
-                                <div className="flex items-center space-x-3">
+                                <div className="flex items-center space-x-3 flex-shrink-0">
                                   {subject.hours && (
-                                    <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
+                                    <span className="text-xs bg-gray-100 px-2.5 py-1 rounded-full text-gray-600 font-medium whitespace-nowrap">
                                       {subject.hours}h
                                     </span>
                                   )}
                                   
                                   {subject.completed ? (
-                                    <span className="text-xs bg-green-100 px-2 py-1 rounded text-green-700 flex items-center">
+                                    <span className="text-xs bg-green-100 px-2.5 py-1 rounded-full text-green-700 flex items-center whitespace-nowrap">
                                       <CheckCircle2 className="h-3 w-3 mr-1" />
                                       Concluído
                                     </span>
                                   ) : (
                                     subject.progress !== undefined && (
-                                      <span className="text-xs bg-blue-100 px-2 py-1 rounded text-blue-700">
+                                      <span className="text-xs bg-blue-100 px-2.5 py-1 rounded-full text-blue-700 font-medium whitespace-nowrap">
                                         {subject.progress}%
                                       </span>
                                     )
@@ -834,10 +1125,10 @@ export default function PlanDetailPage() {
                                     </div>
                                   </div>
                                   
-                              {!subject.completed && subject.progress !== undefined && (
-                                <div className="mt-2 w-full bg-gray-200 rounded-full h-1">
+                              {!subject.completed && subject.progress !== undefined && subject.progress > 0 && (
+                                <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
                                       <div 
-                                    className="bg-blue-600 h-1 rounded-full" 
+                                    className="bg-blue-600 h-1.5 rounded-full group-hover/subject:animate-pulse" 
                                         style={{ width: `${subject.progress}%` }}
                                       ></div>
                                 </div>
@@ -846,17 +1137,28 @@ export default function PlanDetailPage() {
                               ))}
                               </div>
                         ) : (
-                        <div className="px-4 py-3 text-gray-500 text-sm bg-white">
+                        <div className="p-5 text-gray-500 text-sm bg-white text-center">
                             Nenhum assunto adicionado para esta disciplina
                           </div>
                         )}
                   </div>
                 );
-              })}
+                })
+              ) : (
+                <div className="flex flex-col items-center justify-center bg-white rounded-xl border border-gray-200 p-10">
+                  <div className="p-4 bg-gray-100 rounded-full mb-4">
+                    <BookOpen className="h-6 w-6 text-gray-500" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Nenhuma disciplina adicionada</h3>
+                  <p className="text-gray-600 mb-6 text-center">Adicione disciplinas ao seu plano para começar a acompanhar seus estudos</p>
+                  <Link href="/disciplinas" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    Gerenciar disciplinas
+                  </Link>
           </div>
                 )}
-              </CardContent>
-            </Card>
+            </div>
+          </div>
+        </div>
       </div>
     </AppLayout>
   );

@@ -148,4 +148,70 @@ export async function PUT(
       { status: 500 }
     );
   }
+}
+
+// DELETE - Excluir um assunto específico
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string; subjectId: string } }
+) {
+  const { id, subjectId } = params;
+  
+  try {
+    // Extrair o ID da disciplina e do assunto dos parâmetros da rota
+    const disciplineId = parseInt(id);
+    const subjectIdNum = parseInt(subjectId);
+
+    // Verificar se os IDs são válidos
+    if (isNaN(disciplineId) || isNaN(subjectIdNum)) {
+      return NextResponse.json(
+        { error: 'ID de disciplina ou assunto inválido.' },
+        { status: 400 }
+      );
+    }
+
+    // Verificar se a disciplina existe
+    const existingDiscipline = await executeQuerySingle(
+      'SELECT Id FROM Disciplines WHERE Id = @disciplineId',
+      { disciplineId }
+    );
+
+    if (!existingDiscipline) {
+      return NextResponse.json(
+        { error: 'Disciplina não encontrada.' },
+        { status: 404 }
+      );
+    }
+
+    // Verificar se o assunto existe e pertence à disciplina
+    const existingSubject = await executeQuerySingle(
+      'SELECT Id FROM Subjects WHERE Id = @subjectId AND DisciplineId = @disciplineId',
+      { subjectId: subjectIdNum, disciplineId }
+    );
+
+    if (!existingSubject) {
+      return NextResponse.json(
+        { error: 'Assunto não encontrado nesta disciplina.' },
+        { status: 404 }
+      );
+    }
+
+    // Excluir o assunto
+    await executeQuery(
+      'DELETE FROM Subjects WHERE Id = @subjectId AND DisciplineId = @disciplineId',
+      { subjectId: subjectIdNum, disciplineId }
+    );
+
+    // Retornar resposta de sucesso
+    return NextResponse.json({ 
+      success: true,
+      message: 'Assunto excluído com sucesso.'
+    });
+  } catch (error) {
+    console.error('Erro ao excluir assunto:', error);
+    return NextResponse.json(
+      { error: 'Erro ao excluir assunto.' },
+      { status: 500 }
+    );
+  }
 } 

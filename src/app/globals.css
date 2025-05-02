@@ -20,8 +20,11 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  margin: 0;
+  padding: 0;
+  color: rgb(var(--foreground-rgb));
+  background: white;
+  overflow-x: hidden; /* Prevenir scroll horizontal em toda a aplicação */
   font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -116,4 +119,73 @@ body {
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.9);
+}
+
+@layer utilities {
+  /* Animações personalizadas */
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%) skewX(-30deg);
+    }
+    100% {
+      transform: translateX(200%) skewX(-30deg);
+    }
+  }
+
+  @keyframes bounce-small {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-3px);
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+
+  .animate-bounce-small {
+    animation: bounce-small 1s ease-in-out infinite;
+  }
+
+  /* Customização de barra de rolagem */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 8px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 8px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+}
+
+/* Outras animações úteis para a interface */
+.transition-transform {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Transformações para hover e interações */
+.transform {
+  transform: translateZ(0);
+}
+
+.transform-gpu {
+  transform: translate3d(0, 0, 0);
+}
+
+.-skew-x-30 {
+  --tw-skew-x: -30deg;
+  transform: var(--tw-transform);
 }

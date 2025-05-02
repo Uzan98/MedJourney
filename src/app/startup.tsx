@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { inicializarPlanejamento } from '@/services';
+import { inicializarSincronizacao } from '@/services/data-sync';
 
 type StartupProps = {
   onCompleteAction: () => void;
@@ -10,19 +11,36 @@ type StartupProps = {
 export default function Startup({ onCompleteAction }: StartupProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [showStartupScreen, setShowStartupScreen] = useState(true);
+  const [initStatus, setInitStatus] = useState({
+    planejamento: false,
+    sincronizacao: false
+  });
 
   useEffect(() => {
     // Verificar se é a primeira execução do aplicativo
     const isFirstRun = !localStorage.getItem('@medjourney:app_initialized');
     
-    // Inicializar o serviço de planejamento
-    console.log('Inicializando serviço de planejamento...');
-    try {
-      inicializarPlanejamento();
-      console.log('Serviço de planejamento inicializado com sucesso');
-    } catch (error) {
-      console.error('Erro ao inicializar serviço de planejamento:', error);
-    }
+    // Inicializar serviços
+    const initializeServices = async () => {
+      try {
+        // Inicializar o serviço de planejamento
+        console.log('Inicializando serviço de planejamento...');
+        inicializarPlanejamento();
+        console.log('Serviço de planejamento inicializado com sucesso');
+        setInitStatus(prev => ({ ...prev, planejamento: true }));
+        
+        // Inicializar o serviço de sincronização
+        console.log('Inicializando serviço de sincronização...');
+        inicializarSincronizacao();
+        console.log('Serviço de sincronização inicializado com sucesso');
+        setInitStatus(prev => ({ ...prev, sincronizacao: true }));
+      } catch (error) {
+        console.error('Erro ao inicializar serviços:', error);
+      }
+    };
+    
+    // Iniciar serviços
+    initializeServices();
     
     // Se não for a primeira execução, pular a tela de inicialização
     if (!isFirstRun) {

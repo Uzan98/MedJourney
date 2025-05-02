@@ -75,9 +75,9 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           icon: <Brain className="h-5 w-5 flex-shrink-0" />
         },
         {
-          path: "/planejamento/calendario",
-          label: "Calendário",
-          icon: <Calendar className="h-5 w-5 flex-shrink-0" />
+          path: "/desempenho",
+          label: "Desempenho Acadêmico",
+          icon: <GraduationCap className="h-5 w-5 flex-shrink-0" />
         }
       ]
     },
@@ -85,11 +85,6 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       path: "/simulados",
       label: "Simulados",
       icon: <ClipboardList className="h-5 w-5 flex-shrink-0" />
-    },
-    {
-      path: "/estatisticas",
-      label: "Estatísticas",
-      icon: <BarChart2 className="h-5 w-5 flex-shrink-0" />
     }
   ];
 
@@ -135,9 +130,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     
     // Verificação especial para submenus
     // Evita que "/planejamento" seja considerado ativo quando estamos em "/planejamento/inteligente"
-    if (path === "/planejamento" && 
-        (pathname.startsWith("/planejamento/inteligente") || 
-         pathname.startsWith("/planejamento/calendario"))) {
+    if (path === "/planejamento" && pathname.startsWith("/planejamento/inteligente")) {
       return false;
     }
     
@@ -295,7 +288,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         } hidden md:flex`}
       >
         {/* Logo area */}
-        <div className={`flex items-center ${isSidebarOpen ? 'space-x-3' : 'justify-center'} mb-10 pt-4 px-4`}>
+        <div className={`flex items-center ${isSidebarOpen ? 'space-x-3' : 'justify-center'} pt-4 px-4 pb-2 flex-shrink-0`}>
           <div className="bg-blue-400 p-2 rounded-md flex-shrink-0">
             <div className="h-8 w-8 bg-blue-200 rounded-md flex items-center justify-center">
               <BookOpen className="h-5 w-5 text-blue-600" />
@@ -305,7 +298,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         </div>
         
         {/* Toggle button */}
-        <div className="absolute top-20 -right-3">
+        <div className="absolute top-20 -right-3 z-10">
           <button 
             onClick={toggleSidebar}
             className="bg-blue-600 hover:bg-blue-700 p-2 rounded-full text-white shadow-md border border-blue-400"
@@ -318,19 +311,21 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           </button>
         </div>
         
-        {/* Nav links */}
-        <div className="space-y-1 flex-1 px-4">
+        {/* Menu container com scroll próprio */}
+        <div className="flex flex-col flex-1 overflow-hidden">
+          {/* Nav links com scroll */}
+          <div className="space-y-1 flex-1 px-4 pb-4 overflow-y-auto custom-scrollbar">
           {isSidebarOpen && (
-            <p className="text-blue-300 text-xs font-medium uppercase tracking-wider mb-2 px-3">
+              <p className="text-blue-300 text-xs font-medium uppercase tracking-wider mb-2 px-3 sticky top-0 bg-blue-600 py-2">
               Menu Principal
             </p>
           )}
 
-          {menuItems.map(item => renderMenuItem(item))}
-        </div>
-        
-        {/* Bottom links */}
-        <div className={`pt-4 border-t border-blue-500 mt-6 px-4 ${!isSidebarOpen && 'flex flex-col items-center'}`}>
+            {menuItems.map(item => renderMenuItem(item))}
+          </div>
+          
+          {/* Bottom links - fora da área de scroll */}
+          <div className={`pt-4 border-t border-blue-500 px-4 pb-4 flex-shrink-0 ${!isSidebarOpen && 'flex flex-col items-center'}`}>
           <Link href="/configuracoes" className={getNavLinkClasses("/configuracoes")}>
             <Settings className="h-5 w-5 flex-shrink-0" />
             {isSidebarOpen && <span>Configurações</span>}
@@ -345,6 +340,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               </button>
             </div>
           )}
+          </div>
         </div>
       </div>
       
@@ -357,32 +353,34 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         }`}
       >
         {/* Logo area - Mobile */}
-        <div className="flex items-center justify-between px-4 mb-10 pt-4">
+        <div className="flex items-center justify-between px-4 pt-4 pb-2 flex-shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="bg-blue-400 p-2 rounded-md">
-              <div className="h-8 w-8 bg-blue-200 rounded-md flex items-center justify-center">
-                <BookOpen className="h-5 w-5 text-blue-600" />
-              </div>
+          <div className="bg-blue-400 p-2 rounded-md">
+            <div className="h-8 w-8 bg-blue-200 rounded-md flex items-center justify-center">
+              <BookOpen className="h-5 w-5 text-blue-600" />
             </div>
-            <span className="text-xl font-bold">MedJourney</span>
+          </div>
+          <span className="text-xl font-bold">MedJourney</span>
           </div>
           <button onClick={toggleSidebar} className="text-blue-100 hover:text-white">
             <X className="h-5 w-5" />
           </button>
         </div>
         
-        {/* Mobile Nav */}
-        <div className="space-y-1 flex-1 px-4">
-          <p className="text-blue-300 text-xs font-medium uppercase tracking-wider mb-2 px-3">
+        {/* Menu container com scroll próprio - Mobile */}
+        <div className="flex flex-col flex-1 overflow-hidden">
+          {/* Mobile Nav com scroll */}
+          <div className="space-y-1 flex-1 px-4 overflow-y-auto custom-scrollbar">
+            <p className="text-blue-300 text-xs font-medium uppercase tracking-wider mb-2 px-3 sticky top-0 bg-blue-600 py-2">
             Menu Principal
           </p>
 
-          {menuItems.map(item => renderMenuItem(item, true))}
-        </div>
-        
-        {/* Bottom links */}
-        <div className="pt-4 border-t border-blue-500 mt-6 px-4">
-          <Link href="/configuracoes" className={getNavLinkClasses("/configuracoes", false, true)}>
+            {menuItems.map(item => renderMenuItem(item, true))}
+          </div>
+          
+          {/* Bottom links - Mobile, fora da área de scroll */}
+          <div className="pt-4 border-t border-blue-500 px-4 pb-4 flex-shrink-0">
+            <Link href="/configuracoes" className={getNavLinkClasses("/configuracoes", false, true)}>
             <Settings className="h-5 w-5" />
             <span>Configurações</span>
           </Link>
@@ -393,6 +391,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             <button className="w-full bg-blue-400 hover:bg-blue-300 text-blue-800 py-1.5 px-3 rounded-md text-sm font-medium mt-3">
               Contato
             </button>
+            </div>
           </div>
         </div>
       </div>
@@ -400,7 +399,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-white shadow-sm py-4 px-6 flex items-center justify-between">
+        <header className="bg-white shadow-sm py-4 px-6 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center">
             <button 
               onClick={toggleSidebar} 
