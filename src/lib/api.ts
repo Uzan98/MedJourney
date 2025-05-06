@@ -52,6 +52,7 @@ async function fetchApi<T>(
         'Content-Type': 'application/json',
         ...options.headers,
       },
+      credentials: 'include',
       signal: controller.signal
     });
 
@@ -247,6 +248,7 @@ async function isServerAvailable(
           'Pragma': 'no-cache'
         },
         cache: 'no-store',
+        credentials: 'include',
         signal: controller.signal
       });
       

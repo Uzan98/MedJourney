@@ -4,6 +4,7 @@ import "./globals.css";
 import { ToastContainer } from "../components/ui/Toast";
 import { Toaster } from 'react-hot-toast';
 import { StartupProvider } from './providers';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 const geistSans = Geist({
   subsets: ["latin"],
@@ -98,9 +99,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gradient-to-br from-blue-100 to-indigo-100 min-h-screen`}
       >
-        <StartupProvider>
-          {children}
-        </StartupProvider>
+        <AuthProvider>
+          <StartupProvider>
+            {children}
+          </StartupProvider>
+        </AuthProvider>
         {/* Componente de Toast para notificações */}
         <ToastContainer position="top-right" />
         <Toaster 

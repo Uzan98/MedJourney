@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import { X, BookOpen, Palette } from 'lucide-react';
-import { createDiscipline } from '../../lib/api';
 import { toast } from '../../components/ui/Toast';
 import { ThemePicker } from '../ui/ThemeComponents';
+import { DisciplinesRestService } from '@/lib/supabase-rest';
 
 interface DisciplineModalProps {
   isOpen: boolean;
@@ -44,23 +44,17 @@ const DisciplineModal: React.FC<DisciplineModalProps> = ({
         throw new Error('O nome da disciplina é obrigatório');
       }
 
-      // Criar objeto de disciplina
-      const disciplineData = {
+      console.log('Enviando dados para criação de disciplina:', { name, description, theme });
+
+      // Usar a API REST do Supabase diretamente
+      const newDiscipline = await DisciplinesRestService.createDiscipline(
         name,
-        description: description || undefined,
+        description || undefined,
         theme
-      };
+      );
 
-      console.log('Enviando dados para criação de disciplina:', disciplineData);
-
-      // Enviar requisição para a API
-      const response = await createDiscipline(disciplineData);
-      console.log('Resposta da API de criação de disciplina:', response);
-
-      if (response.success) {
-        console.log('Disciplina criada com sucesso:', response.discipline);
-        // Extrair o nome original (sem o prefixo "User:")
-        const displayName = name; // Nome original que o usuário digitou
+      if (newDiscipline) {
+        console.log('Disciplina criada com sucesso:', newDiscipline);
         
         // Adicionar um pequeno atraso para garantir que a atualização no banco foi concluída
         setTimeout(() => {
@@ -68,10 +62,10 @@ const DisciplineModal: React.FC<DisciplineModalProps> = ({
           onClose();
         }, 500);
         
-        // Mostrar confirmação com toast ao invés de alert
-        toast.success(`Disciplina "${displayName}" adicionada com sucesso!`);
+        // Mostrar confirmação com toast
+        toast.success(`Disciplina "${name}" adicionada com sucesso!`);
       } else {
-        throw new Error(response.error || 'Erro ao criar disciplina');
+        throw new Error('Erro ao criar disciplina');
       }
     } catch (err) {
       console.error('Erro ao criar disciplina:', err);

@@ -50,20 +50,20 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   // Definição dos menus e submenus
   const menuItems: MenuItem[] = [
     {
-      path: "/",
+      path: "/dashboard",
       label: "Dashboard",
       icon: <LayoutDashboard className="h-5 w-5 flex-shrink-0" />
+    },
+    {
+      path: "/dashboard/disciplinas",
+      label: "Disciplinas",
+      icon: <Book className="h-5 w-5 flex-shrink-0" />
     },
     {
       path: "/estudos",
       label: "Painel de Estudos",
       icon: <BookOpen className="h-5 w-5 flex-shrink-0" />,
       submenu: [
-        {
-          path: "/disciplinas",
-          label: "Disciplinas",
-          icon: <Book className="h-5 w-5 flex-shrink-0" />
-        },
         {
           path: "/planejamento",
           label: "Planejamento",

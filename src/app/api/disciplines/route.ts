@@ -1,48 +1,96 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '../../../lib/db';
+import { withApiAuth } from '@/lib/api-auth';
+import { supabase } from '@/lib/supabase';
 
-// Interface para disciplina
+// Interface para os resultados de consulta do adaptador de BD
+interface QueryResult {
+  success: boolean;
+  data?: any[];
+  error?: string;
+}
+
+// Interface para disciplina com nomes em minúsculos
 interface Discipline {
-  Id: number;
-  Name: string;
-  Description: string;
-  Theme?: string;
-  CreatedAt: string;
-  UpdatedAt: string;
+  id: number;
+  name: string;
+  description: string;
+  theme?: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // GET - Listar todas as disciplinas
-export async function GET(request: NextRequest) {
+export const GET = withApiAuth(async (request: NextRequest, { userId, supabase: authSupabase }) => {
   try {
-    // Em uma aplicação real, obter o userId do token de autenticação
-    const userId = 1;
+    console.log('API disciplines: Usuário autenticado:', userId);
     
     // Obter parâmetros da requisição
     const { searchParams } = new URL(request.url);
     const onlyUser = searchParams.get('onlyUser') === 'true';
     
-    // Query base
-    let query = `
-      SELECT Id, Name, Description, Theme, CreatedAt, UpdatedAt 
-      FROM Disciplines
-    `;
+    console.log('API disciplines: Parâmetros:', { onlyUser });
     
-    const params: any = {};
+    // Em modo de desenvolvimento, verificar se está usando o bypass
+    const isDev = process.env.NODE_ENV === 'development';
+    const isDevBypass = userId === 'dev-user-123456789';
     
-    // Simplificando a lógica: se onlyUser for true, retornar apenas disciplinas
-    // que começam com o prefixo "User:"
-    if (onlyUser) {
-      query += `
-        WHERE Name LIKE @userPattern
-      `;
+    // Se estiver em modo de desenvolvimento com bypass, usar configuração especial
+    let userIdToUse = userId;
+    
+    // Cliente Supabase a ser utilizado - com autenticação ou padrão
+    const supabaseClient = authSupabase || supabase;
+    
+    if (isDev && isDevBypass) {
+      console.log('API disciplines: Modo de desenvolvimento - exibindo todas as disciplinas');
+      // Em desenvolvimento, não filtrar por usuário
       
-      params.userPattern = 'User:%';
+      const { data: disciplines, error } = await supabaseClient
+        .from('disciplines')
+        .select('*')
+        .order('name');
+        
+      if (error) {
+        console.error('Erro ao listar disciplinas:', error);
+        return NextResponse.json(
+          { error: error.message },
+          { status: 500 }
+        );
+      }
+      
+      console.log(`API disciplines: Retornando ${disciplines.length} disciplinas em modo de desenvolvimento`);
+      
+      return NextResponse.json({
+        success: true,
+        disciplines,
+        devMode: true
+      });
+    }
+    
+    // Usar diretamente o cliente Supabase com autenticação
+    let query = supabaseClient
+      .from('disciplines')
+      .select('*');
+    
+    // Se onlyUser for true, retornar apenas disciplinas do usuário atual
+    // ou disciplinas do sistema (is_system = true)
+    if (onlyUser) {
+      query = query.or(`user_id.eq.${userIdToUse},is_system.eq.true`);
     }
     
     // Ordenar por nome
-    query += ` ORDER BY Name`;
+    query = query.order('name');
     
-    const disciplines = await executeQuery(query, params) as Discipline[];
+    const { data: disciplines, error } = await query;
+    
+    if (error) {
+      console.error('Erro ao listar disciplinas:', error);
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
+    }
 
     console.log(`API disciplines: Retornando ${disciplines.length} disciplinas. onlyUser=${onlyUser}`);
     
@@ -57,10 +105,10 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
 // POST - Criar nova disciplina
-export async function POST(request: Request) {
+export const POST = withApiAuth(async (request: Request, { userId, session, supabase: authSupabase }) => {
   try {
     const { name, description, theme } = await request.json();
 
@@ -72,40 +120,98 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verificar se já existe uma disciplina com o mesmo nome
-    const existingDisciplines = await executeQuery(
-      'SELECT Id FROM Disciplines WHERE Name = @name',
-      { name }
-    );
+    console.log('API disciplines: Criando disciplina para usuário:', userId);
+    
+    // Cliente Supabase a ser utilizado - com autenticação ou padrão
+    const supabaseClient = authSupabase || supabase;
+    
+    // Verificar se o usuário existe na tabela users e criar se não existir
+    console.log('API disciplines: Verificando se o usuário existe na tabela users');
+    const { data: existingUser, error: userCheckError } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    if (userCheckError) {
+      console.error('API disciplines: Erro ao verificar usuário:', userCheckError);
+    }
+    
+    if (!existingUser) {
+      console.log('API disciplines: Usuário não encontrado na tabela users, criando registro');
+      
+      // Obter email do usuário da sessão
+      const userEmail = session?.user?.email;
+      const userName = userEmail ? userEmail.split('@')[0] : 'Usuário';
+      
+      // Inserir usuário na tabela users
+      const { data: newUser, error: createUserError } = await supabaseClient
+        .from('users')
+        .insert([
+          {
+            user_id: userId,
+            email: userEmail || `${userId}@example.com`,
+            name: userName,
+            is_active: true
+          }
+        ])
+        .select()
+        .single();
+      
+      if (createUserError) {
+        console.error('API disciplines: Erro ao criar usuário na tabela users:', createUserError);
+        console.warn('API disciplines: Continuando mesmo sem conseguir criar usuário');
+      } else {
+        console.log('API disciplines: Usuário criado com sucesso:', newUser);
+      }
+    } else {
+      console.log('API disciplines: Usuário encontrado na tabela users:', existingUser);
+    }
 
-    if (existingDisciplines.length > 0) {
+    // Verificar se já existe uma disciplina com o mesmo nome para este usuário
+    const { data: existingDisciplines, error: checkError } = await supabaseClient
+      .from('disciplines')
+      .select('id')
+      .eq('name', name)
+      .eq('user_id', userId);
+
+    if (checkError) {
+      console.error('Erro ao verificar disciplina existente:', checkError);
+      return NextResponse.json(
+        { error: 'Erro ao verificar disciplina existente' },
+        { status: 500 }
+      );
+    }
+
+    if (existingDisciplines && existingDisciplines.length > 0) {
       return NextResponse.json(
         { error: 'Já existe uma disciplina com este nome' },
         { status: 409 }
       );
     }
 
-    // Inserir nova disciplina
-    const result = await executeQuery(
-      `INSERT INTO Disciplines (Name, Description, Theme) 
-       OUTPUT INSERTED.Id, INSERTED.Name, INSERTED.Description, INSERTED.Theme, INSERTED.CreatedAt
-       VALUES (@name, @description, @theme)`,
-      { 
-        name, 
-        description: description || null,
-        theme: theme || null
-      }
-    );
-
-    if (!result || result.length === 0) {
+    // Inserir nova disciplina com o ID do usuário autenticado
+    const { data: newDiscipline, error: insertError } = await supabaseClient
+      .from('disciplines')
+      .insert([
+        {
+          name,
+          description: description || null,
+          theme: theme || null,
+          user_id: userId,
+          is_system: false
+        }
+      ])
+      .select()
+      .single();
+    
+    if (insertError) {
+      console.error('Erro ao criar disciplina:', insertError);
       return NextResponse.json(
-        { error: 'Erro ao criar disciplina' },
+        { error: insertError.message || 'Erro ao criar disciplina', details: insertError },
         { status: 500 }
       );
     }
-
-    // Retornar dados da disciplina criada
-    const newDiscipline = result[0];
 
     return NextResponse.json({
       success: true,
@@ -118,4 +224,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-} 
+}); 
