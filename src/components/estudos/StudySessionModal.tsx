@@ -1,16 +1,22 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, BookOpen, FileText } from 'lucide-react';
-import { createStudySession, getDisciplines } from '../../lib/api';
+import { X, Calendar, Clock, BookOpen, FileText, CheckCircle } from 'lucide-react';
+import { createStudySession } from '../../lib/api';
 import { toast } from '../../components/ui/Toast';
 import { useRouter } from 'next/navigation';
+import { StudyStreakService } from "@/lib/study-streak-service";
+import { DisciplinesRestService } from "@/lib/supabase-rest";
+import { Discipline as SupabaseDiscipline } from "@/lib/supabase";
+import { StudySessionService } from "@/services/study-sessions.service";
 
 interface StudySessionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess?: () => void;
   isScheduling?: boolean; // true = agendar para futuro, false = iniciar agora
+  disciplineId?: number;
+  disciplineName?: string;
 }
 
 interface Discipline {
@@ -23,10 +29,11 @@ const StudySessionModal: React.FC<StudySessionModalProps> = ({
   isOpen, 
   onClose, 
   onSuccess,
-  isScheduling = true
+  isScheduling = true,
+  disciplineId,
+  disciplineName
 }) => {
   const [title, setTitle] = useState('');
-  const [disciplineName, setDisciplineName] = useState('');
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [duration, setDuration] = useState(60);
@@ -38,52 +45,49 @@ const StudySessionModal: React.FC<StudySessionModalProps> = ({
   const [selectedDiscipline, setSelectedDiscipline] = useState<string | null>(null);
   const router = useRouter();
 
-      const fetchDisciplines = async () => {
-        try {
-          setLoadingDisciplines(true);
+  const fetchDisciplines = async () => {
+    try {
+      setLoadingDisciplines(true);
       console.log('Buscando disciplinas do usuário...');
-          const response = await getDisciplines(true);
-      console.log('Resposta da API de disciplinas (apenas usuário):', response);
       
-      if (response.success && response.disciplines && Array.isArray(response.disciplines)) {
-            console.log(`${response.disciplines.length} disciplinas do usuário encontradas`);
-            
-            // Adicionar filtro adicional para garantir que só temos disciplinas com prefixo User:
-            const userDisciplines = response.disciplines.filter(d => d.Name.startsWith('User:'));
-            console.log(`Após filtragem: ${userDisciplines.length} disciplinas com prefixo User:`);
+      // Usar o DisciplinesRestService para buscar as disciplinas
+      const disciplinesData = await DisciplinesRestService.getDisciplines(true);
+      console.log('Disciplinas obtidas do DisciplinesRestService:', disciplinesData);
+      
+      if (disciplinesData && disciplinesData.length > 0) {
+        // Não filtrar as disciplinas - usar todas retornadas pelo serviço
+        // O parâmetro true em getDisciplines já retorna apenas as disciplinas
+        // do usuário atual e disciplinas do sistema (is_system = true)
+        console.log(`Disciplinas disponíveis: ${disciplinesData.length}`);
         
-        // Para garantir que estamos recebendo dados no formato correto
-            const formattedDisciplines = userDisciplines.map(discipline => {
-                console.log('Disciplina recebida:', discipline);
-            return {
-            id: discipline.Id.toString(),
-            name: discipline.Name,
-            // Armazenar o nome de exibição (sem o prefixo User:)
-            displayName: discipline.Name.startsWith('User:') 
-              ? discipline.Name.substring(5) // Remover "User:"
-              : discipline.Name
-            };
-          });
-          
+        // Formatar as disciplinas para o formato esperado pelo componente
+        const formattedDisciplines = disciplinesData.map((discipline: SupabaseDiscipline) => {
+          return {
+            id: discipline.id.toString(),
+            name: discipline.name,
+            displayName: discipline.name // O nome já vem sem o prefixo "User:" no DisciplinesRestService
+          };
+        });
+        
         setDisciplines(formattedDisciplines);
-        console.log('Disciplinas do usuário atualizadas no estado:', formattedDisciplines);
+        console.log('Disciplinas atualizadas no estado:', formattedDisciplines);
         
         // Se não há disciplina selecionada e existem disciplinas disponíveis, selecione a primeira
         if (!selectedDiscipline && formattedDisciplines.length > 0) {
           setSelectedDiscipline(formattedDisciplines[0].id);
-          setDisciplineName(formattedDisciplines[0].name); // Também defina o nome da disciplina
+          setTitle(`Sessão de ${formattedDisciplines[0].displayName}`);
         }
       } else {
-        console.warn('Formato inesperado na resposta da API de disciplinas:', response);
+        console.warn('Nenhuma disciplina encontrada:', disciplinesData);
         setDisciplines([]);
-          }
+      }
     } catch (error) {
       console.error('Erro ao buscar disciplinas do usuário:', error);
       setDisciplines([]);
-        } finally {
-          setLoadingDisciplines(false);
-        }
-      };
+    } finally {
+      setLoadingDisciplines(false);
+    }
+  };
 
   // useEffect para carregar disciplinas quando o componente monta
   useEffect(() => {
@@ -104,25 +108,31 @@ const StudySessionModal: React.FC<StudySessionModalProps> = ({
     }
   }, [isOpen]);
   
+  // Adicione este useEffect para definir o valor inicial de selectedDiscipline quando disciplineId é fornecido
+  useEffect(() => {
+    if (isOpen && disciplineId && disciplines.length > 0) {
+      const discipline = disciplines.find(d => d.id === disciplineId.toString());
+      if (discipline) {
+        setSelectedDiscipline(discipline.id);
+      }
+    }
+  }, [isOpen, disciplineId, disciplines]);
+
   // Função para resetar o formulário
   const resetForm = () => {
     setTitle('');
     setSelectedDiscipline(null);
     setScheduledDate('');
+    setScheduledTime('');
     setDuration(60);
+    setNotes('');
     setError(null);
   };
 
   // Redefinir formulário ao fechar
   useEffect(() => {
     if (!isOpen) {
-      setTitle('');
-      setDisciplineName('');
-      setScheduledDate('');
-      setScheduledTime('');
-      setDuration(60);
-      setNotes('');
-      setError(null);
+      resetForm();
     }
   }, [isOpen]);
 
@@ -138,50 +148,55 @@ const StudySessionModal: React.FC<StudySessionModalProps> = ({
     try {
       setLoading(true);
       
-      // Adicionar a duração em minutos
+      const disciplineId = parseInt(selectedDiscipline);
+      
+      // Formatar a data e hora corretamente para lidar com o fuso horário
+      let formattedDate = '';
+      if (isScheduling && scheduledDate && scheduledTime) {
+        // Criamos uma data com a data e hora selecionadas pelo usuário
+        // Isso garantirá que a data e hora serão processadas no fuso horário local
+        const dateParts = scheduledDate.split('-').map(part => parseInt(part));
+        const timeParts = scheduledTime.split(':').map(part => parseInt(part));
+        
+        const year = dateParts[0];
+        const month = dateParts[1] - 1; // Meses em JS são 0-indexed
+        const day = dateParts[2];
+        const hours = timeParts[0];
+        const minutes = timeParts[1];
+        
+        const dateObj = new Date(year, month, day, hours, minutes);
+        formattedDate = dateObj.toISOString();
+        
+        console.log('Data formatada para ISO:', formattedDate);
+        console.log('Data local original:', `${scheduledDate} ${scheduledTime}`);
+      } else {
+        formattedDate = new Date().toISOString();
+      }
+      
+      // Preparar os dados da sessão com tipagem corrigida
       const sessionData = {
+        user_id: '', // Será preenchido pelo serviço
+        discipline_id: disciplineId,
         title: title.trim() || `Sessão de ${selectedDiscipline}`,
-        disciplineName: selectedDiscipline,
-        scheduledDate: isScheduling 
-          ? `${scheduledDate}T${scheduledTime}` 
-          : new Date().toISOString(),
-        duration,
-        notes: notes.trim() || undefined
+        scheduled_date: formattedDate,
+        duration_minutes: duration,
+        notes: notes.trim() || undefined,
+        completed: !isScheduling, // Se não é agendamento, já marca como concluída
+        status: isScheduling ? 'agendada' as const : 'concluida' as const
       };
       
       console.log('Criando sessão:', sessionData);
       
-      const response = await createStudySession(sessionData);
+      // Usar o StudySessionService para salvar a sessão
+      const result = await StudySessionService.createSession(sessionData);
       
-      if (response.success) {
-        // Adicionar a sessão ao cache local se for uma sessão agendada
-        if (isScheduling) {
-          try {
-            // Obter sessões do cache local
-            const localSessionsData = localStorage.getItem('@medjourney:study_sessions');
-            const localSessions = localSessionsData ? JSON.parse(localSessionsData) : [];
-            
-            // Adicionar a nova sessão
-            localSessions.push({
-              ...sessionData,
-              id: response.session?.id || `session_${Date.now()}`,
-              completed: false
-            });
-            
-            // Salvar no cache
-            localStorage.setItem('@medjourney:study_sessions', JSON.stringify(localSessions));
-            console.log('Sessão adicionada ao cache local');
-          } catch (err) {
-            console.error('Erro ao atualizar cache local de sessões:', err);
-          }
-        }
-        
+      if (result) {
         toast.success('Sessão de estudo criada com sucesso!');
         resetForm();
-        onSuccess();
+        onSuccess?.();
         onClose();
       } else {
-        setError(response.error || 'Erro ao criar sessão de estudo');
+        setError('Erro ao criar sessão de estudo');
       }
     } catch (err) {
       console.error('Erro ao criar sessão:', err);
@@ -253,8 +268,8 @@ const StudySessionModal: React.FC<StudySessionModalProps> = ({
                   </div>
                   <select
                     id="discipline"
-                    value={disciplineName}
-                    onChange={(e) => setDisciplineName(e.target.value)}
+                    value={selectedDiscipline || ""}
+                    onChange={(e) => setSelectedDiscipline(e.target.value)}
                     className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
                     required
                     disabled={loadingDisciplines}
@@ -264,7 +279,7 @@ const StudySessionModal: React.FC<StudySessionModalProps> = ({
                     </option>
                     {disciplines.length > 0 ? (
                       disciplines.map((discipline) => (
-                        <option key={discipline.id} value={discipline.name}>
+                        <option key={discipline.id} value={discipline.id}>
                           {discipline.displayName || discipline.name}
                         </option>
                       ))
@@ -363,6 +378,16 @@ const StudySessionModal: React.FC<StudySessionModalProps> = ({
                     rows={3}
                     placeholder="Objetivos, material de estudo, etc."
                   />
+                </div>
+              </div>
+
+              {/* Informação sobre a sequência de estudos */}
+              <div className="bg-orange-50 p-3 rounded-md">
+                <div className="flex items-start">
+                  <CheckCircle className="h-5 w-5 text-orange-600 mr-2 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-orange-800">
+                    Essa sessão será contabilizada na sua sequência de estudos. Continue estudando diariamente para manter sua sequência!
+                  </p>
                 </div>
               </div>
 

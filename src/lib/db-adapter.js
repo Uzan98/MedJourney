@@ -61,7 +61,13 @@ async function handleSelect(query, params) {
       throw new Error('Não foi possível extrair o nome da tabela da consulta SELECT');
     }
     
-    const tableName = tableMatch[1].toLowerCase().replace(/[\[\]"'`]/g, '');
+    let tableName = tableMatch[1].toLowerCase().replace(/[\[\]"'`]/g, '');
+    
+    // Correção para mapear nomes de tabela antigos para os novos
+    if (tableName === 'studysessions') {
+      tableName = 'study_sessions';
+      console.log('[db-adapter] Mapeando tabela studysessions para study_sessions');
+    }
     
     // Extrai cláusula WHERE da consulta, se existir
     const whereClause = query.match(/WHERE\s+(.+?)(?:\s+ORDER\s+BY|\s+GROUP\s+BY|\s+LIMIT|\s*$)/i);

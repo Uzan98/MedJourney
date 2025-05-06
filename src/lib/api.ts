@@ -432,6 +432,9 @@ export async function getStudySessions(
     // Construir URL com parâmetros de consulta
     const url = new URL('/api/study-sessions', window.location.origin);
     
+    // Logging para debug
+    console.log('Iniciando busca de sessões de estudo com parâmetros:', params);
+    
     // Adicionar parâmetros à URL
     if (params.completed !== undefined) {
       url.searchParams.append('completed', params.completed.toString());
@@ -445,7 +448,10 @@ export async function getStudySessions(
       url.searchParams.append('limit', params.limit.toString());
     }
     
+    console.log('URL de requisição:', url.toString());
+    
     const response = await fetchApi<StudySession[]>(url.toString());
+    console.log('Resposta da API de sessões:', response);
     
     // Se a resposta foi bem-sucedida, salvar as sessões localmente
     if (response.success && response.sessions) {
@@ -453,12 +459,25 @@ export async function getStudySessions(
       if (params.completed === undefined && params.upcoming === undefined) {
         saveLocalSessions(response.sessions);
       }
+      
+      // Garantir que todas as datas estão no formato correto
+      const processedSessions = response.sessions.map((session: StudySession) => ({
+        ...session,
+        scheduledDate: session.scheduledDate ? new Date(session.scheduledDate) : new Date()
+      }));
+      
+      console.log('Sessões processadas:', processedSessions.length);
+      return {
+        ...response,
+        sessions: processedSessions
+      };
     } 
     // Se offline ou falhou, usar dados locais
     else if (response.offline || !response.success) {
       console.log('Usando sessões de estudo armazenadas localmente');
       
       let localSessions = getLocalSessions();
+      console.log('Sessões locais encontradas:', localSessions.length);
       
       // Aplicar filtros às sessões locais
       if (params.completed !== undefined) {
@@ -478,6 +497,7 @@ export async function getStudySessions(
         localSessions = localSessions.slice(0, params.limit);
       }
       
+      console.log('Sessões locais filtradas:', localSessions.length);
       return {
         success: true,
         sessions: localSessions,

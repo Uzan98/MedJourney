@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
         ActualDuration,
         Notes,
         CreatedAt
-      FROM StudySessions
+      FROM study_sessions
       WHERE UserId = @userId
     `;
     
@@ -145,7 +145,7 @@ export async function POST(request: Request) {
     
     // Inserir nova sessão de estudo
     const result = await executeQuery(
-      `INSERT INTO StudySessions 
+      `INSERT INTO study_sessions 
         (UserId, StudyPlanId, Title, DisciplineName, ScheduledDate, Duration, Notes) 
        OUTPUT INSERTED.Id, INSERTED.UserId, INSERTED.StudyPlanId, INSERTED.Title, 
               INSERTED.DisciplineName, INSERTED.ScheduledDate, INSERTED.Duration, 

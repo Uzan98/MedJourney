@@ -1,594 +1,1209 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import AppLayout from '../../components/layout/AppLayout';
-import { Clock, BookOpen, Zap, Brain, Calendar, ChevronRight, Check, ArrowUpRight, Award, BookMarked, GraduationCap, Plus } from 'lucide-react';
-import { getStudyMetrics, getStudySessions } from '../../lib/api';
-import { setupOfflineDetection } from '../../lib/utils/offline';
-import { StudySession } from '../../lib/types/dashboard';
-import StudySessionModal from '../../components/estudos/StudySessionModal';
-import StudyTimer from '../../components/estudos/StudyTimer';
-import { toast } from '../../components/ui/Toast';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { StudySessionService } from '@/services/study-sessions.service';
+import Link from 'next/link';
+import { toast } from 'react-hot-toast';
+import { 
+  Calendar, 
+  Clock, 
+  Plus, 
+  BookOpen, 
+  BarChart, 
+  CheckCircle, 
+  AlertCircle,
+  Flame,
+  CalendarClock,
+  ArrowRight,
+  BookMarked,
+  PlusCircle,
+  BrainCircuit,
+  Target,
+  Award,
+  X as CloseIcon,
+  History,
+  Search,
+  CalendarDays,
+  FileText,
+  SortDesc,
+  SortAsc
+} from 'lucide-react';
+import StudySessionModal from '@/components/estudos/StudySessionModal';
+import QuickStudySessionModal from '@/components/estudos/QuickStudySessionModal';
+import StudySessionTimer from '@/components/estudos/StudySessionTimer';
+import GrowingTimer from '@/components/estudos/GrowingTimer';
+import { DisciplinesRestService } from '@/lib/supabase-rest';
+
+// Interfaces para tipagem
+interface StudySession {
+  id?: number;
+  user_id: string;
+  discipline_id?: number;
+  subject_id?: number;
+  title: string;
+  scheduled_date?: string;
+  duration_minutes: number;
+  actual_duration_minutes?: number;
+  notes?: string;
+  completed?: boolean;
+  status?: string;
+  disciplineName?: string;
+  type?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface StudyMetrics {
+  totalSessions: number;
+  completedSessions: number;
+  totalMinutes: number;
+  streakDays: number;
+}
+
+interface Discipline {
+  id: number;
+  name: string;
+}
 
 export default function EstudosPage() {
-  const router = useRouter();
-
-  // Estados para armazenar dados obtidos da API
-  const [metrics, setMetrics] = useState({
-    hoursThisWeek: 0,
-    completedSessions: 0,
-    streak: 0,
-    reviewedTopics: 0
-  });
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
   const [upcomingSessions, setUpcomingSessions] = useState<StudySession[]>([]);
   const [completedSessions, setCompletedSessions] = useState<StudySession[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [metrics, setMetrics] = useState<StudyMetrics>({
+    totalSessions: 0,
+    completedSessions: 0,
+    totalMinutes: 0,
+    streakDays: 0
+  });
+  const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
+  const [isQuickSessionModalOpen, setIsQuickSessionModalOpen] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
-  const [showSessionModal, setShowSessionModal] = useState(false);
-  const [showStudyTimer, setShowStudyTimer] = useState(false);
-  const [isSchedulingMode, setIsSchedulingMode] = useState(true);
-  const [currentSession, setCurrentSession] = useState<{
-    id: string;
-    title: string;
-    disciplineName: string;
-    duration: number;
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [filteredHistory, setFilteredHistory] = useState<StudySession[]>([]);
+  const [historySearchTerm, setHistorySearchTerm] = useState("");
+  const [historySort, setHistorySort] = useState<'newest' | 'oldest'>('newest');
+  
+  // Estado para controlar a sessão em andamento (cronômetro)
+  const [activeSession, setActiveSession] = useState<StudySession | null>(null);
+  // Estado para controlar a sessão rápida em andamento (cronômetro crescente)
+  const [activeQuickSession, setActiveQuickSession] = useState<{ 
+    disciplineId?: number; 
+    disciplineName?: string;
+    elapsedMinutes?: number;
+    notes?: string;
   } | null>(null);
 
-  // Detectar estado offline
-  useEffect(() => {
-    const offlineDetection = setupOfflineDetection(
-      () => setIsOffline(true),
-      () => setIsOffline(false)
-    );
-    
-    // Verificar a conexão imediatamente
-    offlineDetection.checkConnection().then(isOnline => {
-      setIsOffline(!isOnline);
-    });
-    
-    // Cleanup quando o componente for desmontado
-    return () => {
-      offlineDetection.cleanup();
-    };
-  }, []);
+  const [disciplines, setDisciplines] = useState<Discipline[]>([]);
 
-  // Carregar dados
+  // Carregar dados de estudo quando a página for montada
   useEffect(() => {
     loadStudyData();
+    loadDisciplines();
+
+    // Verificar estado de conexão
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    setIsOffline(!navigator.onLine);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
     async function loadStudyData() {
       try {
         setLoading(true);
+      console.log("Carregando dados de estudo...");
 
-        // Carregar métricas
-        const metricsResponse = await getStudyMetrics();
-        if (metricsResponse.success && metricsResponse.metrics) {
-          setMetrics({
-            hoursThisWeek: metricsResponse.metrics.hoursThisWeek || 0,
-            completedSessions: metricsResponse.metrics.totalSessions || 0,
-            streak: metricsResponse.metrics.streak || 0,
-            reviewedTopics: metricsResponse.metrics.totalTopics || 0
-          });
-        }
+      // Tentar carregar sessões do serviço
+      try {
+        console.log("Tentando carregar sessões do StudySessionService");
         
         // Carregar sessões agendadas
-        const upcomingResponse = await getStudySessions({ completed: false, upcoming: true, limit: 5 });
-        if (upcomingResponse.success && upcomingResponse.sessions) {
-          setUpcomingSessions(upcomingResponse.sessions);
-        }
+        const upcoming = await StudySessionService.getUpcomingSessions(14);
+        console.log("Sessões agendadas carregadas:", upcoming);
         
-        // Carregar sessões concluídas
-        const completedResponse = await getStudySessions({ completed: true, limit: 5 });
-        if (completedResponse.success && completedResponse.sessions) {
-          setCompletedSessions(completedResponse.sessions);
+        if (upcoming) {
+          setUpcomingSessions(upcoming.map(session => ({
+            ...session,
+            disciplineName: session.title.split(' - ')[0] || '',
+          })));
         }
 
-        setLoading(false);
-      } catch (err) {
-        console.error('Erro ao carregar dados de estudo:', err);
-        setError('Erro ao carregar dados. Tente novamente mais tarde.');
-        setLoading(false);
+        // Carregar sessões completadas
+        const allSessions = await StudySessionService.getUserSessions(true);
+        console.log("Todas as sessões carregadas:", allSessions);
+        
+        if (allSessions) {
+          const completed = allSessions.filter(s => s.completed);
+          setCompletedSessions(completed.map(session => ({
+            ...session,
+            disciplineName: session.title.split(' - ')[0] || '',
+          })));
+
+          // Calcular a sequência de dias de estudo (streak)
+          let streakDays = 0;
+          
+          // Agrupar sessões por dia
+          const sessionsByDay = new Map<string, boolean>();
+          
+          completed.forEach(session => {
+            if (session.completed) {
+              // Usar scheduled_date ou created_at como data da sessão
+              const date = session.scheduled_date || session.created_at;
+              if (date) {
+                // Extrair apenas a data (sem o horário) como string YYYY-MM-DD
+                const dateStr = new Date(date).toISOString().split('T')[0];
+                sessionsByDay.set(dateStr, true);
+              }
+            }
+          });
+          
+          // Verificar dias consecutivos até hoje
+          const today = new Date();
+          const todayStr = today.toISOString().split('T')[0];
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split('T')[0];
+          
+          // Verificar se estudou hoje ou ontem para iniciar a contagem
+          if (sessionsByDay.has(todayStr)) {
+            // Estudou hoje
+            streakDays = 1;
+            
+            // Verificar dias anteriores
+            let checkDate = new Date(today);
+            let checkingDays = true;
+            
+            while (checkingDays) {
+              // Avançar para o dia anterior
+              checkDate.setDate(checkDate.getDate() - 1);
+              const dateStr = checkDate.toISOString().split('T')[0];
+              
+              if (sessionsByDay.has(dateStr)) {
+                // Se estudou neste dia, incrementar a sequência
+                streakDays++;
+              } else {
+                // Se não estudou, encerrar a verificação
+                checkingDays = false;
+              }
+              
+              // Limitar a verificação a 60 dias no passado para evitar loops infinitos
+              if (streakDays > 60) {
+                checkingDays = false;
+              }
+            }
+          } else if (sessionsByDay.has(yesterdayStr)) {
+            // Não estudou hoje, mas estudou ontem
+            streakDays = 1;
+            
+            // Verificar dias anteriores a ontem
+            let checkDate = new Date(yesterday);
+            let checkingDays = true;
+            
+            while (checkingDays) {
+              // Avançar para o dia anterior
+              checkDate.setDate(checkDate.getDate() - 1);
+              const dateStr = checkDate.toISOString().split('T')[0];
+              
+              if (sessionsByDay.has(dateStr)) {
+                // Se estudou neste dia, incrementar a sequência
+                streakDays++;
+              } else {
+                // Se não estudou, encerrar a verificação
+                checkingDays = false;
+              }
+              
+              // Limitar a verificação a 60 dias no passado para evitar loops infinitos
+              if (streakDays > 60) {
+                checkingDays = false;
+              }
+            }
+          }
+          // Se não estudou nem hoje nem ontem, a sequência é zero
+
+          // Calcular métricas
+          setMetrics({
+            totalSessions: allSessions.length,
+            completedSessions: completed.length,
+            totalMinutes: allSessions.reduce((total, s) => 
+              total + (s.completed ? (s.actual_duration_minutes || s.duration_minutes) : 0), 0),
+            streakDays: streakDays
+          });
+        }
+      } catch (error) {
+        console.error("Erro ao carregar sessões do serviço:", error);
+        // Tente o método de fallback via API direta
+        loadSessionsFromSupabase();
       }
+    } catch (error) {
+      console.error("Erro ao carregar dados de estudo:", error);
+      toast.error("Não foi possível carregar as sessões de estudo");
+    } finally {
+      setLoading(false);
     }
+  }
+  
+  async function loadSessionsFromSupabase() {
+    if (!user) return;
     
-  // Abrir modal de nova sessão
+    try {
+      console.log("Carregando sessões diretamente do Supabase");
+      
+      // Obter a data atual
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Carregar sessões futuras
+      const { data: upcomingData, error: upcomingError } = await supabase
+        .from('study_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('completed', false)
+        .gte('scheduled_date', today.toISOString())
+        .order('scheduled_date', { ascending: true });
+      
+      if (upcomingError) {
+        throw upcomingError;
+      }
+      
+      console.log("Sessões agendadas do Supabase:", upcomingData);
+      setUpcomingSessions(upcomingData || []);
+      
+      // Carregar sessões completadas
+      const { data: completedData, error: completedError } = await supabase
+        .from('study_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('completed', true)
+        .order('scheduled_date', { ascending: false });
+      
+      if (completedError) {
+        throw completedError;
+      }
+      
+      console.log("Sessões completadas do Supabase:", completedData);
+      const completedSessions = completedData || [];
+      setCompletedSessions(completedSessions.slice(0, 10)); // Mostrar apenas as 10 mais recentes na UI
+      
+      // Calcular a sequência de dias de estudo (streak)
+      let streakDays = 0;
+      
+      // Agrupar sessões por dia
+      const sessionsByDay = new Map<string, boolean>();
+      
+      completedSessions.forEach(session => {
+        if (session.completed) {
+          // Usar scheduled_date ou created_at como data da sessão
+          const date = session.scheduled_date || session.created_at;
+          if (date) {
+            // Extrair apenas a data (sem o horário) como string YYYY-MM-DD
+            const dateStr = new Date(date).toISOString().split('T')[0];
+            sessionsByDay.set(dateStr, true);
+          }
+        }
+      });
+      
+      // Verificar dias consecutivos até hoje
+      const todayStr = today.toISOString().split('T')[0];
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      
+      // Verificar se estudou hoje ou ontem para iniciar a contagem
+      if (sessionsByDay.has(todayStr)) {
+        // Estudou hoje
+        streakDays = 1;
+        
+        // Verificar dias anteriores
+        let checkDate = new Date(today);
+        let checkingDays = true;
+        
+        while (checkingDays) {
+          // Avançar para o dia anterior
+          checkDate.setDate(checkDate.getDate() - 1);
+          const dateStr = checkDate.toISOString().split('T')[0];
+          
+          if (sessionsByDay.has(dateStr)) {
+            // Se estudou neste dia, incrementar a sequência
+            streakDays++;
+          } else {
+            // Se não estudou, encerrar a verificação
+            checkingDays = false;
+          }
+          
+          // Limitar a verificação a 60 dias no passado para evitar loops infinitos
+          if (streakDays > 60) {
+            checkingDays = false;
+          }
+        }
+      } else if (sessionsByDay.has(yesterdayStr)) {
+        // Não estudou hoje, mas estudou ontem
+        streakDays = 1;
+        
+        // Verificar dias anteriores a ontem
+        let checkDate = new Date(yesterday);
+        let checkingDays = true;
+        
+        while (checkingDays) {
+          // Avançar para o dia anterior
+          checkDate.setDate(checkDate.getDate() - 1);
+          const dateStr = checkDate.toISOString().split('T')[0];
+          
+          if (sessionsByDay.has(dateStr)) {
+            // Se estudou neste dia, incrementar a sequência
+            streakDays++;
+          } else {
+            // Se não estudou, encerrar a verificação
+            checkingDays = false;
+          }
+          
+          // Limitar a verificação a 60 dias no passado para evitar loops infinitos
+          if (streakDays > 60) {
+            checkingDays = false;
+          }
+        }
+      }
+      // Se não estudou nem hoje nem ontem, a sequência é zero
+        
+      // Calcular métricas
+      if (upcomingData) {
+        const allSessions = [...upcomingData, ...completedSessions];
+        setMetrics({
+          totalSessions: allSessions.length,
+          completedSessions: completedSessions.length,
+          totalMinutes: completedSessions.reduce((total, s) => 
+            total + (s.actual_duration_minutes || s.duration_minutes), 0),
+          streakDays: streakDays
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao carregar sessões do Supabase:", error);
+      toast.error("Erro ao carregar sessões de estudo");
+    }
+  }
+
   const handleNewSessionClick = () => {
-    setIsSchedulingMode(false); // Sessão para iniciar agora
-    setShowSessionModal(true);
+    setIsSessionModalOpen(true);
+  };
+  
+  const handleQuickSessionClick = () => {
+    // Em vez de abrir o modal, iniciar diretamente o cronômetro crescente
+    setActiveQuickSession({});
   };
 
-  // Iniciar uma sessão rápida
-  const startQuickSession = (disciplineName: string, duration: number) => {
-    // Verificar se há disciplinas cadastradas
-    const hasDisciplines = (upcomingSessions.length > 0 && upcomingSessions[0].disciplineName) ||
-                          (completedSessions.length > 0 && completedSessions[0].disciplineName);
-                          
-    if (!hasDisciplines) {
-      // Se não houver disciplinas, mostrar modal para adicionar uma
-      alert('Você precisa cadastrar pelo menos uma disciplina antes de iniciar uma sessão rápida. Clique em "Adicionar Disciplina".');
+  const handleCloseSessionModal = () => {
+    setIsSessionModalOpen(false);
+  };
+
+  const handleCloseQuickSessionModal = () => {
+    setIsQuickSessionModalOpen(false);
+  };
+
+  const handleSessionCreated = () => {
+    toast.success("Sessão de estudo criada com sucesso!");
+    loadStudyData();
+    handleCloseSessionModal();
+    handleCloseQuickSessionModal();
+  };
+  
+  // Função para iniciar uma sessão de estudo (mostrar cronômetro)
+  const handleStartSession = (session: StudySession) => {
+    if (!session || !session.id) {
+      toast.error("Não foi possível iniciar a sessão. Dados incompletos.");
       return;
     }
     
-    // Criar uma sessão rápida com valores predefinidos
-    const quickSession = {
-      id: `temp-${Date.now()}`, // ID temporário
-      title: `Sessão rápida: ${disciplineName}`,
-      disciplineName: disciplineName,
-      duration: duration
-    };
-    
-    setCurrentSession(quickSession);
-    setShowStudyTimer(true);
+    setActiveSession(session);
+    toast.success("Sessão de estudo iniciada!");
   };
-
-  // Função auxiliar para obter uma disciplina aleatória ou a primeira disponível
-  const getDefaultDiscipline = (): string => {
-    // Verificar se há disciplinas nas sessões agendadas e usar uma delas
-    if (upcomingSessions.length > 0 && upcomingSessions[0].disciplineName) {
-      return upcomingSessions[0].disciplineName;
+  
+  // Função para completar uma sessão de estudo
+  const handleCompleteSession = async (actualDuration: number) => {
+    if (!activeSession || !activeSession.id) {
+      toast.error("Não foi possível completar a sessão. Dados incompletos.");
+      return;
     }
     
-    // Ou usar a primeira disciplina das sessões concluídas
-    if (completedSessions.length > 0 && completedSessions[0].disciplineName) {
-      return completedSessions[0].disciplineName;
-    }
-    
-    // Fallback para um valor padrão
-    return "Estudo Geral";
-  };
-
-  // Abrir modal para agendar sessão
-  const handleScheduleSessionClick = () => {
-    setIsSchedulingMode(true); // Sessão para agendar no futuro
-    setShowSessionModal(true);
-  };
-
-  // Redirecionar para a página de disciplinas
-  const handleAddDisciplineClick = () => {
-    router.push('/disciplinas');
-  };
-
-  // Fechar modals
-  const handleCloseSessionModal = () => {
-    setShowSessionModal(false);
-  };
-
-  // Após criação bem-sucedida de sessão
-  const handleSessionCreated = () => {
-    // Recarregar dados para exibir a nova sessão
-    loadStudyData();
-  };
-
-  // Iniciar uma sessão específica
-  const handleStartSession = (sessionId: string) => {
-    console.log('Iniciando sessão:', sessionId);
-    // Encontrar a sessão pelo ID
-    const session = upcomingSessions.find(s => s.id === sessionId);
-    
-    if (session) {
-      setCurrentSession({
-        id: session.id,
-        title: session.title,
-        disciplineName: session.disciplineName,
-        duration: session.duration
-      });
-      setShowStudyTimer(true);
-    } else {
-      alert('Sessão não encontrada. Tente novamente.');
-    }
-  };
-
-  // Fechar o timer de estudo
-  const handleCloseStudyTimer = () => {
-    setShowStudyTimer(false);
-    setCurrentSession(null);
-  };
-
-  // Callback após completar a sessão de estudo
-  const handleStudyComplete = () => {
-    // Mostrar toast de atualização
-    toast.info('Atualizando dados de estudo...', 2000);
-    
-    // Recarregar dados para refletir a sessão concluída
-    loadStudyData();
-    
-    // Oferecer ao usuário ver as estatísticas atualizadas no dashboard
-    setTimeout(() => {
-      toast.info(
-        'Acesse o Dashboard para ver suas estatísticas atualizadas!',
-        5000
+    try {
+      setLoading(true);
+      
+      // Atualizar a sessão no banco de dados
+      const result = await StudySessionService.completeSession(
+        activeSession.id, 
+        actualDuration
       );
-    }, 2500);
+      
+      if (result) {
+        toast.success("Sessão de estudo concluída com sucesso!");
+        
+        // Recarregar os dados
+        await loadStudyData();
+      } else {
+        toast.error("Erro ao concluir a sessão de estudo");
+      }
+    } catch (error) {
+      console.error("Erro ao concluir sessão:", error);
+      toast.error("Erro ao concluir a sessão de estudo");
+    } finally {
+      setActiveSession(null);
+      setLoading(false);
+    }
+  };
+  
+  // Função para cancelar uma sessão em andamento
+  const handleCancelSession = () => {
+    setActiveSession(null);
+    toast.success("Sessão de estudo cancelada");
   };
 
-  // Função para converter minutos em formato de horas
-  const formatMinutesToHours = (minutes: number): string => {
-    if (minutes < 60) {
-      return `${minutes}min`;
+  // Função para cancelar uma sessão rápida em andamento
+  const handleCancelQuickSession = () => {
+    setActiveQuickSession(null);
+    toast.success("Sessão rápida cancelada");
+  };
+  
+  // Função para completar uma sessão rápida
+  const handleCompleteQuickSession = async (elapsedMinutes: number, disciplineId?: number, notes?: string) => {
+    try {
+      setLoading(true);
+      
+      // Se não temos uma disciplina selecionada, usamos uma disciplina padrão
+      // Clínica Médica (ID: 8) ou a primeira disciplina disponível
+      if (!disciplineId) {
+        // Tentar encontrar uma disciplina disponível
+        let defaultDisciplineId: number | undefined;
+        
+        // Verificar se temos disciplinas carregadas
+        if (disciplines && disciplines.length > 0) {
+          // Preferir "Clínica Médica" (ID: 8) se disponível
+          const clinicaMedica = disciplines.find(d => d.id === 8);
+          
+          if (clinicaMedica) {
+            defaultDisciplineId = clinicaMedica.id;
+          } else {
+            // Caso contrário, usar a primeira disciplina da lista
+            defaultDisciplineId = disciplines[0].id;
+          }
+        } else {
+          // Se não temos disciplinas carregadas, usar ID 8 (Clínica Médica)
+          defaultDisciplineId = 8;
+        }
+        
+        // Se temos uma disciplina padrão, registrar a sessão
+        if (defaultDisciplineId) {
+          const result = await StudySessionService.recordQuickSession(
+            defaultDisciplineId,
+            elapsedMinutes,
+            notes
+          );
+          
+          if (result) {
+            toast.success("Sessão rápida concluída com sucesso!");
+            
+            // Recarregar os dados
+            await loadStudyData();
+          } else {
+            toast.error("Erro ao concluir a sessão rápida");
+          }
+        } else {
+          // Se mesmo assim não temos uma disciplina, mostrar o modal
+          setActiveQuickSession({
+            elapsedMinutes: elapsedMinutes,
+            notes: notes
+          });
+          setIsQuickSessionModalOpen(true);
+          return;
+        }
+      } else {
+        // Registrar a sessão rápida usando o serviço e a disciplina selecionada
+        const result = await StudySessionService.recordQuickSession(
+          disciplineId,
+          elapsedMinutes,
+          notes
+        );
+        
+        if (result) {
+          toast.success("Sessão rápida concluída com sucesso!");
+          
+          // Recarregar os dados
+          await loadStudyData();
+        } else {
+          toast.error("Erro ao concluir a sessão rápida");
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao concluir sessão rápida:", error);
+      toast.error("Erro ao concluir a sessão rápida");
+    } finally {
+      setActiveQuickSession(null);
+      setLoading(false);
     }
+  };
+
+  // Função para formatar minutos em horas e minutos
+  const formatMinutesToHours = (minutes: number): string => {
+    if (!minutes) return "0h";
     
     const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
+    const mins = minutes % 60;
     
-    if (remainingMinutes === 0) {
+    if (hours === 0) {
+      return `${mins}min`;
+    } else if (mins === 0) {
       return `${hours}h`;
+    } else {
+      return `${hours}h ${mins}min`;
     }
-    
-    return `${hours}h ${remainingMinutes}min`;
   };
 
-  // Formatadores
+  // Função corrigida para formatar datas com tratamento adequado de fuso horário
   const formatDate = (dateString: string | Date): string => {
     try {
+      if (!dateString) return 'Data não definida';
+      
+      // Criar data no fuso horário local, garantindo que não haverá conversão para UTC
       const date = new Date(dateString);
+      
       return date.toLocaleDateString('pt-BR', { 
         day: '2-digit', 
-        month: 'short'
-      }).replace('.', '');
-    } catch (e) {
-      return '';
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch (error) {
+      console.error(`Erro ao formatar data ${dateString}:`, error);
+      return dateString?.toString() || 'Data inválida';
     }
   };
 
+  // Função corrigida para formatar horários com tratamento adequado de fuso horário
   const formatTime = (dateString: string | Date): string => {
     try {
+      if (!dateString) return '';
+      
+      // Criar horário no fuso horário local
       const date = new Date(dateString);
+      
       return date.toLocaleTimeString('pt-BR', {
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        hour12: false // Formato 24h
       });
-    } catch (e) {
+    } catch (error) {
+      console.error(`Erro ao formatar hora ${dateString}:`, error);
       return '';
     }
   };
 
-  // Componente para estado de carregamento
-  if (loading) {
-    return (
-      <AppLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600">Carregando dados do painel de estudos...</p>
-          </div>
-        </div>
-      </AppLayout>
-    );
-  }
-
-  // Componente para estado de erro
-  if (error) {
-    return (
-      <AppLayout>
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 my-8">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-700">{error}</p>
-                <button 
-                  className="mt-2 text-sm font-medium text-red-700 hover:text-red-600"
-                  onClick={() => window.location.reload()}
-                >
-                  Tentar novamente
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </AppLayout>
-    );
-  }
-
-  // Exibir mensagem offline quando necessário
   const OfflineAlert = () => isOffline ? (
-    <div className="bg-amber-50 border-l-4 border-amber-500 p-3 mb-6">
-      <div className="flex">
-        <div className="flex-shrink-0">
-          <svg className="h-5 w-5 text-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
-        </div>
-        <div className="ml-3">
-          <p className="text-sm text-amber-700">
-            Você está offline. Alguns dados podem não estar atualizados.
-          </p>
-        </div>
-      </div>
+    <div className="mb-6 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-md flex items-center">
+      <AlertCircle className="h-5 w-5 text-amber-500 mr-2" />
+      <p className="text-amber-700">Você está offline. Algumas funcionalidades podem estar limitadas.</p>
     </div>
   ) : null;
 
-  return (
-    <AppLayout>
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {isOffline && <OfflineAlert />}
-        
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Painel de Estudos</h1>
-            <p className="text-gray-600">Organize seus estudos e acompanhe seu progresso.</p>
+  // Função para ordenar o histórico de sessões
+  const sortHistorySessions = (sessions: StudySession[]) => {
+    return [...sessions].sort((a, b) => {
+      const dateA = new Date(a.scheduled_date || a.created_at || '').getTime();
+      const dateB = new Date(b.scheduled_date || b.created_at || '').getTime();
+      
+      return historySort === 'newest' ? dateB - dateA : dateA - dateB;
+    });
+  };
+
+  // Função para filtrar sessões do histórico
+  const filterHistorySessions = (searchTerm: string) => {
+    if (!searchTerm || searchTerm.trim() === "") {
+      // Se não houver termo de pesquisa, mostrar todas as sessões completadas, ordenadas
+      setFilteredHistory(sortHistorySessions(completedSessions));
+      return;
+    }
+
+    const term = searchTerm.toLowerCase();
+    const filtered = completedSessions.filter(session => 
+      session.title.toLowerCase().includes(term) || 
+      session.disciplineName?.toLowerCase().includes(term) ||
+      (session.notes && session.notes.toLowerCase().includes(term))
+    );
+    
+    // Retornar resultados ordenados
+    setFilteredHistory(sortHistorySessions(filtered));
+  };
+
+  // Função para alternar a ordenação
+  const toggleHistorySort = () => {
+    const newSort = historySort === 'newest' ? 'oldest' : 'newest';
+    setHistorySort(newSort);
+    
+    // Reordenar os resultados existentes
+    setFilteredHistory(sortHistorySessions(filteredHistory));
+  };
+
+  // Função para abrir o modal do histórico de sessões completas
+  const handleOpenHistoryModal = () => {
+    // Inicializar o filteredHistory com todas as sessões completadas
+    setFilteredHistory(sortHistorySessions(completedSessions));
+    setHistorySearchTerm("");
+    setIsHistoryModalOpen(true);
+  };
+
+  // Função para fechar o modal do histórico
+  const handleCloseHistoryModal = () => {
+    setIsHistoryModalOpen(false);
+  };
+
+  // Handler para atualizar a pesquisa
+  const handleHistorySearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTerm = e.target.value;
+    setHistorySearchTerm(newTerm);
+    filterHistorySessions(newTerm);
+  };
+
+  // Calcular o total de horas das sessões filtradas
+  const calculateTotalHoursFiltered = () => {
+    const totalMinutes = filteredHistory.reduce((total, session) => {
+      return total + (session.actual_duration_minutes || session.duration_minutes || 0);
+    }, 0);
+    
+    return formatMinutesToHours(totalMinutes);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gradient-to-b from-blue-50 to-white">
+        <div className="text-center p-8 rounded-xl bg-white shadow-lg border border-blue-100 animate-fade-in">
+          <div className="w-16 h-16 border-4 border-t-blue-600 border-blue-200 rounded-full animate-spin mx-auto mb-6"></div>
+          <p className="text-gray-600 text-lg">Carregando suas sessões de estudo...</p>
+          <div className="mt-4 w-full bg-gray-200 rounded-full h-1.5 max-w-xs mx-auto overflow-hidden">
+            <div className="bg-blue-600 h-1.5 rounded-full animate-pulse-width"></div>
           </div>
-          <div className="flex space-x-3 mt-4 md:mt-0">
+        </div>
+      </div>
+    );
+  }
+
+  // Ordenar as sessões agendadas por data para exibição
+  const sortedUpcomingSessions = [...upcomingSessions].sort((a, b) => {
+    const dateA = a.scheduled_date ? new Date(a.scheduled_date).getTime() : 0;
+    const dateB = b.scheduled_date ? new Date(b.scheduled_date).getTime() : 0;
+    return dateA - dateB;
+  });
+
+  // Agrupar sessões por data para melhor organização
+  const groupSessionsByDate = () => {
+    const groups: { [key: string]: StudySession[] } = {};
+    
+    sortedUpcomingSessions.forEach(session => {
+      if (session.scheduled_date) {
+        // Extrair apenas a data (sem o horário)
+        const date = new Date(session.scheduled_date);
+        const dateKey = date.toISOString().split('T')[0];
+        
+        // Inicializar o grupo se não existir
+        if (!groups[dateKey]) {
+          groups[dateKey] = [];
+        }
+        
+        // Adicionar a sessão ao grupo
+        groups[dateKey].push(session);
+      }
+    });
+    
+    return groups;
+  };
+  
+  const sessionGroups = groupSessionsByDate();
+  const groupDates = Object.keys(sessionGroups).sort();
+
+  // Carregar as disciplinas disponíveis
+  async function loadDisciplines() {
+    try {
+      const disciplinesData = await DisciplinesRestService.getDisciplines(true);
+      setDisciplines(disciplinesData);
+    } catch (error) {
+      console.error("Erro ao carregar disciplinas:", error);
+    }
+  }
+
+  return (
+    <div className="p-0 max-w-7xl mx-auto bg-gradient-to-b from-blue-50 to-white min-h-screen animate-fade-in">
+      {/* Header com gradiente */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-12 px-8 rounded-b-3xl shadow-lg mb-8 relative overflow-hidden">
+        {/* Elementos decorativos de fundo */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mt-32 -mr-32 blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/10 rounded-full -mb-64 -ml-64 blur-3xl"></div>
+        
+        <div className="max-w-5xl mx-auto relative z-10">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 space-y-4 md:space-y-0">
+          <div>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2 flex items-center">
+                <BrainCircuit className="mr-3 h-8 w-8" />
+                Sessões de Estudo
+              </h1>
+              <p className="text-blue-100 md:text-lg">
+                Planeje, acompanhe e gerencie seus estudos de forma eficiente
+              </p>
+          </div>
+            <div className="flex space-x-3">
             <button
-              onClick={handleScheduleSessionClick}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
+                onClick={handleQuickSessionClick}
+                className="px-3 py-2 md:px-4 md:py-2 bg-white/20 hover:bg-white/30 text-white rounded-md transition-all flex items-center text-sm md:text-base backdrop-blur-sm hover:scale-105"
             >
-              <Calendar className="w-4 h-4" />
-              <span>Agendar Sessão</span>
+                <Clock className="h-4 w-4 mr-1 md:mr-2" />
+                Sessão Rápida
             </button>
-            
-            <div className="relative group">
           <button 
             onClick={handleNewSessionClick}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
+                className="px-3 py-2 md:px-4 md:py-2 bg-white text-indigo-700 rounded-md hover:bg-blue-50 transition-all flex items-center font-medium text-sm md:text-base hover:shadow-md hover:scale-105"
             >
-              <Zap className="w-4 h-4" />
-              <span>Iniciar Sessão</span>
+                <Plus className="h-4 w-4 mr-1 md:mr-2" />
+                Agendar
             </button>
-              
-              {/* Menu dropdown para iniciar sessão rápida */}
-              <div className="absolute right-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-10">
-                <div className="bg-white rounded-md shadow-lg border border-gray-200 py-2">
-                  <div className="px-4 py-2 text-sm text-gray-700 font-medium border-b border-gray-100">
-                    Sessão rápida
+            </div>
+          </div>
+
+          {/* Métricas em cards elegantes */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-6 mb-0">
+            {/* Card 1: Total de Sessões - Azul */}
+            <div className="bg-gradient-to-br from-blue-500 to-blue-700 p-4 md:p-5 rounded-xl shadow-md transition-all hover:shadow-lg hover:scale-105">
+              <div className="flex items-center">
+                <div className="rounded-full bg-white/20 p-2 md:p-3 mr-3">
+                  <BookOpen className="h-5 w-5 text-white" />
                   </div>
-                  <button 
-                    onClick={() => startQuickSession(getDefaultDiscipline(), 25)}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Pomodoro 25 min
-                  </button>
-                  <button 
-                    onClick={() => startQuickSession(getDefaultDiscipline(), 45)}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Sessão de 45 min
-                  </button>
-                  <button 
-                    onClick={() => startQuickSession(getDefaultDiscipline(), 60)}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Sessão de 1 hora
-                  </button>
+                <div>
+                  <p className="text-xs md:text-sm text-white/80">Total de Sessões</p>
+                  <h3 className="text-xl md:text-2xl font-bold text-white">{metrics.totalSessions}</h3>
                 </div>
               </div>
             </div>
             
-            <button
-              onClick={handleAddDisciplineClick}
-              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Adicionar Disciplina</span>
-          </button>
+            {/* Card 2: Sessões Completas - Verde */}
+            <div className="bg-gradient-to-br from-green-500 to-emerald-700 p-4 md:p-5 rounded-xl shadow-md transition-all hover:shadow-lg hover:scale-105">
+              <div className="flex items-center">
+                <div className="rounded-full bg-white/20 p-2 md:p-3 mr-3">
+                  <CheckCircle className="h-5 w-5 text-white" />
           </div>
+                <div>
+                  <p className="text-xs md:text-sm text-white/80">Completas</p>
+                  <h3 className="text-xl md:text-2xl font-bold text-white">{metrics.completedSessions}</h3>
         </div>
-        
-        {/* Métricas Rápidas */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-2 bg-blue-500 rounded-lg">
-                <Clock className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xs font-medium text-blue-500 bg-blue-100 px-2 py-1 rounded-full">
-                {metrics.hoursThisWeek > 0 ? formatMinutesToHours(metrics.hoursThisWeek) + ' esta semana' : 'Sem dados'}
-              </span>
             </div>
-            <h3 className="text-gray-500 text-sm font-medium mb-1">Tempo de estudo</h3>
-            <div className="text-blue-600 text-2xl font-bold">{formatMinutesToHours(metrics.hoursThisWeek)}</div>
-          </div>
-          
-          <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl border border-green-200 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-2 bg-green-500 rounded-lg">
-                <Check className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xs font-medium text-green-500 bg-green-100 px-2 py-1 rounded-full">
-                {metrics.completedSessions > 0 ? `${metrics.completedSessions} concluídas` : 'Comece hoje'}
-              </span>
-            </div>
-            <h3 className="text-gray-500 text-sm font-medium mb-1">Sessões concluídas</h3>
-            <div className="text-green-600 text-2xl font-bold">{metrics.completedSessions}</div>
-          </div>
-          
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl border border-purple-200 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-2 bg-purple-500 rounded-lg">
-                <Zap className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xs font-medium text-purple-500 bg-purple-100 px-2 py-1 rounded-full">
-                {metrics.streak > 0 ? `+${metrics.streak} dias` : 'Inicie uma sequência'}
-              </span>
-            </div>
-            <h3 className="text-gray-500 text-sm font-medium mb-1">Sequência atual</h3>
-            <div className="text-purple-600 text-2xl font-bold">{metrics.streak > 0 ? `${metrics.streak} dias` : 'Não iniciado'}</div>
-          </div>
-          
-          <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl border border-orange-200 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-2 bg-orange-500 rounded-lg">
-                <Brain className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xs font-medium text-orange-500 bg-orange-100 px-2 py-1 rounded-full">
-                {metrics.reviewedTopics > 0 ? `${metrics.reviewedTopics} tópicos` : 'Sem revisões'}
-              </span>
-            </div>
-            <h3 className="text-gray-500 text-sm font-medium mb-1">Tópicos revisados</h3>
-            <div className="text-orange-600 text-2xl font-bold">{metrics.reviewedTopics}</div>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Seção Esquerda - Sessões Pendentes */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden h-full flex flex-col">
-              <div className="border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-blue-500 rounded-md">
-                    <BookMarked className="h-4 w-4 text-white" />
-                  </div>
-                  <h2 className="font-semibold text-gray-800">Sessões de Estudo Agendadas</h2>
+
+            {/* Card 3: Tempo Total - Roxo */}
+            <div className="bg-gradient-to-br from-purple-500 to-violet-700 p-4 md:p-5 rounded-xl shadow-md transition-all hover:shadow-lg hover:scale-105">
+              <div className="flex items-center">
+                <div className="rounded-full bg-white/20 p-2 md:p-3 mr-3">
+                  <Clock className="h-5 w-5 text-white" />
                 </div>
+                <div>
+                  <p className="text-xs md:text-sm text-white/80">Tempo Total</p>
+                  <h3 className="text-xl md:text-2xl font-bold text-white">{formatMinutesToHours(metrics.totalMinutes)}</h3>
+          </div>
+              </div>
+          </div>
+          
+            {/* Card 4: Sequência - Laranja */}
+            <div className="bg-gradient-to-br from-amber-500 to-orange-700 p-4 md:p-5 rounded-xl shadow-md transition-all hover:shadow-lg hover:scale-105">
+              <div className="flex items-center">
+                <div className="rounded-full bg-white/20 p-2 md:p-3 mr-3">
+                  <Flame className="h-5 w-5 text-white" />
+              </div>
+                <div>
+                  <p className="text-xs md:text-sm text-white/80">Sequência</p>
+                  <h3 className="text-xl md:text-2xl font-bold text-white">{metrics.streakDays} dias</h3>
+          </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-6">
+        <OfflineAlert />
+
+        {/* Container principal */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Sessões Agendadas - 2/3 da tela */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 transition-all hover:shadow-lg">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6">
+                <div className="flex items-center mb-3 sm:mb-0">
+                  <div className="p-2 bg-blue-100 rounded-lg mr-3">
+                    <CalendarClock className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-900">Sessões Agendadas</h2>
+                </div>
+
+                {/* Botão para histórico de sessões */}
                 <button 
-                  className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium"
-                  onClick={() => handleScheduleSessionClick()}
+                  onClick={handleOpenHistoryModal}
+                  className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors py-2 px-3 rounded-lg bg-blue-50 hover:bg-blue-100"
                 >
-                  Agendar nova
-                  <ArrowUpRight className="h-3 w-3" />
+                  <History className="h-4 w-4" />
+                  Ver histórico completo
                 </button>
               </div>
               
-              <div className="p-6 divide-y divide-gray-100 flex-1">
                 {upcomingSessions.length > 0 ? (
-                  upcomingSessions.map((session, index) => (
-                    <div key={session.id || index} className="py-4 first:pt-0 last:pb-0 hover:bg-blue-50 p-3 rounded-lg transition-colors">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 bg-blue-500 rounded-lg mt-1">
-                            <BookOpen className="h-4 w-4 text-white" />
+                <div className="space-y-6">
+                  {/* Renderizar sessões agrupadas por data */}
+                  {groupDates.map(dateKey => {
+                    const dateObj = new Date(dateKey);
+                    const isToday = dateObj.toDateString() === new Date().toDateString();
+                    const isTomorrow = dateObj.toDateString() === new Date(Date.now() + 86400000).toDateString();
+                    
+                    // Determinar o título do grupo baseado na data
+                    let dateTitle = formatDate(dateKey);
+                    if (isToday) dateTitle = "Hoje";
+                    if (isTomorrow) dateTitle = "Amanhã";
+                    
+                    return (
+                      <div key={dateKey} className="space-y-2">
+                        <h3 className="font-medium text-sm text-gray-500 pb-1 border-b border-gray-200">
+                          {dateTitle} • {sessionGroups[dateKey].length} {sessionGroups[dateKey].length === 1 ? 'sessão' : 'sessões'}
+                        </h3>
+                        
+                        <div className="space-y-3 pl-1">
+                          {sessionGroups[dateKey].map((session, index) => (
+                            <div 
+                              key={session.id} 
+                              className="p-4 rounded-lg border border-gray-200 hover:border-blue-200 hover:bg-blue-50 transition-all hover:shadow-md group animate-fade-in-up"
+                              style={{ animationDelay: `${index * 0.1}s` }}
+                            >
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <h3 className="font-medium text-gray-900 mb-1 group-hover:text-blue-700 transition-colors">{session.title}</h3>
+                                  <div className="text-sm text-gray-500 flex flex-wrap gap-x-4 gap-y-2 mt-1">
+                                    <span className="flex items-center">
+                                      <Clock className="h-4 w-4 mr-1 inline text-gray-400" />
+                                      {formatTime(session.scheduled_date || '')}
+                                    </span>
+                                    <span className="flex items-center">
+                                      <BookMarked className="h-4 w-4 mr-1 inline text-gray-400" />
+                                      {formatMinutesToHours(session.duration_minutes)}
+                                    </span>
+                                  </div>
                           </div>
                           <div>
-                            <h3 className="font-medium text-gray-800">{session.title}</h3>
-                            <div className="flex items-center mt-1">
-                              <Calendar className="h-3 w-3 text-gray-400 mr-1" />
-                              <span className="text-xs text-gray-500 mr-3">
-                                {formatDate(session.scheduledDate)}, {formatTime(session.scheduledDate)}
-                              </span>
-                              <Clock className="h-3 w-3 text-gray-400 mr-1" />
-                              <span className="text-xs text-gray-500">{session.duration}min</span>
+                                  <button 
+                                    onClick={() => handleStartSession(session)}
+                                    className="px-3 py-2 text-sm font-medium rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition-all flex items-center hover:scale-105"
+                                  >
+                                    <Clock className="h-4 w-4 mr-1" />
+                                    Iniciar
+                                  </button>
+                                </div>
+                              </div>
                             </div>
-                          </div>
+                          ))}
                         </div>
-                        <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                          {session.disciplineName || 'Geral'}
-                        </span>
                       </div>
-                      
-                      <div className="flex justify-between items-center ml-10">
-                        <span className="text-xs text-gray-500">
-                          {session.notes ? session.notes.substring(0, 50) + '...' : 'Sem anotações'}
-                        </span>
-                        <button 
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md transition-colors flex items-center gap-1"
-                          onClick={() => handleStartSession(session.id)}
-                        >
-                          Iniciar
-                          <ChevronRight className="h-4 w-4" />
-                        </button>
-                      </div>
+                    );
+                  })}
                     </div>
-                  ))
-                ) : (
-                  <div className="py-12 text-center">
-                    <div className="mx-auto h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mb-4">
-                      <Calendar className="h-6 w-6 text-blue-500" />
-                    </div>
-                    <h3 className="text-gray-800 font-medium mb-2">Sem sessões agendadas</h3>
-                    <p className="text-gray-500 text-sm max-w-sm mx-auto">
-                      Você não tem nenhuma sessão de estudo agendada. Crie uma nova sessão para começar a estudar.
-                    </p>
+              ) : (
+                <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300 animate-fade-in">
+                  <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-1">Nenhuma sessão agendada</h3>
+                  <p className="text-gray-500 mb-4 max-w-md mx-auto">Agende sua primeira sessão de estudos para começar a organizar seu tempo de forma eficiente</p>
                     <button 
-                      className="mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors"
-                      onClick={handleScheduleSessionClick}
+                    onClick={handleNewSessionClick}
+                    className="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all inline-flex items-center hover:scale-105"
                     >
-                      Agendar Nova Sessão
+                    <Plus className="h-4 w-4 mr-1" />
+                    Agendar Sessão
                     </button>
                   </div>
                 )}
-              </div>
-            </div>
           </div>
           
-          {/* Seção Direita - Histórico */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden h-full flex flex-col">
-              <div className="border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-blue-500 rounded-md">
-                    <Award className="h-4 w-4 text-white" />
-                  </div>
-                  <h2 className="font-semibold text-gray-800">Histórico Recente</h2>
+            {/* Sessões Completadas */}
+            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 transition-all hover:shadow-lg">
+              <div className="flex items-center mb-6">
+                <div className="p-2 bg-green-100 rounded-lg mr-3">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
                 </div>
-                <button className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium">
-                  Ver tudo
-                  <ArrowUpRight className="h-3 w-3" />
-                </button>
+                <h2 className="text-xl font-semibold text-gray-900">Sessões Completadas</h2>
               </div>
               
-              <div className="p-6 divide-y divide-gray-100 flex-1">
                 {completedSessions.length > 0 ? (
-                  completedSessions.map((session, index) => (
-                    <div key={session.id || index} className="py-3 first:pt-0 hover:bg-gray-50 p-2 rounded-lg transition-colors">
-                      <div className="flex gap-3">
-                        <div className="p-2 bg-green-500 rounded-lg flex-shrink-0">
-                          <BookOpen className="h-4 w-4 text-white" />
+                <div className="divide-y divide-gray-100">
+                  {completedSessions.slice(0, 5).map((session, index) => (
+                    <div 
+                      key={session.id} 
+                      className="py-3 first:pt-0 last:pb-0 animate-fade-in-up" 
+                      style={{ animationDelay: `${index * 0.1}s` }}
+                    >
+                      <div className="flex justify-between">
+                        <div>
+                          <h3 className="font-medium text-gray-800">{session.title}</h3>
+                          <p className="text-sm text-gray-500 mt-1">
+                            {formatDate(session.scheduled_date || '')} • 
+                            {session.actual_duration_minutes 
+                              ? ` ${formatMinutesToHours(session.actual_duration_minutes)}` 
+                              : ` ${formatMinutesToHours(session.duration_minutes)}`
+                            }
+                          </p>
                         </div>
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-800">{session.title}</h4>
-                          <div className="flex items-center text-xs text-gray-500 mt-1">
-                            <Calendar className="h-3 w-3 text-gray-400 mr-1" />
-                            <span>{formatDate(session.scheduledDate)}</span>
-                            <span className="mx-2">•</span>
-                            <Clock className="h-3 w-3 text-gray-400 mr-1" />
-                            <span>{session.actualDuration || session.duration}min</span>
-                          </div>
-                          <div className="mt-2 flex justify-between items-center">
-                            <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
-                              {session.disciplineName || 'Geral'}
+                        <div className="flex items-center">
+                          <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-md">
+                            Concluída
                             </span>
-                            <div className="flex items-center">
-                              <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                <div className="bg-green-500 h-full w-full rounded-full"></div>
-                              </div>
-                              <span className="text-xs font-medium text-green-500 ml-2">100%</span>
-                            </div>
-                          </div>
                         </div>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="py-10 text-center">
-                    <div className="mx-auto h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
-                      <Award className="h-6 w-6 text-green-500" />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 bg-gray-50 rounded-lg animate-fade-in">
+                  <p className="text-gray-500">Nenhuma sessão de estudo completada</p>
+                </div>
+              )}
+              
+              {completedSessions.length > 5 && (
+                <div className="mt-4 text-center pt-2 border-t border-gray-100">
+                  <button 
+                    onClick={handleOpenHistoryModal}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium inline-flex items-center transition-all hover:translate-x-1"
+                  >
+                    Ver histórico completo <ArrowRight className="h-4 w-4 ml-1" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Sidebar - 1/3 da tela */}
+          <div className="space-y-6">
+            {/* Sessão rápida */}
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl p-6 text-white shadow-md relative overflow-hidden group hover:shadow-lg transition-all">
+              {/* Elementos decorativos de fundo */}
+              <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mt-20 -mr-20 transition-transform group-hover:scale-150"></div>
+              <div className="absolute bottom-0 left-0 w-40 h-40 bg-indigo-500/10 rounded-full -mb-20 -ml-20 transition-transform group-hover:scale-150"></div>
+              
+              <div className="relative z-10">
+                <h2 className="text-xl font-bold mb-4 flex items-center">
+                  <Target className="h-5 w-5 mr-2" />
+                  Sessão Rápida
+                </h2>
+                
+                <p className="text-blue-100 mb-4">
+                  Inicie uma sessão de estudo rápida sem agendamento para registrar seu progresso.
+                </p>
+                
+                <button
+                  onClick={handleQuickSessionClick}
+                  className="w-full py-3 px-4 bg-white text-blue-700 rounded-lg font-medium hover:bg-blue-50 transition-all flex items-center justify-center shadow-sm hover:shadow hover:scale-105"
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Iniciar Sessão Rápida
+                </button>
+              </div>
+            </div>
+            
+            {/* Dicas de Estudo */}
+            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 transition-all hover:shadow-lg">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Award className="h-5 w-5 mr-2 text-amber-500" />
+                Dicas de Estudo
+              </h2>
+              
+              <div className="space-y-3">
+                <div className="p-3 bg-blue-50 rounded-lg hover:shadow-sm transition-all hover:scale-102 hover:bg-blue-100/50">
+                  <p className="text-sm text-blue-800">
+                    Sessões de 25-30 minutos com pausas de 5 minutos (Técnica Pomodoro) podem aumentar sua concentração.
+                  </p>
+                </div>
+                
+                <div className="p-3 bg-green-50 rounded-lg hover:shadow-sm transition-all hover:scale-102 hover:bg-green-100/50">
+                  <p className="text-sm text-green-800">
+                    Alternar entre diferentes matérias na mesma sessão pode melhorar a retenção de conteúdo.
+                  </p>
                     </div>
-                    <h3 className="text-gray-800 font-medium mb-2">Sem histórico</h3>
-                    <p className="text-gray-500 text-sm mx-auto">
-                      Você ainda não concluiu nenhuma sessão de estudo.
+                
+                <div className="p-3 bg-purple-50 rounded-lg hover:shadow-sm transition-all hover:scale-102 hover:bg-purple-100/50">
+                  <p className="text-sm text-purple-800">
+                    Revisitar o mesmo conteúdo em intervalos crescentes (1 dia, 3 dias, 1 semana) fortalece a memória de longo prazo.
                     </p>
                   </div>
-                )}
+              </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Modal de Nova Sessão de Estudo */}
+      {/* Modal de Histórico de Sessões */}
+      {isHistoryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-70">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+                <History className="h-5 w-5 mr-2 text-blue-600" />
+                Histórico de Sessões Completadas
+              </h2>
+              <button
+                onClick={handleCloseHistoryModal}
+                className="text-gray-400 hover:text-gray-500 transition-colors"
+              >
+                <CloseIcon className="h-5 w-5" />
+              </button>
+            </div>
+            
+            {/* Barra de pesquisa e filtros */}
+            <div className="p-4 border-b">
+              <div className="flex flex-col md:flex-row gap-3">
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Buscar por título, disciplina ou notas..."
+                    value={historySearchTerm}
+                    onChange={handleHistorySearchChange}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                {/* Botão de ordenação */}
+                <button 
+                  onClick={toggleHistorySort}
+                  className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors p-2 rounded-lg border border-gray-300 hover:border-blue-500"
+                  title={historySort === 'newest' ? 'Ordenar por mais antigas primeiro' : 'Ordenar por mais recentes primeiro'}
+                >
+                  {historySort === 'newest' ? (
+                    <>
+                      <SortDesc className="h-4 w-4" />
+                      <span className="hidden md:inline">Mais recentes</span>
+                    </>
+                  ) : (
+                    <>
+                      <SortAsc className="h-4 w-4" />
+                      <span className="hidden md:inline">Mais antigas</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+            
+            {/* Lista de sessões */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {filteredHistory.length > 0 ? (
+                <div className="space-y-4">
+                  {filteredHistory.map((session) => (
+                    <div key={session.id} className="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:border-blue-200 transition-colors">
+                      <div className="flex flex-col md:flex-row justify-between mb-2">
+                        <h3 className="font-medium text-blue-700">{session.title}</h3>
+                        <span className="text-sm text-gray-500 flex items-center mt-1 md:mt-0">
+                          <CalendarDays className="h-4 w-4 mr-1" />
+                          {formatDate(session.scheduled_date || session.created_at || '')}
+                        </span>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-3 mb-2">
+                        {session.disciplineName && (
+                          <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+                            {session.disciplineName}
+                          </span>
+                        )}
+                        
+                        <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 flex items-center">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {formatMinutesToHours(session.actual_duration_minutes || session.duration_minutes)}
+                        </span>
+                        
+                        {session.completed && (
+                          <span className="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 flex items-center">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Concluída
+                          </span>
+                        )}
+                      </div>
+                      
+                      {session.notes && (
+                        <div className="mt-2 text-sm text-gray-600 flex items-start">
+                          <FileText className="h-4 w-4 mr-1 mt-0.5 flex-shrink-0" />
+                          <p className="line-clamp-2">{session.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-10">
+                  <div className="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                    <History className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-700 mb-1">Nenhuma sessão encontrada</h3>
+                  <p className="text-gray-500">
+                    {historySearchTerm 
+                      ? "Tente modificar sua busca para encontrar mais resultados."
+                      : "Você ainda não completou nenhuma sessão de estudo."}
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-4 border-t flex flex-col md:flex-row justify-between items-center gap-2">
+              <div className="text-sm text-gray-500">
+                Total: {filteredHistory.length} {filteredHistory.length === 1 ? 'sessão' : 'sessões'} completada{filteredHistory.length !== 1 ? 's' : ''}
+              </div>
+              
+              <div className="text-sm font-medium text-blue-600 flex items-center">
+                <Clock className="h-4 w-4 mr-1" />
+                Tempo total: {calculateTotalHoursFiltered()}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modais */}
         <StudySessionModal 
-          isOpen={showSessionModal}
+        isOpen={isSessionModalOpen}
           onClose={handleCloseSessionModal}
           onSuccess={handleSessionCreated}
-          isScheduling={isSchedulingMode}
+        isScheduling={true}
+      />
+      
+      <QuickStudySessionModal
+        isOpen={isQuickSessionModalOpen}
+        onClose={handleCloseQuickSessionModal}
+        onSuccess={handleSessionCreated}
+        initialDuration={activeQuickSession?.elapsedMinutes}
+        initialNotes={activeQuickSession?.notes}
+      />
+      
+      {/* Cronômetro de sessão de estudo */}
+      {activeSession && activeSession.id && (
+        <StudySessionTimer
+          sessionId={activeSession.id}
+          title={activeSession.title}
+          durationMinutes={activeSession.duration_minutes}
+          onComplete={handleCompleteSession}
+          onCancel={handleCancelSession}
         />
-
-        {/* Componente de Timer para sessão de estudo */}
-        {currentSession && (
-          <StudyTimer
-            isOpen={showStudyTimer}
-            onClose={handleCloseStudyTimer}
-            onComplete={handleStudyComplete}
-            sessionData={currentSession}
-          />
-        )}
+      )}
+      
+      {/* Cronômetro crescente para sessão rápida */}
+      {activeQuickSession && (
+        <GrowingTimer
+          sessionTitle="Sessão Rápida"
+          disciplineId={activeQuickSession.disciplineId}
+          disciplineName={activeQuickSession.disciplineName}
+          onComplete={handleCompleteQuickSession}
+          onCancel={handleCancelQuickSession}
+        />
+      )}
       </div>
-    </AppLayout>
   );
 } 

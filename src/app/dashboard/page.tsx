@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import { Discipline, Subject } from '@/lib/supabase';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
+import { StudyStreakService, StudyStreak, WeekDay } from '@/lib/study-streak-service';
+import { StudySessionService } from '@/services/study-sessions.service';
 import {
   BookOpen,
   Clock,
@@ -20,8 +22,11 @@ import {
   Flame,
   CheckCircle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  PlusCircle,
+  BarChart2
 } from 'lucide-react';
+import QuickStudySessionModal from '@/components/estudos/QuickStudySessionModal';
 
 // Função auxiliar para gerar dias da semana
 const getDaysOfWeek = () => {
@@ -44,11 +49,20 @@ const getDaysOfWeek = () => {
   return days;
 };
 
+// Interface para dados de estudo por disciplina
+interface StudyByDiscipline {
+  name: string;
+  minutes: number;
+  sessionsCount: number;
+  color: string;
+}
+
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
   const [loading, setLoading] = useState(true);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [studyByDiscipline, setStudyByDiscipline] = useState<StudyByDiscipline[]>([]);
   const [stats, setStats] = useState({
     totalDisciplines: 0,
     totalSubjects: 0,
@@ -56,18 +70,22 @@ export default function DashboardPage() {
     subjectsByImportance: { baixa: 0, média: 0, alta: 0 },
     studyHours: 0
   });
-  const [studyStreak, setStudyStreak] = useState({
+  const [studyStreak, setStudyStreak] = useState<StudyStreak>({
     currentStreak: 0,
     longestStreak: 0,
-    weekDays: getDaysOfWeek(),
-    totalDaysStudied: 0
+    totalDaysStudied: 0,
+    weekDays: []
   });
+  const [isStudySessionModalOpen, setIsStudySessionModalOpen] = useState(false);
   
   // Carregar dados do dashboard
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
         setLoading(true);
+        
+        // Registrar login diário do usuário
+        await StudyStreakService.recordDailyLogin();
         
         // Carregar disciplinas
         const disciplinesData = await DisciplinesRestService.getDisciplines(true);
@@ -121,19 +139,56 @@ export default function DashboardPage() {
           subjectsByImportance,
           studyHours: totalHours
         });
+
+        // Carregar sessões de estudo completadas
+        const completedSessions = await StudySessionService.getUserSessions(true);
+        const completedSessionsOnly = completedSessions.filter(session => session.completed);
         
-        // Simular dados de sequência de estudos (streak)
-        // Em um app real, isso viria do banco de dados
-        const weekDays = getDaysOfWeek();
-        const studiedDays = weekDays.filter(day => day.hasStudied);
-        const currentStreak = calculateCurrentStreak(weekDays);
+        // Agrupar sessões por disciplina
+        const sessionsGroupedByDiscipline = new Map<number, { name: string, minutes: number, count: number }>();
         
-        setStudyStreak({
-          currentStreak,
-          longestStreak: Math.max(currentStreak, 5), // Valor fictício para demonstração
-          weekDays,
-          totalDaysStudied: studiedDays.length
+        // Inicializar o Map para todas as disciplinas
+        disciplinesData.forEach(discipline => {
+          sessionsGroupedByDiscipline.set(discipline.id, { 
+            name: discipline.name,
+            minutes: 0,
+            count: 0
+          });
         });
+        
+        // Somar minutos e contagem de sessões por disciplina
+        completedSessionsOnly.forEach(session => {
+          if (session.discipline_id) {
+            const current = sessionsGroupedByDiscipline.get(session.discipline_id);
+            if (current) {
+              sessionsGroupedByDiscipline.set(session.discipline_id, {
+                ...current,
+                minutes: current.minutes + (session.actual_duration_minutes || session.duration_minutes),
+                count: current.count + 1
+              });
+            }
+          }
+        });
+        
+        // Converter Map para array e ordenar por minutos (decrescente)
+        const studyByDisciplineArray = Array.from(sessionsGroupedByDiscipline.values())
+          .filter(item => item.minutes > 0)
+          .map((item, index) => ({
+            name: item.name,
+            minutes: item.minutes,
+            sessionsCount: item.count,
+            color: `hsl(${index * 25}, 70%, 50%)`
+          }))
+          .sort((a, b) => b.minutes - a.minutes)
+          .slice(0, 5); // Limitar a 5 disciplinas
+        
+        setStudyByDiscipline(studyByDisciplineArray);
+        
+        // Carregar dados de sequência de estudos do usuário
+        const streakData = await StudyStreakService.getStudyStreak();
+        if (streakData) {
+          setStudyStreak(streakData);
+        }
         
         // Exibir mensagem de boas-vindas
         toast.success('Bem-vindo ao Dashboard!');
@@ -156,24 +211,6 @@ export default function DashboardPage() {
     return () => clearTimeout(safetyTimeout);
   }, []);
   
-  // Função para calcular a sequência atual (para demonstração)
-  const calculateCurrentStreak = (days) => {
-    let streak = 0;
-    const today = new Date();
-    
-    // Começamos do dia atual e voltamos até encontrar um dia sem estudo
-    for (let i = 0; i < days.length; i++) {
-      const day = days[days.length - 1 - i];
-      if (day.hasStudied) {
-        streak++;
-      } else {
-        break;
-      }
-    }
-    
-    return streak;
-  };
-  
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -184,6 +221,92 @@ export default function DashboardPage() {
       console.error('Erro ao fazer logout:', error);
       toast.error('Erro ao fazer logout');
     }
+  };
+  
+  // Renderizar gráfico de barras horizontais para estudo por disciplina
+  const renderStudyByDisciplineChart = () => {
+    if (studyByDiscipline.length === 0) {
+      return (
+        <div className="text-center py-6">
+          <Clock className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+          <p className="text-gray-600">Nenhuma sessão de estudo registrada</p>
+          <button
+            onClick={() => setIsStudySessionModalOpen(true)}
+            className="mt-2 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+          >
+            Registrar estudo
+          </button>
+        </div>
+      );
+    }
+
+    const maxMinutes = Math.max(...studyByDiscipline.map(d => d.minutes));
+    
+    // Definindo um esquema de cores consistente para as disciplinas
+    const colorScheme = [
+      "hsl(210, 80%, 55%)",  // Azul
+      "hsl(280, 70%, 55%)",  // Roxo
+      "hsl(10, 80%, 55%)",   // Vermelho-laranja
+      "hsl(160, 70%, 45%)",  // Verde-esmeralda
+      "hsl(40, 90%, 55%)",   // Amarelo-âmbar
+      "hsl(330, 80%, 55%)",  // Magenta
+      "hsl(190, 80%, 45%)",  // Ciano
+    ];
+    
+    return (
+      <div className="space-y-4">
+        {studyByDiscipline.map((discipline, index) => {
+          const percent = Math.min(100, (discipline.minutes / maxMinutes) * 100);
+          const hours = Math.floor(discipline.minutes / 60);
+          const mins = discipline.minutes % 60;
+          const timeDisplay = hours > 0 
+            ? `${hours}h${mins > 0 ? ` ${mins}m` : ''}`
+            : `${mins}m`;
+          
+          // Usar a cor do esquema definido ou gerar uma cor baseada no índice
+          const color = colorScheme[index % colorScheme.length];
+          const gradientStart = color;
+          const gradientEnd = color.replace('55%', '45%').replace('45%', '35%');
+          
+          return (
+            <div key={discipline.name} className="space-y-2 group">
+              <div className="flex justify-between text-sm items-center">
+                <div className="flex items-center">
+                  <div
+                    className="w-3 h-3 rounded-full mr-2 flex-shrink-0"
+                    style={{ backgroundColor: color }}
+                  ></div>
+                  <span className="font-medium group-hover:text-blue-600 transition-colors truncate max-w-[150px]">
+                    {discipline.name}
+                  </span>
+                </div>
+                <span className="bg-gray-100 px-2 py-0.5 rounded-full text-gray-700 text-xs font-medium group-hover:bg-blue-100 transition-colors">
+                  {timeDisplay}
+                </span>
+              </div>
+              <div className="h-7 bg-gray-100 rounded-lg overflow-hidden shadow-inner">
+                <div 
+                  className="h-full rounded-lg transition-all duration-500 ease-out flex items-center px-2"
+                  style={{ 
+                    width: `${percent}%`,
+                    background: `linear-gradient(90deg, ${gradientStart} 0%, ${gradientEnd} 100%)`,
+                    minWidth: '40px',
+                    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                  }}
+                >
+                  <span className="text-white text-xs font-medium drop-shadow-sm">
+                    {discipline.sessionsCount}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        <div className="text-xs text-gray-500 mt-2">
+          * Os números nas barras representam a quantidade de sessões
+        </div>
+      </div>
+    );
   };
   
   // Renderizar loading state
@@ -239,6 +362,61 @@ export default function DashboardPage() {
     );
   };
   
+  // Gráfico de barras para importância
+  const renderImportanceChart = () => {
+    const { baixa, média, alta } = stats.subjectsByImportance;
+    const maxValue = Math.max(baixa, média, alta, 1); // Evitar divisão por zero
+    
+    return (
+      <div className="flex flex-col space-y-2">
+        <div className="flex items-center">
+          <span className="w-16 text-sm text-gray-600">Baixa</span>
+          <div className="flex-1 h-6 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-blue-500 rounded-full" 
+              style={{ width: `${(baixa / maxValue) * 100}%` }}
+            ></div>
+          </div>
+          <span className="ml-2 text-sm font-medium">{baixa}</span>
+        </div>
+        
+        <div className="flex items-center">
+          <span className="w-16 text-sm text-gray-600">Média</span>
+          <div className="flex-1 h-6 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-indigo-500 rounded-full" 
+              style={{ width: `${(média / maxValue) * 100}%` }}
+            ></div>
+          </div>
+          <span className="ml-2 text-sm font-medium">{média}</span>
+        </div>
+        
+        <div className="flex items-center">
+          <span className="w-16 text-sm text-gray-600">Alta</span>
+          <div className="flex-1 h-6 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-purple-500 rounded-full" 
+              style={{ width: `${(alta / maxValue) * 100}%` }}
+            ></div>
+          </div>
+          <span className="ml-2 text-sm font-medium">{alta}</span>
+        </div>
+      </div>
+    );
+  };
+  
+  // Botão de ação flutuante para registrar sessão de estudo
+  const renderQuickStudyButton = () => (
+    <button
+      onClick={() => setIsStudySessionModalOpen(true)}
+      className="fixed bottom-8 right-8 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg flex items-center justify-center z-10 transition-all hover:scale-105"
+      aria-label="Registrar sessão de estudo"
+      title="Registrar sessão de estudo"
+    >
+      <PlusCircle className="h-6 w-6" />
+    </button>
+  );
+  
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header com gradiente */}
@@ -261,50 +439,50 @@ export default function DashboardPage() {
           
           {/* Cards de estatísticas */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
-            <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg border border-white/20">
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-lg border border-blue-400/30 shadow-md">
               <div className="flex items-center">
-                <div className="rounded-full bg-white/20 p-3 mr-4">
+                <div className="rounded-full bg-white/20 p-3 mr-4 shadow-inner">
                   <BookOpen className="h-6 w-6 text-white" />
                 </div>
                 <div>
                   <p className="text-sm text-blue-100">Disciplinas</p>
-                  <h3 className="text-2xl font-bold">{stats.totalDisciplines}</h3>
+                  <h3 className="text-2xl font-bold text-white">{stats.totalDisciplines}</h3>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg border border-white/20">
+            <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-lg border border-purple-400/30 shadow-md">
               <div className="flex items-center">
-                <div className="rounded-full bg-white/20 p-3 mr-4">
+                <div className="rounded-full bg-white/20 p-3 mr-4 shadow-inner">
                   <BookMarked className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-blue-100">Assuntos</p>
-                  <h3 className="text-2xl font-bold">{stats.totalSubjects}</h3>
+                  <p className="text-sm text-purple-100">Assuntos</p>
+                  <h3 className="text-2xl font-bold text-white">{stats.totalSubjects}</h3>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg border border-white/20">
+            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 rounded-lg border border-emerald-400/30 shadow-md">
               <div className="flex items-center">
-                <div className="rounded-full bg-white/20 p-3 mr-4">
+                <div className="rounded-full bg-white/20 p-3 mr-4 shadow-inner">
                   <Clock className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-blue-100">Horas de Estudo</p>
-                  <h3 className="text-2xl font-bold">{stats.studyHours}</h3>
+                  <p className="text-sm text-emerald-100">Horas de Estudo</p>
+                  <h3 className="text-2xl font-bold text-white">{stats.studyHours}</h3>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg border border-white/20">
+            <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-6 rounded-lg border border-amber-400/30 shadow-md">
               <div className="flex items-center">
-                <div className="rounded-full bg-white/20 p-3 mr-4">
+                <div className="rounded-full bg-white/20 p-3 mr-4 shadow-inner">
                   <Award className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-blue-100">Alta Importância</p>
-                  <h3 className="text-2xl font-bold">{stats.subjectsByImportance.alta}</h3>
+                  <p className="text-sm text-amber-100">Alta Importância</p>
+                  <h3 className="text-2xl font-bold text-white">{stats.subjectsByImportance.alta}</h3>
                 </div>
               </div>
             </div>
@@ -315,82 +493,87 @@ export default function DashboardPage() {
       <div className="container mx-auto px-6 py-8">
         {/* Seção de Sequência de Estudos */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-              <Flame className="h-6 w-6 text-orange-500 mr-2" />
+              <div className="p-2 rounded-md bg-orange-100 text-orange-600 mr-3">
+                <Flame className="h-5 w-5" />
+              </div>
               Sequência de Estudos
             </h2>
-            <div className="text-sm text-gray-500">
-              <span className="font-medium text-orange-500">{studyStreak.currentStreak} dias</span> consecutivos
+            <div className="text-sm bg-orange-100 text-orange-600 py-1.5 px-4 rounded-full font-medium shadow-sm border border-orange-200">
+              <span className="font-bold">{studyStreak.currentStreak}</span> dias consecutivos
             </div>
           </div>
           
           <div className="flex justify-between items-center">
-            <button className="p-2 rounded-full hover:bg-gray-100">
-              <ChevronLeft className="h-5 w-5 text-gray-400" />
+            <button className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
+              <ChevronLeft className="h-5 w-5" />
             </button>
             
-            <div className="flex justify-between space-x-2 md:space-x-6">
+            <div className="flex justify-between space-x-2 md:space-x-5">
               {studyStreak.weekDays.map((day, index) => (
                 <div key={index} className="flex flex-col items-center">
-                  <div className="text-xs text-gray-500">{day.dayName}</div>
+                  <div className="text-xs font-medium text-gray-500">{day.dayName}</div>
                   <div 
                     className={`
-                      w-10 h-10 flex items-center justify-center rounded-full my-2
-                      ${day.isToday ? 'border-2 border-blue-400' : ''}
+                      w-12 h-12 flex items-center justify-center rounded-full my-2
+                      ${day.isToday ? 'ring-2 ring-blue-400 ring-offset-2' : ''}
                       ${day.hasStudied 
-                        ? 'bg-gradient-to-br from-orange-400 to-red-500 text-white' 
-                        : 'bg-gray-100 text-gray-400'}
+                        ? 'bg-gradient-to-br from-orange-400 to-red-500 text-white shadow-lg transform hover:scale-105 transition-all' 
+                        : 'bg-gray-100 text-gray-400 hover:bg-gray-200 transition-colors'}
                     `}
                   >
                     {day.hasStudied 
-                      ? <Flame className="h-5 w-5" /> 
-                      : day.dayNumber}
+                      ? <Flame className="h-6 w-6" /> 
+                      : <span className="text-sm font-medium">{day.dayNumber}</span>}
                   </div>
                   <div className="text-xs font-medium">
                     {day.hasStudied ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-green-100 text-green-800">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        <span>OK</span>
+                      </span>
                     ) : day.isToday ? (
-                      <span className="text-blue-500">Hoje</span>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">Hoje</span>
                     ) : null}
                   </div>
                 </div>
               ))}
             </div>
             
-            <button className="p-2 rounded-full hover:bg-gray-100">
-              <ChevronRight className="h-5 w-5 text-gray-400" />
+            <button className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
+              <ChevronRight className="h-5 w-5" />
             </button>
           </div>
           
           <div className="mt-6 pt-4 border-t border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex items-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+            <div className="flex items-center p-4 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl shadow-sm">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-white shadow-inner">
                 <Flame className="h-6 w-6" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Sequência Atual</p>
-                <p className="text-xl font-bold text-orange-600">{studyStreak.currentStreak} dias</p>
+                <p className="text-sm font-medium text-orange-100">Sequência Atual</p>
+                <p className="text-xl font-bold text-white">{studyStreak.currentStreak} dias</p>
               </div>
             </div>
             
-            <div className="flex items-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 text-purple-600">
+            <div className="flex items-center p-4 bg-gradient-to-br from-purple-400 to-purple-500 rounded-xl shadow-sm">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-white shadow-inner">
                 <Award className="h-6 w-6" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Maior Sequência</p>
-                <p className="text-xl font-bold text-purple-600">{studyStreak.longestStreak} dias</p>
+                <p className="text-sm font-medium text-purple-100">Maior Sequência</p>
+                <p className="text-xl font-bold text-white">{studyStreak.longestStreak} dias</p>
               </div>
             </div>
             
-            <div className="flex items-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+            <div className="flex items-center p-4 bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl shadow-sm">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-white shadow-inner">
                 <Calendar className="h-6 w-6" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total na Semana</p>
-                <p className="text-xl font-bold text-blue-600">{studyStreak.totalDaysStudied} dias</p>
+                <p className="text-sm font-medium text-blue-100">Total na Semana</p>
+                <p className="text-xl font-bold text-white">{studyStreak.totalDaysStudied} dias</p>
               </div>
             </div>
           </div>
@@ -448,6 +631,29 @@ export default function DashboardPage() {
               </div>
             </div>
             
+            {/* Estudo por disciplina - Novo componente */}
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-800">
+                  Tempo de Estudo por Disciplina
+                </h2>
+                <BarChart2 className="text-green-600 h-5 w-5" />
+              </div>
+              
+              {renderStudyByDisciplineChart()}
+              
+              {studyByDiscipline.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <Link 
+                    href="/estudos" 
+                    className="text-green-600 hover:text-green-800 text-sm font-medium flex items-center"
+                  >
+                    Ver histórico completo <ArrowUpRight className="h-4 w-4 ml-1" />
+                  </Link>
+                </div>
+              )}
+            </div>
+
             {/* Lista de disciplinas */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
@@ -518,6 +724,18 @@ export default function DashboardPage() {
               {renderDifficultyChart()}
             </div>
             
+            {/* Gráfico de importância */}
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-800">
+                  Importância dos Assuntos
+                </h2>
+                <TrendingUp className="text-blue-600 h-5 w-5" />
+              </div>
+              
+              {renderImportanceChart()}
+            </div>
+            
             {/* Acesso rápido */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">
@@ -540,6 +758,15 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <span className="font-medium text-gray-800">Planejamento</span>
+                  </div>
+                </Link>
+                
+                <Link href="/estudos" className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                  <div className="bg-orange-100 p-2 rounded-lg mr-3">
+                    <Clock className="h-5 w-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-800">Histórico de Estudos</span>
                   </div>
                 </Link>
                 
@@ -569,6 +796,21 @@ export default function DashboardPage() {
           </p>
         </div>
       </div>
+      
+      {/* Botão de ação flutuante */}
+      {renderQuickStudyButton()}
+      
+      {/* Modal de sessão de estudo rápida */}
+      <QuickStudySessionModal
+        isOpen={isStudySessionModalOpen}
+        onClose={() => setIsStudySessionModalOpen(false)}
+        onSuccess={() => {
+          setIsStudySessionModalOpen(false);
+          toast.success('Sessão de estudo registrada com sucesso!');
+          // Recarregar dados após registrar uma sessão
+          window.location.reload();
+        }}
+      />
     </div>
   );
 } 

@@ -1,107 +1,75 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from './supabase';
-import { createRequestSupabaseClient } from './supabase-server';
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
+import { Database } from '@/lib/database.types';
 
-// Configuração para bypass de autenticação em desenvolvimento
-const DEV_MODE_BYPASS = false; // Desativado para usar autenticação real
-const DEV_USER_ID = 'dev-user-123456789'; // ID de usuário de desenvolvimento
+export type ApiAuthContext = {
+  userId: string;
+  session: any;
+  supabase: ReturnType<typeof createServerClient<Database>>;
+};
 
-/**
- * Utilitário para verificar autenticação nas rotas de API
- * @param request Request da API
- * @returns Objeto com userId se autenticado, ou null se não autenticado
- */
-export async function verifyApiAuth(request: NextRequest) {
-  try {
-    // Bypass para desenvolvimento, se configurado
-    if (process.env.NODE_ENV === 'development' && DEV_MODE_BYPASS) {
-      console.log('API Auth: Modo de desenvolvimento com bypass ativado');
-      return { 
-        userId: DEV_USER_ID, 
-        isAuthenticated: true,
-        session: { user: { id: DEV_USER_ID, email: 'dev@example.com' } },
-        hasCookie: true,
-        devMode: true
-      };
-    }
-
-    // Verificar cookies da requisição
-    const cookieHeader = request.headers.get('cookie');
-    const hasSbCookie = cookieHeader?.includes('sb-');
-    
-    console.log('API Auth: Verificando autenticação');
-    console.log('API Auth: Cookies presentes:', !!cookieHeader);
-    console.log('API Auth: Cookie de autenticação Supabase:', hasSbCookie);
-    
-    // Criar um cliente Supabase que utilize os cookies da requisição
-    const supabaseWithAuth = createRequestSupabaseClient(request);
-    
-    // Verificar sessão no Supabase usando o cliente com cookies do request
-    const { data: { session }, error } = await supabaseWithAuth.auth.getSession();
-    
-    if (error) {
-      console.error('API Auth: Erro ao verificar sessão:', error.message);
-      return { 
-        userId: null, 
-        isAuthenticated: false, 
-        error: error.message,
-        hasCookie: hasSbCookie 
-      };
-    }
-    
-    const userId = session?.user?.id;
-    console.log('API Auth: Sessão encontrada:', !!session);
-    console.log('API Auth: UserId recuperado:', userId || 'nenhum');
-    
-    return { 
-      userId, 
-      isAuthenticated: !!userId,
-      session,
-      hasCookie: hasSbCookie,
-      supabaseClient: supabaseWithAuth // Incluir o cliente autenticado para uso nos handlers
-    };
-  } catch (error: any) {
-    console.error('API Auth: Erro crítico:', error);
-    return { 
-      userId: null, 
-      isAuthenticated: false, 
-      error: error.message || 'Erro desconhecido' 
-    };
-  }
-}
+type ApiHandlerWithAuth = (
+  request: NextRequest | Request,
+  context: ApiAuthContext
+) => Promise<NextResponse | Response>;
 
 /**
- * Wrapper para proteger rotas de API que requerem autenticação
- * @param handler Função handler da API
- * @returns Handler protegido que verifica autenticação
+ * Wrapper para handlers de API que requerem autenticação
+ * Verifica se o usuário está autenticado e passa o userId, session e cliente supabase para o handler
  */
-export function withApiAuth(
-  handler: (
-    request: NextRequest, 
-    auth: { userId: string, session: any, supabase?: any }
-  ) => Promise<NextResponse>
-) {
-  return async (request: NextRequest) => {
-    // Verificar autenticação
-    const { userId, isAuthenticated, error, session, supabaseClient } = await verifyApiAuth(request);
-    
-    // Se não estiver autenticado, retornar erro 401
-    if (!isAuthenticated) {
+export function withApiAuth(handler: ApiHandlerWithAuth) {
+  return async (request: NextRequest | Request) => {
+    try {
+      // Inicializar cliente Supabase
+      const cookieStore = cookies();
+      
+      const supabase = createServerClient<Database>(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            get(name: string) {
+              return cookieStore.get(name)?.value;
+            },
+            set(name: string, value: string, options: any) {
+              cookieStore.set({ name, value, ...options });
+            },
+            remove(name: string, options: any) {
+              cookieStore.set({ name, value: '', ...options });
+            },
+          },
+        }
+      );
+
+      // Verificar autenticação
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Erro ao obter sessão:', sessionError);
+        return NextResponse.json(
+          { error: 'Erro de autenticação' },
+          { status: 500 }
+        );
+      }
+      
+      if (!session) {
+        return NextResponse.json(
+          { error: 'Não autorizado' },
+          { status: 401 }
+        );
+      }
+      
+      const userId = session.user.id;
+      
+      // Chamar o handler com o contexto autenticado
+      return handler(request, { userId, session, supabase });
+    } catch (error) {
+      console.error('Erro ao processar requisição autenticada:', error);
       return NextResponse.json(
-        { 
-          error: 'Não autorizado. Faça login para acessar este recurso.',
-          details: error
-        }, 
-        { status: 401 }
+        { error: 'Erro interno do servidor' },
+        { status: 500 }
       );
     }
-    
-    // Se estiver autenticado, prosseguir com o handler original
-    // O userId é garantido não-nulo aqui por causa da verificação acima
-    return handler(request, { 
-      userId: userId!, 
-      session,
-      supabase: supabaseClient // Passar o cliente autenticado para o handler
-    });
   };
 } 

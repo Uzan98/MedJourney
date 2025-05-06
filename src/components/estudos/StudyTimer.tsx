@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Play, Pause, RotateCcw, Check, Settings, Clock, X, Volume2, Volume1, VolumeX } from 'lucide-react';
 import { completeStudySession } from '../../lib/api';
 import { toast } from '../ui/Toast';
@@ -34,6 +34,9 @@ const StudyTimer: React.FC<StudyTimerProps> = ({
   const [loading, setLoading] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0); // tempo decorrido em segundos
   const [completionConfirm, setCompletionConfirm] = useState(false);
+
+  // Ref para guardar o ID do intervalo
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Som de notificação
   const playNotificationSound = () => {
@@ -180,26 +183,30 @@ const StudyTimer: React.FC<StudyTimerProps> = ({
     let interval: NodeJS.Timeout;
     
     if (isRunning) {
-      interval = setInterval(() => {
-        // Decrementar tempo restante e incrementar tempo decorrido
-        setTimeRemaining(prev => prev > 0 ? prev - 1 : 0);
-        setElapsedTime(prev => prev + 1);
-          
-          // Se o tempo acabou (seja em Pomodoro ou sessão normal)
-        if (timeRemaining <= 1) {
-            playNotificationSound();
-            setIsRunning(false);
-            
-            // Se for sessão normal (não pomodoro), mostrar diálogo de conclusão
-            if (!pomodoro) {
-              setCompletionConfirm(true);
-            }
+      const startTime = Date.now();
+      
+      const tick = () => {
+        if (!isRunning) return;
+        
+        const now = Date.now();
+        const elapsed = Math.floor((now - startTime) / 1000);
+        setElapsedTime(prev => prev + elapsed);
+        
+        const remaining = Math.max(0, timeRemaining - elapsed);
+        setTimeRemaining(remaining);
+        
+        if (remaining <= 1) {
+          playNotificationSound();
+          setIsRunning(false);
+          setCompletionConfirm(true);
         }
-      }, 1000); // Exatamente 1 segundo por ciclo
+      };
+      
+      interval = setInterval(tick, 1000);
     }
     
     return () => clearInterval(interval);
-  }, [isRunning, pomodoro, timeRemaining]);
+  }, [isRunning, timeRemaining]);
 
   // Efeito para definir o título da página
   useEffect(() => {
