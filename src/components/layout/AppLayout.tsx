@@ -22,7 +22,8 @@ import {
   ChevronDown,
   ChevronUp,
   ListTodo,
-  GraduationCap
+  GraduationCap,
+  FileQuestion
 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -82,9 +83,9 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       ]
     },
     {
-      path: "/simulados",
-      label: "Simulados",
-      icon: <ClipboardList className="h-5 w-5 flex-shrink-0" />
+      path: "/banco-questoes",
+      label: "Banco de Questões",
+      icon: <FileQuestion className="h-5 w-5 flex-shrink-0" />
     }
   ];
 
@@ -270,6 +271,9 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         key={item.path}
         href={item.path}
         className={linkClasses}
+        onClick={(e) => {
+          console.log(`Navegando para: ${item.path}`);
+        }}
       >
         <div className={`min-w-8 ${isMobile ? '' : 'pl-2'}`}>
           {item.icon}
