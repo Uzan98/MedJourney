@@ -247,10 +247,10 @@ export default function EstudosPage() {
       console.error("Erro ao carregar dados de estudo:", error);
       toast.error("Não foi possível carregar as sessões de estudo");
     } finally {
-      setLoading(false);
+        setLoading(false);
+      }
     }
-  }
-  
+    
   async function loadSessionsFromSupabase() {
     if (!user) return;
     
@@ -446,7 +446,7 @@ export default function EstudosPage() {
         
         // Recarregar os dados
         await loadStudyData();
-      } else {
+    } else {
         toast.error("Erro ao concluir a sessão de estudo");
       }
     } catch (error) {
@@ -606,7 +606,7 @@ export default function EstudosPage() {
     <div className="mb-6 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-md flex items-center">
       <AlertCircle className="h-5 w-5 text-amber-500 mr-2" />
       <p className="text-amber-700">Você está offline. Algumas funcionalidades podem estar limitadas.</p>
-    </div>
+          </div>
   ) : null;
 
   // Função para ordenar o histórico de sessões
@@ -684,9 +684,9 @@ export default function EstudosPage() {
           <p className="text-gray-600 text-lg">Carregando suas sessões de estudo...</p>
           <div className="mt-4 w-full bg-gray-200 rounded-full h-1.5 max-w-xs mx-auto overflow-hidden">
             <div className="bg-blue-600 h-1.5 rounded-full animate-pulse-width"></div>
-          </div>
-        </div>
-      </div>
+              </div>
+              </div>
+            </div>
     );
   }
 
@@ -795,19 +795,19 @@ export default function EstudosPage() {
                   <p className="text-xs md:text-sm text-white/80">Completas</p>
                   <h3 className="text-xl md:text-2xl font-bold text-white">{metrics.completedSessions}</h3>
         </div>
-              </div>
-            </div>
-
+          </div>
+        </div>
+        
             {/* Card 3: Tempo Total - Roxo */}
             <div className="bg-gradient-to-br from-purple-500 to-violet-700 p-4 md:p-5 rounded-xl shadow-md transition-all hover:shadow-lg hover:scale-105">
               <div className="flex items-center">
                 <div className="rounded-full bg-white/20 p-2 md:p-3 mr-3">
-                  <Clock className="h-5 w-5 text-white" />
-                </div>
+                <Clock className="h-5 w-5 text-white" />
+              </div>
                 <div>
                   <p className="text-xs md:text-sm text-white/80">Tempo Total</p>
                   <h3 className="text-xl md:text-2xl font-bold text-white">{formatMinutesToHours(metrics.totalMinutes)}</h3>
-          </div>
+            </div>
               </div>
           </div>
           
@@ -820,13 +820,13 @@ export default function EstudosPage() {
                 <div>
                   <p className="text-xs md:text-sm text-white/80">Sequência</p>
                   <h3 className="text-xl md:text-2xl font-bold text-white">{metrics.streakDays} dias</h3>
+            </div>
           </div>
               </div>
             </div>
-          </div>
         </div>
-      </div>
-
+          </div>
+          
       <div className="px-6">
         <OfflineAlert />
 
@@ -839,7 +839,7 @@ export default function EstudosPage() {
                 <div className="flex items-center mb-3 sm:mb-0">
                   <div className="p-2 bg-blue-100 rounded-lg mr-3">
                     <CalendarClock className="h-5 w-5 text-blue-600" />
-                  </div>
+              </div>
                   <h2 className="text-xl font-semibold text-gray-900">Sessões Agendadas</h2>
                 </div>
 
@@ -890,9 +890,9 @@ export default function EstudosPage() {
                                     <span className="flex items-center">
                                       <BookMarked className="h-4 w-4 mr-1 inline text-gray-400" />
                                       {formatMinutesToHours(session.duration_minutes)}
-                                    </span>
-                                  </div>
-                          </div>
+              </span>
+            </div>
+          </div>
                           <div>
                                   <button 
                                     onClick={() => handleStartSession(session)}
@@ -901,9 +901,9 @@ export default function EstudosPage() {
                                     <Clock className="h-4 w-4 mr-1" />
                                     Iniciar
                                   </button>
-                                </div>
-                              </div>
-                            </div>
+        </div>
+                  </div>
+                </div>
                           ))}
                         </div>
                       </div>
@@ -915,23 +915,23 @@ export default function EstudosPage() {
                   <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-3" />
                   <h3 className="text-lg font-medium text-gray-900 mb-1">Nenhuma sessão agendada</h3>
                   <p className="text-gray-500 mb-4 max-w-md mx-auto">Agende sua primeira sessão de estudos para começar a organizar seu tempo de forma eficiente</p>
-                    <button 
+                <button 
                     onClick={handleNewSessionClick}
                     className="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all inline-flex items-center hover:scale-105"
-                    >
+                >
                     <Plus className="h-4 w-4 mr-1" />
                     Agendar Sessão
-                    </button>
+                </button>
                   </div>
                 )}
-          </div>
-          
+              </div>
+              
             {/* Sessões Completadas */}
             <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 transition-all hover:shadow-lg">
               <div className="flex items-center mb-6">
                 <div className="p-2 bg-green-100 rounded-lg mr-3">
                   <CheckCircle className="h-5 w-5 text-green-600" />
-                </div>
+                          </div>
                 <h2 className="text-xl font-semibold text-gray-900">Sessões Completadas</h2>
               </div>
               
@@ -944,8 +944,8 @@ export default function EstudosPage() {
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
                       <div className="flex justify-between">
-                        <div>
-                          <h3 className="font-medium text-gray-800">{session.title}</h3>
+                          <div>
+                            <h3 className="font-medium text-gray-800">{session.title}</h3>
                           <p className="text-sm text-gray-500 mt-1">
                             {formatDate(session.scheduled_date || '')} • 
                             {session.actual_duration_minutes 
@@ -957,12 +957,12 @@ export default function EstudosPage() {
                         <div className="flex items-center">
                           <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-md">
                             Concluída
-                            </span>
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
                   ))}
-                </div>
+                      </div>
               ) : (
                 <div className="text-center py-6 bg-gray-50 rounded-lg animate-fade-in">
                   <p className="text-gray-500">Nenhuma sessão de estudo completada</p>
@@ -971,16 +971,16 @@ export default function EstudosPage() {
               
               {completedSessions.length > 5 && (
                 <div className="mt-4 text-center pt-2 border-t border-gray-100">
-                  <button 
+                        <button 
                     onClick={handleOpenHistoryModal}
                     className="text-blue-600 hover:text-blue-800 text-sm font-medium inline-flex items-center transition-all hover:translate-x-1"
-                  >
+                        >
                     Ver histórico completo <ArrowRight className="h-4 w-4 ml-1" />
-                  </button>
-                </div>
+                        </button>
+                      </div>
               )}
-            </div>
-          </div>
+                    </div>
+                    </div>
           
           {/* Sidebar - 1/3 da tela */}
           <div className="space-y-6">
@@ -1000,15 +1000,15 @@ export default function EstudosPage() {
                   Inicie uma sessão de estudo rápida sem agendamento para registrar seu progresso.
                 </p>
                 
-                <button
+                    <button 
                   onClick={handleQuickSessionClick}
                   className="w-full py-3 px-4 bg-white text-blue-700 rounded-lg font-medium hover:bg-blue-50 transition-all flex items-center justify-center shadow-sm hover:shadow hover:scale-105"
-                >
+                    >
                   <Clock className="h-4 w-4 mr-2" />
                   Iniciar Sessão Rápida
-                </button>
+                    </button>
+                  </div>
               </div>
-            </div>
             
             {/* Dicas de Estudo */}
             <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 transition-all hover:shadow-lg">
@@ -1022,20 +1022,20 @@ export default function EstudosPage() {
                   <p className="text-sm text-blue-800">
                     Sessões de 25-30 minutos com pausas de 5 minutos (Técnica Pomodoro) podem aumentar sua concentração.
                   </p>
-                </div>
+            </div>
                 
                 <div className="p-3 bg-green-50 rounded-lg hover:shadow-sm transition-all hover:scale-102 hover:bg-green-100/50">
                   <p className="text-sm text-green-800">
                     Alternar entre diferentes matérias na mesma sessão pode melhorar a retenção de conteúdo.
                   </p>
-                    </div>
-                
+          </div>
+          
                 <div className="p-3 bg-purple-50 rounded-lg hover:shadow-sm transition-all hover:scale-102 hover:bg-purple-100/50">
                   <p className="text-sm text-purple-800">
                     Revisitar o mesmo conteúdo em intervalos crescentes (1 dia, 3 dias, 1 semana) fortalece a memória de longo prazo.
                     </p>
                   </div>
-              </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1055,16 +1055,16 @@ export default function EstudosPage() {
                 className="text-gray-400 hover:text-gray-500 transition-colors"
               >
                 <CloseIcon className="h-5 w-5" />
-              </button>
-            </div>
-            
+                </button>
+              </div>
+              
             {/* Barra de pesquisa e filtros */}
             <div className="p-4 border-b">
               <div className="flex flex-col md:flex-row gap-3">
                 <div className="relative flex-1">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Search className="h-4 w-4 text-gray-400" />
-                  </div>
+                        </div>
                   <input
                     type="text"
                     placeholder="Buscar por título, disciplina ou notas..."
@@ -1072,7 +1072,7 @@ export default function EstudosPage() {
                     onChange={handleHistorySearchChange}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
-                </div>
+                          </div>
                 
                 {/* Botão de ordenação */}
                 <button 
@@ -1092,8 +1092,8 @@ export default function EstudosPage() {
                     </>
                   )}
                 </button>
-              </div>
-            </div>
+                              </div>
+                            </div>
             
             {/* Lista de sessões */}
             <div className="flex-1 overflow-y-auto p-4">
@@ -1107,7 +1107,7 @@ export default function EstudosPage() {
                           <CalendarDays className="h-4 w-4 mr-1" />
                           {formatDate(session.scheduled_date || session.created_at || '')}
                         </span>
-                      </div>
+                          </div>
                       
                       <div className="flex flex-wrap gap-3 mb-2">
                         {session.disciplineName && (
@@ -1127,13 +1127,13 @@ export default function EstudosPage() {
                             Concluída
                           </span>
                         )}
-                      </div>
+                        </div>
                       
                       {session.notes && (
                         <div className="mt-2 text-sm text-gray-600 flex items-start">
                           <FileText className="h-4 w-4 mr-1 mt-0.5 flex-shrink-0" />
                           <p className="line-clamp-2">{session.notes}</p>
-                        </div>
+                      </div>
                       )}
                     </div>
                   ))}
@@ -1142,31 +1142,31 @@ export default function EstudosPage() {
                 <div className="text-center py-10">
                   <div className="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
                     <History className="h-8 w-8 text-gray-400" />
-                  </div>
+                    </div>
                   <h3 className="text-lg font-medium text-gray-700 mb-1">Nenhuma sessão encontrada</h3>
                   <p className="text-gray-500">
                     {historySearchTerm 
                       ? "Tente modificar sua busca para encontrar mais resultados."
                       : "Você ainda não completou nenhuma sessão de estudo."}
-                  </p>
-                </div>
-              )}
-            </div>
+                    </p>
+                  </div>
+                )}
+              </div>
             
             <div className="p-4 border-t flex flex-col md:flex-row justify-between items-center gap-2">
               <div className="text-sm text-gray-500">
                 Total: {filteredHistory.length} {filteredHistory.length === 1 ? 'sessão' : 'sessões'} completada{filteredHistory.length !== 1 ? 's' : ''}
-              </div>
+            </div>
               
               <div className="text-sm font-medium text-blue-600 flex items-center">
                 <Clock className="h-4 w-4 mr-1" />
                 Tempo total: {calculateTotalHoursFiltered()}
-              </div>
-            </div>
+          </div>
+        </div>
           </div>
         </div>
       )}
-      
+
       {/* Modais */}
         <StudySessionModal 
         isOpen={isSessionModalOpen}
@@ -1202,8 +1202,8 @@ export default function EstudosPage() {
           disciplineName={activeQuickSession.disciplineName}
           onComplete={handleCompleteQuickSession}
           onCancel={handleCancelQuickSession}
-        />
-      )}
+          />
+        )}
       </div>
   );
 } 

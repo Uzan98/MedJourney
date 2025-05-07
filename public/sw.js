@@ -84,10 +84,10 @@ self.addEventListener('fetch', event => {
       console.log('[Service Worker] Interceptando solicitação Supabase:', request.url);
       
       // Deixar a solicitação original passar primeiro
-      event.respondWith(
+    event.respondWith(
         fetch(request.clone())
-          .then(response => {
-            if (response.ok) {
+      .then(response => {
+        if (response.ok) {
               return response;
             }
             
@@ -139,10 +139,10 @@ self.addEventListener('fetch', event => {
     caches.match(request)
       .then((cachedResponse) => {
         // Se o recurso estiver em cache, retorne-o
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        
+  if (cachedResponse) {
+    return cachedResponse;
+  }
+
         // Caso contrário, busque da rede
         return fetch(request)
           .then((networkResponse) => {

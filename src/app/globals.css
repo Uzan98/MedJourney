@@ -101,6 +101,22 @@ body {
   animation: fadeIn 0.2s ease-out forwards;
 }
 
+/* Adicionando animação de fade-in para dropdowns */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out forwards;
+}
+
 /* Adicionando estilos para scrollbar personalizada */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;

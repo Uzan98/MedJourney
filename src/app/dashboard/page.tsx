@@ -24,7 +24,12 @@ import {
   ChevronLeft,
   ChevronRight,
   PlusCircle,
-  BarChart2
+  BarChart2,
+  User,
+  Settings,
+  LogOut,
+  ChevronDown,
+  Bell
 } from 'lucide-react';
 import QuickStudySessionModal from '@/components/estudos/QuickStudySessionModal';
 
@@ -77,6 +82,7 @@ export default function DashboardPage() {
     weekDays: []
   });
   const [isStudySessionModalOpen, setIsStudySessionModalOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   
   // Carregar dados do dashboard
   useEffect(() => {
@@ -222,6 +228,25 @@ export default function DashboardPage() {
       toast.error('Erro ao fazer logout');
     }
   };
+  
+  const handleProfileToggle = () => {
+    setIsProfileOpen(!isProfileOpen);
+  };
+
+  // Função para fechar o dropdown quando clicar fora dele
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('#profile-dropdown') && !target.closest('#profile-button')) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
   
   // Renderizar gráfico de barras horizontais para estudo por disciplina
   const renderStudyByDisciplineChart = () => {
@@ -429,12 +454,78 @@ export default function DashboardPage() {
                 Olá, {user?.user_metadata?.name || user?.email || 'Usuário'}
               </p>
             </div>
+            <div className="flex items-center space-x-4">
+              {/* Icone de Notificações */}
+              <button className="relative p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors">
+                <Bell className="h-5 w-5 text-white" />
+                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-indigo-700"></span>
+              </button>
+              
+              {/* Dropdown de Perfil */}
+              <div className="relative">
+                <button 
+                  id="profile-button"
+                  onClick={handleProfileToggle}
+                  className="flex items-center space-x-2 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                >
+                  <div className="h-8 w-8 rounded-full bg-blue-400 flex items-center justify-center overflow-hidden">
+                    {user?.user_metadata?.avatar_url ? (
+                      <img 
+                        src={user.user_metadata.avatar_url} 
+                        alt="Avatar" 
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-5 w-5 text-white" />
+                    )}
+                  </div>
+                  <ChevronDown className={`h-4 w-4 text-white transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {isProfileOpen && (
+                  <div 
+                    id="profile-dropdown"
+                    className="absolute right-0 mt-2 w-60 bg-white rounded-lg shadow-lg py-2 z-50 animate-fade-in"
+                  >
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="text-sm font-medium text-gray-900">
+                        {user?.user_metadata?.name || 'Usuário'}
+                      </p>
+                      <p className="text-sm text-gray-500 truncate">
+                        {user?.email || ''}
+                      </p>
+                    </div>
+                    
+                    <div className="py-1">
+                      <Link 
+                        href="/perfil" 
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <User className="h-4 w-4 mr-3 text-gray-500" />
+                        Meu Perfil
+                      </Link>
+                      <Link 
+                        href="/configuracoes" 
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <Settings className="h-4 w-4 mr-3 text-gray-500" />
+                        Configurações
+                      </Link>
+                    </div>
+                    
+                    <div className="py-1 border-t border-gray-100">
             <button 
               onClick={handleSignOut}
-              className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-md transition-colors"
+                        className="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
             >
+                        <LogOut className="h-4 w-4 mr-3 text-red-500" />
               Sair
             </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
           
           {/* Cards de estatísticas */}
