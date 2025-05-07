@@ -42,6 +42,9 @@ export default function BancoQuestoesPage() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   
+  // Estados para exclusão
+  const [deleting, setDeleting] = useState<number | null>(null);
+  
   // Carregar dados iniciais
   useEffect(() => {
     loadData();
@@ -180,24 +183,30 @@ export default function BancoQuestoesPage() {
   
   // Função para excluir questão
   const handleDeleteQuestion = async (id: number) => {
-    if (window.confirm('Tem certeza que deseja excluir esta questão?')) {
-      try {
-        // Em um ambiente de produção, chamaríamos o serviço
+    if (!window.confirm('Tem certeza que deseja excluir esta questão? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+    
+    setDeleting(id);
+    try {
+      // Em um ambiente real, chamaríamos a API
         // const success = await QuestionsBankService.deleteQuestion(id);
         
-        // Para desenvolvimento, simulamos o sucesso
+      // Para desenvolvimento, simulamos sucesso
         const success = true;
         
         if (success) {
+        // Remover a questão da lista local
           setQuestions(questions.filter(q => q.id !== id));
           toast.success('Questão excluída com sucesso');
         } else {
-          toast.error('Não foi possível excluir a questão');
+        toast.error('Erro ao excluir questão');
         }
       } catch (error) {
         console.error('Erro ao excluir questão:', error);
         toast.error('Ocorreu um erro ao excluir a questão');
-      }
+    } finally {
+      setDeleting(null);
     }
   };
   
@@ -254,32 +263,45 @@ export default function BancoQuestoesPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Cabeçalho */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-            <FileText className="h-6 w-6 mr-2 text-blue-600" />
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 mb-8 shadow-lg">
+        <div className="flex flex-col md:flex-row justify-between items-center">
+          <div className="text-white mb-6 md:mb-0">
+            <h1 className="text-3xl font-bold flex items-center">
+              <FileText className="h-8 w-8 mr-3" />
             Banco de Questões
           </h1>
-          <p className="text-gray-600 mt-1">
-            Gerencie suas questões para estudos e simulados
-          </p>
+            <p className="mt-2 text-blue-100 max-w-xl">
+              Organize e gerencie suas questões para estudos. Crie, edite e pratique para aprimorar seu conhecimento médico.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <div className="bg-blue-500/30 px-4 py-2 rounded-lg flex items-center text-sm backdrop-blur-sm">
+                <div className="h-2 w-2 bg-green-400 rounded-full mr-2"></div>
+                <span>{filteredQuestions.length} questões disponíveis</span>
+              </div>
+              <div className="bg-blue-500/30 px-4 py-2 rounded-lg flex items-center text-sm backdrop-blur-sm">
+                <div className="h-2 w-2 bg-yellow-400 rounded-full mr-2"></div>
+                <span>{disciplines.length} disciplinas</span>
+              </div>
+            </div>
         </div>
         
-        <div className="mt-4 md:mt-0">
           <Link href="/banco-questoes/nova-questao" 
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-            <Plus className="h-5 w-5 mr-2" />
-            Nova Questão
+                className="group flex items-center px-6 py-3 bg-white text-blue-700 rounded-xl hover:bg-blue-50 transition-all shadow-md hover:shadow-xl">
+            <div className="bg-blue-100 p-2 rounded-lg mr-3 group-hover:bg-blue-200 transition-colors">
+              <Plus className="h-5 w-5" />
+            </div>
+            <span className="font-semibold">Nova Questão</span>
           </Link>
         </div>
       </div>
 
       {/* Filtros e barra de pesquisa */}
-      <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+      <div className="bg-white rounded-xl shadow-md mb-8 overflow-hidden">
+        <div className="p-5 border-b border-gray-100">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-gray-400" />
             </div>
             <input
@@ -287,52 +309,53 @@ export default function BancoQuestoesPage() {
               placeholder="Pesquisar questões..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                className="pl-12 pr-4 py-3 w-full border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             />
           </div>
 
           <div className="flex space-x-2">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Filtros
-              <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+                className="px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 flex items-center transition-colors"
+              >
+                <Filter className="h-5 w-5 mr-2 text-blue-600" />
+                <span className="text-gray-700">Filtros</span>
+                <ChevronDown className={`ml-2 h-4 w-4 text-gray-500 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
             </button>
             
             <button
               onClick={toggleSortOrder}
-              className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                className="px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
               title={sortOrder === 'newest' ? 'Mais recentes primeiro' : 'Mais antigas primeiro'}
             >
               {sortOrder === 'newest' ? (
-                <SortDesc className="h-5 w-5 text-gray-500" />
+                  <SortDesc className="h-5 w-5 text-blue-600" />
               ) : (
-                <SortAsc className="h-5 w-5 text-gray-500" />
+                  <SortAsc className="h-5 w-5 text-blue-600" />
               )}
             </button>
             
             <button
               onClick={loadData}
-              className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                className="px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
               title="Atualizar"
             >
-              <RefreshCw className="h-5 w-5 text-gray-500" />
+                <RefreshCw className="h-5 w-5 text-blue-600" />
             </button>
+            </div>
           </div>
         </div>
         
         {/* Filtros expandidos */}
         {showFilters && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="p-5 bg-gray-50 border-t border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Disciplina</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Disciplina</label>
                 <select
                   value={selectedDiscipline?.toString() || ''}
                   onChange={handleDisciplineChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Todas as disciplinas</option>
                   {disciplines.map(discipline => (
@@ -344,11 +367,11 @@ export default function BancoQuestoesPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Assunto</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Assunto</label>
                 <select
                   value={selectedSubject?.toString() || ''}
                   onChange={(e) => setSelectedSubject(e.target.value ? parseInt(e.target.value) : null)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   disabled={!selectedDiscipline || subjects.length === 0}
                 >
                   <option value="">Todos os assuntos</option>
@@ -361,11 +384,11 @@ export default function BancoQuestoesPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Dificuldade</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Dificuldade</label>
                 <select
                   value={selectedDifficulty || ''}
                   onChange={(e) => setSelectedDifficulty(e.target.value || null)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Todas as dificuldades</option>
                   <option value="baixa">Baixa</option>
@@ -375,11 +398,11 @@ export default function BancoQuestoesPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Questão</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Questão</label>
                 <select
                   value={selectedType || ''}
                   onChange={(e) => setSelectedType(e.target.value || null)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Todos os tipos</option>
                   <option value="multiple_choice">Múltipla Escolha</option>
@@ -389,10 +412,10 @@ export default function BancoQuestoesPage() {
               </div>
             </div>
             
-            <div className="flex justify-end mt-4">
+            <div className="flex justify-end mt-5">
               <button
                 onClick={clearFilters}
-                className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
               >
                 Limpar filtros
               </button>
@@ -404,114 +427,117 @@ export default function BancoQuestoesPage() {
       {/* Lista de questões */}
       <div className="space-y-6">
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="flex flex-col items-center justify-center h-64 bg-white rounded-xl shadow-md">
+            <div className="animate-spin rounded-full h-14 w-14 border-4 border-blue-500 border-t-transparent mb-3"></div>
+            <p className="text-gray-600 font-medium">Carregando questões...</p>
           </div>
         ) : filteredQuestions.length === 0 ? (
-          <div className="text-center py-16 bg-gray-50 rounded-lg">
-            <FileText className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-4 text-lg font-medium text-gray-900">Nenhuma questão encontrada</h3>
-            <p className="mt-2 text-sm text-gray-500">
+          <div className="text-center py-16 bg-white rounded-xl shadow-md">
+            <div className="bg-blue-100 h-24 w-24 rounded-full flex items-center justify-center mx-auto">
+              <FileText className="h-12 w-12 text-blue-600" />
+            </div>
+            <h3 className="mt-6 text-xl font-medium text-gray-900">Nenhuma questão encontrada</h3>
+            <p className="mt-2 text-gray-500 max-w-md mx-auto">
               {searchTerm || selectedDiscipline || selectedSubject || selectedDifficulty || selectedType
                 ? 'Tente ajustar os filtros para encontrar questões.'
                 : 'Comece adicionando sua primeira questão ao banco.'}
             </p>
             <Link 
               href="/banco-questoes/nova-questao"
-              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+              className="mt-6 inline-flex items-center px-5 py-3 border border-transparent rounded-xl shadow-md text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all"
             >
               <Plus className="h-5 w-5 mr-2" />
               Nova Questão
             </Link>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Questão
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tipo
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Disciplina
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Dificuldade
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Data
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ações
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+          <div>
+            <div className="p-4 bg-blue-50 rounded-xl mb-4 flex flex-col sm:flex-row justify-between items-center">
+              <p className="text-blue-700 font-medium mb-2 sm:mb-0">
+                <span className="font-bold">{filteredQuestions.length}</span> questões encontradas
+              </p>
+              <div className="text-sm text-blue-600">
+                {selectedDiscipline && <span className="px-3 py-1 bg-blue-100 rounded-full mr-2">Disciplina filtrada</span>}
+                {selectedSubject && <span className="px-3 py-1 bg-blue-100 rounded-full mr-2">Assunto filtrado</span>}
+                {selectedDifficulty && <span className="px-3 py-1 bg-blue-100 rounded-full mr-2">Dificuldade: {selectedDifficulty}</span>}
+                {selectedType && <span className="px-3 py-1 bg-blue-100 rounded-full">Tipo: {getQuestionTypeLabel(selectedType)}</span>}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {filteredQuestions.map((question) => (
-                    <tr key={question.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900 line-clamp-2">{question.content}</div>
-                        {question.tags && question.tags.length > 0 && (
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {question.tags.map((tag, idx) => (
-                              <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                {tag}
-                              </span>
-                            ))}
+                <div 
+                  key={question.id} 
+                  className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow border border-gray-100"
+                >
+                  <div className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center mb-3">
+                        <div className={`w-3 h-3 rounded-full mr-2 ${
+                          question.difficulty === 'baixa' ? 'bg-green-500' : 
+                          question.difficulty === 'média' ? 'bg-yellow-500' : 'bg-red-500'
+                        }`}></div>
+                        <span className="text-xs font-medium text-gray-500 uppercase">{getQuestionTypeLabel(question.question_type)}</span>
                           </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-900">
-                          {getQuestionTypeLabel(question.question_type)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-900">
-                          {getDisciplineName(question.discipline_id)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getDifficultyColor(question.difficulty)}`}>
-                          {question.difficulty}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(question.created_at)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end space-x-2">
+                      <div className="flex space-x-1">
                           <Link
                             href={`/banco-questoes/questao/${question.id}`}
-                            className="text-blue-600 hover:text-blue-900 p-1"
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           >
                             <Eye className="h-4 w-4" />
-                            <span className="sr-only">Ver</span>
                           </Link>
                           <Link
                             href={`/banco-questoes/questao/${question.id}/editar`}
-                            className="text-indigo-600 hover:text-indigo-900 p-1"
+                          className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                           >
                             <Edit className="h-4 w-4" />
-                            <span className="sr-only">Editar</span>
                           </Link>
                           <button
                             onClick={() => question.id && handleDeleteQuestion(question.id)}
-                            className="text-red-600 hover:text-red-900 p-1"
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            disabled={deleting === question.id}
                           >
+                            {deleting === question.id ? (
+                              <div className="animate-spin h-4 w-4 border-2 border-red-500 border-t-transparent rounded-full"></div>
+                            ) : (
                             <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Excluir</span>
+                            )}
                           </button>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <h3 className="text-gray-800 font-medium line-clamp-2 text-base">{question.content}</h3>
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center justify-between mt-4">
+                      <div className="flex items-center text-gray-500 text-sm">
+                        <Book className="h-4 w-4 mr-1.5" />
+                        <span>{getDisciplineName(question.discipline_id)}</span>
+                      </div>
+                      
+                      <div className="text-gray-400 text-xs">
+                        {formatDate(question.created_at)}
+                      </div>
+                    </div>
+                    
+                    {question.tags && question.tags.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <div className="flex flex-wrap gap-1.5">
+                          {question.tags.map((tag, idx) => (
+                            <span 
+                              key={idx} 
+                              className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
