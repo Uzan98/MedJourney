@@ -86,6 +86,11 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       path: "/banco-questoes",
       label: "Banco de Questões",
       icon: <FileQuestion className="h-5 w-5 flex-shrink-0" />
+    },
+    {
+      path: "/simulados",
+      label: "Simulados",
+      icon: <ClipboardList className="h-5 w-5 flex-shrink-0" />
     }
   ];
 
@@ -451,4 +456,4 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   );
 };
 
-export default AppLayout; 
+export default AppLayout;
