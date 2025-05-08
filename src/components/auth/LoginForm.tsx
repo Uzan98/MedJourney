@@ -12,33 +12,38 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loginSuccess, setLoginSuccess] = useState(false);
+  const [redirectPath, setRedirectPath] = useState('/dashboard');
   
   const { signIn, isAuthenticated } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  // Obter URL de redirecionamento dos parâmetros da URL ou usar o dashboard por padrão
-  const redirectTo = searchParams?.get('redirectTo') || searchParams?.get('redirect') || '/dashboard';
+  // Efeito para obter os parâmetros de URL de forma segura depois que o componente montar
+  useEffect(() => {
+    // Obter URL de redirecionamento dos parâmetros da URL ou usar o dashboard por padrão
+    const redirect = searchParams?.get('redirectTo') || searchParams?.get('redirect') || '/dashboard';
+    setRedirectPath(redirect);
+  }, [searchParams]);
 
   // Verifique se já está autenticado e redirecione
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('Usuário já autenticado, redirecionando para:', redirectTo);
+      console.log('Usuário já autenticado, redirecionando para:', redirectPath);
       toast.success('Você já está autenticado!');
-      router.push(redirectTo);
+      router.push(redirectPath);
     }
-  }, [isAuthenticated, redirectTo, router]);
+  }, [isAuthenticated, redirectPath, router]);
 
   // Efeito para lidar com o sucesso do login
   useEffect(() => {
     if (loginSuccess) {
-      console.log('Efetuando redirecionamento após login com sucesso para:', redirectTo);
+      console.log('Efetuando redirecionamento após login com sucesso para:', redirectPath);
       // Pequeno atraso para garantir que cookies sejam definidos
       setTimeout(() => {
-        router.push(redirectTo);
+        router.push(redirectPath);
       }, 1000);
     }
-  }, [loginSuccess, redirectTo, router]);
+  }, [loginSuccess, redirectPath, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +63,7 @@ export default function LoginForm() {
       console.log('Resultado do login:', { success, error });
       
       if (success) {
-        console.log('Login bem-sucedido! Redirecionando para:', redirectTo);
+        console.log('Login bem-sucedido! Redirecionando para:', redirectPath);
         toast.success('Login realizado com sucesso!');
         setLoginSuccess(true);
       } else {

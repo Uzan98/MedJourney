@@ -141,7 +141,7 @@ export class ExamsService {
         throw error;
       }
       
-      return data as ExamQuestion[];
+      return (data as unknown) as ExamQuestion[];
     } catch (error) {
       console.error(`Erro ao buscar questões do simulado ${examId}:`, error);
       return [];
@@ -661,9 +661,24 @@ export class ExamsService {
         if (question.discipline_id && question.disciplines) {
           const disciplineId = question.discipline_id;
           if (!disciplineMap[disciplineId]) {
+            // Abordagem mais segura para acessar o nome da disciplina
+            let disciplineName = 'Disciplina';
+            
+            try {
+              if (typeof question.disciplines === 'object') {
+                if (Array.isArray(question.disciplines) && question.disciplines.length > 0) {
+                  disciplineName = question.disciplines[0]?.name || 'Disciplina';
+                } else if (question.disciplines && 'name' in question.disciplines) {
+                  disciplineName = (question.disciplines as any).name || 'Disciplina';
+                }
+              }
+            } catch (e) {
+              console.error('Erro ao acessar nome da disciplina:', e);
+            }
+            
             disciplineMap[disciplineId] = {
               id: disciplineId,
-              name: question.disciplines.name,
+              name: disciplineName,
               total: 0,
               correct: 0
             };
@@ -768,9 +783,24 @@ export class ExamsService {
         if (question.discipline_id && question.disciplines) {
           const disciplineId = question.discipline_id;
           if (!disciplineMap[disciplineId]) {
+            // Abordagem mais segura para acessar o nome da disciplina
+            let disciplineName = 'Disciplina';
+            
+            try {
+              if (typeof question.disciplines === 'object') {
+                if (Array.isArray(question.disciplines) && question.disciplines.length > 0) {
+                  disciplineName = question.disciplines[0]?.name || 'Disciplina';
+                } else if (question.disciplines && 'name' in question.disciplines) {
+                  disciplineName = (question.disciplines as any).name || 'Disciplina';
+                }
+              }
+            } catch (e) {
+              console.error('Erro ao acessar nome da disciplina:', e);
+            }
+            
             disciplineMap[disciplineId] = {
               id: disciplineId,
-              name: question.disciplines.name,
+              name: disciplineName,
               total: 0,
               correct: 0
             };
