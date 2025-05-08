@@ -6,22 +6,18 @@ import { QuestionsBankService, Question } from '@/services/questions-bank.servic
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 import { Discipline, Subject } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
+import Link from 'next/link';
 import { 
   Search, 
   Plus, 
   Filter, 
-  Edit, 
-  Trash2, 
-  Eye,
   FileText, 
-  Book, 
-  Tag,
   ChevronDown,
   RefreshCw,
   SortAsc,
   SortDesc
 } from 'lucide-react';
-import Link from 'next/link';
+import QuestionCard from '@/components/banco-questoes/QuestionCard';
 
 export default function BancoQuestoesPage() {
   const { user } = useAuth();
@@ -66,16 +62,24 @@ export default function BancoQuestoesPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Buscar questões reais do banco de dados em vez de usar dados mockados
-      const questionsData = await QuestionsBankService.getUserQuestions();
-      
-      // Se não houver questões reais, podemos usar mockadas para demonstração
-      if (questionsData && questionsData.length > 0) {
-        setQuestions(questionsData);
-        console.log('Carregou questões reais:', questionsData.length);
+      // Verificar se as tabelas existem
+      const tablesExist = await QuestionsBankService.checkTablesExist();
+
+      // Buscar questões reais do banco de dados ou usar dados mockados para demonstração
+      if (tablesExist) {
+        const questionsData = await QuestionsBankService.getUserQuestions();
+        
+        if (questionsData && questionsData.length > 0) {
+          setQuestions(questionsData);
+          console.log('Carregou questões reais:', questionsData.length);
+        } else {
+          // Para desenvolvimento, usamos dados de exemplo se não houver questões reais
+          console.log('Nenhuma questão encontrada, usando dados mock para demo');
+          const mockData = QuestionsBankService.getMockQuestions();
+          setQuestions(mockData);
+        }
       } else {
-        // Para desenvolvimento, usamos dados de exemplo
-        console.log('Nenhuma questão encontrada, usando dados mock para demo');
+        console.log('Tabelas não encontradas, usando dados mock para demo');
         const mockData = QuestionsBankService.getMockQuestions();
         setQuestions(mockData);
       }
@@ -93,6 +97,10 @@ export default function BancoQuestoesPage() {
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       toast.error('Erro ao carregar dados');
+      
+      // Carregar dados mockados em caso de erro
+      const mockData = QuestionsBankService.getMockQuestions();
+      setQuestions(mockData);
     } finally {
       setLoading(false);
     }
@@ -105,6 +113,7 @@ export default function BancoQuestoesPage() {
       setSubjects(subjectsData || []);
     } catch (error) {
       console.error('Erro ao carregar assuntos:', error);
+      setSubjects([]);
     }
   };
   
@@ -132,7 +141,15 @@ export default function BancoQuestoesPage() {
     
     // Filtrar por dificuldade
     if (selectedDifficulty) {
-      filtered = filtered.filter(q => q.difficulty === selectedDifficulty);
+      // Normalizar a dificuldade para lidar com 'média' e 'media'
+      filtered = filtered.filter(q => {
+        const qDiff = q.difficulty?.toLowerCase();
+        const filterDiff = selectedDifficulty.toLowerCase();
+        
+        return qDiff === filterDiff ||
+              (qDiff === 'média' && filterDiff === 'media') ||
+              (qDiff === 'media' && filterDiff === 'média');
+      });
     }
     
     // Filtrar por tipo de questão
@@ -189,40 +206,20 @@ export default function BancoQuestoesPage() {
     
     setDeleting(id);
     try {
-      // Em um ambiente real, chamaríamos a API
-        // const success = await QuestionsBankService.deleteQuestion(id);
-        
-      // Para desenvolvimento, simulamos sucesso
-        const success = true;
-        
-        if (success) {
+      const success = await QuestionsBankService.deleteQuestion(id);
+      
+      if (success) {
         // Remover a questão da lista local
-          setQuestions(questions.filter(q => q.id !== id));
-          toast.success('Questão excluída com sucesso');
-        } else {
+        setQuestions(questions.filter(q => q.id !== id));
+        toast.success('Questão excluída com sucesso');
+      } else {
         toast.error('Erro ao excluir questão');
-        }
-      } catch (error) {
-        console.error('Erro ao excluir questão:', error);
-        toast.error('Ocorreu um erro ao excluir a questão');
+      }
+    } catch (error) {
+      console.error('Erro ao excluir questão:', error);
+      toast.error('Ocorreu um erro ao excluir a questão');
     } finally {
       setDeleting(null);
-    }
-  };
-  
-  // Função para formatar a data
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '';
-    
-    try {
-      const date = new Date(dateString);
-      return new Intl.DateTimeFormat('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      }).format(date);
-    } catch (error) {
-      return '';
     }
   };
   
@@ -231,34 +228,6 @@ export default function BancoQuestoesPage() {
     if (!id) return 'Sem disciplina';
     const discipline = disciplines.find(d => d.id === id);
     return discipline ? discipline.name : 'Disciplina não encontrada';
-  };
-  
-  // Função para obter a cor da dificuldade
-  const getDifficultyColor = (difficulty?: string) => {
-    switch (difficulty) {
-      case 'baixa':
-        return 'bg-green-100 text-green-800';
-      case 'média':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'alta':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-  
-  // Função para obter o label do tipo de questão
-  const getQuestionTypeLabel = (type?: string) => {
-    switch (type) {
-      case 'multiple_choice':
-        return 'Múltipla Escolha';
-      case 'true_false':
-        return 'Verdadeiro/Falso';
-      case 'essay':
-        return 'Dissertativa';
-      default:
-        return 'Outro';
-    }
   };
 
   return (
@@ -269,8 +238,8 @@ export default function BancoQuestoesPage() {
           <div className="text-white mb-6 md:mb-0">
             <h1 className="text-3xl font-bold flex items-center">
               <FileText className="h-8 w-8 mr-3" />
-            Banco de Questões
-          </h1>
+              Banco de Questões
+            </h1>
             <p className="mt-2 text-blue-100 max-w-xl">
               Organize e gerencie suas questões para estudos. Crie, edite e pratique para aprimorar seu conhecimento médico.
             </p>
@@ -284,8 +253,8 @@ export default function BancoQuestoesPage() {
                 <span>{disciplines.length} disciplinas</span>
               </div>
             </div>
-        </div>
-        
+          </div>
+          
           <Link href="/banco-questoes/nova-questao" 
                 className="group flex items-center px-6 py-3 bg-white text-blue-700 rounded-xl hover:bg-blue-50 transition-all shadow-md hover:shadow-xl">
             <div className="bg-blue-100 p-2 rounded-lg mr-3 group-hover:bg-blue-200 transition-colors">
@@ -299,49 +268,49 @@ export default function BancoQuestoesPage() {
       {/* Filtros e barra de pesquisa */}
       <div className="bg-white rounded-xl shadow-md mb-8 overflow-hidden">
         <div className="p-5 border-b border-gray-100">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Pesquisar questões..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Pesquisar questões..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-12 pr-4 py-3 w-full border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-            />
-          </div>
+              />
+            </div>
 
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
                 className="px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 flex items-center transition-colors"
               >
                 <Filter className="h-5 w-5 mr-2 text-blue-600" />
                 <span className="text-gray-700">Filtros</span>
                 <ChevronDown className={`ml-2 h-4 w-4 text-gray-500 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-            </button>
-            
-            <button
-              onClick={toggleSortOrder}
+              </button>
+              
+              <button
+                onClick={toggleSortOrder}
                 className="px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-              title={sortOrder === 'newest' ? 'Mais recentes primeiro' : 'Mais antigas primeiro'}
-            >
-              {sortOrder === 'newest' ? (
+                title={sortOrder === 'newest' ? 'Mais recentes primeiro' : 'Mais antigas primeiro'}
+              >
+                {sortOrder === 'newest' ? (
                   <SortDesc className="h-5 w-5 text-blue-600" />
-              ) : (
+                ) : (
                   <SortAsc className="h-5 w-5 text-blue-600" />
-              )}
-            </button>
-            
-            <button
-              onClick={loadData}
+                )}
+              </button>
+              
+              <button
+                onClick={loadData}
                 className="px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-              title="Atualizar"
-            >
+                title="Atualizar"
+              >
                 <RefreshCw className="h-5 w-5 text-blue-600" />
-            </button>
+              </button>
             </div>
           </div>
         </div>
@@ -460,83 +429,23 @@ export default function BancoQuestoesPage() {
                 {selectedDiscipline && <span className="px-3 py-1 bg-blue-100 rounded-full mr-2">Disciplina filtrada</span>}
                 {selectedSubject && <span className="px-3 py-1 bg-blue-100 rounded-full mr-2">Assunto filtrado</span>}
                 {selectedDifficulty && <span className="px-3 py-1 bg-blue-100 rounded-full mr-2">Dificuldade: {selectedDifficulty}</span>}
-                {selectedType && <span className="px-3 py-1 bg-blue-100 rounded-full">Tipo: {getQuestionTypeLabel(selectedType)}</span>}
+                {selectedType && (
+                  <span className="px-3 py-1 bg-blue-100 rounded-full">
+                    Tipo: {selectedType === 'multiple_choice' ? 'Múltipla Escolha' : 
+                           selectedType === 'true_false' ? 'Verdadeiro/Falso' : 'Dissertativa'}
+                  </span>
+                )}
               </div>
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {filteredQuestions.map((question) => (
-                <div 
-                  key={question.id} 
-                  className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow border border-gray-100"
-                >
-                  <div className="p-6">
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-center mb-3">
-                        <div className={`w-3 h-3 rounded-full mr-2 ${
-                          question.difficulty === 'baixa' ? 'bg-green-500' : 
-                          question.difficulty === 'média' ? 'bg-yellow-500' : 'bg-red-500'
-                        }`}></div>
-                        <span className="text-xs font-medium text-gray-500 uppercase">{getQuestionTypeLabel(question.question_type)}</span>
-                          </div>
-                      <div className="flex space-x-1">
-                          <Link
-                            href={`/banco-questoes/questao/${question.id}`}
-                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Link>
-                          <Link
-                            href={`/banco-questoes/questao/${question.id}/editar`}
-                          className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Link>
-                          <button
-                            onClick={() => question.id && handleDeleteQuestion(question.id)}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            disabled={deleting === question.id}
-                          >
-                            {deleting === question.id ? (
-                              <div className="animate-spin h-4 w-4 border-2 border-red-500 border-t-transparent rounded-full"></div>
-                            ) : (
-                            <Trash2 className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                    </div>
-                    
-                    <div className="mb-4">
-                      <h3 className="text-gray-800 font-medium line-clamp-2 text-base">{question.content}</h3>
-                    </div>
-                    
-                    <div className="flex flex-wrap items-center justify-between mt-4">
-                      <div className="flex items-center text-gray-500 text-sm">
-                        <Book className="h-4 w-4 mr-1.5" />
-                        <span>{getDisciplineName(question.discipline_id)}</span>
-                      </div>
-                      
-                      <div className="text-gray-400 text-xs">
-                        {formatDate(question.created_at)}
-                      </div>
-                    </div>
-                    
-                    {question.tags && question.tags.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-gray-100">
-                        <div className="flex flex-wrap gap-1.5">
-                          {question.tags.map((tag, idx) => (
-                            <span 
-                              key={idx} 
-                              className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+              {filteredQuestions.map((question) => (
+                <QuestionCard
+                  key={question.id}
+                  question={question}
+                  onDelete={handleDeleteQuestion}
+                  disciplineName={getDisciplineName(question.discipline_id)}
+                />
               ))}
             </div>
           </div>

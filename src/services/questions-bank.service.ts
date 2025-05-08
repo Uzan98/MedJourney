@@ -14,10 +14,11 @@ export interface Question {
   tags?: string[];
   created_at?: string;
   updated_at?: string;
+  answer_options?: AnswerOption[]; // Referência às opções de resposta
 }
 
 export interface AnswerOption {
-  id?: number;
+  id?: number | string;
   question_id: number;
   text: string;
   is_correct: boolean;
@@ -69,11 +70,17 @@ export class QuestionsBankService {
         throw error;
       }
       
+      // Carregar as opções de resposta se for uma questão de múltipla escolha ou V/F
+      if (data && (data.question_type === 'multiple_choice' || data.question_type === 'true_false')) {
+        const options = await this.getAnswerOptions(data.id as number);
+        data.answer_options = options;
+      }
+      
       return data;
     } catch (error) {
       console.error(`Erro ao buscar questão ${id}:`, error);
-          return null;
-        }
+      return null;
+    }
   }
   
   /**
@@ -130,7 +137,7 @@ export class QuestionsBankService {
       
       const questionId = data.id;
       
-      // Se houver opções de resposta e for uma questão de múltipla escolha
+      // Se houver opções de resposta e for uma questão de múltipla escolha ou V/F
       if (answerOptions && answerOptions.length > 0 && 
           (question.question_type === 'multiple_choice' || question.question_type === 'true_false')) {
         
@@ -191,7 +198,7 @@ export class QuestionsBankService {
         throw error;
       }
       
-      // Se houver opções de resposta e for uma questão de múltipla escolha
+      // Se houver opções de resposta e for uma questão de múltipla escolha ou V/F
       if (answerOptions && answerOptions.length > 0 && 
           (question.question_type === 'multiple_choice' || question.question_type === 'true_false')) {
         
@@ -319,6 +326,27 @@ export class QuestionsBankService {
   }
   
   /**
+   * Verifica se as tabelas necessárias existem e contêm dados
+   */
+  static async checkTablesExist(): Promise<boolean> {
+    try {
+      const { count, error } = await supabase
+        .from('questions')
+        .select('*', { count: 'exact', head: true });
+      
+      if (error) {
+        console.error('Erro ao verificar tabelas:', error);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erro ao verificar estrutura do banco de dados:', error);
+      return false;
+    }
+  }
+  
+  /**
    * Gera dados de exemplo para o banco de questões
    */
   static getMockQuestions(): Question[] {
@@ -332,7 +360,13 @@ export class QuestionsBankService {
         difficulty: 'média',
         question_type: 'multiple_choice',
         tags: ['hipertensão', 'diabetes', 'tratamento'],
-        created_at: '2025-01-15T10:30:00Z'
+        created_at: '2025-01-15T10:30:00Z',
+        answer_options: [
+          { id: 1, question_id: 1, text: 'IECA ou BRA', is_correct: true },
+          { id: 2, question_id: 1, text: 'Beta-bloqueadores', is_correct: false },
+          { id: 3, question_id: 1, text: 'Bloqueadores de canais de cálcio', is_correct: false },
+          { id: 4, question_id: 1, text: 'Diuréticos tiazídicos', is_correct: false }
+        ]
       },
       {
         id: 2,
@@ -366,7 +400,13 @@ export class QuestionsBankService {
         difficulty: 'média',
         question_type: 'multiple_choice',
         tags: ['neurologia', 'parkinson', 'diagnóstico'],
-        created_at: '2025-02-05T11:20:00Z'
+        created_at: '2025-02-05T11:20:00Z',
+        answer_options: [
+          { id: 5, question_id: 4, text: 'Tremor de repouso', is_correct: false },
+          { id: 6, question_id: 4, text: 'Rigidez', is_correct: false },
+          { id: 7, question_id: 4, text: 'Coreia', is_correct: true },
+          { id: 8, question_id: 4, text: 'Bradicinesia', is_correct: false }
+        ]
       },
       {
         id: 5,
