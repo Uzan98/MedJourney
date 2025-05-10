@@ -1,19 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { ToastContainer } from "../components/ui/Toast";
 import { Toaster } from 'react-hot-toast';
 import { StartupProvider } from './providers';
 import { AuthProvider } from '@/contexts/AuthContext';
 
-const geistSans = Geist({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-geist-sans",
-});
-
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
@@ -97,7 +92,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gradient-to-br from-blue-100 to-indigo-100 min-h-screen`}
+        className={`${inter.variable} antialiased bg-gradient-to-br from-blue-100 to-indigo-100 min-h-screen`}
       >
         <AuthProvider>
           <StartupProvider>

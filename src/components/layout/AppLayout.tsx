@@ -65,24 +65,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     {
       path: "/estudos",
       label: "Painel de Estudos",
-      icon: <BookOpen className="h-5 w-5 flex-shrink-0" />,
-      submenu: [
-        {
-          path: "/planejamento",
-          label: "Planejamento",
-          icon: <Calendar className="h-5 w-5 flex-shrink-0" />
-        },
-        {
-          path: "/planejamento/inteligente",
-          label: "Plano Inteligente",
-          icon: <Brain className="h-5 w-5 flex-shrink-0" />
-        },
-        {
-          path: "/desempenho",
-          label: "Desempenho Acadêmico",
-          icon: <GraduationCap className="h-5 w-5 flex-shrink-0" />
-        }
-      ]
+      icon: <BookOpen className="h-5 w-5 flex-shrink-0" />
     },
     {
       path: "/banco-questoes",
@@ -378,12 +361,12 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         {/* Logo area - Mobile */}
         <div className="flex items-center justify-between px-4 pt-4 pb-2 flex-shrink-0">
           <div className="flex items-center space-x-3">
-          <div className="bg-blue-400 p-2 rounded-md">
-            <div className="h-8 w-8 bg-blue-200 rounded-md flex items-center justify-center">
-              <BookOpen className="h-5 w-5 text-blue-600" />
+            <div className="bg-blue-400 p-2 rounded-md">
+              <div className="h-8 w-8 bg-blue-200 rounded-md flex items-center justify-center">
+                <BookOpen className="h-5 w-5 text-blue-600" />
+              </div>
             </div>
-          </div>
-          <span className="text-xl font-bold">MedJourney</span>
+            <span className="text-xl font-bold">MedJourney</span>
           </div>
           <button onClick={toggleSidebar} className="text-blue-100 hover:text-white">
             <X className="h-5 w-5" />
@@ -395,8 +378,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           {/* Mobile Nav com scroll */}
           <div className="space-y-1 flex-1 px-4 overflow-y-auto custom-scrollbar">
             <p className="text-blue-300 text-xs font-medium uppercase tracking-wider mb-2 px-3 sticky top-0 bg-blue-600 py-2">
-            Menu Principal
-          </p>
+              Menu Principal
+            </p>
 
             {menuItems.map(item => renderMenuItem(item, true))}
           </div>
@@ -404,16 +387,16 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           {/* Bottom links - Mobile, fora da área de scroll */}
           <div className="pt-4 border-t border-blue-500 px-4 pb-4 flex-shrink-0">
             <Link href="/configuracoes" className={getNavLinkClasses("/configuracoes", false, true)}>
-            <Settings className="h-5 w-5" />
-            <span>Configurações</span>
-          </Link>
+              <Settings className="h-5 w-5" />
+              <span>Configurações</span>
+            </Link>
           
-          <div className="bg-blue-500 text-white rounded-lg p-3 mt-4 text-sm">
-            <p className="font-medium">Precisa de ajuda?</p>
-            <p className="text-blue-100 text-xs mt-1">Entre em contato com o suporte para qualquer dúvida.</p>
-            <button className="w-full bg-blue-400 hover:bg-blue-300 text-blue-800 py-1.5 px-3 rounded-md text-sm font-medium mt-3">
-              Contato
-            </button>
+            <div className="bg-blue-500 text-white rounded-lg p-3 mt-4 text-sm">
+              <p className="font-medium">Precisa de ajuda?</p>
+              <p className="text-blue-100 text-xs mt-1">Entre em contato com o suporte para qualquer dúvida.</p>
+              <button className="w-full bg-blue-400 hover:bg-blue-300 text-blue-800 py-1.5 px-3 rounded-md text-sm font-medium mt-3">
+                Contato
+              </button>
             </div>
           </div>
         </div>
