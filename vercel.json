@@ -1,5 +1,5 @@
 {
-  "buildCommand": "chmod +x ./setup-vercel.sh && ./setup-vercel.sh && npm run build || exit 0",
+  "buildCommand": "npm run vercel-build",
   "outputDirectory": ".next",
   "framework": "nextjs",
   "devCommand": "next dev",
