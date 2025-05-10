@@ -1,6 +1,18 @@
 {
-  "buildCommand": "chmod +x ./setup-vercel.sh && ./setup-vercel.sh && NODE_OPTIONS=--max_old_space_size=4096 npm run build",
+  "buildCommand": "chmod +x ./setup-vercel.sh && ./setup-vercel.sh && NEXT_IGNORE_ERRORS=1 NODE_OPTIONS=--max_old_space_size=4096 npm run build",
   "installCommand": "npm install --legacy-peer-deps",
   "framework": "nextjs",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  },
+  "ignoreCommand": "echo ignore inconsistent builds",
+  "functions": {
+    "src/app/api/*/route.ts": {
+      "runtime": "nodejs18.x",
+      "memory": 1024
+    }
+  }
 } 

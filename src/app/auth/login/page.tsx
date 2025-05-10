@@ -1,4 +1,6 @@
+import { Suspense } from 'react';
 import LoginForm from '@/components/auth/LoginForm';
+import Loading from '@/components/Loading';
 
 export const metadata = {
   title: 'Login | MedJourney',
@@ -9,7 +11,9 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen bg-gray-100">
       <div className="flex-1 flex items-center justify-center p-4">
-        <LoginForm />
+        <Suspense fallback={<Loading message="Carregando..." />}>
+          <LoginForm />
+        </Suspense>
       </div>
       
       <div className="hidden lg:flex flex-1 bg-blue-600 items-center justify-center">

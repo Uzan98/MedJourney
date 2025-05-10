@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { createMiddlewareSupabaseClient } from '@/lib/supabase-server';
+import { createRequestSupabaseClient } from '@/lib/supabase-server';
+
+// Configurar esta rota como dinâmica para evitar erros de renderização estática
+export const dynamic = 'force-dynamic';
 
 /**
  * Endpoint para verificar o estado da sessão de autenticação
@@ -12,8 +15,7 @@ export async function GET(request: NextRequest) {
     const { data: { session: clientSession }, error: clientError } = await supabase.auth.getSession();
     
     // Tentar obter a sessão através do cliente de middleware (para comparação)
-    const res = NextResponse.next();
-    const middlewareClient = createMiddlewareSupabaseClient(request, res);
+    const middlewareClient = createRequestSupabaseClient(request);
     const { data: { session: middlewareSession }, error: middlewareError } = await middlewareClient.auth.getSession();
     
     // Verificar cookies
