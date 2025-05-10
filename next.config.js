@@ -16,6 +16,20 @@ const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   
+  // Desativar minificação com SWC para evitar problemas de compatibilidade
+  swcMinify: false,
+  
+  // Configuração de imagens
+  images: { 
+    unoptimized: true 
+  },
+  
+  // Desativar transpilação de dependências
+  transpilePackages: [],
+  
+  // Ignorar erros de exportação de páginas
+  output: 'standalone',
+  
   // Headers personalizados para PWA
   async headers() {
     return [
@@ -73,6 +87,14 @@ const nextConfig = {
         destination: "/_next/static/sw.js",
       },
     ];
+  },
+  
+  // Configurações experimentais
+  experimental: {
+    // Desativar recursos experimentais
+    serverActions: false,
+    serverActionsBodySizeLimit: '2mb',
+    serverComponentsExternalPackages: [],
   },
 };
 
