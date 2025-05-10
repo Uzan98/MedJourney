@@ -64,7 +64,9 @@ function ensureDirectoryExists(dir) {
   if (!fs.existsSync(dir)) {
     console.log(`📁 Criando diretório ${dir}...`);
     fs.mkdirSync(dir, { recursive: true });
+    return true;
   }
+  return false;
 }
 
 // Função para verificar e criar/atualizar arquivo
@@ -84,6 +86,9 @@ function createOrUpdateFile(filePath, content, backup = true) {
 // Verificar diretórios críticos
 ensureDirectoryExists(path.join(process.cwd(), '.next'));
 ensureDirectoryExists(path.join(process.cwd(), 'src'));
+ensureDirectoryExists(path.join(process.cwd(), 'src', 'app'));
+ensureDirectoryExists(path.join(process.cwd(), 'src', 'mocks'));
+ensureDirectoryExists(path.join(process.cwd(), 'src', 'lib'));
 
 // Configurar tsconfig.json
 createOrUpdateFile(
@@ -107,6 +112,36 @@ DISABLE_ESLINT_PLUGIN=true
 
 createOrUpdateFile(envPath, envContent, false);
 
+// Verificar e criar o arquivo de mock para o db-adapter
+const dbAdapterMockPath = path.join(process.cwd(), 'src', 'lib', 'db-adapter-mock.js');
+if (!fs.existsSync(dbAdapterMockPath)) {
+  const dbAdapterMockContent = `
+// Mock para o adaptador de banco de dados usado durante o build
+export function createMockDb() {
+  return {
+    query: async (queryText, params) => {
+      console.log('[Mock DB] Query:', queryText.substring(0, 50) + '...');
+      return { rows: [] };
+    },
+    close: () => console.log('[Mock DB] Connection closed')
+  };
+}
+
+export function mockDbQuery(queryType) {
+  // Importamos os mocks de forma dinâmica para evitar erros durante o build
+  try {
+    const mocks = require('../mocks/db-mocks');
+    return mocks.mockDbQuery(queryType);
+  } catch (error) {
+    console.log('[Mock DB] Error loading mocks:', error.message);
+    return Promise.resolve({ message: 'Mock data not available' });
+  }
+}
+`;
+  createOrUpdateFile(dbAdapterMockPath, dbAdapterMockContent, false);
+  console.log('✅ Criado adaptador de banco de dados mock');
+}
+
 // Configurar API routes como dinâmicas
 const apiDir = path.join(process.cwd(), 'src', 'app', 'api');
 if (fs.existsSync(apiDir)) {
@@ -122,7 +157,7 @@ if (fs.existsSync(apiDir)) {
       
       if (stat.isDirectory()) {
         results = results.concat(findTsFiles(filePath));
-      } else if (file === 'route.ts') {
+      } else if (file === 'route.ts' || file === 'route.js') {
         results.push(filePath);
       }
     }
@@ -159,6 +194,89 @@ if (fs.existsSync(apiDir)) {
       fs.writeFileSync(file, content);
     }
   }
+}
+
+// Verifica e corrige importações problemáticas do Supabase
+const libDirPath = path.join(process.cwd(), 'src', 'lib');
+const supabaseServerPath = path.join(libDirPath, 'supabase-server.ts');
+if (fs.existsSync(supabaseServerPath)) {
+  let content = fs.readFileSync(supabaseServerPath, 'utf8');
+  
+  if (!content.includes('createRequestSupabaseClient') && content.includes('createMiddlewareSupabaseClient')) {
+    console.log('📝 Atualizando implementação do supabase-server.ts...');
+    
+    // Fazer backup
+    fs.writeFileSync(`${supabaseServerPath}.bak`, content);
+    
+    // Adicionar a nova função se necessário
+    if (!content.includes('createRequestSupabaseClient')) {
+      content += `
+// Nova implementação para substituir o createMiddlewareSupabaseClient
+export function createRequestSupabaseClient(request) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  );
+  
+  // Se tivermos cookies no request, tentamos usar para autenticação
+  if (request && request.headers && request.headers.get('cookie')) {
+    const cookies = request.headers.get('cookie');
+    if (cookies) {
+      try {
+        // Tentar extrair o token de autenticação dos cookies
+        const authCookie = cookies.split(';').find(c => c.trim().startsWith('my-auth-token='));
+        if (authCookie) {
+          const token = authCookie.split('=')[1];
+          if (token) {
+            supabase.auth.setSession({ access_token: token, refresh_token: '' });
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao processar cookies:', error);
+      }
+    }
+  }
+  
+  return supabase;
+}
+`;
+      
+      fs.writeFileSync(supabaseServerPath, content);
+    }
+  }
+}
+
+// Criar arquivo de componente de loading
+const loadingComponentPath = path.join(process.cwd(), 'src', 'components', 'LoadingSpinner.tsx');
+ensureDirectoryExists(path.join(process.cwd(), 'src', 'components'));
+if (!fs.existsSync(loadingComponentPath)) {
+  const loadingComponentContent = `
+import React from 'react';
+
+interface LoadingSpinnerProps {
+  size?: 'sm' | 'md' | 'lg';
+  color?: string;
+}
+
+export default function LoadingSpinner({ 
+  size = 'md', 
+  color = 'border-blue-600' 
+}: LoadingSpinnerProps) {
+  const sizeClass = {
+    'sm': 'h-6 w-6',
+    'md': 'h-12 w-12',
+    'lg': 'h-24 w-24'
+  }[size];
+  
+  return (
+    <div className="flex justify-center items-center">
+      <div className={\`animate-spin rounded-full \${sizeClass} border-2 border-t-transparent \${color}\`}></div>
+    </div>
+  );
+}
+`;
+  createOrUpdateFile(loadingComponentPath, loadingComponentContent, false);
+  console.log('✅ Criado componente de loading');
 }
 
 console.log('✅ Configuração JavaScript concluída com sucesso!'); 
