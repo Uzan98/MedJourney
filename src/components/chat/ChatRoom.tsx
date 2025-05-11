@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 import { StudyRoomService } from '@/services/study-room.service';
 import { MessageCircle } from 'lucide-react';
-import Spinner from '@/components/Spinner';
+import { Spinner } from '@/components/Spinner';
 import { useChatScroll } from '@/hooks/useChatScroll';
 
 interface ChatRoomProps {

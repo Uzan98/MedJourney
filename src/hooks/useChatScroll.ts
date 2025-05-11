@@ -45,13 +45,9 @@ export const useChatScroll = ({
 
     // Método 1: Usando scrollIntoView no elemento de referência no final das mensagens
     if (endOfMessagesRef.current) {
-      // Usar scrollTo no container em vez de scrollIntoView para evitar rolagem da página
-      const container = containerRef.current;
-      const scrollTarget = endOfMessagesRef.current.offsetTop;
-      
-      container.scrollTo({
-        top: scrollTarget,
-        behavior
+      endOfMessagesRef.current.scrollIntoView({
+        behavior,
+        block: 'end',
       });
       return;
     }
