@@ -251,20 +251,20 @@ export default function SalaEstudosDetalhe({ params }: { params: { id: string } 
               </div>
             </div>
             
-            {/* Coluna da Direita: Chat - AGORA MENOR */}
+            {/* Coluna da Direita: Chat */}
             <div className={`md:w-2/5 lg:w-1/3 ${!chatVisible && 'hidden md:block'}`}>
-              <div className="bg-white rounded-xl shadow-md overflow-hidden h-[600px] flex flex-col">
-                <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+              <div className="bg-white rounded-xl shadow-md h-[600px] flex flex-col">
+                <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 flex-shrink-0">
                   <h2 className="text-white font-bold flex items-center">
                     <MessageCircle className="mr-2 h-5 w-5" />
                     Chat
                   </h2>
                 </div>
-                <div className="flex-1 flex flex-col">
+                <div className="flex-1 flex flex-col overflow-hidden">
                   <ChatRoom 
                     roomId={params.id} 
-                    showHeader={false}
-                    className="h-full" 
+                    showHeader={false} 
+                    className="h-full"
                   />
                 </div>
               </div>

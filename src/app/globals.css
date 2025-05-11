@@ -265,3 +265,114 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Estilos simplificados para o chat */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden; /* Impede que o container inteiro role */
+}
+
+.chat-messages-area {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0; /* Importante para que o flex-1 funcione corretamente */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+}
+
+.chat-messages-area::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.chat-messages-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-messages-area::-webkit-scrollbar-thumb {
+  background-color: rgba(155, 155, 155, 0.5);
+  border-radius: 20px;
+}
+
+.chat-messages-area:hover::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-input-area {
+  flex-shrink: 0;
+  border-top: 1px solid #e2e8f0;
+  background-color: white;
+  width: 100%;
+  position: relative;
+  z-index: 10;
+}
+
+/* Compatibilidade com Firefox */
+@supports (-moz-appearance: none) {
+  .chat-messages-area {
+    min-height: 0;
+    max-height: calc(100% - 60px); /* Altura total menos altura estimada do input */
+  }
+}
+
+/* Compatibilidade com Safari */
+@supports (-webkit-touch-callout: none) {
+  .chat-messages-area {
+    height: calc(100% - 60px); /* Altura total menos altura estimada do input */
+  }
+}
+
+/* Estilos específicos para barra de rolagem no Webkit (Chrome, Safari) */
+.chat-messages-area::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.chat-messages-area::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+  border-radius: 6px !important;
+  margin: 2px !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.chat-messages-area::-webkit-scrollbar-thumb {
+  background-color: #94a3b8 !important;
+  border-radius: 6px !important;
+  border: 2px solid #f1f5f9 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.chat-messages-area::-webkit-scrollbar-thumb:hover {
+  background-color: #64748b !important;
+}
+
+/* Remova estilos de hover que podem ocultar a barra de rolagem */
+.chat-messages-area:hover::-webkit-scrollbar,
+.chat-messages-area:hover::-webkit-scrollbar-thumb,
+.chat-messages-area:hover::-webkit-scrollbar-track {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Certificar-se de que o IE e Edge mostram a barra de rolagem */
+@supports (-ms-overflow-style: none) {
+  .chat-messages-area {
+    -ms-overflow-style: scrollbar !important;
+  }
+}
+
+/* Estilos para mobile */
+@media (max-width: 768px) {
+  .chat-messages-area::-webkit-scrollbar {
+    width: 8px !important;
+  }
+}

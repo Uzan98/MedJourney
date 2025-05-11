@@ -19,13 +19,79 @@ export interface StudyRoom {
   active_users: number;
 }
 
+// Mapeamento de IDs antigos para novos UUIDs
+// Este objeto será preenchido dinamicamente na inicialização
+const legacyIdMapping: Record<string, string> = {};
+
 export class StudyRoomService {
   private static channels: Record<string, any> = {};
+  private static initialized = false;
+  
+  /**
+   * Inicializar o serviço e carregar o mapeamento de IDs
+   */
+  private static async initialize() {
+    if (this.initialized) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('study_rooms')
+        .select('id, name')
+        .order('name');
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Criar mapeamento baseado no nome da sala
+      // Isso é uma solução temporária para compatibilidade
+      if (data) {
+        const nameToLegacyId: Record<string, string> = {
+          'Cardiologia Avançada': 'cardiologia',
+          'Neurologia e Neurociência': 'neurologia',
+          'Técnicas Cirúrgicas': 'cirurgia',
+          'Pediatria Geral': 'pediatria',
+          'Preparação para Residência': 'residencia'
+        };
+        
+        data.forEach(room => {
+          const legacyId = nameToLegacyId[room.name];
+          if (legacyId) {
+            legacyIdMapping[legacyId] = room.id;
+          }
+        });
+        
+        console.log('Mapeamento de IDs antigos inicializado:', legacyIdMapping);
+      }
+      
+      this.initialized = true;
+    } catch (error) {
+      console.error('Erro ao inicializar mapeamento de IDs:', error);
+    }
+  }
+  
+  /**
+   * Resolver ID da sala (suporta tanto IDs legados quanto UUIDs)
+   */
+  private static async resolveRoomId(roomId: string): Promise<string> {
+    await this.initialize();
+    
+    // Verificar se é um ID legado
+    if (legacyIdMapping[roomId]) {
+      console.log(`ID legado '${roomId}' resolvido para UUID '${legacyIdMapping[roomId]}'`);
+      return legacyIdMapping[roomId];
+    }
+    
+    // Verificar se é um UUID válido ou outro formato não reconhecido
+    return roomId;
+  }
   
   /**
    * Obter todas as salas de estudo disponíveis
    */
   static async getStudyRooms(): Promise<StudyRoom[]> {
+    await this.initialize();
+    
     try {
       const { data, error } = await supabase
         .from('study_rooms')
@@ -50,6 +116,9 @@ export class StudyRoomService {
    */
   static async joinRoom(roomId: string): Promise<boolean> {
     try {
+      // Resolver o ID da sala
+      const resolvedRoomId = await this.resolveRoomId(roomId);
+      
       // Verificar se o usuário está autenticado
       const { data: userData } = await supabase.auth.getUser();
       if (!userData?.user) {
@@ -73,7 +142,7 @@ export class StudyRoomService {
         .from('study_room_users')
         .upsert({
           user_id: user.id,
-          room_id: roomId,
+          room_id: resolvedRoomId,
           username,
           avatar_url: profileData?.avatar_url,
           entrou_em: timestamp,
@@ -87,7 +156,7 @@ export class StudyRoomService {
       }
       
       // Iniciar o canal de presença
-      this.setupPresenceChannel(roomId, user.id, username, profileData?.avatar_url);
+      this.setupPresenceChannel(resolvedRoomId, user.id, username, profileData?.avatar_url);
       
       return true;
     } catch (error) {
@@ -151,6 +220,9 @@ export class StudyRoomService {
    */
   static async leaveRoom(roomId: string): Promise<boolean> {
     try {
+      // Resolver o ID da sala
+      const resolvedRoomId = await this.resolveRoomId(roomId);
+      
       // Verificar se o usuário está autenticado
       const { data: userData } = await supabase.auth.getUser();
       if (!userData?.user) {
@@ -164,7 +236,7 @@ export class StudyRoomService {
         .from('study_room_users')
         .select('entrou_em, tempo_total')
         .eq('user_id', user.id)
-        .eq('room_id', roomId)
+        .eq('room_id', resolvedRoomId)
         .single();
       
       if (userSession) {
@@ -182,11 +254,17 @@ export class StudyRoomService {
             tempo_total: tempoTotal
           })
           .eq('user_id', user.id)
-          .eq('room_id', roomId);
+          .eq('room_id', resolvedRoomId);
       }
       
       // Remover presença do canal
-      if (this.channels[roomId]) {
+      if (this.channels[resolvedRoomId]) {
+        await this.channels[resolvedRoomId].untrack();
+        delete this.channels[resolvedRoomId];
+      }
+      
+      // Também limpar o canal com o ID não resolvido, por segurança
+      if (roomId !== resolvedRoomId && this.channels[roomId]) {
         await this.channels[roomId].untrack();
         delete this.channels[roomId];
       }
@@ -204,10 +282,13 @@ export class StudyRoomService {
    */
   static async getOnlineUsers(roomId: string): Promise<StudyRoomUser[]> {
     try {
+      // Resolver o ID da sala
+      const resolvedRoomId = await this.resolveRoomId(roomId);
+      
       const { data, error } = await supabase
         .from('study_room_users')
         .select('user_id, username, avatar_url, entrou_em, tempo_total')
-        .eq('room_id', roomId)
+        .eq('room_id', resolvedRoomId)
         .eq('esta_online', true)
         .order('entrou_em');
       

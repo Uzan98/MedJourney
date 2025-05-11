@@ -1,9 +1,9 @@
 -- Script para configurar as tabelas relacionadas às salas de estudo e chat
 -- Execute este script no Console SQL do Supabase
 
--- Tabela de salas de estudo
+-- Tabela de salas de estudo - Modificando para utilizar UUID para compatibilidade
 CREATE TABLE IF NOT EXISTS study_rooms (
-  id TEXT PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT,
   capacity INTEGER NOT NULL DEFAULT 20,
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS study_rooms (
 -- Tabela de usuários em salas de estudo
 CREATE TABLE IF NOT EXISTS study_room_users (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  room_id TEXT REFERENCES study_rooms(id) ON DELETE CASCADE,
+  room_id UUID REFERENCES study_rooms(id) ON DELETE CASCADE,
   username TEXT NOT NULL,
   avatar_url TEXT,
   entrou_em TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
@@ -64,20 +64,34 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger para atualizar contagem de usuários ativos
-CREATE TRIGGER trg_update_active_users
-AFTER INSERT OR UPDATE OR DELETE ON study_room_users
-FOR EACH ROW
-EXECUTE FUNCTION update_active_users_count();
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger 
+    WHERE tgname = 'trg_update_active_users'
+  ) THEN
+    CREATE TRIGGER trg_update_active_users
+    AFTER INSERT OR UPDATE OR DELETE ON study_room_users
+    FOR EACH ROW
+    EXECUTE FUNCTION update_active_users_count();
+  END IF;
+END$$;
 
 -- Tabela de mensagens de chat
 CREATE TABLE IF NOT EXISTS chat_messages (
-  id UUID PRIMARY KEY,
-  room_id TEXT NOT NULL REFERENCES study_rooms(id) ON DELETE CASCADE,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  room_id UUID NOT NULL,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   username TEXT NOT NULL,
   content TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
 );
+
+-- Adicionar a constraint de chave estrangeira separadamente para permitir opção de verificação
+ALTER TABLE IF EXISTS chat_messages 
+  DROP CONSTRAINT IF EXISTS chat_messages_room_id_fkey,
+  ADD CONSTRAINT chat_messages_room_id_fkey 
+  FOREIGN KEY (room_id) REFERENCES study_rooms(id) ON DELETE CASCADE;
 
 -- Índices para a tabela de mensagens
 CREATE INDEX IF NOT EXISTS idx_chat_messages_room_id ON chat_messages(room_id);
@@ -141,10 +155,18 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger para limpar mensagens antigas
-CREATE TRIGGER trigger_cleanup_old_chat_messages
-AFTER INSERT ON chat_messages
-FOR EACH ROW
-EXECUTE FUNCTION cleanup_old_chat_messages();
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger 
+    WHERE tgname = 'trigger_cleanup_old_chat_messages'
+  ) THEN
+    CREATE TRIGGER trigger_cleanup_old_chat_messages
+    AFTER INSERT ON chat_messages
+    FOR EACH ROW
+    EXECUTE FUNCTION cleanup_old_chat_messages();
+  END IF;
+END$$;
 
 -- Configurar Supabase Realtime para a tabela de mensagens
 BEGIN;
@@ -162,11 +184,11 @@ BEGIN
   IF NOT EXISTS (SELECT FROM study_rooms LIMIT 1) THEN
     INSERT INTO study_rooms (id, name, description, capacity)
     VALUES 
-      ('cardiologia', 'Cardiologia Avançada', 'Sala dedicada aos estudos de cardiologia e doenças cardiovasculares', 20),
-      ('neurologia', 'Neurologia e Neurociência', 'Para entusiastas do sistema nervoso e distúrbios neurológicos', 15),
-      ('cirurgia', 'Técnicas Cirúrgicas', 'Discussão sobre procedimentos cirúrgicos e novas tecnologias', 12),
-      ('pediatria', 'Pediatria Geral', 'Estudos sobre saúde infantil e desenvolvimento', 15),
-      ('residencia', 'Preparação para Residência', 'Grupo de estudos focado na preparação para provas de residência médica', 25);
+      (gen_random_uuid(), 'Cardiologia Avançada', 'Sala dedicada aos estudos de cardiologia e doenças cardiovasculares', 20),
+      (gen_random_uuid(), 'Neurologia e Neurociência', 'Para entusiastas do sistema nervoso e distúrbios neurológicos', 15),
+      (gen_random_uuid(), 'Técnicas Cirúrgicas', 'Discussão sobre procedimentos cirúrgicos e novas tecnologias', 12),
+      (gen_random_uuid(), 'Pediatria Geral', 'Estudos sobre saúde infantil e desenvolvimento', 15),
+      (gen_random_uuid(), 'Preparação para Residência', 'Grupo de estudos focado na preparação para provas de residência médica', 25);
       
     RAISE NOTICE 'Salas de exemplo criadas com sucesso!';
   END IF;

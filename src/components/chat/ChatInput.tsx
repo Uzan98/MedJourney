@@ -33,7 +33,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <div className={cn("flex items-center w-full border-t p-2", className)}>
+    <div className={cn("flex items-center w-full p-3 bg-white", className)}>
       <input
         type="text"
         value={message}

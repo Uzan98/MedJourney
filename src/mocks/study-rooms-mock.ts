@@ -23,38 +23,34 @@ export async function setupMockStudyRooms() {
     
     console.log('Criando salas de estudo mockadas...');
     
-    // Salas mockadas
+    // Salas mockadas - Agora usando gen_random_uuid() no Supabase
     const mockRooms = [
       {
-        id: 'cardiologia',
+        // O id será gerado automaticamente pelo Supabase com gen_random_uuid()
         name: 'Cardiologia Avançada',
         description: 'Sala dedicada aos estudos de cardiologia e doenças cardiovasculares',
         capacity: 20,
         active_users: 0
       },
       {
-        id: 'neurologia',
         name: 'Neurologia e Neurociência',
         description: 'Para entusiastas do sistema nervoso e distúrbios neurológicos',
         capacity: 15,
         active_users: 0
       },
       {
-        id: 'cirurgia',
         name: 'Técnicas Cirúrgicas',
         description: 'Discussão sobre procedimentos cirúrgicos e novas tecnologias',
         capacity: 12,
         active_users: 0
       },
       {
-        id: 'pediatria',
         name: 'Pediatria Geral',
         description: 'Estudos sobre saúde infantil e desenvolvimento',
         capacity: 15,
         active_users: 0
       },
       {
-        id: 'residencia',
         name: 'Preparação para Residência',
         description: 'Grupo de estudos focado na preparação para provas de residência médica',
         capacity: 25,
@@ -63,16 +59,19 @@ export async function setupMockStudyRooms() {
     ];
     
     // Inserir salas mockadas
-    const { error: insertError } = await supabase
+    const { data, error: insertError } = await supabase
       .from('study_rooms')
-      .insert(mockRooms);
+      .insert(mockRooms)
+      .select(); // Selecionamos os dados retornados para verificar os IDs gerados
     
     if (insertError) {
       console.error('Erro ao inserir salas mockadas:', insertError);
       return;
     }
     
-    console.log('Salas de estudo mockadas criadas com sucesso!');
+    if (data) {
+      console.log('Salas de estudo mockadas criadas com sucesso!', data.map(room => room.id));
+    }
   } catch (error) {
     console.error('Erro ao configurar mocks de salas de estudo:', error);
   }

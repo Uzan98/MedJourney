@@ -75,7 +75,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         
         <div 
           className={cn(
-            "px-4 py-2 rounded-xl text-sm",
+            "px-4 py-2 rounded-xl text-sm break-words",
             isCurrentUser 
               ? "bg-blue-600 text-white rounded-tr-none" 
               : "bg-gray-200 text-gray-800 rounded-tl-none"
