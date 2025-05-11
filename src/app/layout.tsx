@@ -9,6 +9,8 @@ import { AuthProvider } from '@/contexts/AuthContext';
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
 });
 
 export const metadata: Metadata = {
@@ -22,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={inter.variable}>
       <head>
         <meta name="application-name" content="MedJourney" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -91,9 +93,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body
-        className={`${inter.variable} antialiased bg-gradient-to-br from-blue-100 to-indigo-100 min-h-screen`}
-      >
+      <body className="font-sans antialiased bg-gradient-to-br from-blue-100 to-indigo-100 min-h-screen">
         <AuthProvider>
           <StartupProvider>
             {children}

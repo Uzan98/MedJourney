@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { StudyRoom, StudyRoomService } from '@/services/study-room.service';
 import Loading from '@/components/Loading';
 import StudyTimeDisplay from '@/components/StudyTimeDisplay';
+import { setupMockStudyRooms } from '@/mocks/study-rooms-mock';
 
 export default function SalaEstudosPage() {
   const router = useRouter();
@@ -19,8 +20,16 @@ export default function SalaEstudosPage() {
   const [stats, setStats] = useState<{ total_time: number; sessions: number }>({ total_time: 0, sessions: 0 });
   
   useEffect(() => {
-    loadRooms();
-    loadUserStats();
+    async function initializeData() {
+      // Configurar salas mockadas se necessário
+      await setupMockStudyRooms();
+      
+      // Carregar dados
+      await loadRooms();
+      await loadUserStats();
+    }
+    
+    initializeData();
   }, []);
   
   const loadRooms = async () => {

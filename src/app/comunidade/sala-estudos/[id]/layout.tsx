@@ -1,11 +1,18 @@
 'use client';
 
 import { ReactNode } from 'react';
+import SupabaseProvider from '@/contexts/SupabaseProvider';
 
 export default function SalaEstudosDetalheLayout({
   children,
 }: {
   children: ReactNode;
 }) {
-  return children;
+  return (
+    <SupabaseProvider>
+      <div className="relative">
+        {children}
+      </div>
+    </SupabaseProvider>
+  );
 } 

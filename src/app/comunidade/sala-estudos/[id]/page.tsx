@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { FaArrowLeft } from 'react-icons/fa';
-import { Clock, Users, Loader2, LogOut } from 'lucide-react';
+import { Clock, Users, Loader2, LogOut, MessageCircle, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { StudyRoom, StudyRoomUser, StudyRoomService } from '@/services/study-room.service';
 import Loading from '@/components/Loading';
 import OnlineUsersList from '@/components/OnlineUsersList';
 import StudyTimer from '@/components/StudyTimer';
 import { supabase } from '@/lib/supabase';
+import ChatRoom from '@/components/chat/ChatRoom';
 
 export default function SalaEstudosDetalhe({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function SalaEstudosDetalhe({ params }: { params: { id: string } 
   const [isJoining, setIsJoining] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [joinTime, setJoinTime] = useState<string>('');
+  const [chatVisible, setChatVisible] = useState(true);
   
   // Intervalo para atualizar a lista de usuários online
   useEffect(() => {
@@ -149,6 +151,9 @@ export default function SalaEstudosDetalhe({ params }: { params: { id: string } 
     }
   };
   
+  // Alternar a visibilidade do chat
+  const toggleChat = () => setChatVisible(prev => !prev);
+  
   if (loading) {
     return <Loading message="Carregando sala de estudos..." />;
   }
@@ -168,8 +173,8 @@ export default function SalaEstudosDetalhe({ params }: { params: { id: string } 
   }
   
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-5xl mx-auto">
+    <div className="container mx-auto px-4 py-8 font-sans">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
@@ -222,40 +227,64 @@ export default function SalaEstudosDetalhe({ params }: { params: { id: string } 
           )}
         </div>
         
-        {/* Usuários Online */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
-          <div className="bg-gradient-to-r from-green-500 to-teal-600 px-6 py-4">
-            <h2 className="text-xl font-bold text-white flex items-center">
-              <Users className="mr-2 h-5 w-5" />
-              Usuários Online ({onlineUsers.length}/{room.capacity || 'Ilimitado'})
-            </h2>
-          </div>
-          <div className="p-6">
-            <OnlineUsersList users={onlineUsers} />
-          </div>
-        </div>
-        
-        {/* Informações da Sala */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-500 to-indigo-600 px-6 py-4">
-            <h2 className="text-xl font-bold text-white">
-              Sobre esta Sala
-            </h2>
-          </div>
-          <div className="p-6">
-            <p className="text-gray-600 mb-4">
-              Ao entrar na sala de estudos, seu tempo online será contabilizado e você poderá ver outros 
-              estudantes que estão estudando no momento. Isso ajuda a manter a motivação e criar uma 
-              rotina de estudos consistente.
-            </p>
+        {user && (
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Coluna da Esquerda: Usuários Online - AGORA MAIOR */}
+            <div className="md:w-3/5 lg:w-2/3">
+              <div className="bg-white rounded-xl shadow-md overflow-hidden h-[600px] flex flex-col">
+                <div className="bg-gradient-to-r from-green-500 to-teal-600 px-6 py-4 flex justify-between items-center">
+                  <h2 className="text-white font-bold flex items-center">
+                    <Users className="mr-2 h-5 w-5" />
+                    Usuários Online ({onlineUsers.length})
+                  </h2>
+                  
+                  <button
+                    onClick={toggleChat}
+                    className="md:hidden p-2 bg-white/20 hover:bg-white/30 rounded-lg text-white flex items-center"
+                  >
+                    {chatVisible ? <X className="h-4 w-4" /> : <MessageCircle className="h-4 w-4" />}
+                  </button>
+                </div>
+                <div className="p-4 overflow-y-auto flex-grow">
+                  <OnlineUsersList users={onlineUsers} />
+                </div>
+              </div>
+            </div>
             
-            {!isInRoom && (
-              <p className="bg-yellow-50 p-4 rounded-lg text-yellow-800 text-sm">
-                <strong>Dica:</strong> Enquanto estiver estudando, mantenha esta página aberta para que seu tempo de estudo seja registrado corretamente.
-              </p>
-            )}
+            {/* Coluna da Direita: Chat - AGORA MENOR */}
+            <div className={`md:w-2/5 lg:w-1/3 ${!chatVisible && 'hidden md:block'}`}>
+              <div className="bg-white rounded-xl shadow-md overflow-hidden h-[600px] flex flex-col">
+                <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+                  <h2 className="text-white font-bold flex items-center">
+                    <MessageCircle className="mr-2 h-5 w-5" />
+                    Chat
+                  </h2>
+                </div>
+                <div className="flex-1 flex flex-col">
+                  <ChatRoom 
+                    roomId={params.id} 
+                    showHeader={false}
+                    className="h-full" 
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
+        
+        {!user && (
+          <div className="bg-yellow-50 p-6 rounded-xl text-center">
+            <p className="text-yellow-800">
+              Você precisa estar logado para ver o chat e os usuários online.
+            </p>
+            <Link 
+              href="/auth/login"
+              className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Entrar
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
