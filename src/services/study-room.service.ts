@@ -345,4 +345,39 @@ export class StudyRoomService {
       return { total_time: 0, sessions: 0 };
     }
   }
+  
+  /**
+   * Obter o ranking dos usuários com mais tempo de estudo na sala
+   * @param roomId ID da sala
+   * @param limit Limite de usuários a serem retornados (padrão: 3)
+   */
+  static async getTopUsersByTime(roomId: string, limit: number = 3): Promise<StudyRoomUser[]> {
+    try {
+      // Resolver o ID da sala
+      const resolvedRoomId = await this.resolveRoomId(roomId);
+      
+      const { data, error } = await supabase
+        .from('study_room_users')
+        .select('user_id, username, avatar_url, entrou_em, tempo_total')
+        .eq('room_id', resolvedRoomId)
+        .order('tempo_total', { ascending: false })
+        .limit(limit);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Mapear os dados para o formato correto
+      return (data || []).map(user => ({
+        id: user.user_id,
+        username: user.username,
+        avatar_url: user.avatar_url,
+        entrou_em: user.entrou_em,
+        tempo_total: user.tempo_total || 0
+      }));
+    } catch (error) {
+      console.error('Erro ao buscar ranking de usuários:', error);
+      return [];
+    }
+  }
 } 

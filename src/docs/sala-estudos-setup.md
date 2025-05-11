@@ -71,4 +71,59 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_anônima
 
 - Verifique se a extensão `pg_stat_statements` está habilitada
 - Verifique se o limite de canais de presença não foi excedido (10 por sala)
-- Verifique se a chave anônima (ANON_KEY) está configurada corretamente 
+- Verifique se a chave anônima (ANON_KEY) está configurada corretamente
+
+## Correção de Contabilização Duplicada de Tempo
+
+Para corrigir o problema de contabilização duplicada de tempo de estudo quando um usuário sai da sala, siga estas etapas:
+
+1. Aplique as alterações no arquivo `src/app/comunidade/sala-estudos/[id]/page.tsx` para adicionar o controle de saída manual vs. automática usando as referências `manuallyClosed` e `cleanupExecuted`.
+
+2. Aplique as alterações no arquivo `src/services/study-room.service.ts` para implementar o mecanismo de bloqueio de processamento duplicado de saídas.
+
+3. Execute o script SQL abaixo no Console do Supabase para adicionar um trigger de prevenção de contagem dupla:
+
+```sql
+-- Script SQL para prevenir contagem dupla de tempo de estudo
+-- Este script cria um trigger que impede atualização duplicada do tempo de estudo
+-- quando um usuário já está offline
+
+-- Função que será executada pelo trigger
+CREATE OR REPLACE FUNCTION prevent_double_counting()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Se estiver alterando o status de online para offline
+    IF OLD.esta_online = true AND NEW.esta_online = false THEN
+        -- Registrar a operação para fins de depuração
+        RAISE NOTICE 'Usuário % saindo da sala %: tempo_total atualizado de % para %',
+                    OLD.user_id, OLD.room_id, OLD.tempo_total, NEW.tempo_total;
+    END IF;
+    
+    -- Se o usuário já estava offline e estão tentando atualizar o tempo_total,
+    -- mantemos o tempo_total anterior para evitar duplicação
+    IF OLD.esta_online = false AND NEW.esta_online = false AND NEW.tempo_total != OLD.tempo_total THEN
+        RAISE NOTICE 'Impedindo atualização duplicada de tempo para usuário % na sala %',
+                    OLD.user_id, OLD.room_id;
+        
+        -- Manter o tempo_total antigo
+        NEW.tempo_total = OLD.tempo_total;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Criar ou substituir o trigger
+DROP TRIGGER IF EXISTS prevent_double_counting_trigger ON study_room_users;
+
+CREATE TRIGGER prevent_double_counting_trigger
+BEFORE UPDATE ON study_room_users
+FOR EACH ROW
+EXECUTE FUNCTION prevent_double_counting();
+```
+
+Esta solução implementa três camadas de proteção contra contabilização duplicada:
+
+1. **Nível de Interface**: Controle via referências React no componente da sala de estudos
+2. **Nível de Serviço**: Sistema de bloqueio no serviço `StudyRoomService`
+3. **Nível de Banco de Dados**: Trigger SQL que impede atualizações duplicadas 

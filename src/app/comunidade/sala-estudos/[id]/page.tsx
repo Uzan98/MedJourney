@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -13,6 +13,7 @@ import OnlineUsersList from '@/components/OnlineUsersList';
 import StudyTimer from '@/components/StudyTimer';
 import { supabase } from '@/lib/supabase';
 import ChatRoom from '@/components/chat/ChatRoom';
+import StudyRoomRanking from '@/components/StudyRoomRanking';
 
 export default function SalaEstudosDetalhe({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -20,11 +21,14 @@ export default function SalaEstudosDetalhe({ params }: { params: { id: string } 
   const [loading, setLoading] = useState(true);
   const [room, setRoom] = useState<StudyRoom | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<StudyRoomUser[]>([]);
+  const [topUsers, setTopUsers] = useState<StudyRoomUser[]>([]);
   const [isInRoom, setIsInRoom] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [joinTime, setJoinTime] = useState<string>('');
   const [chatVisible, setChatVisible] = useState(true);
+  // Referência para controlar saída manual vs automática
+  const manuallyClosed = useRef(false);
   
   // Intervalo para atualizar a lista de usuários online
   useEffect(() => {
@@ -39,8 +43,8 @@ export default function SalaEstudosDetalhe({ params }: { params: { id: string } 
     return () => {
       clearInterval(interval);
       
-      // Se o usuário estiver na sala, sair automaticamente ao fechar a página
-      if (isInRoom) {
+      // Se o usuário estiver na sala e não saiu manualmente, sair automaticamente ao fechar a página
+      if (isInRoom && !manuallyClosed.current) {
         StudyRoomService.leaveRoom(params.id);
       }
     };
@@ -64,6 +68,9 @@ export default function SalaEstudosDetalhe({ params }: { params: { id: string } 
       
       // Carregar usuários online
       await loadOnlineUsers();
+      
+      // Carregar ranking de usuários
+      await loadTopUsers();
       
       // Verificar se o usuário atual está na sala
       const { data: userData } = await supabase.auth.getUser();
@@ -98,6 +105,16 @@ export default function SalaEstudosDetalhe({ params }: { params: { id: string } 
     }
   };
   
+  // Carregar ranking de usuários com mais tempo de estudo
+  const loadTopUsers = async () => {
+    try {
+      const users = await StudyRoomService.getTopUsersByTime(params.id);
+      setTopUsers(users);
+    } catch (error) {
+      console.error('Erro ao carregar ranking de usuários:', error);
+    }
+  };
+  
   // Entrar na sala de estudos
   const handleJoinRoom = async () => {
     if (!user) {
@@ -117,6 +134,7 @@ export default function SalaEstudosDetalhe({ params }: { params: { id: string } 
         
         // Atualizar lista de usuários
         await loadOnlineUsers();
+        await loadTopUsers();
       } else {
         toast.error('Não foi possível entrar na sala');
       }
@@ -131,6 +149,9 @@ export default function SalaEstudosDetalhe({ params }: { params: { id: string } 
   // Sair da sala de estudos
   const handleLeaveRoom = async () => {
     setIsLeaving(true);
+    // Marcar que o usuário está saindo manualmente
+    manuallyClosed.current = true;
+    
     try {
       const success = await StudyRoomService.leaveRoom(params.id);
       
@@ -140,12 +161,17 @@ export default function SalaEstudosDetalhe({ params }: { params: { id: string } 
         
         // Atualizar lista de usuários
         await loadOnlineUsers();
+        await loadTopUsers();
       } else {
         toast.error('Não foi possível sair da sala');
+        // Se falhar, resetar a flag
+        manuallyClosed.current = false;
       }
     } catch (error) {
       console.error('Erro ao sair da sala:', error);
       toast.error('Ocorreu um erro ao sair da sala');
+      // Se houver erro, resetar a flag
+      manuallyClosed.current = false;
     } finally {
       setIsLeaving(false);
     }
@@ -228,48 +254,55 @@ export default function SalaEstudosDetalhe({ params }: { params: { id: string } 
         </div>
         
         {user && (
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* Coluna da Esquerda: Usuários Online - AGORA MAIOR */}
-            <div className="md:w-3/5 lg:w-2/3">
-              <div className="bg-white rounded-xl shadow-md overflow-hidden h-[600px] flex flex-col">
-                <div className="bg-gradient-to-r from-green-500 to-teal-600 px-6 py-4 flex justify-between items-center">
-                  <h2 className="text-white font-bold flex items-center">
-                    <Users className="mr-2 h-5 w-5" />
-                    Usuários Online ({onlineUsers.length})
-                  </h2>
-                  
-                  <button
-                    onClick={toggleChat}
-                    className="md:hidden p-2 bg-white/20 hover:bg-white/30 rounded-lg text-white flex items-center"
-                  >
-                    {chatVisible ? <X className="h-4 w-4" /> : <MessageCircle className="h-4 w-4" />}
-                  </button>
-                </div>
-                <div className="p-4 overflow-y-auto flex-grow">
-                  <OnlineUsersList users={onlineUsers} />
-                </div>
-              </div>
+          <>
+            {/* Ranking Horizontal */}
+            <div className="mb-6">
+              <StudyRoomRanking users={topUsers} isHorizontal={true} />
             </div>
             
-            {/* Coluna da Direita: Chat */}
-            <div className={`md:w-2/5 lg:w-1/3 ${!chatVisible && 'hidden md:block'}`}>
-              <div className="bg-white rounded-xl shadow-md h-[600px] flex flex-col">
-                <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 flex-shrink-0">
-                  <h2 className="text-white font-bold flex items-center">
-                    <MessageCircle className="mr-2 h-5 w-5" />
-                    Chat
-                  </h2>
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* Coluna da Esquerda: Usuários Online */}
+              <div className="lg:w-1/2">
+                <div className="bg-white rounded-xl shadow-md overflow-hidden h-[600px] flex flex-col">
+                  <div className="bg-gradient-to-r from-green-500 to-teal-600 px-6 py-4 flex justify-between items-center">
+                    <h2 className="text-white font-bold flex items-center">
+                      <Users className="mr-2 h-5 w-5" />
+                      Usuários Online ({onlineUsers.length})
+                    </h2>
+                    
+                    <button
+                      onClick={toggleChat}
+                      className="lg:hidden p-2 bg-white/20 hover:bg-white/30 rounded-lg text-white flex items-center"
+                    >
+                      {chatVisible ? <X className="h-4 w-4" /> : <MessageCircle className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <div className="p-4 overflow-y-auto flex-grow">
+                    <OnlineUsersList users={onlineUsers} />
+                  </div>
                 </div>
-                <div className="flex-1 flex flex-col overflow-hidden">
-                  <ChatRoom 
-                    roomId={params.id} 
-                    showHeader={false} 
-                    className="h-full"
-                  />
+              </div>
+              
+              {/* Coluna da Direita: Chat */}
+              <div className={`lg:w-1/2 ${!chatVisible && 'hidden lg:block'}`}>
+                <div className="bg-white rounded-xl shadow-md h-[600px] flex flex-col">
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 flex-shrink-0">
+                    <h2 className="text-white font-bold flex items-center">
+                      <MessageCircle className="mr-2 h-5 w-5" />
+                      Chat
+                    </h2>
+                  </div>
+                  <div className="flex-1 flex flex-col overflow-hidden">
+                    <ChatRoom 
+                      roomId={params.id} 
+                      showHeader={false} 
+                      className="h-full"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          </>
         )}
         
         {!user && (
