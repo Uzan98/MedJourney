@@ -88,14 +88,6 @@ const nextConfig = {
       },
     ];
   },
-  
-  // Configurações experimentais
-  experimental: {
-    // Desativar recursos experimentais
-    serverActions: false,
-    serverActionsBodySizeLimit: '2mb',
-    serverComponentsExternalPackages: [],
-  },
 };
 
 module.exports = nextConfig; 

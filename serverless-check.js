@@ -41,41 +41,44 @@ let modifiedCount = 0;
 
 // Para cada arquivo de rota
 routeFiles.forEach(file => {
-  let content = fs.readFileSync(file, 'utf8');
-  let modified = false;
-  
-  // Verificar e adicionar export const dynamic = 'force-dynamic'
-  if (!content.includes("export const dynamic = 'force-dynamic'")) {
-    console.log(`📝 Adicionando configuração dynamic a ${file}`);
-    const dynamicConfig = "\n// Configurar rota como dinâmica para o ambiente serverless\nexport const dynamic = 'force-dynamic';\n\n";
-    content = dynamicConfig + content;
-    modified = true;
-  }
-  
-  // Verificar e adicionar maxDuration
-  if (!content.includes('export const maxDuration')) {
-    console.log(`📝 Adicionando configuração maxDuration a ${file}`);
-    const durationConfig = "\n// Limitar duração máxima para o plano gratuito da Vercel\nexport const maxDuration = 5;\n";
+  try {
+    let content = fs.readFileSync(file, 'utf8');
+    let modified = false;
     
-    // Encontrar onde colocar a configuração (após imports ou no início)
-    const lines = content.split('\n');
-    let importEndIndex = 0;
-    
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].trim().startsWith('import')) {
-        importEndIndex = Math.max(importEndIndex, i + 1);
-      }
+    // Verificar e adicionar export const dynamic = 'force-dynamic'
+    if (!content.includes("export const dynamic = 'force-dynamic'")) {
+      console.log(`📝 Adicionando configuração dynamic a ${file}`);
+      // Adicionar no início do arquivo
+      const dynamicConfig = "// Configurar rota como dinâmica para o ambiente serverless\nexport const dynamic = 'force-dynamic';\n\n";
+      content = dynamicConfig + content;
+      modified = true;
     }
     
-    lines.splice(importEndIndex, 0, durationConfig);
-    content = lines.join('\n');
-    modified = true;
-  }
-  
-  // Salvar arquivo se modificado
-  if (modified) {
-    fs.writeFileSync(file, content);
-    modifiedCount++;
+    // Verificar e adicionar maxDuration como uma exportação no começo do arquivo
+    if (!content.includes('export const maxDuration')) {
+      console.log(`📝 Adicionando configuração maxDuration a ${file}`);
+      
+      // Se já adicionamos o dynamic, adicionamos o maxDuration logo abaixo
+      if (content.includes("export const dynamic = 'force-dynamic'")) {
+        content = content.replace(
+          "export const dynamic = 'force-dynamic';", 
+          "export const dynamic = 'force-dynamic';\n// Limitar duração máxima para o plano gratuito da Vercel\nexport const maxDuration = 5;"
+        );
+      } else {
+        // Caso contrário, adicionamos no início do arquivo
+        const durationConfig = "// Limitar duração máxima para o plano gratuito da Vercel\nexport const maxDuration = 5;\n\n";
+        content = durationConfig + content;
+      }
+      modified = true;
+    }
+    
+    // Salvar arquivo se modificado
+    if (modified) {
+      fs.writeFileSync(file, content);
+      modifiedCount++;
+    }
+  } catch (error) {
+    console.error(`❌ Erro ao processar arquivo ${file}:`, error);
   }
 });
 
