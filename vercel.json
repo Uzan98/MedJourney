@@ -4,7 +4,6 @@
   "framework": "nextjs",
   "devCommand": "next dev",
   "installCommand": "npm install",
-  "regions": ["dub1", "iad1"],
   "git": {
     "deploymentEnabled": {
       "main": true
@@ -12,8 +11,8 @@
   },
   "functions": {
     "src/app/api/**/route.ts": {
-      "memory": 1024,
-      "maxDuration": 10
+      "memory": 256,
+      "maxDuration": 5
     }
   },
   "headers": [
@@ -48,7 +47,7 @@
     "NEXT_SKIP_TYPESCRIPT_CHECK": "true",
     "NEXT_IGNORE_ERRORS": "1",
     "NEXT_TELEMETRY_DISABLED": "1",
-    "NODE_OPTIONS": "--max_old_space_size=4096",
+    "NODE_OPTIONS": "--max_old_space_size=3008",
     "PRESERVE_REAL_FILES": "true",
     "CI": "false",
     "DISABLE_ESLINT_PLUGIN": "true"
