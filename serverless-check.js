@@ -45,37 +45,55 @@ routeFiles.forEach(file => {
     let content = fs.readFileSync(file, 'utf8');
     let modified = false;
     
-    // Verificar e adicionar export const dynamic = 'force-dynamic'
-    if (!content.includes("export const dynamic = 'force-dynamic'")) {
-      console.log(`📝 Adicionando configuração dynamic a ${file}`);
-      // Adicionar no início do arquivo
-      const dynamicConfig = "// Configurar rota como dinâmica para o ambiente serverless\nexport const dynamic = 'force-dynamic';\n\n";
-      content = dynamicConfig + content;
-      modified = true;
-    }
+    // Verificar se as diretivas já existem
+    const hasDynamic = content.includes("export const dynamic = 'force-dynamic'");
+    const hasMaxDuration = content.includes('export const maxDuration');
     
-    // Verificar e adicionar maxDuration como uma exportação no começo do arquivo
-    if (!content.includes('export const maxDuration')) {
-      console.log(`📝 Adicionando configuração maxDuration a ${file}`);
+    // Se qualquer diretiva estiver faltando, vamos adicionar ambas no início do arquivo
+    if (!hasDynamic || !hasMaxDuration) {
+      console.log(`📝 Adicionando configurações ao arquivo ${file}`);
       
-      // Se já adicionamos o dynamic, adicionamos o maxDuration logo abaixo
-      if (content.includes("export const dynamic = 'force-dynamic'")) {
-        content = content.replace(
-          "export const dynamic = 'force-dynamic';", 
-          "export const dynamic = 'force-dynamic';\n// Limitar duração máxima para o plano gratuito da Vercel\nexport const maxDuration = 5;"
-        );
-      } else {
-        // Caso contrário, adicionamos no início do arquivo
-        const durationConfig = "// Limitar duração máxima para o plano gratuito da Vercel\nexport const maxDuration = 5;\n\n";
-        content = durationConfig + content;
+      // Primeiro, remover qualquer diretiva existente para evitar duplicação
+      let lines = content.split('\n');
+      lines = lines.filter(line => 
+        !line.includes("export const dynamic =") && 
+        !line.includes("export const maxDuration =") &&
+        !line.includes("// Configurar esta rota como dinâmica") &&
+        !line.includes("// Limitar duração máxima para o plano gratuito da Vercel")
+      );
+      
+      // Encontrar onde terminam os imports para inserir as diretivas
+      let lastImportIndex = -1;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim().startsWith('import ')) {
+          lastImportIndex = i;
+        }
       }
-      modified = true;
-    }
-    
-    // Salvar arquivo se modificado
-    if (modified) {
+      
+      // Preparar as diretivas
+      const directives = [
+        '',
+        '// Configurar esta rota como dinâmica para evitar erros de renderização estática',
+        "export const dynamic = 'force-dynamic';",
+        '',
+        '// Limitar duração máxima para o plano gratuito da Vercel',
+        'export const maxDuration = 5;',
+        ''
+      ];
+      
+      // Inserir no início ou após os imports
+      const insertIndex = lastImportIndex >= 0 ? lastImportIndex + 1 : 0;
+      lines.splice(insertIndex, 0, ...directives);
+      
+      // Reconstruir o conteúdo e salvar
+      content = lines.join('\n');
       fs.writeFileSync(file, content);
       modifiedCount++;
+      modified = true;
+    }
+    
+    if (!modified) {
+      console.log(`ℹ️ Arquivo ${file} já possui as configurações necessárias.`);
     }
   } catch (error) {
     console.error(`❌ Erro ao processar arquivo ${file}:`, error);
