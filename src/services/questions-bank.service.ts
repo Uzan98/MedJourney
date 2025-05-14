@@ -18,6 +18,12 @@ export interface Question {
 }
 
 export interface AnswerOption {
+  /**
+   * ID da opção de resposta
+   * - No frontend: pode ser uma string temporária (ex: "temp-123456")
+   * - No backend: será sempre um número (bigint no Supabase)
+   * - Será removido antes de enviar ao backend para criação
+   */
   id?: number | string;
   question_id: number;
   text: string;
@@ -141,13 +147,18 @@ export class QuestionsBankService {
       if (answerOptions && answerOptions.length > 0 && 
           (question.question_type === 'multiple_choice' || question.question_type === 'true_false')) {
         
-        // Adiciona o question_id às opções de resposta
-        const optionsWithQuestionId = answerOptions.map(option => ({
-          ...option,
-          question_id: questionId,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }));
+        // Adiciona o question_id às opções de resposta e remove os IDs temporários
+        const optionsWithQuestionId = answerOptions.map(option => {
+          // Remove o campo id para que o Supabase gere um novo ID
+          const { id, ...optionWithoutId } = option;
+          
+          return {
+            ...optionWithoutId,
+            question_id: questionId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+        });
 
         // Insere as opções de resposta
         const { error: optionsError } = await supabase
@@ -155,6 +166,7 @@ export class QuestionsBankService {
           .insert(optionsWithQuestionId);
 
         if (optionsError) {
+          console.error('Erro ao inserir opções de resposta:', optionsError);
           throw optionsError;
         }
       }
@@ -162,6 +174,7 @@ export class QuestionsBankService {
       return questionId;
     } catch (error) {
       console.error('Erro ao adicionar questão:', error);
+      toast.error('Erro ao adicionar questão: ' + (error as any).message);
       return null;
     }
   }
@@ -212,13 +225,18 @@ export class QuestionsBankService {
           throw deleteError;
         }
 
-        // Adiciona o question_id às opções de resposta
-        const optionsWithQuestionId = answerOptions.map(option => ({
-          ...option,
-          question_id: id,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }));
+        // Adiciona o question_id às opções de resposta e remove os IDs temporários
+        const optionsWithQuestionId = answerOptions.map(option => {
+          // Remove o campo id para que o Supabase gere um novo ID
+          const { id: optionId, ...optionWithoutId } = option;
+          
+          return {
+            ...optionWithoutId,
+            question_id: id,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+        });
 
         // Insere as novas opções de resposta
         const { error: optionsError } = await supabase
@@ -226,6 +244,7 @@ export class QuestionsBankService {
           .insert(optionsWithQuestionId);
 
         if (optionsError) {
+          console.error('Erro ao inserir opções de resposta:', optionsError);
           throw optionsError;
         }
       }
@@ -233,6 +252,7 @@ export class QuestionsBankService {
       return true;
     } catch (error) {
       console.error(`Erro ao atualizar questão ${id}:`, error);
+      toast.error('Erro ao atualizar questão: ' + (error as any).message);
       return false;
     }
   }
