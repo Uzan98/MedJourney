@@ -24,6 +24,7 @@
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.40.0",
     "@types/react-beautiful-dnd": "^13.1.8",
+    "@vercel/speed-insights": "^1.2.0",
     "autoprefixer": "^10.4.18",
     "chart.js": "^4.4.9",
     "class-variance-authority": "^0.7.1",

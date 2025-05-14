@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import { StartupProvider } from './providers';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { PWAProvider } from '@/components/PWAProvider';
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import dynamic from 'next/dynamic';
 
 // Dynamically import the MobileMenu component with no SSR
@@ -113,6 +114,9 @@ export default function RootLayout({
         </AuthProvider>
         {/* Componente de Toast para notificações */}
         <Toaster position="top-right" />
+        
+        {/* Vercel Speed Insights */}
+        <SpeedInsights />
       </body>
     </html>
   );

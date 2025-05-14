@@ -69,3 +69,6 @@ temp/
 
 # Arquivos de configuração local
 src/config/local.ts
+
+# Next.js dev server
+.next-dev/
