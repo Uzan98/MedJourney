@@ -42,6 +42,12 @@ const nextConfig = {
       '@/components/ui/dropdown-menu': require('path').resolve('./src/components/ui/dropdown-menu.tsx'),
       '@/components/ui/badge': require('path').resolve('./src/components/ui/badge.tsx'),
       '@/components/ui/skeleton': require('path').resolve('./src/components/ui/skeleton.tsx'),
+      '@/components/ui/modal': require('path').resolve('./src/components/ui/modal.tsx'),
+      '@/components/ui/dialog': require('path').resolve('./src/components/ui/dialog.tsx'),
+      '@/components/Modal': require('path').resolve('./src/components/Modal.tsx'),
+      '@/components/Loading': require('path').resolve('./src/components/Loading.tsx'),
+      '@/components/Pill': require('path').resolve('./src/components/Pill.tsx'),
+      '@/components/ConfirmationModal': require('path').resolve('./src/components/ConfirmationModal.tsx'),
     };
     
     return config;

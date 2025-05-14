@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "vercel-build": "npm install -g typescript && npm install --save typescript tailwindcss autoprefixer postcss tailwindcss-animate && node build-setup.js && node mock-setup.js && node serverless-check.js && node fix-routes.js && node emergency-fix.js && node vercel-prebuild.js && next build || exit 0",
+    "vercel-build": "npm install -g typescript && npm install --save typescript tailwindcss autoprefixer postcss tailwindcss-animate && node build-setup.js && node mock-setup.js && node serverless-check.js && node fix-routes.js && node emergency-fix.js && node fix-vercel-deployment.js && next build || exit 0",
     "start": "next start",
     "lint": "next lint",
     "db:test": "node --experimental-json-modules scripts/test-db-connection.js",
