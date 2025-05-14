@@ -1,5 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { pt } from 'date-fns/locale';
 
 export interface ChatMessageProps {
   id: string;
@@ -16,17 +18,33 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   isCurrentUser
 }) => {
   // Formatar data/hora para exibição
-  const formattedTime = new Date(createdAt).toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  const formattedTime = format(new Date(createdAt), 'HH:mm', { locale: pt });
+  
+  // Verificar se a mensagem foi enviada hoje
+  const isToday = () => {
+    const today = new Date();
+    const messageDate = new Date(createdAt);
+    return (
+      today.getDate() === messageDate.getDate() &&
+      today.getMonth() === messageDate.getMonth() &&
+      today.getFullYear() === messageDate.getFullYear()
+    );
+  };
+  
+  // Formatar data completa se não for hoje
+  const fullDate = !isToday() ? format(new Date(createdAt), 'dd/MM/yyyy', { locale: pt }) : null;
 
   // Gerar uma cor baseada no nome do usuário (para avatar)
   const getColorFromName = (name: string) => {
     const colors = [
-      'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 
-      'bg-red-500', 'bg-purple-500', 'bg-pink-500', 
-      'bg-indigo-500', 'bg-teal-500'
+      'bg-blue-500 text-white',
+      'bg-green-500 text-white',
+      'bg-indigo-500 text-white', 
+      'bg-purple-500 text-white', 
+      'bg-pink-500 text-white',
+      'bg-amber-500 text-white',
+      'bg-cyan-500 text-white',
+      'bg-red-500 text-white',
     ];
     
     // Gerar um índice consistente baseado no nome
@@ -42,19 +60,20 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
   // Obter as iniciais do nome de usuário
   const getInitials = (name: string) => {
+    if (!name) return '??';
     return name.split(' ').map(part => part[0]).join('').toUpperCase().substring(0, 2);
   };
 
   return (
     <div 
       className={cn(
-        "flex w-full mb-4", 
+        "flex w-full my-1.5 px-2", 
         isCurrentUser ? "justify-end" : "justify-start"
       )}
     >
       {!isCurrentUser && (
-        <div className="flex-shrink-0 mr-2">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${getColorFromName(username)}`}>
+        <div className="flex-shrink-0 mr-2 mt-2">
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${getColorFromName(username)}`}>
             {getInitials(username)}
           </div>
         </div>
@@ -62,23 +81,27 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       
       <div 
         className={cn(
-          "max-w-[75%] flex flex-col",
+          "max-w-[80%] flex flex-col",
           isCurrentUser ? "items-end" : "items-start"
         )}
       >
-        <div className="flex items-center mb-1">
+        <div className="flex items-baseline mb-0.5 space-x-1.5">
           {!isCurrentUser && (
-            <span className="text-sm font-semibold mr-2">{username}</span>
+            <span className="text-xs font-medium text-gray-700 truncate max-w-[120px]">
+              {username}
+            </span>
           )}
-          <span className="text-xs text-gray-500">{formattedTime}</span>
+          <span className="text-[10px] text-gray-400 whitespace-nowrap">
+            {fullDate ? `${fullDate} ${formattedTime}` : formattedTime}
+          </span>
         </div>
         
         <div 
           className={cn(
-            "px-4 py-2 rounded-xl text-sm break-words",
+            "px-3 py-2 rounded-2xl text-sm break-words",
             isCurrentUser 
-              ? "bg-blue-600 text-white rounded-tr-none" 
-              : "bg-gray-200 text-gray-800 rounded-tl-none"
+              ? "bg-blue-500 text-white rounded-br-none shadow-sm" 
+              : "bg-gray-100 text-gray-800 rounded-bl-none border border-gray-200"
           )}
         >
           {content}
@@ -86,8 +109,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       </div>
       
       {isCurrentUser && (
-        <div className="flex-shrink-0 ml-2">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white bg-blue-600`}>
+        <div className="flex-shrink-0 ml-2 mt-2">
+          <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium bg-blue-500 text-white">
             {getInitials(username)}
           </div>
         </div>

@@ -11,7 +11,7 @@ import PerformanceCharts from './PerformanceCharts';
 import Notifications from './Notifications';
 import AppLayout from '../layout/AppLayout';
 import { BarChart, Clock, FileText, TrendingUp, BarChart2 } from 'lucide-react';
-import { Card } from '../ui/Card';
+import { Card } from '@/components/ui/card';
 import { getStudyMetrics, getStudySessions, getTasks, getNotes, getSimulatedTests } from '../../lib/api';
 import { StudyMetrics, Task, StudySession, Note, StudyData, SimulatedTest } from '../../lib/types/dashboard';
 import { setupOfflineDetection } from '../../lib/utils/offline';

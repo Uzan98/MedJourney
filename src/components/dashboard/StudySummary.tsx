@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Clock, CheckCircle, Calendar, BarChart2, Zap, Activity, TrendingUp, Award, Flame, ChevronLeft, ChevronRight, X, CalendarDays, Eye } from 'lucide-react';
-import { Card, CardStat, CardGrid } from '../ui/Card';
+import { Card, CardStat, CardGrid } from '@/components/ui/card';
 import { StudyMetrics } from '../../lib/types/dashboard';
 
 interface StudySummaryProps {

@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Card } from '../ui/Card';
+import { Card } from '@/components/ui/card';
 import { FileText, Edit, Calendar, Bookmark, ExternalLink, Tag } from 'lucide-react';
 import { Note } from '../../lib/types/dashboard';
 import { formatDate } from '../../lib/utils';

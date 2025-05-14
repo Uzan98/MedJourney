@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Play, Pause, RotateCcw, Check, Clock, X, Volume2, VolumeX } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { StudySession } from '@/lib/types/planning';
 import { atualizarSessaoEstudo } from '@/services';
 import toast from 'react-hot-toast';

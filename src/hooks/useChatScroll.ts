@@ -11,7 +11,7 @@ interface UseChatScrollProps {
 /**
  * Hook para gerenciar o comportamento de rolagem automática em chats.
  * Quando novas mensagens são adicionadas, o chat rola para baixo somente se:
- * 1. shouldAutoScroll estiver ativado (agora desativado por padrão)
+ * 1. shouldAutoScroll estiver ativado
  * 2. O usuário já estava próximo do final do chat
  */
 export const useChatScroll = ({
@@ -19,7 +19,7 @@ export const useChatScroll = ({
   dependencies = [],
   smooth = true,
   bottomOffset = 100,
-  shouldAutoScroll = false // Agora desativado por padrão
+  shouldAutoScroll = true // Habilitado por padrão
 }: UseChatScrollProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
@@ -76,25 +76,26 @@ export const useChatScroll = ({
     return () => {
       container.removeEventListener('scroll', handleScroll);
     };
-  }, []);
+  }, [bottomOffset]);
 
   // Efeito para rolar ao fundo quando novas mensagens chegam
   useEffect(() => {
-    if (!shouldAutoScroll) return;
-    
-    // Se não houver mensagens, não é necessário rolar
-    if (messages.length === 0) return;
+    // Se não houver mensagens ou não devemos auto-scrollar, retornar
+    if (messages.length === 0 || !shouldAutoScroll) return;
     
     const scrollIfNeeded = () => {
       // Rola para baixo somente se o usuário já estava próximo do fim
+      // ou se o chat acabou de ser inicializado (sem rolagem anterior)
       if (wasAtBottomRef.current) {
         scrollToBottom(smooth ? 'smooth' : 'auto');
       }
     };
 
     // Agenda a rolagem para depois do próximo ciclo de renderização
-    setTimeout(scrollIfNeeded, 100);
+    // Aumentamos um pouco o timeout para dar tempo ao navegador de renderizar
+    const timeoutId = setTimeout(scrollIfNeeded, 150);
     
+    return () => clearTimeout(timeoutId);
   }, [messages, smooth, shouldAutoScroll, ...dependencies]);
 
   return { containerRef, endOfMessagesRef, scrollToBottom };

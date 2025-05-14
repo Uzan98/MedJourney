@@ -25,8 +25,11 @@ import {
   GraduationCap,
   FileQuestion,
   Users,
-  Clock
+  Clock,
+  User
 } from 'lucide-react';
+import MobileMenu from './MobileMenu';
+import SidebarMenu from './SidebarMenu';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -319,34 +322,25 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         
         {/* Menu container com scroll próprio */}
         <div className="flex flex-col flex-1 overflow-hidden">
-          {/* Nav links com scroll */}
-          <div className="space-y-1 flex-1 px-4 pb-4 overflow-y-auto custom-scrollbar">
-          {isSidebarOpen && (
-              <p className="text-blue-300 text-xs font-medium uppercase tracking-wider mb-2 px-3 sticky top-0 bg-blue-600 py-2">
-              Menu Principal
-            </p>
-          )}
-
-            {menuItems.map(item => renderMenuItem(item))}
-          </div>
+          {/* Nav links com scroll - Usando o novo componente SidebarMenu */}
+          <SidebarMenu 
+            collapsed={!isSidebarOpen} 
+            onToggleSubmenu={toggleSubmenu} 
+            expandedMenus={expandedMenus}
+          />
           
           {/* Bottom links - fora da área de scroll */}
-          <div className={`pt-4 border-t border-blue-500 px-4 pb-4 flex-shrink-0 ${!isSidebarOpen && 'flex flex-col items-center'}`}>
-          <Link href="/configuracoes" className={getNavLinkClasses("/configuracoes")}>
-            <Settings className="h-5 w-5 flex-shrink-0" />
-            {isSidebarOpen && <span>Configurações</span>}
-          </Link>
-          
           {isSidebarOpen && (
-            <div className="bg-blue-500 text-white rounded-lg p-3 mt-4 text-sm">
-              <p className="font-medium">Precisa de ajuda?</p>
-              <p className="text-blue-100 text-xs mt-1">Entre em contato com o suporte para qualquer dúvida.</p>
-              <button className="w-full bg-blue-400 hover:bg-blue-300 text-blue-800 py-1.5 px-3 rounded-md text-sm font-medium mt-3">
-                Contato
-              </button>
+            <div className="pt-4 border-t border-blue-500 px-4 pb-4 flex-shrink-0">
+              <div className="bg-blue-500 text-white rounded-lg p-3 mt-2 text-sm">
+                <p className="font-medium">Precisa de ajuda?</p>
+                <p className="text-blue-100 text-xs mt-1">Entre em contato com o suporte para qualquer dúvida.</p>
+                <button className="w-full bg-blue-400 hover:bg-blue-300 text-blue-800 py-1.5 px-3 rounded-md text-sm font-medium mt-3">
+                  Contato
+                </button>
+              </div>
             </div>
           )}
-          </div>
         </div>
       </div>
       
@@ -375,23 +369,15 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         
         {/* Menu container com scroll próprio - Mobile */}
         <div className="flex flex-col flex-1 overflow-hidden">
-          {/* Mobile Nav com scroll */}
-          <div className="space-y-1 flex-1 px-4 overflow-y-auto custom-scrollbar">
-            <p className="text-blue-300 text-xs font-medium uppercase tracking-wider mb-2 px-3 sticky top-0 bg-blue-600 py-2">
-              Menu Principal
-            </p>
-
-            {menuItems.map(item => renderMenuItem(item, true))}
-          </div>
+          {/* Mobile Nav com scroll - Usando o novo componente SidebarMenu */}
+          <SidebarMenu 
+            onToggleSubmenu={toggleSubmenu} 
+            expandedMenus={expandedMenus}
+          />
           
           {/* Bottom links - Mobile, fora da área de scroll */}
           <div className="pt-4 border-t border-blue-500 px-4 pb-4 flex-shrink-0">
-            <Link href="/configuracoes" className={getNavLinkClasses("/configuracoes", false, true)}>
-              <Settings className="h-5 w-5" />
-              <span>Configurações</span>
-            </Link>
-          
-            <div className="bg-blue-500 text-white rounded-lg p-3 mt-4 text-sm">
+            <div className="bg-blue-500 text-white rounded-lg p-3 mt-2 text-sm">
               <p className="font-medium">Precisa de ajuda?</p>
               <p className="text-blue-100 text-xs mt-1">Entre em contato com o suporte para qualquer dúvida.</p>
               <button className="w-full bg-blue-400 hover:bg-blue-300 text-blue-800 py-1.5 px-3 rounded-md text-sm font-medium mt-3">
@@ -437,7 +423,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             {/* User */}
             <div className="flex items-center space-x-2">
               <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
-                U
+                <User className="h-4 w-4" />
               </div>
               <span className="font-medium text-sm hidden sm:inline-block">Usuário</span>
             </div>
@@ -445,10 +431,13 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         </header>
         
         {/* Page content */}
-        <main className="flex-1 overflow-auto p-6 bg-gray-50">
+        <main className="flex-1 overflow-auto p-0 sm:p-6 bg-gray-50 max-w-full w-full pb-16 md:pb-6">
           {children}
         </main>
       </div>
+
+      {/* Mobile Menu */}
+      <MobileMenu forceShow />
     </div>
   );
 };

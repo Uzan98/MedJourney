@@ -26,11 +26,11 @@ import {
 
 // Adicionar importação da API
 import { getDisciplines, getDisciplineSubjects, createDiscipline, createSubject, deleteDiscipline, deleteSubject } from '../../lib/api';
-import { toast } from '../../components/ui/Toast';
+import { toast } from '@/components/ui/toast';
 // Importar definições de tema
 import { DISCIPLINE_THEMES, getThemesMap, getThemeById } from '../../constants/themes';
-import { ThemePicker, ThemeBadge, ThemedCard, ThemeCircle } from '../../components/ui/ThemeComponents';
-import SubjectCard from '../../components/ui/SubjectCard';
+import { ThemePicker, ThemeBadge, ThemedCard, ThemeCircle } from '@/components/ui/theme-components';
+import SubjectCard from '@/components/ui/subject-card';
 
 // Interfaces para tipos de dados
 interface Assunto {

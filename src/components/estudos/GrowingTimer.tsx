@@ -24,13 +24,36 @@ const GrowingTimer: React.FC<GrowingTimerProps> = ({
   const [notes, setNotes] = useState('');
   
   // Referência para armazenar o ID do intervalo
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  // Tempo de início para cálculos precisos
+  const timerIntervalRef = useRef<number | null>(null);
+  // Tempo de início absoluto
   const startTimeRef = useRef<number>(Date.now());
-  // Tempo acumulado em pausas anteriores
-  const pausedAccumulatedTimeRef = useRef<number>(0);
-  // Tempo em que o timer foi pausado pela última vez
+  // Tempo total acumulado durante pausas
+  const pausedTimeRef = useRef<number>(0);
+  // Tempo quando o timer foi pausado pela última vez
   const lastPauseTimeRef = useRef<number>(0);
+  // Flag para verificar se a página está visível
+  const isVisibleRef = useRef<boolean>(true);
+  // Referência para o último tempo calculado
+  const lastCalculatedTimeRef = useRef<number>(0);
+
+  // Função para calcular o tempo decorrido com precisão
+  const calculateElapsedTime = () => {
+    if (isPaused) {
+      return lastCalculatedTimeRef.current;
+    }
+
+    const now = Date.now();
+    const rawElapsed = now - startTimeRef.current;
+    const adjustedElapsed = Math.floor((rawElapsed - pausedTimeRef.current) / 1000);
+    
+    lastCalculatedTimeRef.current = adjustedElapsed;
+    return adjustedElapsed;
+  };
+
+  // Atualizar o tempo decorrido
+  const updateElapsedTime = () => {
+    setElapsedSeconds(calculateElapsedTime());
+  };
 
   // Formatar o tempo para exibição
   const formatTime = (seconds: number): string => {
@@ -45,36 +68,72 @@ const GrowingTimer: React.FC<GrowingTimerProps> = ({
   useEffect(() => {
     // Iniciar o timer apenas se não estiver pausado
     if (!isPaused) {
-      // Definir ou redefinir o tempo de início
+      // Se estamos iniciando do zero
       if (elapsedSeconds === 0) {
         startTimeRef.current = Date.now();
-        pausedAccumulatedTimeRef.current = 0;
+        pausedTimeRef.current = 0;
+        lastCalculatedTimeRef.current = 0;
       } else if (lastPauseTimeRef.current > 0) {
         // Se estamos retomando de uma pausa, adicionar o tempo pausado ao acumulado
-        pausedAccumulatedTimeRef.current += (Date.now() - lastPauseTimeRef.current);
+        pausedTimeRef.current += (Date.now() - lastPauseTimeRef.current);
         lastPauseTimeRef.current = 0;
       }
       
-      // Limpar qualquer intervalo existente
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current);
-      }
+      // Usar requestAnimationFrame para animação mais suave e precisa
+      const animate = () => {
+        if (isVisibleRef.current) {
+          updateElapsedTime();
+        }
+        timerIntervalRef.current = requestAnimationFrame(animate);
+      };
       
-      // Criar novo intervalo que atualiza a cada segundo
-      timerIntervalRef.current = setInterval(() => {
-        const now = Date.now();
-        const rawElapsed = now - startTimeRef.current;
-        const adjustedElapsed = Math.floor((rawElapsed - pausedAccumulatedTimeRef.current) / 1000);
-        
-        setElapsedSeconds(adjustedElapsed);
-      }, 1000);
+      timerIntervalRef.current = requestAnimationFrame(animate);
     }
     
-    // Limpar intervalo ao desmontar
+    // Limpar animação ao desmontar
     return () => {
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current);
+      if (timerIntervalRef.current !== null) {
+        cancelAnimationFrame(timerIntervalRef.current);
       }
+    };
+  }, [isPaused]);
+
+  // Adicionar listeners para visibilidade da página
+  useEffect(() => {
+    // Manipulador para quando a página fica visível/invisível
+    const handleVisibilityChange = () => {
+      const isVisible = document.visibilityState === 'visible';
+      isVisibleRef.current = isVisible;
+      
+      if (isVisible && !isPaused) {
+        // Recalcular e atualizar o tempo quando a página volta a ficar visível
+        updateElapsedTime();
+      }
+    };
+    
+    // Manipulador para quando a janela perde/ganha foco
+    const handleFocus = () => {
+      isVisibleRef.current = true;
+      if (!isPaused) {
+        // Recalcular e atualizar o tempo quando a janela ganha foco
+        updateElapsedTime();
+      }
+    };
+    
+    const handleBlur = () => {
+      isVisibleRef.current = false;
+    };
+    
+    // Adicionar listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
+    
+    // Remover listeners ao desmontar
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
     };
   }, [isPaused]);
 
@@ -87,9 +146,9 @@ const GrowingTimer: React.FC<GrowingTimerProps> = ({
         // Se estamos pausando, armazenar o momento em que pausamos
         lastPauseTimeRef.current = Date.now();
         
-        // Limpar o intervalo
-        if (timerIntervalRef.current) {
-          clearInterval(timerIntervalRef.current);
+        // Parar a animação
+        if (timerIntervalRef.current !== null) {
+          cancelAnimationFrame(timerIntervalRef.current);
           timerIntervalRef.current = null;
         }
       }
@@ -100,21 +159,24 @@ const GrowingTimer: React.FC<GrowingTimerProps> = ({
 
   // Completar sessão
   const handleComplete = () => {
-    // Limpar o intervalo
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
+    // Parar a animação
+    if (timerIntervalRef.current !== null) {
+      cancelAnimationFrame(timerIntervalRef.current);
     }
     
+    // Calcular o tempo final com precisão
+    const finalElapsedSeconds = calculateElapsedTime();
+    
     // Calcular quanto tempo durou a sessão (em minutos)
-    const elapsedMinutes = Math.max(1, Math.ceil(elapsedSeconds / 60));
+    const elapsedMinutes = Math.max(1, Math.ceil(finalElapsedSeconds / 60));
     onComplete(elapsedMinutes, disciplineId, notes);
   };
   
   // Cancelar sessão
   const handleCancel = () => {
-    // Limpar o intervalo
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
+    // Parar a animação
+    if (timerIntervalRef.current !== null) {
+      cancelAnimationFrame(timerIntervalRef.current);
     }
     
     onCancel();

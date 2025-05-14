@@ -278,6 +278,8 @@ export class StudySessionService {
       console.log('getUpcomingSessions: Tabela study_sessions existe e está acessível');
 
       // Buscar sessões não completadas com data de agendamento a partir de hoje
+      // Removemos o filtro de status para pegar todas as sessões não completadas,
+      // independentemente de serem 'agendada', 'pendente', etc.
       const { data, error } = await supabase
         .from('study_sessions')
         .select('*')
@@ -292,7 +294,7 @@ export class StudySessionService {
         return [];
       }
 
-      // Depuração 
+      // Depuração mais detalhada
       console.log('getUpcomingSessions: Sessões encontradas:', data?.length || 0);
       if (data && data.length > 0) {
         // Log mais detalhado para ajudar no diagnóstico do problema de horário
@@ -301,7 +303,21 @@ export class StudySessionService {
           title: data[0].title,
           raw_date: data[0].scheduled_date,
           js_date: new Date(data[0].scheduled_date).toLocaleString(),
-          iso_date: new Date(data[0].scheduled_date).toISOString()
+          iso_date: new Date(data[0].scheduled_date).toISOString(),
+          completed: data[0].completed,
+          status: data[0].status
+        });
+        
+        // Imprimir resumo de todas as sessões para diagnóstico
+        console.log('getUpcomingSessions: Resumo de todas as sessões:');
+        data.forEach((session, index) => {
+          console.log(`Sessão ${index + 1}:`, {
+            id: session.id,
+            title: session.title,
+            date: new Date(session.scheduled_date || '').toLocaleString(),
+            completed: session.completed,
+            status: session.status
+          });
         });
       }
 

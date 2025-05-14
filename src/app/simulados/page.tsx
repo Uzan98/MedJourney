@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { FaPlus, FaPlay, FaEdit, FaTrash, FaClipboard, FaHistory } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { Exam, ExamsService } from '@/services/exams.service';
-import { Modal } from '@/components/ui/Modal';
+import { Modal } from '@/components/ui/modal';
 
 // Simple Loading component
 const Loading = ({ message = "Carregando..." }) => (

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Play, Pause, RotateCcw, Check, Settings, Clock, X, Volume2, Volume1, VolumeX } from 'lucide-react';
 import { completeStudySession } from '../../lib/api';
-import { toast } from '../ui/Toast';
+import { toast } from '@/components/ui/toast';
 
 interface StudyTimerProps {
   isOpen: boolean;
@@ -180,33 +180,82 @@ const StudyTimer: React.FC<StudyTimerProps> = ({
 
   // Efeito para controlar o timer
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    if (!isRunning) return;
     
-    if (isRunning) {
-      const startTime = Date.now();
+    // Armazenar o timestamp inicial
+    const startTimestamp = Date.now();
+    const initialElapsedTime = elapsedTime;
+    const initialTimeRemaining = timeRemaining;
+    
+    // Referência para o ID da animação
+    let animationFrameId: number | null = null;
+    
+    // Flag para verificar se a página está visível
+    let isVisible = true;
+    
+    // Função para atualizar o timer
+    const updateTimer = () => {
+      if (!isRunning) return;
       
-      const tick = () => {
-        if (!isRunning) return;
-        
+      if (isVisible) {
         const now = Date.now();
-        const elapsed = Math.floor((now - startTime) / 1000);
-        setElapsedTime(prev => prev + elapsed);
+        const deltaSeconds = Math.floor((now - startTimestamp) / 1000);
         
-        const remaining = Math.max(0, timeRemaining - elapsed);
-        setTimeRemaining(remaining);
+        // Atualizar o tempo decorrido
+        const newElapsedTime = initialElapsedTime + deltaSeconds;
+        setElapsedTime(newElapsedTime);
         
-        if (remaining <= 1) {
+        // Atualizar o tempo restante
+        const newTimeRemaining = Math.max(0, initialTimeRemaining - deltaSeconds);
+        setTimeRemaining(newTimeRemaining);
+        
+        // Verificar se o tempo acabou
+        if (newTimeRemaining <= 0) {
           playNotificationSound();
           setIsRunning(false);
           setCompletionConfirm(true);
+          return;
         }
-      };
+      }
       
-      interval = setInterval(tick, 1000);
-    }
+      // Continuar a animação
+      animationFrameId = requestAnimationFrame(updateTimer);
+    };
     
-    return () => clearInterval(interval);
-  }, [isRunning, timeRemaining]);
+    // Iniciar a animação
+    animationFrameId = requestAnimationFrame(updateTimer);
+    
+    // Gerenciar visibilidade da página
+    const handleVisibilityChange = () => {
+      isVisible = document.visibilityState === 'visible';
+    };
+    
+    // Quando a janela ganha foco
+    const handleFocus = () => {
+      isVisible = true;
+    };
+    
+    // Quando a janela perde foco
+    const handleBlur = () => {
+      isVisible = false;
+    };
+    
+    // Adicionar listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
+    
+    // Limpar recursos ao desmontar
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
+      
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [isRunning, elapsedTime, timeRemaining]);
 
   // Efeito para definir o título da página
   useEffect(() => {

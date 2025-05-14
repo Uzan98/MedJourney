@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import AppLayout from '../../../components/layout/AppLayout';
 import { Database, Check, AlertCircle, RefreshCw } from 'lucide-react';
-import { toast } from '../../../components/ui/Toast';
+import { toast } from '@/components/ui/toast';
 
 export default function AdminDatabasePage() {
   const [loading, setLoading] = useState(false);

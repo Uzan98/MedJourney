@@ -12,7 +12,7 @@ import {
 import Link from 'next/link';
 import SubjectModal from '@/components/estudos/SubjectModal';
 import QuickStudySessionModal from '@/components/estudos/QuickStudySessionModal';
-import { toast } from '@/components/ui/Toast';
+import { toast } from '@/components/ui/toast';
 import { StudyStreakService } from '@/lib/study-streak-service';
 
 // Função para obter cores baseadas no tema da disciplina

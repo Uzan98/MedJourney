@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 import { Discipline } from '@/lib/supabase';
-import { Plus, Book, ChevronRight, AlertCircle, Bookmark, Clock, Calendar, FileText } from 'lucide-react';
+import { Plus, Book, ChevronRight, AlertCircle, Bookmark, Clock, Calendar, FileText, Trash2 } from 'lucide-react';
 import DisciplineModal from './DisciplineModal';
-import { toast } from '../ui/Toast';
+import { toast } from '../ui/toast-interface';
 import Link from 'next/link';
 
 // Função para obter cores baseadas no tema da disciplina
@@ -128,6 +128,8 @@ export default function DisciplinesList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deletingDisciplineId, setDeletingDisciplineId] = useState<number | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
 
   // Função para carregar disciplinas
   const loadDisciplines = async () => {
@@ -169,6 +171,41 @@ export default function DisciplinesList() {
       month: '2-digit',
       year: 'numeric'
     });
+  };
+
+  // Função para iniciar o processo de exclusão
+  const handleDeleteClick = (e: React.MouseEvent, disciplineId: number) => {
+    e.preventDefault(); // Impede a navegação para a página de detalhes
+    e.stopPropagation(); // Impede que o evento se propague
+    setDeletingDisciplineId(disciplineId);
+    setShowDeleteConfirm(true);
+  };
+
+  // Função para confirmar a exclusão
+  const confirmDelete = async () => {
+    if (!deletingDisciplineId) return;
+    
+    try {
+      const success = await DisciplinesRestService.deleteDiscipline(deletingDisciplineId);
+      if (success) {
+        toast.success("Disciplina excluída com sucesso!");
+        loadDisciplines(); // Recarregar a lista
+      } else {
+        toast.error("Erro ao excluir disciplina. Tente novamente.");
+      }
+    } catch (err) {
+      console.error("Erro ao excluir disciplina:", err);
+      toast.error("Erro ao excluir disciplina. Tente novamente.");
+    } finally {
+      setShowDeleteConfirm(false);
+      setDeletingDisciplineId(null);
+    }
+  };
+
+  // Função para cancelar a exclusão
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setDeletingDisciplineId(null);
   };
 
   return (
@@ -222,14 +259,16 @@ export default function DisciplinesList() {
           {disciplines.map((discipline) => {
             const colors = getThemeColors(discipline.theme);
             return (
-              <Link 
+              <div 
                 key={discipline.id} 
-                href={`/dashboard/disciplinas/${discipline.id}`}
                 className={`relative group overflow-hidden ${colors.bg} rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border ${colors.border}`}
               >
                 <div className="absolute top-0 right-0 w-24 h-24 -mt-10 -mr-10 rounded-full opacity-10 bg-gradient-to-br from-white to-black"></div>
                 
-                <div className="p-6 relative">
+                <Link 
+                  href={`/dashboard/disciplinas/${discipline.id}`}
+                  className="block p-6 relative"
+                >
                   <div className="flex items-start justify-between">
                     <div className="flex-shrink-0 mb-4">
                       {getThemeIcon(discipline.theme)}
@@ -250,23 +289,56 @@ export default function DisciplinesList() {
                       <Calendar className="h-3 w-3 mr-1" />
                       {formatDate(discipline.created_at)}
                     </span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${colors.light} ${colors.text}`}>
-                      {discipline.is_system ? 'Sistema' : 'Personalizada'}
-                    </span>
                   </div>
-                </div>
-              </Link>
+                </Link>
+
+                {/* Botão de exclusão */}
+                <button
+                  onClick={(e) => handleDeleteClick(e, discipline.id)}
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                  title="Excluir disciplina"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             );
           })}
         </div>
       )}
 
-      {/* Modal para criar disciplina */}
+      {/* Modal de criação de disciplina */}
       <DisciplineModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleCreateSuccess}
       />
+
+      {/* Modal de confirmação de exclusão */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/30">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Confirmar exclusão</h2>
+            <p className="text-gray-600 mb-6">
+              Tem certeza que deseja excluir esta disciplina? Essa ação não pode ser desfeita.
+            </p>
+            
+            <div className="flex space-x-3 justify-end">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

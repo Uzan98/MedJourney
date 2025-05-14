@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { CalendarClock, ChevronRight, ClipboardList, Clock, CheckCircle, BookOpen } from 'lucide-react';
-import { Card } from '../ui/Card';
+import { Card } from '@/components/ui/card';
 import { Task } from '../../lib/types/dashboard';
 import { formatDate } from '../../lib/utils';
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Skeleton, CircleSkeleton, TextSkeleton } from '../ui/Skeleton';
+import { Skeleton, CircleSkeleton, TextSkeleton } from '@/components/ui/skeleton';
 
 // Esqueleto para os cards do resumo do plano
 export const PlanMetricsSkeleton: React.FC = () => (

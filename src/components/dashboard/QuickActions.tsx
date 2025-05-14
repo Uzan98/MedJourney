@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Card } from '../ui/Card';
+import { Card } from '@/components/ui/card';
 import { Play, BookOpen, Plus, FileSpreadsheet, Sparkles, Clock, CheckCircle, X, Calendar, Target, CheckSquare, CalendarClock, Loader2, GraduationCap, Search } from 'lucide-react';
 import Link from 'next/link';
 import { StudySession } from '../../lib/types/dashboard';

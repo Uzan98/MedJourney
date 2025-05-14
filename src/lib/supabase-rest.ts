@@ -158,14 +158,14 @@ export const DisciplinesRestService = {
   
   /**
    * Cria uma nova disciplina
-   * @param name Nome da disciplina
-   * @param description Descrição da disciplina (opcional)
-   * @param theme Tema/cor da disciplina (opcional)
+   * @param discipline Objeto da disciplina
    */
   async createDiscipline(
-    name: string,
-    description?: string,
-    theme?: string
+    discipline: {
+      name: string;
+      description?: string;
+      theme?: string;
+    }
   ): Promise<Discipline | null> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -184,11 +184,10 @@ export const DisciplinesRestService = {
       const url = `${getSupabaseRestUrl()}disciplines`;
       
       const disciplineData = {
-        name,
-        description: description || null,
-        theme: theme || null,
-        user_id: user.id, // Sempre usar o ID do Auth
-        is_system: false
+        name: discipline.name,
+        description: discipline.description || null,
+        theme: discipline.theme || null,
+        user_id: user.id // Sempre usar o ID do Auth
       };
       
       console.log('Dados da disciplina a serem enviados:', disciplineData);
@@ -222,11 +221,7 @@ export const DisciplinesRestService = {
               headers: {
                 'Content-Type': 'application/json'
               },
-              body: JSON.stringify({
-                name,
-                description,
-                theme
-              })
+              body: JSON.stringify(discipline)
             });
             
             if (!apiResponse.ok) {
@@ -361,6 +356,77 @@ export const DisciplinesRestService = {
     } catch (error) {
       console.error('Erro ao criar assunto:', error);
       return null;
+    }
+  },
+  
+  /**
+   * Remove uma disciplina
+   * @param disciplineId ID da disciplina a ser removida
+   */
+  async deleteDiscipline(disciplineId: number): Promise<boolean> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+      
+      console.log('Removendo disciplina:', disciplineId);
+      
+      const headers = await getAuthHeaders();
+      const url = `${getSupabaseRestUrl()}disciplines?id=eq.${disciplineId}`;
+      
+      // Verificar se a disciplina pertence ao usuário atual
+      const { data: discipline, error: fetchError } = await supabase
+        .from('disciplines')
+        .select('*')
+        .eq('id', disciplineId)
+        .single();
+      
+      if (fetchError) {
+        console.error('Erro ao verificar disciplina:', fetchError);
+        return false;
+      }
+      
+      if (!discipline) {
+        console.error('Disciplina não encontrada');
+        return false;
+      }
+      
+      if (discipline.user_id !== user.id) {
+        console.error('Sem permissão para excluir essa disciplina');
+        return false;
+      }
+      
+      // Tentar excluir a disciplina diretamente pelo cliente Supabase
+      const { error: deleteError } = await supabase
+        .from('disciplines')
+        .delete()
+        .eq('id', disciplineId);
+      
+      if (deleteError) {
+        console.error('Erro ao excluir disciplina via cliente Supabase:', deleteError);
+        console.log('Tentando via API REST...');
+        
+        const response = await fetch(url, {
+          method: 'DELETE',
+          headers
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          console.error('Erro ao excluir disciplina via API REST:', error);
+          return false;
+        }
+        
+        return response.status === 204 || response.status === 200;
+      }
+      
+      console.log('Disciplina excluída com sucesso');
+      return true;
+    } catch (error) {
+      console.error('Erro ao excluir disciplina:', error);
+      return false;
     }
   }
 }; 

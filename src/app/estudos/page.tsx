@@ -116,25 +116,111 @@ export default function EstudosPage() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+  
+  // Verificar parâmetros de URL para iniciar sessão automaticamente
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get('session');
+      const autoStart = params.get('start');
+      
+      // Se temos um ID de sessão e start=true
+      if (sessionId && autoStart === 'true' && !activeSession) {
+        console.log(`Iniciando sessão automaticamente: ${sessionId}`);
+        
+        // Carregar a sessão específica e iniciá-la
+        const startSessionFromUrl = async () => {
+          try {
+            // Buscar todas as sessões não completadas
+            const sessions = await StudySessionService.getUserSessions(false);
+            console.log("Sessions para iniciar automaticamente:", sessions);
+            
+            const sessionToStart = sessions.find(s => s.id === Number(sessionId));
+            console.log("Sessão encontrada para iniciar:", sessionToStart);
+            
+            if (sessionToStart) {
+              handleStartSession(sessionToStart);
+              
+              // Limpar parâmetros da URL para evitar iniciar novamente em refresh
+              if (window.history.replaceState) {
+                const newUrl = window.location.pathname;
+                window.history.replaceState({ path: newUrl }, '', newUrl);
+              }
+            } else {
+              console.error(`Sessão não encontrada: ${sessionId}`);
+              toast.error("Sessão não encontrada");
+            }
+          } catch (error) {
+            console.error("Erro ao iniciar sessão automaticamente:", error);
+          }
+        };
+        
+        startSessionFromUrl();
+      }
+    }
+  }, []);
 
-    async function loadStudyData() {
-      try {
-        setLoading(true);
+  async function loadStudyData() {
+    try {
+      setLoading(true);
       console.log("Carregando dados de estudo...");
 
       // Tentar carregar sessões do serviço
       try {
         console.log("Tentando carregar sessões do StudySessionService");
         
-        // Carregar sessões agendadas
-        const upcoming = await StudySessionService.getUpcomingSessions(14);
-        console.log("Sessões agendadas carregadas:", upcoming);
+        // Primeiro, vamos buscar TODAS as sessões não completadas do usuário
+        // Isso irá capturar as sessões criadas em qualquer parte do aplicativo
+        const allNonCompletedSessions = await StudySessionService.getUserSessions(false);
+        console.log("Todas as sessões não completadas:", allNonCompletedSessions);
         
-        if (upcoming) {
-          setUpcomingSessions(upcoming.map(session => ({
+        // Filtrar apenas as sessões futuras (a partir de hoje)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayStr = today.toISOString();
+        
+        // Filtrar sessões com data agendada para hoje ou futuro
+        const upcoming = allNonCompletedSessions.filter(session => {
+          if (!session.scheduled_date) return false;
+          return new Date(session.scheduled_date) >= today;
+        });
+        
+        console.log("Sessões agendadas filtradas:", upcoming);
+        
+        if (upcoming && upcoming.length > 0) {
+          // Garantir que temos o nome da disciplina
+          const upcomingWithNames = upcoming.map(session => ({
             ...session,
             disciplineName: session.title.split(' - ')[0] || '',
-          })));
+          }));
+          
+          // Ordenar por data
+          const sortedUpcoming = upcomingWithNames.sort((a, b) => {
+            const dateA = a.scheduled_date ? new Date(a.scheduled_date).getTime() : 0;
+            const dateB = b.scheduled_date ? new Date(b.scheduled_date).getTime() : 0;
+            return dateA - dateB;
+          });
+          
+          setUpcomingSessions(sortedUpcoming);
+        } else {
+          // Como fallback, tente o método específico
+          const upcomingSessions = await StudySessionService.getUpcomingSessions(30);
+          if (upcomingSessions && upcomingSessions.length > 0) {
+            const upcomingWithNames = upcomingSessions.map(session => ({
+              ...session,
+              disciplineName: session.title.split(' - ')[0] || '',
+            }));
+            
+            const sortedUpcoming = upcomingWithNames.sort((a, b) => {
+              const dateA = a.scheduled_date ? new Date(a.scheduled_date).getTime() : 0;
+              const dateB = b.scheduled_date ? new Date(b.scheduled_date).getTime() : 0;
+              return dateA - dateB;
+            });
+            
+            setUpcomingSessions(sortedUpcoming);
+          } else {
+            setUpcomingSessions([]);
+          }
         }
 
         // Carregar sessões completadas
@@ -261,21 +347,74 @@ export default function EstudosPage() {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      // Carregar sessões futuras
-      const { data: upcomingData, error: upcomingError } = await supabase
+      // Abordagem 1: Obter todas as sessões não completadas primeiro
+      const { data: allSessions, error: allSessionsError } = await supabase
         .from('study_sessions')
         .select('*')
         .eq('user_id', user.id)
         .eq('completed', false)
-        .gte('scheduled_date', today.toISOString())
         .order('scheduled_date', { ascending: true });
       
-      if (upcomingError) {
-        throw upcomingError;
+      if (allSessionsError) {
+        throw allSessionsError;
       }
       
-      console.log("Sessões agendadas do Supabase:", upcomingData);
-      setUpcomingSessions(upcomingData || []);
+      console.log("Todas as sessões do Supabase:", allSessions);
+      
+      // Filtrar apenas as sessões futuras (a partir de hoje)
+      const upcomingData = allSessions ? allSessions.filter(session => {
+        if (!session.scheduled_date) return false;
+        return new Date(session.scheduled_date) >= today;
+      }) : [];
+      
+      console.log("Sessões agendadas filtradas do Supabase:", upcomingData);
+      
+      // Garantir que temos o nome da disciplina e ordenar da mesma forma que o método principal
+      if (upcomingData && upcomingData.length > 0) {
+        const upcomingWithNames = upcomingData.map(session => ({
+          ...session,
+          disciplineName: session.title.split(' - ')[0] || '',
+        }));
+        
+        // Ordenar por data
+        const sortedUpcoming = upcomingWithNames.sort((a, b) => {
+          const dateA = a.scheduled_date ? new Date(a.scheduled_date).getTime() : 0;
+          const dateB = b.scheduled_date ? new Date(b.scheduled_date).getTime() : 0;
+          return dateA - dateB;
+        });
+        
+        setUpcomingSessions(sortedUpcoming);
+      } else {
+        // Abordagem 2 (Fallback): Usar a consulta específica para 30 dias
+        const { data: fallbackUpcoming, error: fallbackError } = await supabase
+          .from('study_sessions')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('completed', false)
+          .gte('scheduled_date', today.toISOString())
+          .order('scheduled_date', { ascending: true });
+        
+        if (fallbackError) {
+          throw fallbackError;
+        }
+        
+        if (fallbackUpcoming && fallbackUpcoming.length > 0) {
+          const upcomingWithNames = fallbackUpcoming.map(session => ({
+            ...session,
+            disciplineName: session.title.split(' - ')[0] || '',
+          }));
+          
+        const sortedUpcoming = upcomingWithNames.sort((a, b) => {
+          const dateA = a.scheduled_date ? new Date(a.scheduled_date).getTime() : 0;
+          const dateB = b.scheduled_date ? new Date(b.scheduled_date).getTime() : 0;
+          return dateA - dateB;
+        });
+        
+        setUpcomingSessions(sortedUpcoming);
+      } else {
+        setUpcomingSessions([]);
+        }
+      }
       
       // Carregar sessões completadas
       const { data: completedData, error: completedError } = await supabase
@@ -854,45 +993,48 @@ export default function EstudosPage() {
               </div>
               
                 {upcomingSessions.length > 0 ? (
-                <div className="space-y-6">
-                  {/* Renderizar sessões agrupadas por data */}
+                <div className="space-y-4">
+                  {/* Sessões agendadas - mostrar todas as não completadas */}
+                  <div className="bg-white rounded-lg p-6 space-y-1">
                   {groupDates.map(dateKey => {
                     const dateObj = new Date(dateKey);
-                    const isToday = dateObj.toDateString() === new Date().toDateString();
-                    const isTomorrow = dateObj.toDateString() === new Date(Date.now() + 86400000).toDateString();
-                    
-                    // Determinar o título do grupo baseado na data
-                    let dateTitle = formatDate(dateKey);
-                    if (isToday) dateTitle = "Hoje";
-                    if (isTomorrow) dateTitle = "Amanhã";
+                      // Formatar a data em português
+                      const dateFormatted = formatDate(dateObj);
+                      
+                      // Verificar se a data é hoje
+                      const isToday = new Date(dateKey).toLocaleDateString() === new Date().toLocaleDateString();
                     
                     return (
-                      <div key={dateKey} className="space-y-2">
-                        <h3 className="font-medium text-sm text-gray-500 pb-1 border-b border-gray-200">
-                          {dateTitle} • {sessionGroups[dateKey].length} {sessionGroups[dateKey].length === 1 ? 'sessão' : 'sessões'}
+                        <div key={dateKey} className="mb-4 last:mb-0">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <div 
+                              className={`w-0.5 h-6 rounded-full ${isToday ? 'bg-blue-500' : 'bg-gray-300'}`}
+                            ></div>
+                            <h3 className={`text-sm font-semibold ${isToday ? 'text-blue-600' : 'text-gray-700'}`}>
+                              {isToday ? 'Hoje - ' : ''}{dateFormatted}
                         </h3>
+                          </div>
                         
-                        <div className="space-y-3 pl-1">
+                          <div className="space-y-2">
                           {sessionGroups[dateKey].map((session, index) => (
                             <div 
                               key={session.id} 
-                              className="p-4 rounded-lg border border-gray-200 hover:border-blue-200 hover:bg-blue-50 transition-all hover:shadow-md group animate-fade-in-up"
-                              style={{ animationDelay: `${index * 0.1}s` }}
+                                className="bg-gray-50 hover:bg-gray-100 rounded-lg p-3 border border-gray-200 transition-colors flex justify-between items-center"
                             >
-                              <div className="flex justify-between items-center">
                                 <div>
-                                  <h3 className="font-medium text-gray-900 mb-1 group-hover:text-blue-700 transition-colors">{session.title}</h3>
-                                  <div className="text-sm text-gray-500 flex flex-wrap gap-x-4 gap-y-2 mt-1">
-                                    <span className="flex items-center">
-                                      <Clock className="h-4 w-4 mr-1 inline text-gray-400" />
-                                      {formatTime(session.scheduled_date || '')}
+                                  <p className="text-sm font-medium text-gray-800">{session.title}</p>
+                                  <div className="flex items-center mt-1">
+                                    {session.disciplineName && (
+                                      <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full mr-2">
+                                        {session.disciplineName}
                                     </span>
-                                    <span className="flex items-center">
-                                      <BookMarked className="h-4 w-4 mr-1 inline text-gray-400" />
-                                      {formatMinutesToHours(session.duration_minutes)}
+                                    )}
+                                    <span className="text-xs text-gray-500">
+                                      {formatTime(session.scheduled_date || '')} • {session.duration_minutes} min
               </span>
             </div>
           </div>
+                                
                           <div>
                                   <button 
                                     onClick={() => handleStartSession(session)}
@@ -901,7 +1043,6 @@ export default function EstudosPage() {
                                     <Clock className="h-4 w-4 mr-1" />
                                     Iniciar
                                   </button>
-        </div>
                   </div>
                 </div>
                           ))}
@@ -909,6 +1050,7 @@ export default function EstudosPage() {
                       </div>
                     );
                   })}
+                    </div>
                     </div>
               ) : (
                 <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300 animate-fade-in">

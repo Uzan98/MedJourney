@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Card } from '../ui/Card';
+import { Card } from '@/components/ui/card';
 import { 
   CheckCircle, Clock, ChevronRight, Filter, 
   CheckSquare, AlertTriangle, ArrowUpCircle

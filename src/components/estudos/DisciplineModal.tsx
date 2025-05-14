@@ -1,10 +1,30 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, BookOpen, Palette } from 'lucide-react';
-import { toast } from '../../components/ui/Toast';
-import { ThemePicker } from '../ui/ThemeComponents';
+import { toast } from '../../components/ui/toast-interface';
+import { ThemePicker } from '@/components/ui/theme-components';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
+import { useRef } from 'react';
+import { Button } from '../../components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
+import { Input } from '../../components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
 
 interface DisciplineModalProps {
   isOpen: boolean;
@@ -24,7 +44,7 @@ const DisciplineModal: React.FC<DisciplineModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   // Redefinir formulário ao fechar
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isOpen) {
       setName('');
       setDescription('');
@@ -35,47 +55,47 @@ const DisciplineModal: React.FC<DisciplineModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
+    if (!name || name.trim() === "") {
+      setError("Nome da disciplina não pode ser vazio.");
+      return;
+    }
+
+    if (name.length > 50) {
+      setError("Nome da disciplina não pode ter mais que 50 caracteres.");
+      return;
+    }
 
     try {
-      // Validar campos obrigatórios
-      if (!name) {
-        throw new Error('O nome da disciplina é obrigatório');
-      }
+      setLoading(true);
+      setError("");
 
-      console.log('Enviando dados para criação de disciplina:', { name, description, theme });
-
-      // Usar a API REST do Supabase diretamente
-      const newDiscipline = await DisciplinesRestService.createDiscipline(
+      const discipline = await DisciplinesRestService.createDiscipline({
         name,
-        description || undefined,
-        theme
-      );
+        description,
+        theme,
+      });
 
-      if (newDiscipline) {
-        console.log('Disciplina criada com sucesso:', newDiscipline);
-        
-        // Adicionar um pequeno atraso para garantir que a atualização no banco foi concluída
-        setTimeout(() => {
-          onSuccess();
-          onClose();
-        }, 500);
-        
-        // Mostrar confirmação com toast
-        toast.success(`Disciplina "${name}" adicionada com sucesso!`);
+      if (discipline) {
+        toast.success("Disciplina criada com sucesso!");
+        resetForm();
+        onClose();
+        onSuccess();
       } else {
-        throw new Error('Erro ao criar disciplina');
+        toast.error("Erro ao criar disciplina. Tente novamente.");
       }
     } catch (err) {
-      console.error('Erro ao criar disciplina:', err);
-      setError(err instanceof Error ? err.message : 'Ocorreu um erro inesperado');
-      
-      // Mostrar erro como toast
-      toast.error(err instanceof Error ? err.message : 'Ocorreu um erro inesperado');
+      console.error("Error creating discipline:", err);
+      toast.error("Erro ao criar disciplina. Tente novamente.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const resetForm = () => {
+    setName('');
+    setDescription('');
+    setTheme('azul');
+    setError(null);
   };
 
   if (!isOpen) return null;

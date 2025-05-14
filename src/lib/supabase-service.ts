@@ -133,8 +133,7 @@ class SupabaseService {
             name,
             description,
             theme,
-            user_id: userId,
-            is_system: false
+            user_id: userId
           }
         ])
         .select()

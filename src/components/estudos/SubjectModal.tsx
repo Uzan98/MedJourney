@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, BookOpen } from 'lucide-react';
-import { toast } from '@/components/ui/Toast';
+import { toast } from '@/components/ui/toast';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 
 interface SubjectModalProps {

@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Card } from '../ui/Card';
+import { Card } from '@/components/ui/card';
 import { Play, Calendar, Clock, BookOpen, Calendar as CalendarIcon, GraduationCap } from 'lucide-react';
 import { StudySession } from '../../lib/types/dashboard';
 import { formatDate, formatTime } from '../../lib/utils';

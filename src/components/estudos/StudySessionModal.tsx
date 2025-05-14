@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, BookOpen, FileText, CheckCircle } from 'lucide-react';
 import { createStudySession } from '../../lib/api';
-import { toast } from '../../components/ui/Toast';
+import { toast } from '@/components/ui/toast';
 import { useRouter } from 'next/navigation';
 import { StudyStreakService } from "@/lib/study-streak-service";
 import { DisciplinesRestService } from "@/lib/supabase-rest";

@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Card } from '../ui/Card';
+import { Card } from '@/components/ui/card';
 import { BellRing, Clock, BookOpen, FileText, XCircle, Bell } from 'lucide-react';
 
 interface Notification {

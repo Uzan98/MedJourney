@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { ToastContainer } from "../components/ui/Toast";
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from '../components/ui/toast-interface';
 import { StartupProvider } from './providers';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { PWAProvider } from '@/components/PWAProvider';
+import dynamic from 'next/dynamic';
+import { ToastProvider } from '@/components/ui/toast-interface';
+
+// Dynamically import the MobileMenu component with no SSR
+const MobileMenu = dynamic(() => import('@/components/layout/MobileMenu'), { 
+  ssr: false 
+});
 
 const inter = Inter({
   subsets: ["latin"],
@@ -16,6 +23,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "MedJourney - Sua jornada de estudos médicos",
   description: "Uma plataforma inteligente para estudantes de medicina",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -93,34 +101,21 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="font-sans antialiased bg-gradient-to-br from-blue-100 to-indigo-100 min-h-screen">
+      <body className="font-sans antialiased bg-gradient-to-br from-blue-100 to-indigo-100 min-h-screen pb-16 md:pb-0">
         <AuthProvider>
-          <StartupProvider>
-            {children}
-          </StartupProvider>
+          <PWAProvider>
+            <StartupProvider>
+              <ToastProvider>
+                {children}
+                
+                {/* Mobile Menu - Only visible on mobile devices */}
+                <MobileMenu />
+              </ToastProvider>
+            </StartupProvider>
+          </PWAProvider>
         </AuthProvider>
         {/* Componente de Toast para notificações */}
-        <ToastContainer position="top-right" />
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            duration: 3000,
-            style: {
-              background: '#fff',
-              color: '#333',
-            },
-            success: {
-              style: {
-                borderLeft: '4px solid #10b981',
-              },
-            },
-            error: {
-              style: {
-                borderLeft: '4px solid #ef4444',
-              },
-            },
-          }}
-        />
+        <Toaster position="top-right" />
       </body>
     </html>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Card } from '../ui/Card';
+import { Card } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Clock, Target, Award, Brain } from 'lucide-react';
 import { PerformanceMetrics } from '../../lib/types/dashboard';
 

@@ -220,8 +220,10 @@ export class StudyRoomService {
    */
   static async leaveRoom(roomId: string): Promise<boolean> {
     try {
+      console.log(`Iniciando processo de saída da sala: ${roomId}`);
       // Resolver o ID da sala
       const resolvedRoomId = await this.resolveRoomId(roomId);
+      console.log(`ID resolvido: ${resolvedRoomId}`);
       
       // Verificar se o usuário está autenticado
       const { data: userData } = await supabase.auth.getUser();
@@ -230,24 +232,33 @@ export class StudyRoomService {
       }
       
       const user = userData.user;
+      console.log(`Usuário ${user.id} está saindo da sala ${resolvedRoomId}`);
       
       // Obter o horário de entrada
       const { data: userSession } = await supabase
         .from('study_room_users')
-        .select('entrou_em, tempo_total')
+        .select('entrou_em, tempo_total, esta_online')
         .eq('user_id', user.id)
         .eq('room_id', resolvedRoomId)
         .single();
       
       if (userSession) {
+        // Verificar se o usuário já está offline
+        if (!userSession.esta_online) {
+          console.log(`Usuário ${user.id} já está offline na sala ${resolvedRoomId}`);
+          return true;
+        }
+        
         // Calcular tempo total de estudo
         const entradaTime = new Date(userSession.entrou_em).getTime();
         const saidaTime = new Date().getTime();
         const tempoSessao = Math.floor((saidaTime - entradaTime) / 1000); // em segundos
         const tempoTotal = (userSession.tempo_total || 0) + tempoSessao;
         
+        console.log(`Tempo da sessão: ${tempoSessao}s, Tempo total atualizado: ${tempoTotal}s`);
+        
         // Atualizar registro no banco
-        await supabase
+        const { error: updateError } = await supabase
           .from('study_room_users')
           .update({
             esta_online: false,
@@ -255,20 +266,32 @@ export class StudyRoomService {
           })
           .eq('user_id', user.id)
           .eq('room_id', resolvedRoomId);
+          
+        if (updateError) {
+          console.error('Erro ao atualizar status do usuário:', updateError);
+          throw updateError;
+        }
+        
+        console.log(`Status do usuário atualizado com sucesso na sala ${resolvedRoomId}`);
+      } else {
+        console.log(`Nenhuma sessão encontrada para o usuário ${user.id} na sala ${resolvedRoomId}`);
       }
       
       // Remover presença do canal
       if (this.channels[resolvedRoomId]) {
+        console.log(`Removendo canal de presença para sala ${resolvedRoomId}`);
         await this.channels[resolvedRoomId].untrack();
         delete this.channels[resolvedRoomId];
       }
       
       // Também limpar o canal com o ID não resolvido, por segurança
       if (roomId !== resolvedRoomId && this.channels[roomId]) {
+        console.log(`Removendo canal de presença adicional para ID ${roomId}`);
         await this.channels[roomId].untrack();
         delete this.channels[roomId];
       }
       
+      console.log(`Usuário ${user.id} saiu com sucesso da sala ${resolvedRoomId}`);
       return true;
     } catch (error) {
       console.error('Erro ao sair da sala:', error);

@@ -32,6 +32,7 @@ import {
   Bell
 } from 'lucide-react';
 import QuickStudySessionModal from '@/components/estudos/QuickStudySessionModal';
+import MobileDashboard from '@/components/MobileDashboard';
 
 // Função auxiliar para gerar dias da semana
 const getDaysOfWeek = () => {
@@ -63,6 +64,7 @@ interface StudyByDiscipline {
 }
 
 export default function DashboardPage() {
+  const [isMobile, setIsMobile] = useState(false);
   const { user, signOut } = useAuth();
   const [loading, setLoading] = useState(true);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
@@ -83,6 +85,24 @@ export default function DashboardPage() {
   });
   const [isStudySessionModalOpen, setIsStudySessionModalOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  
+  // Checar se o dispositivo é mobile
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Verificar no carregamento inicial
+    checkIsMobile();
+    
+    // Adicionar listener para mudanças de tamanho da janela
+    window.addEventListener('resize', checkIsMobile);
+    
+    // Limpar listener ao desmontar
+    return () => {
+      window.removeEventListener('resize', checkIsMobile);
+    };
+  }, []);
   
   // Carregar dados do dashboard
   useEffect(() => {
@@ -442,6 +462,14 @@ export default function DashboardPage() {
     </button>
   );
   
+  // Se for dispositivo móvel, renderizar o componente MobileDashboard
+  if (isMobile) {
+    return (
+      <MobileDashboard />
+    );
+  }
+  
+  // Renderização para desktop
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header com gradiente */}

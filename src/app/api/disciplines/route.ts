@@ -74,9 +74,8 @@ export const GET = withApiAuth(async (request: NextRequest, { userId, supabase: 
       .select('*');
     
     // Se onlyUser for true, retornar apenas disciplinas do usuário atual
-    // ou disciplinas do sistema (is_system = true)
     if (onlyUser) {
-      query = query.or(`user_id.eq.${userIdToUse},is_system.eq.true`);
+      query = query.eq('user_id', userIdToUse);
     }
     
     // Ordenar por nome
@@ -198,8 +197,7 @@ export const POST = withApiAuth(async (request: Request, { userId, session, supa
           name,
           description: description || null,
           theme: theme || null,
-          user_id: userId,
-          is_system: false
+          user_id: userId
         }
       ])
       .select()

@@ -26,10 +26,16 @@ const StudySessionTimer: React.FC<StudySessionTimerProps> = ({
   const [isPaused, setIsPaused] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   
-  // Referência para armazenar o ID do intervalo
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  // Referência para armazenar o tempo em que o timer foi pausado
+  // Referência para armazenar o ID da animação
+  const timerAnimationRef = useRef<number | null>(null);
+  // Referência para o tempo de início
+  const startTimeRef = useRef<number>(Date.now());
+  // Referência para o tempo de pausa acumulado
   const pausedTimeRef = useRef<number>(0);
+  // Referência para o último tempo de pausa
+  const lastPauseTimeRef = useRef<number>(0);
+  // Flag para verificar se a página está visível
+  const isVisibleRef = useRef<boolean>(true);
 
   // Formatar o tempo para exibição
   const formatTime = (seconds: number): string => {
@@ -40,42 +46,127 @@ const StudySessionTimer: React.FC<StudySessionTimerProps> = ({
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Calcular a porcentagem de progresso - preenchendo gradualmente
-  const progress = (elapsedTime / totalSeconds) * 100;
-  
+  // Função para calcular o tempo restante com precisão
+  const calculateTimeLeft = (): number => {
+    if (isPaused) {
+      return timeLeft; // Se estiver pausado, retorna o último valor
+    }
+    
+    const now = Date.now();
+    const elapsedSinceStart = now - startTimeRef.current - pausedTimeRef.current;
+    const secondsElapsed = Math.floor(elapsedSinceStart / 1000);
+    const remaining = Math.max(0, totalSeconds - secondsElapsed);
+    
+    return remaining;
+  };
+
+  // Função para calcular o tempo decorrido
+  const calculateElapsedTime = (): number => {
+    if (isPaused) {
+      return elapsedTime; // Se estiver pausado, retorna o último valor
+    }
+    
+    const now = Date.now();
+    const elapsedSinceStart = now - startTimeRef.current - pausedTimeRef.current;
+    return Math.floor(elapsedSinceStart / 1000);
+  };
+
+  // Atualizar tempos
+  const updateTimers = () => {
+    const currentTimeLeft = calculateTimeLeft();
+    const currentElapsedTime = calculateElapsedTime();
+    
+    setTimeLeft(currentTimeLeft);
+    setElapsedTime(currentElapsedTime);
+    
+    // Verificar se o tempo acabou
+    if (currentTimeLeft <= 0 && !isPaused) {
+      // Parar a animação
+      if (timerAnimationRef.current !== null) {
+        cancelAnimationFrame(timerAnimationRef.current);
+        timerAnimationRef.current = null;
+      }
+      
+      // Chamar a função de conclusão automaticamente
+      const actualDurationMinutes = Math.ceil(currentElapsedTime / 60);
+      onComplete(actualDurationMinutes);
+    }
+  };
+
   // Iniciar o timer
   useEffect(() => {
     // Iniciar o timer apenas se não estiver pausado
     if (!isPaused) {
-      // Limpar qualquer intervalo existente
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current);
+      // Se estamos começando, definir o tempo de início
+      if (elapsedTime === 0) {
+        startTimeRef.current = Date.now();
+        pausedTimeRef.current = 0;
+      } else if (lastPauseTimeRef.current > 0) {
+        // Se estamos retomando de uma pausa, adicionar o tempo pausado ao acumulado
+        pausedTimeRef.current += (Date.now() - lastPauseTimeRef.current);
+        lastPauseTimeRef.current = 0;
       }
       
-      // Criar novo intervalo
-      timerIntervalRef.current = setInterval(() => {
-        setTimeLeft(prevTime => {
-          if (prevTime <= 1) {
-            // Quando o tempo acabar
-            if (timerIntervalRef.current) {
-              clearInterval(timerIntervalRef.current);
-            }
-            return 0;
-          }
-          return prevTime - 1;
-        });
-        
-        setElapsedTime(prev => prev + 1);
-      }, 1000);
+      // Usar requestAnimationFrame para animação mais suave e precisa
+      const animate = () => {
+        if (isVisibleRef.current) {
+          updateTimers();
+        }
+        timerAnimationRef.current = requestAnimationFrame(animate);
+      };
+      
+      timerAnimationRef.current = requestAnimationFrame(animate);
     }
     
-    // Limpar intervalo ao desmontar
+    // Limpar animação ao desmontar
     return () => {
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current);
+      if (timerAnimationRef.current !== null) {
+        cancelAnimationFrame(timerAnimationRef.current);
       }
     };
   }, [isPaused]);
+
+  // Adicionar listeners para visibilidade da página
+  useEffect(() => {
+    // Manipulador para quando a página fica visível/invisível
+    const handleVisibilityChange = () => {
+      const isVisible = document.visibilityState === 'visible';
+      isVisibleRef.current = isVisible;
+      
+      if (isVisible && !isPaused) {
+        // Recalcular e atualizar o tempo quando a página volta a ficar visível
+        updateTimers();
+      }
+    };
+    
+    // Manipulador para quando a janela perde/ganha foco
+    const handleFocus = () => {
+      isVisibleRef.current = true;
+      if (!isPaused) {
+        // Recalcular e atualizar o tempo quando a janela ganha foco
+        updateTimers();
+      }
+    };
+    
+    const handleBlur = () => {
+      isVisibleRef.current = false;
+    };
+    
+    // Adicionar listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
+    
+    // Remover listeners ao desmontar
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [isPaused]);
+
+  // Calcular porcentagem de progresso - preenchendo gradualmente
+  const progress = (elapsedTime / totalSeconds) * 100;
 
   // Alternar entre pausar e retomar
   const togglePause = () => {
@@ -84,11 +175,12 @@ const StudySessionTimer: React.FC<StudySessionTimerProps> = ({
       
       if (newPausedState) {
         // Se estamos pausando, armazenar a referência do tempo atual
-        pausedTimeRef.current = timeLeft;
-        // Limpar o intervalo
-        if (timerIntervalRef.current) {
-          clearInterval(timerIntervalRef.current);
-          timerIntervalRef.current = null;
+        lastPauseTimeRef.current = Date.now();
+        
+        // Parar a animação
+        if (timerAnimationRef.current !== null) {
+          cancelAnimationFrame(timerAnimationRef.current);
+          timerAnimationRef.current = null;
         }
       }
       
@@ -98,9 +190,9 @@ const StudySessionTimer: React.FC<StudySessionTimerProps> = ({
 
   // Completar sessão
   const handleComplete = () => {
-    // Limpar o intervalo
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
+    // Parar a animação
+    if (timerAnimationRef.current !== null) {
+      cancelAnimationFrame(timerAnimationRef.current);
     }
     
     // Calcular quanto tempo realmente durou a sessão (em minutos)
@@ -110,9 +202,9 @@ const StudySessionTimer: React.FC<StudySessionTimerProps> = ({
   
   // Cancelar sessão
   const handleCancel = () => {
-    // Limpar o intervalo
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
+    // Parar a animação
+    if (timerAnimationRef.current !== null) {
+      cancelAnimationFrame(timerAnimationRef.current);
     }
     
     onCancel();
@@ -248,27 +340,21 @@ const StudySessionTimer: React.FC<StudySessionTimerProps> = ({
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
-                    <Timer className="h-4 w-4 text-blue-600 mr-2" />
-                    <span className="text-sm text-gray-600">Duração total:</span>
+                    <Timer className="h-4 w-4 text-blue-500 mr-2" />
+                    <span className="text-sm font-medium text-gray-700">Duração Total</span>
                   </div>
-                  <span className="font-medium">{formatTime(totalSeconds)}</span>
+                  <span className="text-sm font-bold text-gray-800">{durationMinutes} min</span>
                 </div>
               </div>
               
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
-                    <Clock className="h-4 w-4 text-green-600 mr-2" />
-                    <span className="text-sm text-gray-600">Tempo decorrido:</span>
+                    <Timer className="h-4 w-4 text-green-500 mr-2" />
+                    <span className="text-sm font-medium text-gray-700">Tempo Estudado</span>
                   </div>
-                  <span className="font-medium">{formatTime(elapsedTime)}</span>
+                  <span className="text-sm font-bold text-gray-800">{Math.floor(elapsedTime / 60)} min</span>
                 </div>
-              </div>
-              
-              <div className="bg-blue-50 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
-                  <strong>Dica:</strong> Estudos mostram que intervalos de 5 minutos a cada 25 minutos podem melhorar sua concentração.
-                </p>
               </div>
             </div>
           </div>
