@@ -30,6 +30,23 @@ const nextConfig = {
   // Ignorar erros de exportação de páginas
   output: 'standalone',
   
+  // Resolver aliases para componentes que podem ter problema de case sensitivity
+  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    // Adicionar resolvers para mitigar problemas de case-sensitivity
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@/components/ui/button': require('path').resolve('./src/components/ui/button.tsx'),
+      '@/components/ui/card': require('path').resolve('./src/components/ui/card.tsx'),
+      '@/components/ui/toast': require('path').resolve('./src/components/ui/toast.tsx'),
+      '@/components/ui/tabs': require('path').resolve('./src/components/ui/tabs.tsx'),
+      '@/components/ui/dropdown-menu': require('path').resolve('./src/components/ui/dropdown-menu.tsx'),
+      '@/components/ui/badge': require('path').resolve('./src/components/ui/badge.tsx'),
+      '@/components/ui/skeleton': require('path').resolve('./src/components/ui/skeleton.tsx'),
+    };
+    
+    return config;
+  },
+  
   // Headers personalizados para PWA
   async headers() {
     return [

@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, BookOpen, Palette } from 'lucide-react';
-import { toast } from '../../components/ui/toast-interface';
+import { toast } from '@/components/ui/toast-interface';
 import { ThemePicker } from '@/components/ui/theme-components';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 import { useRef } from 'react';
-import { Button } from '../../components/ui/button';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -14,17 +14,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '../../components/ui/dialog';
-import { Input } from '../../components/ui/input';
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../components/ui/select';
-import { Label } from '../../components/ui/label';
-import { Textarea } from '../../components/ui/textarea';
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 interface DisciplineModalProps {
   isOpen: boolean;
