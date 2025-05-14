@@ -30,6 +30,17 @@ const nextConfig = {
   // Ignorar erros de exportação de páginas
   output: 'standalone',
   
+  // Configurações experimentais válidas
+  experimental: {
+    outputFileTracingExcludes: {
+      '**': [
+        'node_modules/@swc/core-linux-x64-gnu',
+        'node_modules/@swc/core-linux-x64-musl',
+        'node_modules/@esbuild/linux-x64',
+      ],
+    },
+  },
+  
   // Resolver aliases para componentes que podem ter problema de case sensitivity
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
     // Adicionar resolvers para mitigar problemas de case-sensitivity
@@ -38,6 +49,7 @@ const nextConfig = {
       '@/components/ui/button': require('path').resolve('./src/components/ui/button.tsx'),
       '@/components/ui/card': require('path').resolve('./src/components/ui/card.tsx'),
       '@/components/ui/toast': require('path').resolve('./src/components/ui/toast.tsx'),
+      '@/components/ui/toast-interface': require('path').resolve('./src/components/ui/toast-interface.tsx'),
       '@/components/ui/tabs': require('path').resolve('./src/components/ui/tabs.tsx'),
       '@/components/ui/dropdown-menu': require('path').resolve('./src/components/ui/dropdown-menu.tsx'),
       '@/components/ui/badge': require('path').resolve('./src/components/ui/badge.tsx'),
@@ -111,6 +123,9 @@ const nextConfig = {
       },
     ];
   },
+  
+  // Páginas excluídas do build de produção usando o padrão correto do Next.js
+  distDir: process.env.NODE_ENV === 'production' ? '.next' : '.next-dev',
 };
 
 module.exports = nextConfig; 

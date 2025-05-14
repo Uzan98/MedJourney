@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Toaster } from '../components/ui/toast-interface';
+import { Toaster } from 'react-hot-toast';
 import { StartupProvider } from './providers';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { PWAProvider } from '@/components/PWAProvider';
 import dynamic from 'next/dynamic';
-import { ToastProvider } from '@/components/ui/toast-interface';
 
 // Dynamically import the MobileMenu component with no SSR
 const MobileMenu = dynamic(() => import('@/components/layout/MobileMenu'), { 
@@ -105,12 +104,10 @@ export default function RootLayout({
         <AuthProvider>
           <PWAProvider>
             <StartupProvider>
-              <ToastProvider>
-                {children}
-                
-                {/* Mobile Menu - Only visible on mobile devices */}
-                <MobileMenu />
-              </ToastProvider>
+              {children}
+              
+              {/* Mobile Menu - Only visible on mobile devices */}
+              <MobileMenu />
             </StartupProvider>
           </PWAProvider>
         </AuthProvider>
