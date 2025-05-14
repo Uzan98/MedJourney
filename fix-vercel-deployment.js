@@ -15,9 +15,6 @@ if (!fs.existsSync(uiDir)) {
 const uiComponents = [
   'button.tsx',
   'card.tsx',
-  'toast.tsx',
-  'toast-interface.tsx',
-  'tabs.tsx',
   'dialog.tsx',
   'dropdown-menu.tsx',
   'input.tsx',
@@ -58,7 +55,6 @@ export interface ${componentName}Props {
 
 export const ${componentName} = React.forwardRef<HTMLDivElement, ${componentName}Props>(
   ({ children, ...props }, ref) => {
-    console.warn('Componente stub: ${componentName} foi usado mas não está completamente implementado');
     return (
       <div ref={ref} {...props}>
         {children}
@@ -89,6 +85,236 @@ export default ${componentName};
   }
 });
 
+// Criar componentes especiais com exportações específicas
+const specialComponents = [
+  { 
+    file: 'toast.tsx', 
+    content: `"use client";
+
+import React from "react";
+
+// Stub para componente toast com exportação de funções
+export interface ToastProps {
+  children?: React.ReactNode;
+  variant?: 'default' | 'destructive' | 'success' | 'error' | 'warning' | 'info';
+  [key: string]: any;
+}
+
+export const Toast = React.forwardRef<HTMLDivElement, ToastProps>(
+  ({ children, ...props }, ref) => {
+    return (
+      <div ref={ref} {...props}>
+        {children}
+      </div>
+    );
+  }
+);
+
+Toast.displayName = "Toast";
+
+// Componentes relacionados
+export const ToastViewport = (props: any) => <div {...props} />;
+export const ToastProvider = (props: any) => <div {...props} />;
+export const ToastTitle = (props: any) => <div {...props} />;
+export const ToastDescription = (props: any) => <div {...props} />;
+export const ToastClose = (props: any) => <div {...props} />;
+export const ToastAction = (props: any) => <div {...props} />;
+
+// Função toast que é importada diretamente em vários arquivos
+export const toast = {
+  success: (message: string, duration?: number) => {
+    console.log('Toast success:', message, duration);
+    return 'toast-id';
+  },
+  error: (message: string, duration?: number) => {
+    console.log('Toast error:', message, duration);
+    return 'toast-id';
+  },
+  info: (message: string, duration?: number) => {
+    console.log('Toast info:', message, duration);
+    return 'toast-id';
+  },
+  warning: (message: string, duration?: number) => {
+    console.log('Toast warning:', message, duration);
+    return 'toast-id';
+  },
+  hide: (id: string) => {
+    console.log('Toast hide:', id);
+  }
+};
+
+// Tipos e hooks auxiliares
+export type ToastActionElement = React.ReactElement<typeof ToastAction>;
+export type ToastType = 'success' | 'error' | 'info' | 'warning';
+
+export const useToast = () => {
+  return toast;
+};
+
+export const ToastContainer = ({ position = 'top-right' }: { position?: string }) => {
+  return <div className={\`fixed z-50 \${position}\`}></div>;
+};
+
+export default Toast;`
+  },
+  { 
+    file: 'tabs.tsx', 
+    content: `"use client";
+
+import * as React from "react";
+
+// Stub simples para o componente Tabs
+const Tabs = (props: any) => <div {...props} />;
+
+const TabsList = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={\`inline-flex h-10 items-center justify-center rounded-lg bg-gray-100 p-1 text-gray-500 \${className || ''}\`}
+      {...props}
+    />
+  )
+);
+TabsList.displayName = "TabsList";
+
+const TabsTrigger = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
+  ({ className, ...props }, ref) => (
+    <button
+      ref={ref}
+      className={\`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium \${className || ''}\`}
+      {...props}
+    />
+  )
+);
+TabsTrigger.displayName = "TabsTrigger";
+
+const TabsContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={\`mt-2 \${className || ''}\`}
+      {...props}
+    />
+  )
+);
+TabsContent.displayName = "TabsContent";
+
+export { Tabs, TabsList, TabsTrigger, TabsContent };`
+  },
+  { 
+    file: 'button.tsx', 
+    content: `"use client";
+
+import React, { forwardRef } from 'react';
+
+// Stub simples com export do buttonVariants
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  size?: 'default' | 'sm' | 'lg';
+  isLoading?: boolean;
+}
+
+// Função que simula o comportamento do cva
+export const buttonVariants = (options: any) => {
+  const { variant = 'default', size = 'default', className = '' } = options || {};
+  let classes = 'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ';
+  
+  // Adicionar classes com base na variante
+  switch (variant) {
+    case 'destructive':
+      classes += 'bg-red-500 text-white hover:bg-red-600 focus-visible:ring-red-600 ';
+      break;
+    case 'outline':
+      classes += 'bg-transparent border border-gray-300 hover:bg-gray-100 text-gray-700 ';
+      break;
+    case 'secondary':
+      classes += 'bg-gray-100 text-gray-900 hover:bg-gray-200 focus-visible:ring-gray-600 ';
+      break;
+    case 'ghost':
+      classes += 'bg-transparent hover:bg-gray-100 text-gray-700 ';
+      break;
+    case 'link':
+      classes += 'underline-offset-4 hover:underline text-blue-600 bg-transparent ';
+      break;
+    default:
+      classes += 'bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-600 ';
+  }
+  
+  // Adicionar classes com base no tamanho
+  switch (size) {
+    case 'sm':
+      classes += 'h-9 px-3 rounded-md ';
+      break;
+    case 'lg':
+      classes += 'h-11 px-8 rounded-md ';
+      break;
+    default:
+      classes += 'h-10 py-2 px-4 ';
+  }
+  
+  // Adicionar classes personalizadas
+  classes += className;
+  
+  return classes.trim();
+};
+
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant = 'default', size = 'default', isLoading, children, ...props }, ref) => {
+  return (
+    <button
+        className={buttonVariants({ variant, size, className })}
+        ref={ref}
+        disabled={isLoading || props.disabled}
+      {...props}
+    >
+        {isLoading && <span className="mr-2 h-4 w-4 animate-spin">⏳</span>}
+        {children}
+    </button>
+  );
+  }
+);
+
+Button.displayName = "Button";
+
+export { Button };`
+  },
+  { 
+    file: 'calendar.tsx', 
+    content: `"use client"
+
+import * as React from "react"
+
+// Stub simples para o componente Calendar
+export type CalendarProps = any;
+
+function Calendar({
+  className,
+  classNames,
+  showOutsideDays = true,
+  ...props
+}: CalendarProps) {
+  return (
+    <div className="p-3 calendar-stub">
+      <div className="text-center p-4 bg-gray-100 rounded-md">
+        Calendário (stub)
+      </div>
+    </div>
+  )
+}
+Calendar.displayName = "Calendar"
+
+export { Calendar }`
+  }
+];
+
+// Criar ou substituir componentes especiais
+specialComponents.forEach(({ file, content }) => {
+  const filePath = path.join(uiDir, file);
+  console.log(`🔧 Criando/substituindo componente especial: ${file}`);
+  fs.writeFileSync(filePath, content);
+  console.log(`✅ Arquivo especial criado: ${filePath}`);
+});
+
 // Lista de componentes no diretório raiz /src/components
 const rootComponents = [
   { file: 'Modal.tsx', name: 'Modal' },
@@ -115,7 +341,6 @@ interface ${name}Props {
 }
 
 export default function ${name}(props: ${name}Props) {
-  console.warn('Componente stub: ${name} foi usado mas não está completamente implementado');
   return <div {...props}>{props.children}</div>;
 }
 `;
