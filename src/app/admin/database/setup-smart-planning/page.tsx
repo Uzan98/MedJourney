@@ -6,6 +6,10 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "react-hot-toast";
 import { Code } from 'lucide-react';
 
+// Exportar uma configuração de geração estática para evitar pré-renderização durante o build
+export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
+
 export default function SetupSmartPlanningPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);

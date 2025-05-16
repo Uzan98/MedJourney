@@ -6,6 +6,10 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
 
+// Exportar uma configuração de geração estática para evitar pré-renderização durante o build
+export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
+
 export default function SetupFunctionsPage() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<{

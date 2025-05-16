@@ -5,6 +5,10 @@ import AppLayout from '../../../components/layout/AppLayout';
 import { Database, Check, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 
+// Exportar uma configuração de geração estática para evitar pré-renderização durante o build
+export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
+
 export default function AdminDatabasePage() {
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState<{
