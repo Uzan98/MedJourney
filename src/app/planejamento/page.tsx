@@ -34,7 +34,9 @@ import {
   Trash2, 
   Edit, 
   PlayCircle,
-  ArrowRightCircle
+  ArrowRightCircle,
+  Settings,
+  PlusCircle
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import PlannedSessionsList from '@/components/planning/PlannedSessionsList';
@@ -263,24 +265,23 @@ export default function PlanejamentoPage() {
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500 opacity-10 rounded-full -mb-32 -ml-32"></div>
           
         <div className="relative">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-white">
-                  Sessões de Estudo
-                </h1>
-                <p className="text-blue-100 mt-1 max-w-2xl">
-                  Planeje, acompanhe e gerencie seus estudos de forma eficiente
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Planejamento de Estudos</h1>
+                <p className="text-gray-600 mt-1 md:mt-2">
+                  Organize suas semanas de estudo e acompanhe seu progresso
                 </p>
               </div>
               
-              <div className="flex space-x-2">
-                <Button 
-                  onClick={handleCreateSession} 
-                  className="bg-white hover:bg-blue-50 text-blue-700 shadow-md hover:shadow-lg transition-all"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Agendar
-                </Button>
+              <div className="flex items-center gap-2">
+                <button className="px-4 py-2 rounded-lg bg-white border border-gray-200 shadow-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  <span>Configurações</span>
+                </button>
+                <button className="px-4 py-2 rounded-lg bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 transition-colors flex items-center gap-2">
+                  <PlusCircle className="h-4 w-4" />
+                  <span>Nova Sessão</span>
+                </button>
               </div>
             </div>
             
@@ -336,6 +337,42 @@ export default function PlanejamentoPage() {
                 </div>
           </div>
             </div>
+
+          {/* Banner do Planejamento Inteligente */}
+          <div className="mt-6 mb-8 relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 shadow-lg">
+            <div className="absolute top-0 right-0 w-64 h-64 opacity-20">
+              <div className="w-full h-full bg-white rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
+                </div>
+            
+            <div className="relative p-6 md:p-8 flex flex-col md:flex-row items-center">
+              <div className="flex-1 text-white mb-4 md:mb-0">
+                <div className="flex items-center">
+                  <h2 className="text-xl md:text-2xl font-bold">Novo! Planejamento Inteligente</h2>
+                  <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white text-purple-700">
+                    Beta
+                  </span>
+              </div>
+                <p className="mt-2 text-indigo-100 max-w-lg">
+                  Deixe nossa IA gerar seu plano de estudos personalizado baseado nas suas prioridades,
+                  dificuldades e disponibilidade de tempo.
+                </p>
+                
+              <Link 
+                href="/planejamento/inteligente" 
+                  className="mt-4 inline-flex items-center px-4 py-2 rounded-lg bg-white text-purple-700 font-medium hover:bg-indigo-50 transition-colors"
+              >
+                  Experimentar
+                  <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+              </div>
+              
+              <div className="flex-shrink-0 bg-white bg-opacity-10 p-4 rounded-full">
+                <Brain className="h-16 w-16 text-white" />
+            </div>
+            </div>
+            
+            <div className="absolute bottom-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600"></div>
+          </div>
 
           {/* Abas melhoradas */}
             <Tabs defaultValue="semana" className="w-full">

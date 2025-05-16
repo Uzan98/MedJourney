@@ -52,6 +52,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const pathname = usePathname();
+  // Flag para controlar se o sidebar pode ser aberto em dispositivos móveis
+  const [isMobileSidebarLocked, setIsMobileSidebarLocked] = useState(false);
 
   // Definição dos menus e submenus
   const menuItems: MenuItem[] = [
@@ -117,8 +119,24 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     setExpandedMenus(activeMenus);
   }, [pathname]);
 
-  const toggleSidebar = () => {
+  const toggleSidebar = (fromMobileMenu = false) => {
+    // Se a chamada veio do menu mobile e o sidebar está bloqueado, não faz nada
+    if (fromMobileMenu && isMobileSidebarLocked) {
+      return;
+    }
+    
     setIsSidebarOpen(!isSidebarOpen);
+  };
+  
+  // Versão do toggleSidebar para eventos de clique
+  const handleToggleSidebar = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    toggleSidebar(false);
+  };
+  
+  // Método para bloquear/desbloquear o sidebar em dispositivos móveis
+  const lockMobileSidebar = (locked = true) => {
+    setIsMobileSidebarLocked(locked);
   };
 
   const toggleSubmenu = (path: string) => {
@@ -135,9 +153,14 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     if (pathname === path) return true;
     
     // Verificação especial para submenus
-    // Evita que "/planejamento" seja considerado ativo quando estamos em "/planejamento/inteligente"
+    // Planejamento e Planejamento Inteligente são considerados itens independentes
     if (path === "/planejamento" && pathname.startsWith("/planejamento/inteligente")) {
       return false;
+    }
+    
+    // Para o caminho de Planejamento Inteligente, garantir que é considerado ativo quando estamos em suas subpáginas
+    if (path === "/planejamento/inteligente" && pathname.startsWith("/planejamento/inteligente/")) {
+      return true;
     }
     
     // Verificação para URLs que começam com o mesmo path
@@ -309,7 +332,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         {/* Toggle button */}
         <div className="absolute top-20 -right-3 z-10">
           <button 
-            onClick={toggleSidebar}
+            onClick={handleToggleSidebar}
             className="bg-blue-600 hover:bg-blue-700 p-2 rounded-full text-white shadow-md border border-blue-400"
             aria-label={isSidebarOpen ? "Retrair menu" : "Expandir menu"}
           >
@@ -344,49 +367,60 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         </div>
       </div>
       
-      {/* Sidebar - Mobile */}
-      <div className={`fixed inset-0 bg-gray-800 bg-opacity-50 z-40 md:hidden transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={toggleSidebar}></div>
-      
-      <div 
-        className={`fixed inset-y-0 left-0 z-50 bg-blue-600 text-white flex flex-col transition-transform duration-300 ease-in-out w-64 md:hidden ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        {/* Logo area - Mobile */}
-        <div className="flex items-center justify-between px-4 pt-4 pb-2 flex-shrink-0">
-          <div className="flex items-center space-x-3">
-            <div className="bg-blue-400 p-2 rounded-md">
-              <div className="h-8 w-8 bg-blue-200 rounded-md flex items-center justify-center">
-                <BookOpen className="h-5 w-5 text-blue-600" />
-              </div>
-            </div>
-            <span className="text-xl font-bold">MedJourney</span>
-          </div>
-          <button onClick={toggleSidebar} className="text-blue-100 hover:text-white">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        
-        {/* Menu container com scroll próprio - Mobile */}
-        <div className="flex flex-col flex-1 overflow-hidden">
-          {/* Mobile Nav com scroll - Usando o novo componente SidebarMenu */}
-          <SidebarMenu 
-            onToggleSubmenu={toggleSubmenu} 
-            expandedMenus={expandedMenus}
-          />
+      {/* Somente renderiza a parte mobile do sidebar se não estiver bloqueado */}
+      {!isMobileSidebarLocked && (
+        <>
+          {/* Sidebar - Mobile Overlay */}
+          <div 
+            className={`fixed inset-0 bg-gray-800 bg-opacity-50 z-40 md:hidden transition-opacity duration-300 ${
+              isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`} 
+            onClick={handleToggleSidebar}
+          ></div>
           
-          {/* Bottom links - Mobile, fora da área de scroll */}
-          <div className="pt-4 border-t border-blue-500 px-4 pb-4 flex-shrink-0">
-            <div className="bg-blue-500 text-white rounded-lg p-3 mt-2 text-sm">
-              <p className="font-medium">Precisa de ajuda?</p>
-              <p className="text-blue-100 text-xs mt-1">Entre em contato com o suporte para qualquer dúvida.</p>
-              <button className="w-full bg-blue-400 hover:bg-blue-300 text-blue-800 py-1.5 px-3 rounded-md text-sm font-medium mt-3">
-                Contato
+          {/* Sidebar - Mobile */}
+          <div 
+            className={`fixed inset-y-0 left-0 z-50 bg-blue-600 text-white flex flex-col transition-transform duration-300 ease-in-out w-64 md:hidden ${
+              isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+            }`}
+          >
+            {/* Logo area - Mobile */}
+            <div className="flex items-center justify-between px-4 pt-4 pb-2 flex-shrink-0">
+              <div className="flex items-center space-x-3">
+                <div className="bg-blue-400 p-2 rounded-md">
+                  <div className="h-8 w-8 bg-blue-200 rounded-md flex items-center justify-center">
+                    <BookOpen className="h-5 w-5 text-blue-600" />
+                  </div>
+                </div>
+                <span className="text-xl font-bold">MedJourney</span>
+              </div>
+              <button onClick={handleToggleSidebar} className="text-blue-100 hover:text-white">
+                <X className="h-5 w-5" />
               </button>
             </div>
+            
+            {/* Menu container com scroll próprio - Mobile */}
+            <div className="flex flex-col flex-1 overflow-hidden">
+              {/* Mobile Nav com scroll - Usando o novo componente SidebarMenu */}
+              <SidebarMenu 
+                onToggleSubmenu={toggleSubmenu} 
+                expandedMenus={expandedMenus}
+              />
+              
+              {/* Bottom links - Mobile, fora da área de scroll */}
+              <div className="pt-4 border-t border-blue-500 px-4 pb-4 flex-shrink-0">
+                <div className="bg-blue-500 text-white rounded-lg p-3 mt-2 text-sm">
+                  <p className="font-medium">Precisa de ajuda?</p>
+                  <p className="text-blue-100 text-xs mt-1">Entre em contato com o suporte para qualquer dúvida.</p>
+                  <button className="w-full bg-blue-400 hover:bg-blue-300 text-blue-800 py-1.5 px-3 rounded-md text-sm font-medium mt-3">
+                    Contato
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
       
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -394,7 +428,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         <header className="bg-white shadow-sm py-4 px-6 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center">
             <button 
-              onClick={toggleSidebar} 
+              onClick={handleToggleSidebar} 
               className="mr-4 text-gray-500 hover:text-gray-700 md:hidden"
               aria-label="Abrir menu"
             >
@@ -436,8 +470,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         </main>
       </div>
 
-      {/* Mobile Menu */}
-      <MobileMenu forceShow />
+      {/* Mobile Menu - Passa a função de bloqueio para o MobileMenu */}
+      <MobileMenu forceShow lockMobileSidebar={lockMobileSidebar} />
     </div>
   );
 };

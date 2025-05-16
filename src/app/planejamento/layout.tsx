@@ -7,7 +7,5 @@ export default function PlanejamentoLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <ProtectedLayout>{children}</ProtectedLayout>
-  );
+  return <ProtectedLayout>{children}</ProtectedLayout>;
 } 

@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase';
-import { StudyStreakService } from '@/lib/study-streak-service';
 import { format } from 'date-fns';
+import SmartPlanningService from './smart-planning.service';
+import { toast } from 'react-hot-toast';
+import { StudyStreakService } from '@/lib/study-streak-service';
 
 export interface StudySession {
   id?: number;
@@ -120,47 +122,135 @@ export class StudySessionService {
    */
   static async completeSession(id: number, actualDuration?: number): Promise<StudySession | null> {
     try {
-      // Buscar a sessão primeiro para obter a disciplina e duração
-      const { data: session, error: fetchError } = await supabase
+      // Verificar em qual tabela a sessão existe
+      
+      // 1. Tentar buscar na tabela study_sessions
+      const { data: regularSession, error: regularError } = await supabase
         .from('study_sessions')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
-      if (fetchError) {
-        console.error('Erro ao buscar sessão de estudo:', fetchError);
-        return null;
+      if (regularError) {
+        console.error('Erro ao buscar sessão de estudo regular:', regularError);
       }
 
-      const updates = {
-        completed: true,
-        status: 'concluida' as const,
-        actual_duration_minutes: actualDuration || session.duration_minutes
-      };
-
-      // Atualizar a sessão
-      const { data, error } = await supabase
-        .from('study_sessions')
-        .update(updates)
+      // 2. Tentar buscar na tabela smart_plan_sessions
+      const { data: smartSession, error: smartError } = await supabase
+        .from('smart_plan_sessions')
+        .select('*, disciplines:discipline_id(id, name)')
         .eq('id', id)
-        .select()
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        console.error('Erro ao completar sessão de estudo:', error);
-        return null;
+      if (smartError) {
+        console.error('Erro ao buscar sessão de plano inteligente:', smartError);
       }
 
-      // Registrar a atividade de estudo
-      if (session.discipline_id) {
+      // Determinar em qual tabela está a sessão e proceder com a atualização
+      if (regularSession) {
+        // Completar sessão regular
+        const updates = {
+          completed: true,
+          status: 'concluida' as const,
+          actual_duration_minutes: actualDuration || regularSession.duration_minutes
+        };
+
+        // Atualizar a sessão
+        const { data, error } = await supabase
+          .from('study_sessions')
+          .update(updates)
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Erro ao completar sessão de estudo:', error);
+          return null;
+        }
+
+        // Registrar a atividade de estudo
+        if (regularSession.discipline_id) {
+          await StudyStreakService.recordStudySession(
+            updates.actual_duration_minutes,
+            regularSession.discipline_id,
+            id
+          );
+        }
+
+        return data;
+      } 
+      else if (smartSession) {
+        // Completar sessão de plano inteligente
+        // Como a tabela smart_plan_sessions pode não ter o campo 'completed',
+        // vamos usar o campo metadata para guardar essa informação
+        
+        // Ler metadata atual, se existir
+        let metadata: any = {};
+        if (smartSession.metadata) {
+          try {
+            metadata = JSON.parse(smartSession.metadata);
+          } catch (e) {
+            console.warn('Erro ao analisar metadados da sessão:', e);
+          }
+        }
+        
+        // Atualizar metadata com informações de conclusão
+        metadata.completed = true;
+        metadata.completed_at = new Date().toISOString();
+        metadata.actual_duration_minutes = actualDuration || smartSession.duration_minutes;
+        
+        const updates = {
+          metadata: JSON.stringify(metadata)
+        };
+        
+        // Atualizar a sessão
+        const { data: updatedSmartSession, error } = await supabase
+          .from('smart_plan_sessions')
+          .update(updates)
+          .eq('id', id)
+          .select('*, disciplines:discipline_id(id, name)')
+          .single();
+          
+        if (error) {
+          console.error('Erro ao completar sessão de plano inteligente:', error);
+          return null;
+        }
+        
+        // Registrar a atividade de estudo
         await StudyStreakService.recordStudySession(
-          updates.actual_duration_minutes,
-          session.discipline_id,
+          actualDuration || smartSession.duration_minutes,
+          smartSession.discipline_id,
           id
         );
+        
+        // Converter para o formato de sessão de estudo
+        const convertedSession = SmartPlanningService.convertToStudySession({
+          id: updatedSmartSession.id,
+          title: updatedSmartSession.title,
+          discipline_id: updatedSmartSession.discipline_id,
+          discipline_name: updatedSmartSession.disciplines?.name || 'Disciplina',
+          subject_id: updatedSmartSession.subject_id,
+          date: updatedSmartSession.date,
+          start_time: updatedSmartSession.start_time,
+          end_time: updatedSmartSession.end_time,
+          duration_minutes: updatedSmartSession.duration_minutes,
+          is_revision: updatedSmartSession.is_revision,
+          original_session_id: updatedSmartSession.original_session_id,
+          plan_id: updatedSmartSession.plan_id
+        });
+        
+        // Adicionar informações de conclusão ao objeto convertido
+        return {
+          ...convertedSession,
+          completed: true,
+          status: 'concluida',
+          actual_duration_minutes: actualDuration || smartSession.duration_minutes
+        };
       }
-
-      return data;
+      else {
+        console.error('Sessão não encontrada em nenhuma das tabelas:', id);
+        return null;
+      }
     } catch (error) {
       console.error('Erro ao completar sessão de estudo:', error);
       return null;
@@ -206,23 +296,121 @@ export class StudySessionService {
         return [];
       }
 
+      // Obter a data atual para filtragem
+      const today = new Date();
+      
+      // 1. Buscar sessões regulares
       let query = supabase
         .from('study_sessions')
         .select('*')
         .eq('user_id', userId);
 
       if (!includeCompleted) {
+        // Filtrar por sessões não completadas
         query = query.eq('completed', false);
+        
+        // Para sessões não completadas, vamos limitar a apenas as do dia atual
+        // Definimos o início e o fim do dia atual
+        const startOfDay = new Date(today);
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const endOfDay = new Date(today);
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        // Aplicar filtro de data para o dia atual
+        query = query
+          .gte('scheduled_date', startOfDay.toISOString())
+          .lt('scheduled_date', endOfDay.toISOString());
       }
 
-      const { data, error } = await query.order('scheduled_date', { ascending: true });
+      const { data: regularSessions, error } = await query.order('scheduled_date', { ascending: true });
 
       if (error) {
         console.error('Erro ao buscar sessões de estudo:', error);
         return [];
       }
+      
+      console.log('getUserSessions: Regular sessions encontradas:', regularSessions?.length || 0);
 
-      return data || [];
+      // 2. Buscar sessões do planejamento inteligente
+      try {
+        // Buscar planos do usuário
+        const { data: plans, error: plansError } = await supabase
+          .from('smart_plans')
+          .select('id')
+          .eq('user_id', userId);
+
+        if (plansError) {
+          console.error('Erro ao buscar planos inteligentes:', plansError);
+          return regularSessions || [];
+        }
+
+        if (!plans || plans.length === 0) {
+          return regularSessions || [];
+        }
+
+        // Obter IDs dos planos
+        const planIds = plans.map(plan => plan.id);
+        
+        // Buscar sessões associadas aos planos
+        const { data: smartSessions, error: smartSessionsError } = await supabase
+          .from('smart_plan_sessions')
+          .select(`
+            *,
+            disciplines:discipline_id (id, name)
+          `)
+          .in('plan_id', planIds);
+
+        if (smartSessionsError) {
+          console.error('Erro ao buscar sessões de planos inteligentes:', smartSessionsError);
+          return regularSessions || [];
+        }
+
+        // Obter a data atual para filtragem
+        const today = new Date();
+        
+        // Converter sessões do planejamento inteligente para o formato de sessão regular
+        let convertedSmartSessions = (smartSessions || []).map(session => {
+          return SmartPlanningService.convertToStudySession({
+            id: session.id,
+            title: session.title,
+            discipline_id: session.discipline_id,
+            discipline_name: session.disciplines?.name || 'Disciplina',
+            subject_id: session.subject_id,
+            date: session.date,
+            start_time: session.start_time,
+            end_time: session.end_time,
+            duration_minutes: session.duration_minutes,
+            is_revision: session.is_revision,
+            original_session_id: session.original_session_id,
+            plan_id: session.plan_id
+          });
+        });
+        
+        // Filtrar sessões para mostrar apenas as do dia atual
+        if (!includeCompleted) {
+          convertedSmartSessions = convertedSmartSessions.filter(session => {
+            if (!session.scheduled_date) return false;
+            
+            const sessionDate = new Date(session.scheduled_date);
+            
+            // Comparar ano, mês e dia localmente (sem conversão para UTC)
+            return (
+              sessionDate.getFullYear() === today.getFullYear() &&
+              sessionDate.getMonth() === today.getMonth() &&
+              sessionDate.getDate() === today.getDate()
+            );
+          });
+        }
+
+        console.log('getUserSessions: Smart sessions encontradas (após filtragem):', convertedSmartSessions.length);
+
+        // Combinar os dois tipos de sessões
+        return [...regularSessions || [], ...convertedSmartSessions];
+      } catch (smartError) {
+        console.error('Erro ao processar sessões de planos inteligentes:', smartError);
+        return regularSessions || [];
+      }
     } catch (error) {
       console.error('Erro ao buscar sessões de estudo:', error);
       return [];
@@ -236,8 +424,7 @@ export class StudySessionService {
    */
   static async getUpcomingSessions(days: number = 7): Promise<StudySession[]> {
     try {
-      // Depuração
-      console.log('getUpcomingSessions: Iniciando busca...');
+      console.log("getUpcomingSessions: Iniciando busca...");
       
       const { data: { session } } = await supabase.auth.getSession();
       const userId = session?.user?.id;
@@ -246,24 +433,29 @@ export class StudySessionService {
         console.error('getUpcomingSessions: Usuário não autenticado');
         return [];
       }
-
-      // Obter data atual no início do dia (00:00:00) no fuso horário local
-      const now = new Date();
-      // Zeramos as horas para pegar qualquer sessão que esteja agendada para hoje
-      now.setHours(0, 0, 0, 0);
       
-      // Calcular data futura (hoje + days) no fuso horário local
-      const future = new Date();
-      future.setDate(future.getDate() + days);
-      future.setHours(23, 59, 59, 999);
+      // Calcular as datas de início e fim para o intervalo
+      const startDate = new Date();
       
-      // Converter para ISO String para usar no filtro
-      const nowISO = now.toISOString();
-      const futureISO = future.toISOString();
+      // Se days=1, vamos buscar apenas o dia atual (hoje)
+      // Senão, buscar o intervalo normal de dias
+      let endDate;
       
-      console.log('getUpcomingSessions: Buscando sessões entre:', nowISO, 'e', futureISO);
-      console.log('getUpcomingSessions: Usuário ID:', userId);
-
+      if (days === 1) {
+        // Para 1 dia (hoje), definimos início às 00:00 e fim às 23:59
+        startDate.setHours(0, 0, 0, 0);
+        
+        endDate = new Date();
+        endDate.setHours(23, 59, 59, 999);
+      } else {
+        // Para múltiplos dias, mantemos a lógica original
+        endDate = new Date();
+        endDate.setDate(endDate.getDate() + days);
+      }
+      
+      console.log(`getUpcomingSessions: Buscando sessões entre: ${startDate.toISOString()} e ${endDate.toISOString()}`);
+      console.log(`getUpcomingSessions: Usuário ID: ${userId}`);
+      
       // Verificar existência da tabela
       const { data: tableInfo, error: tableError } = await supabase
         .from('study_sessions')
@@ -285,8 +477,8 @@ export class StudySessionService {
         .select('*')
         .eq('user_id', userId)
         .eq('completed', false)
-        .gte('scheduled_date', nowISO)
-        .lte('scheduled_date', futureISO)
+        .gte('scheduled_date', startDate.toISOString())
+        .lte('scheduled_date', endDate.toISOString())
         .order('scheduled_date', { ascending: true });
 
       if (error) {
@@ -384,6 +576,88 @@ export class StudySessionService {
       return result;
     } catch (error) {
       console.error('Erro ao registrar sessão rápida:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Obtém uma sessão de estudo específica pelo ID
+   * @param id ID da sessão
+   * @returns A sessão encontrada ou null se não existir
+   */
+  static async getSessionById(id: number): Promise<StudySession | null> {
+    try {
+      console.log(`getSessionById: Buscando sessão com ID ${id}`);
+      
+      // 1. Tentar buscar na tabela study_sessions
+      const { data: regularSession, error: regularError } = await supabase
+        .from('study_sessions')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (regularError) {
+        console.error('Erro ao buscar sessão de estudo regular:', regularError);
+      }
+
+      // 2. Tentar buscar na tabela smart_plan_sessions
+      const { data: smartSession, error: smartError } = await supabase
+        .from('smart_plan_sessions')
+        .select('*, disciplines:discipline_id(id, name)')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (smartError) {
+        console.error('Erro ao buscar sessão de plano inteligente:', smartError);
+      }
+
+      // Se encontrou uma sessão regular, retorná-la
+      if (regularSession) {
+        console.log(`getSessionById: Encontrada sessão regular com ID ${id}`);
+        return regularSession;
+      } 
+      
+      // Se encontrou uma sessão de plano inteligente, convertê-la e retorná-la
+      if (smartSession) {
+        console.log(`getSessionById: Encontrada sessão de plano inteligente com ID ${id}`);
+        
+        const convertedSession = SmartPlanningService.convertToStudySession({
+          id: smartSession.id,
+          title: smartSession.title,
+          discipline_id: smartSession.discipline_id,
+          discipline_name: smartSession.disciplines?.name || 'Disciplina',
+          subject_id: smartSession.subject_id,
+          date: smartSession.date,
+          start_time: smartSession.start_time,
+          end_time: smartSession.end_time,
+          duration_minutes: smartSession.duration_minutes,
+          is_revision: smartSession.is_revision,
+          original_session_id: smartSession.original_session_id,
+          plan_id: smartSession.plan_id
+        });
+        
+        // Verificar se a sessão está marcada como concluída (no metadata)
+        if (smartSession.metadata) {
+          try {
+            const metadata = JSON.parse(smartSession.metadata);
+            if (metadata.completed) {
+              convertedSession.completed = true;
+              convertedSession.status = 'concluida';
+              convertedSession.actual_duration_minutes = metadata.actual_duration_minutes || smartSession.duration_minutes;
+            }
+          } catch (e) {
+            console.warn('Erro ao analisar metadados da sessão:', e);
+          }
+        }
+        
+        return convertedSession;
+      }
+      
+      // Se não encontrou em nenhuma tabela
+      console.log(`getSessionById: Sessão com ID ${id} não encontrada em nenhuma tabela`);
+      return null;
+    } catch (error) {
+      console.error(`Erro ao buscar sessão por ID ${id}:`, error);
       return null;
     }
   }

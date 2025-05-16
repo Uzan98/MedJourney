@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -10,22 +10,46 @@ import {
   FileQuestion, 
   BookText,
   Users,
-  Plus
+  Plus,
+  Calendar,
+  ClipboardList,
+  Settings,
+  GraduationCap
 } from 'lucide-react';
 
 interface MobileMenuProps {
   className?: string;
   forceShow?: boolean;
+  lockMobileSidebar?: (locked: boolean) => void;
 }
 
-const MobileMenu: React.FC<MobileMenuProps> = ({ className = '', forceShow = false }) => {
+const MobileMenu: React.FC<MobileMenuProps> = ({ 
+  className = '', 
+  forceShow = false,
+  lockMobileSidebar
+}) => {
   const pathname = usePathname();
+  const router = useRouter();
   const [shouldRender, setShouldRender] = useState(false);
+
+  // Ativa o bloqueio do sidebar quando este componente carregar
+  useEffect(() => {
+    if (lockMobileSidebar) {
+      lockMobileSidebar(true);
+    }
+    
+    // Libera o bloqueio ao desmontar o componente
+    return () => {
+      if (lockMobileSidebar) {
+        lockMobileSidebar(false);
+      }
+    };
+  }, [lockMobileSidebar]);
 
   // Check if we should render the menu
   // Don't render on protected routes unless forceShow is true
   useEffect(() => {
-    const protectedPaths = ['/dashboard', '/estudos', '/banco-questoes', '/simulados', '/comunidade', '/planejamento'];
+    const protectedPaths = ['/dashboard', '/estudos', '/banco-questoes', '/simulados', '/comunidade', '/planejamento', '/configuracoes', '/disciplinas'];
     
     // Check if current path is a protected path or a subpath of one
     const isProtectedRoute = protectedPaths.some(path => 
@@ -36,12 +60,27 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ className = '', forceShow = fal
     setShouldRender(!isProtectedRoute || forceShow);
   }, [pathname, forceShow]);
 
-  // Menu items for the mobile navigation
-  const menuItems = [
+  // Primary menu items (always visible)
+  const primaryMenuItems = [
     {
       path: "/dashboard",
       label: "Home",
       icon: <Home className="h-5 w-5" />
+    },
+    {
+      path: "/disciplinas",
+      label: "Disciplinas",
+      icon: <BookOpen className="h-5 w-5" />
+    },
+    {
+      path: "/planejamento",
+      label: "Planejar",
+      icon: <Calendar className="h-5 w-5" />
+    },
+    {
+      path: "/estudos",
+      label: "Estudos",
+      icon: <BookText className="h-5 w-5" />
     },
     {
       path: "/banco-questoes",
@@ -49,13 +88,13 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ className = '', forceShow = fal
       icon: <FileQuestion className="h-5 w-5" />
     },
     {
-      path: "/planejamento",
-      label: "Estudos",
-      icon: <BookText className="h-5 w-5" />
+      path: "/simulados",
+      label: "Simulados",
+      icon: <ClipboardList className="h-5 w-5" />
     },
     {
       path: "/comunidade",
-      label: "Comunidade",
+      label: "Social",
       icon: <Users className="h-5 w-5" />
     }
   ];
@@ -72,45 +111,44 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ className = '', forceShow = fal
     return false;
   };
 
+  // Função para navegar manualmente
+  const handleNavigation = (path: string) => {
+    // Só navega se não estivermos já no caminho
+    if (pathname !== path) {
+      router.push(path);
+    }
+  };
+
   if (!shouldRender) return null;
 
   return (
     <div className={`fixed bottom-0 left-0 right-0 z-50 md:hidden ${className}`}>
-      {/* FAB - Floating Action Button */}
-      <div className="absolute left-1/2 -translate-x-1/2 -top-6">
-        <Link href="/planejamento/nova-sessao">
-          <button className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95">
-            <Plus className="h-6 w-6" />
-          </button>
-        </Link>
-      </div>
-      
       {/* Menu Bar */}
       <div className="bg-white border-t border-gray-200 shadow-lg rounded-t-xl">
-        <div className="flex justify-around items-center px-2">
-          {menuItems.map((item, index) => {
+        <div className="flex justify-around items-center px-0.5 py-2">
+          {primaryMenuItems.map((item, index) => {
             const active = isActive(item.path);
             
             return (
-              <Link
+              <button
                 key={item.path}
-                href={item.path}
-                className={`flex flex-col items-center py-3 px-3 relative ${
+                onClick={() => handleNavigation(item.path)}
+                className={`flex flex-col items-center py-0.5 px-1 relative ${
                   active 
                     ? 'text-blue-600' 
                     : 'text-gray-500 hover:text-gray-700'
                 } transition-colors duration-200`}
               >
-                <div className={`p-1.5 rounded-full ${active ? 'bg-blue-100' : ''} transition-colors duration-200`}>
+                <div className={`p-1 rounded-full ${active ? 'bg-blue-100' : ''} transition-colors duration-200`}>
                   {item.icon}
                 </div>
-                <span className="text-xs mt-1 font-medium">{item.label}</span>
+                <span className="text-[8px] mt-0.5 font-medium truncate max-w-10 text-center">{item.label}</span>
                 
                 {/* Active indicator */}
                 {active && (
-                  <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-blue-600 rounded-full"></div>
+                  <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-blue-600 rounded-full"></div>
                 )}
-              </Link>
+              </button>
             );
           })}
         </div>

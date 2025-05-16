@@ -116,7 +116,7 @@ export default function EstudosPage() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
-  
+
   // Verificar parâmetros de URL para iniciar sessão automaticamente
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -131,11 +131,8 @@ export default function EstudosPage() {
         // Carregar a sessão específica e iniciá-la
         const startSessionFromUrl = async () => {
           try {
-            // Buscar todas as sessões não completadas
-            const sessions = await StudySessionService.getUserSessions(false);
-            console.log("Sessions para iniciar automaticamente:", sessions);
-            
-            const sessionToStart = sessions.find(s => s.id === Number(sessionId));
+            // Buscar a sessão diretamente pelo ID usando o novo método
+            const sessionToStart = await StudySessionService.getSessionById(Number(sessionId));
             console.log("Sessão encontrada para iniciar:", sessionToStart);
             
             if (sessionToStart) {
@@ -160,9 +157,9 @@ export default function EstudosPage() {
     }
   }, []);
 
-  async function loadStudyData() {
-    try {
-      setLoading(true);
+    async function loadStudyData() {
+      try {
+        setLoading(true);
       console.log("Carregando dados de estudo...");
 
       // Tentar carregar sessões do serviço
@@ -174,18 +171,24 @@ export default function EstudosPage() {
         const allNonCompletedSessions = await StudySessionService.getUserSessions(false);
         console.log("Todas as sessões não completadas:", allNonCompletedSessions);
         
-        // Filtrar apenas as sessões futuras (a partir de hoje)
+        // Filtrar apenas as sessões do dia atual (usando métodos que preservam o fuso horário)
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const todayStr = today.toISOString();
         
-        // Filtrar sessões com data agendada para hoje ou futuro
+        // Filtrar sessões com data agendada apenas para hoje
         const upcoming = allNonCompletedSessions.filter(session => {
           if (!session.scheduled_date) return false;
-          return new Date(session.scheduled_date) >= today;
+          
+          const sessionDate = new Date(session.scheduled_date);
+          
+          // Comparar ano, mês e dia localmente (sem conversão para UTC)
+          return (
+            sessionDate.getFullYear() === today.getFullYear() &&
+            sessionDate.getMonth() === today.getMonth() &&
+            sessionDate.getDate() === today.getDate()
+          );
         });
         
-        console.log("Sessões agendadas filtradas:", upcoming);
+        console.log("Sessões agendadas para hoje:", upcoming);
         
         if (upcoming && upcoming.length > 0) {
           // Garantir que temos o nome da disciplina
@@ -203,8 +206,8 @@ export default function EstudosPage() {
           
           setUpcomingSessions(sortedUpcoming);
         } else {
-          // Como fallback, tente o método específico
-          const upcomingSessions = await StudySessionService.getUpcomingSessions(30);
+          // Como fallback, tente o método específico apenas para hoje
+          const upcomingSessions = await StudySessionService.getUpcomingSessions(1);
           if (upcomingSessions && upcomingSessions.length > 0) {
             const upcomingWithNames = upcomingSessions.map(session => ({
               ...session,
@@ -343,9 +346,8 @@ export default function EstudosPage() {
     try {
       console.log("Carregando sessões diretamente do Supabase");
       
-      // Obter a data atual
+      // Obter a data atual em loadSessionsFromSupabase
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
       
       // Abordagem 1: Obter todas as sessões não completadas primeiro
       const { data: allSessions, error: allSessionsError } = await supabase
@@ -361,17 +363,25 @@ export default function EstudosPage() {
       
       console.log("Todas as sessões do Supabase:", allSessions);
       
-      // Filtrar apenas as sessões futuras (a partir de hoje)
-      const upcomingData = allSessions ? allSessions.filter(session => {
+      // Filtrar apenas as sessões de hoje (usando métodos que preservam o fuso horário)
+      const todaySessions = allSessions ? allSessions.filter(session => {
         if (!session.scheduled_date) return false;
-        return new Date(session.scheduled_date) >= today;
+        
+        const sessionDate = new Date(session.scheduled_date);
+        
+        // Comparar ano, mês e dia localmente (sem conversão para UTC)
+        return (
+          sessionDate.getFullYear() === today.getFullYear() &&
+          sessionDate.getMonth() === today.getMonth() &&
+          sessionDate.getDate() === today.getDate()
+        );
       }) : [];
       
-      console.log("Sessões agendadas filtradas do Supabase:", upcomingData);
+      console.log("Sessões de hoje do Supabase:", todaySessions);
       
       // Garantir que temos o nome da disciplina e ordenar da mesma forma que o método principal
-      if (upcomingData && upcomingData.length > 0) {
-        const upcomingWithNames = upcomingData.map(session => ({
+      if (todaySessions && todaySessions.length > 0) {
+        const upcomingWithNames = todaySessions.map(session => ({
           ...session,
           disciplineName: session.title.split(' - ')[0] || '',
         }));
@@ -385,15 +395,27 @@ export default function EstudosPage() {
         
         setUpcomingSessions(sortedUpcoming);
       } else {
-        // Abordagem 2 (Fallback): Usar a consulta específica para 30 dias
-        const { data: fallbackUpcoming, error: fallbackError } = await supabase
-          .from('study_sessions')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('completed', false)
-          .gte('scheduled_date', today.toISOString())
-          .order('scheduled_date', { ascending: true });
+        // Abordagem 2 (Fallback): Usar a consulta específica para o dia atual
+        // Construir datas de início e fim do dia respeitando o fuso horário local
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
         
+        const endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        // Formatar as datas para ISO string (necessário para o Supabase)
+        const startIso = startOfDay.toISOString();
+        const endIso = endOfDay.toISOString();
+        
+        const { data: fallbackUpcoming, error: fallbackError } = await supabase
+        .from('study_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('completed', false)
+        .gte('scheduled_date', startIso)
+        .lt('scheduled_date', endIso)
+        .order('scheduled_date', { ascending: true });
+      
         if (fallbackError) {
           throw fallbackError;
         }
@@ -513,8 +535,8 @@ export default function EstudosPage() {
       // Se não estudou nem hoje nem ontem, a sequência é zero
         
       // Calcular métricas
-      if (upcomingData) {
-        const allSessions = [...upcomingData, ...completedSessions];
+      if (todaySessions) {
+        const allSessions = [...todaySessions, ...completedSessions];
         setMetrics({
           totalSessions: allSessions.length,
           completedSessions: completedSessions.length,

@@ -14,7 +14,8 @@ import {
   Users,
   Home,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Brain
 } from 'lucide-react';
 
 interface SidebarMenuProps {
@@ -61,6 +62,11 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
       path: "/planejamento",
       label: "Planejamento",
       icon: <Calendar className="h-5 w-5 flex-shrink-0" />
+    },
+    {
+      path: "/planejamento/inteligente",
+      label: "Planejamento AI",
+      icon: <Brain className="h-5 w-5 flex-shrink-0" />
     },
     {
       path: "/banco-questoes",

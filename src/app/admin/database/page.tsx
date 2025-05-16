@@ -77,6 +77,24 @@ export default function AdminDatabasePage() {
               placeholder="Insira a chave de API"
             />
           </div>
+
+          <div className="mb-6">
+            <h3 className="font-medium mb-3">Configuração rápida:</h3>
+            <div className="flex flex-wrap gap-3">
+              <a 
+                href="/admin/database/setup-functions" 
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center gap-2"
+              >
+                <span>Configurar Funções SQL</span>
+              </a>
+              <a 
+                href="/admin/database/setup-smart-planning" 
+                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center gap-2"
+              >
+                <span>Configurar Planejamento Inteligente</span>
+              </a>
+            </div>
+          </div>
           
           <div className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-lg">
