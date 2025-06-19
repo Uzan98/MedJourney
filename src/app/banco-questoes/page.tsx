@@ -15,9 +15,11 @@ import {
   ChevronDown,
   RefreshCw,
   SortAsc,
-  SortDesc
+  SortDesc,
+  Wand2
 } from 'lucide-react';
 import QuestionCard from '@/components/banco-questoes/QuestionCard';
+import AIQuestionGeneratorModal from '@/components/banco-questoes/AIQuestionGeneratorModal';
 
 export default function BancoQuestoesPage() {
   const { user } = useAuth();
@@ -37,6 +39,9 @@ export default function BancoQuestoesPage() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  
+  // Estado para modal de geração de questão com IA
+  const [showAIModal, setShowAIModal] = useState(false);
   
   // Estados para exclusão
   const [deleting, setDeleting] = useState<number | null>(null);
@@ -255,13 +260,25 @@ export default function BancoQuestoesPage() {
             </div>
           </div>
           
-          <Link href="/banco-questoes/nova-questao" 
-                className="group flex items-center px-6 py-3 bg-white text-blue-700 rounded-xl hover:bg-blue-50 transition-all shadow-md hover:shadow-xl">
-            <div className="bg-blue-100 p-2 rounded-lg mr-3 group-hover:bg-blue-200 transition-colors">
-              <Plus className="h-5 w-5" />
-            </div>
-            <span className="font-semibold">Nova Questão</span>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => setShowAIModal(true)}
+              className="group flex items-center px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all shadow-md hover:shadow-xl"
+            >
+              <div className="bg-purple-500 p-2 rounded-lg mr-3 group-hover:bg-purple-400 transition-colors">
+                <Wand2 className="h-5 w-5" />
+              </div>
+              <span className="font-semibold">Criar com IA</span>
+            </button>
+            
+            <Link href="/banco-questoes/nova-questao" 
+                  className="group flex items-center px-6 py-3 bg-white text-blue-700 rounded-xl hover:bg-blue-50 transition-all shadow-md hover:shadow-xl">
+              <div className="bg-blue-100 p-2 rounded-lg mr-3 group-hover:bg-blue-200 transition-colors">
+                <Plus className="h-5 w-5" />
+              </div>
+              <span className="font-semibold">Nova Questão</span>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -451,6 +468,13 @@ export default function BancoQuestoesPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de geração de questão com IA */}
+      <AIQuestionGeneratorModal
+        isOpen={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        onQuestionCreated={loadData}
+      />
     </div>
   );
 } 
