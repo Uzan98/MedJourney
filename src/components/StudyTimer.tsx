@@ -143,10 +143,10 @@ export default function StudyTimer({
         return `${secs}s`;
       }
     } else {
-      if (hours > 0) {
-        return `${hours}h ${minutes.toString().padStart(2, '0')}m ${secs.toString().padStart(2, '0')}s`;
-      } else {
-        return `${minutes}m ${secs.toString().padStart(2, '0')}s`;
+    if (hours > 0) {
+      return `${hours}h ${minutes.toString().padStart(2, '0')}m ${secs.toString().padStart(2, '0')}s`;
+    } else {
+      return `${minutes}m ${secs.toString().padStart(2, '0')}s`;
       }
     }
   };

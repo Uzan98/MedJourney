@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Users, Clock, Send, LogOut, X, MessageSquare, User, Award, Info, Copy, Shield, Sparkles, UserPlus, ExternalLink, BookOpen, Timer, Activity } from 'lucide-react';
+import { ArrowLeft, Users, Clock, Send, LogOut, X, MessageSquare, User, Award, Info, Copy, Shield, Sparkles, UserPlus, ExternalLink, BookOpen, Timer, Activity, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { StudyGroup, StudyGroupMember, StudyGroupService } from '@/services/study-group.service';
@@ -13,6 +13,7 @@ import StudyTimeDisplay from '@/components/StudyTimeDisplay';
 import GroupStudyTimer from '@/components/estudos/GroupStudyTimer';
 import PomodoroTimer from '@/components/estudos/PomodoroTimer';
 import AchievementsFeed from '@/components/comunidade/AchievementsFeed';
+import GroupExamsSection from '@/components/comunidade/GroupExamsSection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChatScroll } from '@/hooks/useChatScroll';
 import { supabase } from '@/lib/supabase';
@@ -43,7 +44,7 @@ export default function GrupoEstudosPage() {
   const [isMember, setIsMember] = useState(false);
   const [joinTime, setJoinTime] = useState<string>('');
   const [isLeaving, setIsLeaving] = useState(false);
-  const [activeSection, setActiveSection] = useState<'chat' | 'info' | 'pomodoro'>('chat');
+  const [activeSection, setActiveSection] = useState<'chat' | 'info' | 'pomodoro' | 'simulados'>('chat');
   const [menuPosition, setMenuPosition] = useState({ left: 0 });
   
   // Chave única para forçar remontagem do timer quando necessário
@@ -558,13 +559,13 @@ export default function GrupoEstudosPage() {
                     <div className="px-4 py-2 flex justify-center items-center">
                       <Clock className="h-5 w-5 text-white/80 mr-2" />
                       <div className="text-white font-bold text-lg">
-                        <GroupStudyTimer 
-                          startTime={joinTime} 
-                          isActive={isActive} 
+              <GroupStudyTimer 
+                startTime={joinTime} 
+                isActive={isActive} 
                           resetOnMount={false}
                           showBackground={false}
                           key={timerKey.current}
-                        />
+              />
                       </div>
                     </div>
                   </div>
@@ -628,6 +629,19 @@ export default function GrupoEstudosPage() {
             >
               <Info className={`h-4 w-4 mr-2 ${activeSection === 'info' ? 'drop-shadow-md' : ''}`} />
               <span className="font-medium">Informações</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveSection('simulados')}
+              className={`px-4 py-2.5 rounded-xl transition-all duration-300 flex items-center ${
+                activeSection === 'simulados' 
+                  ? 'bg-gradient-to-br from-green-500 to-teal-600 text-white shadow-md shadow-green-500/30' 
+                  : 'bg-white/40 text-gray-700 hover:bg-white/60'
+              }`}
+              title="Simulados"
+            >
+              <FileText className={`h-4 w-4 mr-2 ${activeSection === 'simulados' ? 'drop-shadow-md' : ''}`} />
+              <span className="font-medium">Simulados</span>
             </button>
             
             <button
@@ -816,6 +830,15 @@ export default function GrupoEstudosPage() {
                 </>
               )}
               
+              {/* Simulados */}
+              {activeSection === 'simulados' && (
+                <GroupExamsSection 
+                  groupId={groupId}
+                  userId={user?.id || ''}
+                  isAdmin={isAdmin}
+                />
+              )}
+              
               {/* Pomodoro */}
               {activeSection === 'pomodoro' && (
                 <>
@@ -826,11 +849,11 @@ export default function GrupoEstudosPage() {
                     
                     <h3 className="text-lg font-bold mb-2 flex items-center relative z-10"><Timer className="h-5 w-5 mr-2"/> Técnica Pomodoro</h3>
                     <p className="text-white/90 text-sm relative z-10">
-                      Use o método Pomodoro para aumentar sua produtividade: alterne entre períodos de foco intenso e pequenas pausas.
-                    </p>
-                  </div>
+                    Use o método Pomodoro para aumentar sua produtividade: alterne entre períodos de foco intenso e pequenas pausas.
+                  </p>
+                </div>
                 
-                  <div className="p-6">
+                                 <div className="p-6">
                     {pomodoroRef.current}
                   
                   <div className="mt-6 bg-blue-50 rounded-xl p-4 border border-blue-100">

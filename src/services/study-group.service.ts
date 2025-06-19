@@ -30,6 +30,16 @@ export interface StudyGroup {
   online_count?: number; // Contagem de membros online (calculada)
 }
 
+export interface GroupExam {
+  id: number;
+  group_id: string;
+  exam_id: number;
+  added_by: string;
+  created_at: string;
+  exam?: any; // Detalhes do simulado
+  user?: any; // Detalhes de quem adicionou
+}
+
 export class StudyGroupService {
   private static channels: Record<string, any> = {};
   
@@ -1198,6 +1208,251 @@ export class StudyGroupService {
     if (this.heartbeatIntervals[groupId]) {
       clearInterval(this.heartbeatIntervals[groupId]);
       delete this.heartbeatIntervals[groupId];
+    }
+  }
+
+  /**
+   * Adicionar um simulado ao grupo de estudos
+   * @param groupId ID do grupo
+   * @param examId ID do simulado
+   */
+  static async addExamToGroup(groupId: string, examId: number): Promise<boolean> {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData?.user) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      // Verificar se o usuário é membro do grupo
+      const isMember = await this.isGroupMember(groupId);
+      if (!isMember) {
+        throw new Error('Você não é membro deste grupo');
+      }
+
+      // Verificar se o simulado já está no grupo
+      const { data: existingExam } = await supabase
+        .from('group_exams')
+        .select('id')
+        .eq('group_id', groupId)
+        .eq('exam_id', examId)
+        .maybeSingle();
+
+      if (existingExam) {
+        return true; // Simulado já está no grupo
+      }
+
+      // Tentar inserção direta
+      const { error } = await supabase
+        .from('group_exams')
+        .insert({
+          group_id: groupId,
+          exam_id: examId,
+          added_by: userData.user.id,
+          created_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Erro na inserção direta:', error);
+        
+        // Se o erro for de chave estrangeira para added_by, tentar uma abordagem alternativa
+        if (error.code === '23503' && error.message.includes('group_exams_added_by_fkey')) {
+          // Verificar se o usuário tem um perfil
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', userData.user.id)
+            .single();
+            
+          if (!profile) {
+            // Criar um perfil para o usuário se não existir
+            await supabase
+              .from('profiles')
+              .upsert({
+                id: userData.user.id,
+                username: userData.user.email?.split('@')[0] || 'Usuário',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              });
+          }
+          
+          // Tentar novamente após criar o perfil
+          const { error: retryError } = await supabase
+            .from('group_exams')
+            .insert({
+              group_id: groupId,
+              exam_id: examId,
+              added_by: userData.user.id,
+              created_at: new Date().toISOString()
+            });
+            
+          if (retryError) {
+            console.error('Erro na segunda tentativa de inserção:', retryError);
+            throw retryError;
+          }
+        } else {
+          throw error;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao adicionar simulado ao grupo:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Remover um simulado do grupo de estudos
+   * @param groupId ID do grupo
+   * @param examId ID do simulado
+   */
+  static async removeExamFromGroup(groupId: string, examId: number): Promise<boolean> {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData?.user) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      // Verificar se o usuário é membro do grupo e admin ou se é o dono do simulado
+      const { data: member } = await supabase
+        .from('study_group_members')
+        .select('is_admin')
+        .eq('group_id', groupId)
+        .eq('user_id', userData.user.id)
+        .single();
+
+      const { data: exam } = await supabase
+        .from('group_exams')
+        .select('added_by')
+        .eq('group_id', groupId)
+        .eq('exam_id', examId)
+        .single();
+
+      if (!member && (!exam || exam.added_by !== userData.user.id)) {
+        throw new Error('Você não tem permissão para remover este simulado');
+      }
+
+      // Remover o simulado do grupo
+      const { error } = await supabase
+        .from('group_exams')
+        .delete()
+        .eq('group_id', groupId)
+        .eq('exam_id', examId);
+
+      if (error) {
+        throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao remover simulado do grupo:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Obter todos os simulados de um grupo
+   * @param groupId ID do grupo
+   */
+  static async getGroupExams(groupId: string): Promise<GroupExam[]> {
+    try {
+      // Primeiro, buscar os exames do grupo
+      const { data: groupExamsData, error: groupExamsError } = await supabase
+        .from('group_exams')
+        .select(`
+          id,
+          group_id,
+          exam_id,
+          added_by,
+          created_at
+        `)
+        .eq('group_id', groupId)
+        .order('created_at', { ascending: false });
+
+      if (groupExamsError) {
+        throw groupExamsError;
+      }
+
+      // Se não houver exames, retornar array vazio
+      if (!groupExamsData || groupExamsData.length === 0) {
+        return [];
+      }
+
+      // Para cada exame, buscar detalhes adicionais
+      const result = await Promise.all(groupExamsData.map(async (item) => {
+        // Buscar detalhes do exame
+        const { data: examData, error: examError } = await supabase
+          .from('exams')
+          .select('*')
+          .eq('id', item.exam_id)
+          .single();
+
+        if (examError) {
+          console.error('Erro ao buscar detalhes do exame:', examError);
+        }
+
+        // Buscar detalhes do usuário que adicionou
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('username, avatar_url')
+          .eq('id', item.added_by)
+          .single();
+
+        if (userError) {
+          console.error('Erro ao buscar detalhes do usuário:', userError);
+        }
+
+        // Retornar objeto com todas as informações
+        return {
+          ...item,
+          exam: examData || null,
+          user: userData || null
+        };
+      }));
+
+      return result;
+    } catch (error) {
+      console.error('Erro ao buscar simulados do grupo:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Obter simulados do usuário que podem ser adicionados ao grupo
+   * (simulados que o usuário criou e que ainda não estão no grupo)
+   * @param groupId ID do grupo
+   */
+  static async getUserExamsForGroup(groupId: string): Promise<any[]> {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData?.user) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      // Buscar simulados que já estão no grupo
+      const { data: groupExams } = await supabase
+        .from('group_exams')
+        .select('exam_id')
+        .eq('group_id', groupId);
+
+      const existingExamIds = groupExams ? groupExams.map(item => item.exam_id) : [];
+
+      // Buscar simulados do usuário que não estão no grupo
+      const { data, error } = await supabase
+        .from('exams')
+        .select('*')
+        .eq('user_id', userData.user.id)
+        .not('id', 'in', existingExamIds.length > 0 ? `(${existingExamIds.join(',')})` : '(0)')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Erro ao buscar simulados disponíveis para o grupo:', error);
+      return [];
     }
   }
 }

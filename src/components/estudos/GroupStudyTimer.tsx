@@ -54,23 +54,23 @@ export default function GroupStudyTimer({
           key={`study-timer-${startTime}`}
         />
       ) : (
-        <div 
-          ref={timerRef}
-          data-active={localIsActive.toString()}
+    <div 
+      ref={timerRef}
+      data-active={localIsActive.toString()}
           className={`bg-white/30 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center border border-white/20 shadow-sm ${className}`}
-        >
-          <Clock className="h-4 w-4 text-blue-600 mr-2" />
-          <div className="flex flex-col">
-            <span className="text-xs text-blue-700">Tempo no grupo</span>
-            <StudyTimer 
-              startTime={startTime} 
-              className="text-blue-700 font-medium" 
-              compact={true} 
-              active={localIsActive} 
-              resetOnMount={resetOnMount}
+    >
+      <Clock className="h-4 w-4 text-blue-600 mr-2" />
+      <div className="flex flex-col">
+        <span className="text-xs text-blue-700">Tempo no grupo</span>
+        <StudyTimer 
+          startTime={startTime} 
+          className="text-blue-700 font-medium" 
+          compact={true} 
+          active={localIsActive} 
+          resetOnMount={resetOnMount}
               key={`study-timer-${startTime}`}
-            />
-          </div>
+        />
+      </div>
         </div>
       )}
     </div>
