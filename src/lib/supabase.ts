@@ -28,10 +28,20 @@ try {
           'X-Client-Info': 'medjourney-app'
         }
       },
-      // Configuração explícita para realtime
+      // Configuração explícita para realtime com valores mais agressivos
       realtime: {
         params: {
-          eventsPerSecond: 10
+          eventsPerSecond: 20, // Aumentar o número de eventos por segundo
+          heartbeatIntervalMs: 5000, // Enviar heartbeat a cada 5 segundos
+          // Função de backoff exponencial para reconexão
+          reconnectAfterMs: function(attempts: number): number {
+            // Estratégia de backoff exponencial com limite máximo
+            const baseDelay = 1000; // 1 segundo
+            const maxDelay = 10000; // 10 segundos
+            const delay = Math.min(baseDelay * Math.pow(2, attempts), maxDelay);
+            console.log(`Tentando reconectar em ${delay}ms (tentativa ${attempts + 1})`);
+            return delay;
+          }
         }
       }
     });
@@ -39,8 +49,37 @@ try {
     // Inicializar o cliente realtime explicitamente
     supabaseClient.realtime.setAuth(supabaseAnonKey);
     
+    // Configurar um canal de heartbeat para manter a conexão ativa
+    const heartbeatChannel = supabaseClient.channel('heartbeat');
+    heartbeatChannel.subscribe((status) => {
+      console.log(`Heartbeat channel status: ${status}`);
+    });
+    
     console.log('Cliente Supabase criado com sucesso para autenticação');
-    console.log('Suporte a realtime habilitado');
+    console.log('Suporte a realtime habilitado com configurações otimizadas');
+    
+    // Adicionar listener para mudanças de conectividade
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => {
+        console.log('Conexão de rede restaurada, reconectando Supabase Realtime');
+        supabaseClient.realtime.connect();
+      });
+      
+      window.addEventListener('offline', () => {
+        console.log('Conexão de rede perdida, Supabase Realtime pode ser afetado');
+      });
+      
+      // Verificar a conexão periodicamente
+      setInterval(() => {
+        const isConnected = supabaseClient.realtime.isConnected();
+        console.log(`Status da conexão Realtime: ${isConnected ? 'conectado' : 'desconectado'}`);
+        
+        if (!isConnected) {
+          console.log('Tentando reconectar...');
+          supabaseClient.realtime.connect();
+        }
+      }, 30000); // Verificar a cada 30 segundos
+    }
   } else {
     console.error('Não foi possível criar o cliente Supabase: URL ou chave anônima ausentes');
     // Criar um cliente mock para evitar erros de runtime
@@ -87,7 +126,10 @@ function createMockClient(): SupabaseClient {
       channel: () => ({
         on: () => ({ subscribe: () => {} }),
         subscribe: () => {}
-      })
+      }),
+      connect: () => {},
+      disconnect: () => {},
+      isConnected: () => false
     }
   } as unknown as SupabaseClient;
 }
