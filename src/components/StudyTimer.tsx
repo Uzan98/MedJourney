@@ -10,6 +10,7 @@ interface StudyTimerProps {
   showIcon?: boolean;
   compact?: boolean;
   active?: boolean;
+  resetOnMount?: boolean;
 }
 
 export default function StudyTimer({ 
@@ -18,27 +19,48 @@ export default function StudyTimer({
   className = '', 
   showIcon = false,
   compact = false,
-  active = true
+  active = true,
+  resetOnMount = false
 }: StudyTimerProps) {
   const [elapsedTime, setElapsedTime] = useState(initialSeconds);
-  const startTimeRef = useRef<number>(new Date(startTime).getTime());
+  const startTimeRef = useRef<number>(resetOnMount ? Date.now() : new Date(startTime).getTime());
   const animationFrameId = useRef<number | null>(null);
   const isVisibleRef = useRef<boolean>(true);
+  const isMountedRef = useRef<boolean>(false);
 
   // Função para calcular o tempo decorrido com precisão
   const calculateElapsedTime = (): number => {
+    if (resetOnMount && !isMountedRef.current) {
+      // Se estamos resetando no mount e ainda não foi montado, retorna 0
+      return 0;
+    }
     return Math.floor((Date.now() - startTimeRef.current) / 1000) + initialSeconds;
   };
   
   useEffect(() => {
-    // Inicializa o tempo decorrido
-    setElapsedTime(calculateElapsedTime());
+    // Marcar como montado
+    isMountedRef.current = true;
     
-    if (!active) return;
+    // Se resetOnMount for true, definir o startTime como agora
+    if (resetOnMount) {
+      startTimeRef.current = Date.now();
+      setElapsedTime(0);
+    } else {
+      // Inicializa o tempo decorrido
+      setElapsedTime(calculateElapsedTime());
+    }
+    
+    if (!active) {
+      console.log('Timer inativo, não iniciando contagem');
+      return;
+    }
 
     // Função para atualizar o timer
     const updateTimer = () => {
-      if (!active) return;
+      if (!active) {
+        console.log('Timer desativado, parando atualização');
+        return;
+      }
       
       if (isVisibleRef.current) {
         setElapsedTime(calculateElapsedTime());
@@ -52,7 +74,7 @@ export default function StudyTimer({
       isVisibleRef.current = document.visibilityState === 'visible';
       
       // Recalcula o tempo quando a página fica visível novamente
-      if (isVisibleRef.current) {
+      if (isVisibleRef.current && active) {
         setElapsedTime(calculateElapsedTime());
       }
     };
@@ -63,15 +85,16 @@ export default function StudyTimer({
     // Inicia a animação
     animationFrameId.current = requestAnimationFrame(updateTimer);
     
-    // Limpa recursos ao desmontar
+    // Limpa recursos ao desmontar ou quando active mudar
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       
       if (animationFrameId.current !== null) {
         cancelAnimationFrame(animationFrameId.current);
+        animationFrameId.current = null;
       }
     };
-  }, [startTime, initialSeconds, active]);
+  }, [startTime, initialSeconds, active, resetOnMount]);
   
   const formatTime = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);

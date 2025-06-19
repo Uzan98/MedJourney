@@ -22,39 +22,25 @@ try {
         autoRefreshToken: true, // Renovar token automaticamente
         detectSessionInUrl: false, // Desativar detecção de sessão na URL para evitar conflitos
         flowType: 'pkce',
-        // Não usar storage key personalizado para garantir que o Supabase use o padrão
-        // storage: {
-        //   getItem: (key) => {
-        //     // Wrapper de debug para ver se está acessando o cookie corretamente
-        //     console.log(`Tentando acessar cookie ${key}`);
-        //     if (typeof window !== 'undefined') {
-        //       const item = window.localStorage.getItem(key);
-        //       console.log(`Valor obtido: ${item?.substring(0, 20)}...`);
-        //       return item;
-        //     }
-        //     return null;
-        //   },
-        //   setItem: (key, value) => {
-        //     console.log(`Tentando definir cookie ${key}`);
-        //     if (typeof window !== 'undefined') {
-        //       window.localStorage.setItem(key, value);
-        //     }
-        //   },
-        //   removeItem: (key) => {
-        //     console.log(`Tentando remover cookie ${key}`);
-        //     if (typeof window !== 'undefined') {
-        //       window.localStorage.removeItem(key);
-        //     }
-        //   }
-        // }
       },
       global: {
         headers: {
           'X-Client-Info': 'medjourney-app'
         }
+      },
+      // Configuração explícita para realtime
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
       }
     });
+    
+    // Inicializar o cliente realtime explicitamente
+    supabaseClient.realtime.setAuth(supabaseAnonKey);
+    
     console.log('Cliente Supabase criado com sucesso para autenticação');
+    console.log('Suporte a realtime habilitado');
   } else {
     console.error('Não foi possível criar o cliente Supabase: URL ou chave anônima ausentes');
     // Criar um cliente mock para evitar erros de runtime
@@ -96,6 +82,13 @@ function createMockClient(): SupabaseClient {
       signIn: () => Promise.resolve({ user: null, session: null, error: new Error('Cliente Supabase não inicializado') }),
       signOut: () => Promise.resolve({ error: new Error('Cliente Supabase não inicializado') }),
     },
+    realtime: {
+      setAuth: () => {},
+      channel: () => ({
+        on: () => ({ subscribe: () => {} }),
+        subscribe: () => {}
+      })
+    }
   } as unknown as SupabaseClient;
 }
 

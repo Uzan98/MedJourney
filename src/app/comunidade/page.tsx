@@ -59,174 +59,52 @@ export default function ComunidadePage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="max-w-5xl mx-auto">
-        {/* Header com estatísticas */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Comunidade</h1>
-            <p className="text-gray-600 text-sm">
-              Conecte-se com outros estudantes e aprimore seus estudos em grupo
+    <div className="container mx-auto py-6 px-4 max-w-5xl">
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">Comunidade de Estudos</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Card para Sala de Estudos */}
+        <Link href="/comunidade/sala-estudos" className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all">
+          <div className="h-36 bg-gradient-to-r from-blue-500 to-blue-600 p-6 flex flex-col justify-between">
+            <h2 className="text-2xl font-bold text-white">Sala de Estudos</h2>
+            <p className="text-blue-100">Estude em tempo real com outros usuários em salas temáticas</p>
+          </div>
+          <div className="p-6">
+            <p className="text-gray-600 mb-4">
+              Entre em salas de estudo organizadas por especialidade médica. Estude com foco e veja quem mais está estudando em tempo real.
             </p>
+            <div className="flex justify-between items-center">
+              <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">Salas Disponíveis</span>
+              <span className="text-blue-600 flex items-center">
+                <span className="mr-1 font-medium">Acessar</span>
+                <ChevronRight size={18} />
+              </span>
+            </div>
           </div>
-          
-          <button 
-            onClick={handleRefresh} 
-            disabled={refreshing}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-            aria-label="Atualizar dados"
-          >
-            <RefreshCw className={`h-5 w-5 text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
+        </Link>
+
+        {/* Card para Grupos de Estudos */}
+        <Link href="/comunidade/grupos-estudos" className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all">
+          <div className="h-36 bg-gradient-to-r from-purple-500 to-purple-600 p-6 flex flex-col justify-between">
+            <h2 className="text-2xl font-bold text-white">Grupos de Estudos</h2>
+            <p className="text-purple-100">Crie ou participe de grupos personalizados com códigos de acesso</p>
+          </div>
+          <div className="p-6">
+            <p className="text-gray-600 mb-4">
+              Organize seus próprios grupos de estudo e convide colegas através de um código único. 
+              Colabore e monitore seu tempo de estudo em grupo.
+            </p>
+            <div className="flex justify-between items-center">
+              <span className="bg-purple-50 text-purple-600 px-3 py-1 rounded-full text-sm font-medium">Personalizado</span>
+              <span className="text-purple-600 flex items-center">
+                <span className="mr-1 font-medium">Acessar</span>
+                <ChevronRight size={18} />
+              </span>
+            </div>
+          </div>
+        </Link>
         
-        {/* Estatísticas do usuário */}
-        {loading ? (
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-6 flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-5 py-3.5">
-              <h2 className="text-lg font-bold text-white flex items-center">
-                <Trophy className="h-5 w-5 mr-2" />
-                Estatísticas da Comunidade
-              </h2>
-            </div>
-            <div className="p-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 shadow-sm">
-                  <h3 className="text-sm font-medium text-blue-700 mb-1">Tempo Total</h3>
-                  <p className="text-xl font-bold text-blue-800">
-                    <StudyTimeDisplay seconds={stats.total_time} />
-                  </p>
-                </div>
-                
-                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg p-4 shadow-sm">
-                  <h3 className="text-sm font-medium text-indigo-700 mb-1">Sessões de Estudo</h3>
-                  <p className="text-xl font-bold text-indigo-800">{stats.sessions}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-          <Users className="h-5 w-5 text-blue-500 mr-2" />
-          Recursos da Comunidade
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          {/* Card da Sala de Estudos */}
-          <Link 
-            href="/comunidade/sala-estudos"
-            className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all"
-          >
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3">
-              <h2 className="text-lg font-bold text-white flex items-center">
-                <Clock className="mr-2 h-5 w-5" />
-                Sala de Estudos
-              </h2>
-            </div>
-            <div className="p-4">
-              <p className="text-gray-600 text-sm mb-4">
-                Estude em grupo com outros estudantes em tempo real. Registre seu tempo de estudo e veja quem está estudando no momento.
-              </p>
-              <div className="flex justify-between items-center">
-                <span className="text-sm bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full font-medium">
-                  Disponível agora
-                </span>
-                <span className="flex items-center text-blue-600 hover:text-blue-700">
-                  <span className="mr-1 font-medium">Entrar</span>
-                  <ChevronRight className="h-5 w-5" />
-                </span>
-              </div>
-            </div>
-          </Link>
-
-          {/* Card de Grupos de Estudo (em breve) */}
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-dashed border-gray-300">
-            <div className="bg-gradient-to-r from-gray-100 to-gray-200 px-4 py-3">
-              <h2 className="text-lg font-bold text-gray-600 flex items-center">
-                <UserPlus className="mr-2 h-5 w-5" />
-                Grupos de Estudo
-              </h2>
-            </div>
-            <div className="p-4">
-              <div className="flex items-start mb-4">
-                <div className="bg-yellow-50 p-2 rounded-full mr-3">
-                  <Lightbulb className="h-5 w-5 text-yellow-500" />
-                </div>
-                <p className="text-gray-600 text-sm">
-                  Crie seu próprio grupo de estudo ou participe de grupos existentes para disciplinas específicas.
-                </p>
-              </div>
-              <div className="bg-gray-50 text-gray-500 text-sm px-3 py-2 rounded-lg text-center">
-                Em breve disponível
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Card de Fórum de discussão (em breve) */}
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-dashed border-gray-300">
-            <div className="bg-gradient-to-r from-gray-100 to-gray-200 px-4 py-3">
-              <h2 className="text-lg font-bold text-gray-600 flex items-center">
-                <MessageSquare className="mr-2 h-5 w-5" />
-                Fórum de Discussão
-              </h2>
-            </div>
-            <div className="p-4">
-              <div className="flex items-start mb-4">
-                <div className="bg-yellow-50 p-2 rounded-full mr-3">
-                  <Lightbulb className="h-5 w-5 text-yellow-500" />
-                </div>
-                <p className="text-gray-600 text-sm">
-                  Tire dúvidas, compartilhe conhecimentos e discuta tópicos médicos com seus colegas.
-                </p>
-              </div>
-              <div className="bg-gray-50 text-gray-500 text-sm px-3 py-2 rounded-lg text-center">
-                Em breve disponível
-              </div>
-            </div>
-          </div>
-
-          {/* Card de Biblioteca compartilhada (em breve) */}
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-dashed border-gray-300">
-            <div className="bg-gradient-to-r from-gray-100 to-gray-200 px-4 py-3">
-              <h2 className="text-lg font-bold text-gray-600 flex items-center">
-                <BookOpen className="mr-2 h-5 w-5" />
-                Biblioteca Compartilhada
-              </h2>
-            </div>
-            <div className="p-4">
-              <div className="flex items-start mb-4">
-                <div className="bg-yellow-50 p-2 rounded-full mr-3">
-                  <Lightbulb className="h-5 w-5 text-yellow-500" />
-                </div>
-                <p className="text-gray-600 text-sm">
-                  Compartilhe resumos, materiais de estudo e recursos úteis com outros estudantes.
-                </p>
-              </div>
-              <div className="bg-gray-50 text-gray-500 text-sm px-3 py-2 rounded-lg text-center">
-                Em breve disponível
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Dica de uso */}
-        <div className="bg-blue-50 rounded-xl p-4 mt-6 border-l-4 border-blue-500 shadow-sm">
-          <h3 className="text-sm font-semibold text-blue-800 mb-1.5 flex items-center">
-            <Lightbulb className="h-4 w-4 mr-1.5 text-blue-600" />
-            Dica para Comunidade
-          </h3>
-          <p className="text-xs text-blue-700 leading-relaxed">
-            Estudar em grupo é mais eficiente quando todos participam ativamente. Defina metas claras para suas sessões 
-            de estudo e incentive discussões construtivas para maximizar o aprendizado coletivo.
-          </p>
-        </div>
+        {/* Outros cards de recursos da comunidade podem ser adicionados aqui */}
       </div>
     </div>
   );
