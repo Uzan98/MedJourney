@@ -22,25 +22,71 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
   const longBreakTime = 15;
   const longBreakInterval = 4;
 
+  // Use localStorage para persistir o estado entre mudanças de abas
+  const getInitialState = () => {
+    if (typeof window === 'undefined') return 'idle';
+    const storedState = localStorage.getItem(`pomodoro-state-${groupId}`);
+    return storedState ? storedState as PomodoroState : 'idle';
+  };
+
+  const getInitialTimeLeft = () => {
+    if (typeof window === 'undefined') return focusTime * 60;
+    const storedTime = localStorage.getItem(`pomodoro-time-${groupId}`);
+    return storedTime ? parseInt(storedTime, 10) : focusTime * 60;
+  };
+
+  const getInitialIsActive = () => {
+    if (typeof window === 'undefined') return false;
+    const storedActive = localStorage.getItem(`pomodoro-active-${groupId}`);
+    return storedActive === 'true';
+  };
+
+  const getInitialCompletedSessions = () => {
+    if (typeof window === 'undefined') return 0;
+    const storedSessions = localStorage.getItem(`pomodoro-sessions-${groupId}`);
+    return storedSessions ? parseInt(storedSessions, 10) : 0;
+  };
+
+  // Função para recuperar o timestamp de quando o timer foi iniciado
+  const getStartTimestamp = () => {
+    if (typeof window === 'undefined') return null;
+    const timestamp = localStorage.getItem(`pomodoro-start-time-${groupId}`);
+    return timestamp ? parseInt(timestamp, 10) : null;
+  };
+
+  // Função para recuperar o timestamp de quando o timer deve terminar
+  const getEndTimestamp = () => {
+    if (typeof window === 'undefined') return null;
+    const timestamp = localStorage.getItem(`pomodoro-end-time-${groupId}`);
+    return timestamp ? parseInt(timestamp, 10) : null;
+  };
+
   const { user } = useAuth();
-  const [timeLeft, setTimeLeft] = useState(focusTime * 60);
-  const [isActive, setIsActive] = useState(false);
-  const [state, setState] = useState<PomodoroState>('idle');
-  const [completedSessions, setCompletedSessions] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(getInitialTimeLeft());
+  const [isActive, setIsActive] = useState(getInitialIsActive());
+  const [state, setState] = useState<PomodoroState>(getInitialState());
+  const [completedSessions, setCompletedSessions] = useState(getInitialCompletedSessions());
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   
   // Referências para controle do timer
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const startTimeRef = useRef<number | null>(null);
-  const endTimeRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(getStartTimestamp());
+  const endTimeRef = useRef<number | null>(getEndTimestamp());
   const totalTimeRef = useRef<number>(focusTime * 60);
 
   // Log para depuração
   useEffect(() => {
     console.log('PomodoroTimer montado com groupId:', groupId);
     console.log('Usuário autenticado:', user);
+    console.log('Estado inicial:', { 
+      timeLeft, 
+      isActive, 
+      state, 
+      startTime: startTimeRef.current ? new Date(startTimeRef.current).toISOString() : null,
+      endTime: endTimeRef.current ? new Date(endTimeRef.current).toISOString() : null
+    });
   }, [groupId, user]);
 
   useEffect(() => {
@@ -48,6 +94,22 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
     
     // Adicionar eventos para detectar quando a página fica visível/invisível
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Sincronizar o tempo ao montar o componente
+    if (isActive && startTimeRef.current && endTimeRef.current) {
+      const now = Date.now();
+      if (now >= endTimeRef.current) {
+        // O timer já deveria ter terminado
+        handleTimerComplete();
+      } else {
+        // Recalcular o tempo restante
+        const remaining = Math.max(0, Math.floor((endTimeRef.current - now) / 1000));
+        setTimeLeft(remaining);
+        
+        // Iniciar o timer novamente
+        startTimer();
+      }
+    }
     
     return () => {
       if (timerRef.current) {
@@ -59,25 +121,25 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
   
   // Função para lidar com mudanças de visibilidade da página
   const handleVisibilityChange = () => {
-    if (document.visibilityState === 'visible' && isActive && startTimeRef.current) {
+    if (document.visibilityState === 'visible' && isActive && startTimeRef.current && endTimeRef.current) {
       // Recalcular o tempo restante quando a página voltar a ficar visível
       const now = Date.now();
-      const elapsedSeconds = Math.floor((now - startTimeRef.current) / 1000);
-      const newTimeLeft = Math.max(0, totalTimeRef.current - elapsedSeconds);
       
-      console.log('Página voltou a ficar visível. Recalculando tempo:', {
-        startTime: new Date(startTimeRef.current).toISOString(),
-        now: new Date(now).toISOString(),
-        elapsedSeconds,
-        newTimeLeft
-      });
-      
-      // Se o tempo acabou enquanto a página estava invisível
-      if (newTimeLeft <= 0) {
-        setTimeLeft(0);
+      if (now >= endTimeRef.current) {
+        // O timer já deveria ter terminado
         handleTimerComplete();
       } else {
-        setTimeLeft(newTimeLeft);
+        // Recalcular o tempo restante
+        const remaining = Math.max(0, Math.floor((endTimeRef.current - now) / 1000));
+        
+        console.log('Página voltou a ficar visível. Recalculando tempo:', {
+          startTime: new Date(startTimeRef.current).toISOString(),
+          endTime: new Date(endTimeRef.current).toISOString(),
+          now: new Date(now).toISOString(),
+          remaining
+        });
+        
+        setTimeLeft(remaining);
       }
     }
   };
@@ -89,6 +151,12 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
         startTimeRef.current = Date.now();
         totalTimeRef.current = timeLeft;
         endTimeRef.current = startTimeRef.current + (timeLeft * 1000);
+        
+        // Persistir os timestamps
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(`pomodoro-start-time-${groupId}`, startTimeRef.current.toString());
+          localStorage.setItem(`pomodoro-end-time-${groupId}`, endTimeRef.current.toString());
+        }
       }
       
       timerRef.current = setInterval(() => {
@@ -112,8 +180,16 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
       // Se o timer foi pausado (não completado), armazenar o tempo restante
       if (timeLeft > 0) {
         totalTimeRef.current = timeLeft;
+        
+        // Limpar os timestamps ao pausar
         startTimeRef.current = null;
         endTimeRef.current = null;
+        
+        // Persistir a limpeza dos timestamps
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(`pomodoro-start-time-${groupId}`);
+          localStorage.removeItem(`pomodoro-end-time-${groupId}`);
+        }
       }
     }
 
@@ -140,6 +216,21 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
     
   }, [state, onStateChange]);
 
+  // Adicionar persistência ao mudar estado
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`pomodoro-state-${groupId}`, state);
+      localStorage.setItem(`pomodoro-sessions-${groupId}`, completedSessions.toString());
+    }
+  }, [state, completedSessions, groupId]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`pomodoro-time-${groupId}`, timeLeft.toString());
+      localStorage.setItem(`pomodoro-active-${groupId}`, isActive.toString());
+    }
+  }, [timeLeft, isActive, groupId]);
+
   const handleTimerComplete = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -148,6 +239,12 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
     // Resetar as referências de tempo
     startTimeRef.current = null;
     endTimeRef.current = null;
+    
+    // Persistir a limpeza dos timestamps
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(`pomodoro-start-time-${groupId}`);
+      localStorage.removeItem(`pomodoro-end-time-${groupId}`);
+    }
     
     setIsActive(false);
     
@@ -293,34 +390,79 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
   };
 
   const startTimer = () => {
+    if (isActive) return;
+    
+    // Calcular o tempo final com base no tempo atual
+    const now = Date.now();
+    startTimeRef.current = now;
+    endTimeRef.current = now + (timeLeft * 1000);
+    
+    // Persistir os timestamps
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`pomodoro-start-time-${groupId}`, startTimeRef.current.toString());
+      localStorage.setItem(`pomodoro-end-time-${groupId}`, endTimeRef.current.toString());
+    }
+    
+    console.log('Iniciando timer:', {
+      startTime: new Date(startTimeRef.current).toISOString(),
+      endTime: new Date(endTimeRef.current).toISOString(),
+      timeLeft
+    });
+    
+    setIsActive(true);
+    
+    // Se estiver no estado 'idle', iniciar com foco
     if (state === 'idle') {
       setState('focus');
     }
-    
-    // Configurar os timestamps de início e fim
-    startTimeRef.current = Date.now();
-    endTimeRef.current = startTimeRef.current + (timeLeft * 1000);
-    
-    setIsActive(true);
   };
 
   const pauseTimer = () => {
     setIsActive(false);
+    
+    // Ao pausar, calcular o tempo restante e limpar os timestamps
+    if (endTimeRef.current) {
+      const now = Date.now();
+      const remaining = Math.max(0, Math.floor((endTimeRef.current - now) / 1000));
+      setTimeLeft(remaining);
+    }
+    
+    // Limpar os timestamps
+    startTimeRef.current = null;
+    endTimeRef.current = null;
+    
+    // Persistir a limpeza dos timestamps
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(`pomodoro-start-time-${groupId}`);
+      localStorage.removeItem(`pomodoro-end-time-${groupId}`);
+    }
   };
 
   const resetTimer = () => {
+    // Parar o timer
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
     
-    // Resetar as referências de tempo
+    // Resetar todos os estados
+    setIsActive(false);
+    setState('idle');
+    setCompletedSessions(0);
+    setTimeLeft(focusTime * 60);
+    
+    // Limpar as referências
     startTimeRef.current = null;
     endTimeRef.current = null;
     
-    setIsActive(false);
-    setState('idle');
-    setTimeLeft(focusTime * 60);
-    setCompletedSessions(0);
+    // Limpar todos os dados persistidos
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(`pomodoro-state-${groupId}`);
+      localStorage.removeItem(`pomodoro-time-${groupId}`);
+      localStorage.removeItem(`pomodoro-active-${groupId}`);
+      localStorage.removeItem(`pomodoro-sessions-${groupId}`);
+      localStorage.removeItem(`pomodoro-start-time-${groupId}`);
+      localStorage.removeItem(`pomodoro-end-time-${groupId}`);
+    }
   };
 
   const formatTime = (seconds: number): string => {

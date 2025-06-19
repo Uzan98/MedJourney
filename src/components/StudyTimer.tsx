@@ -23,33 +23,55 @@ export default function StudyTimer({
   resetOnMount = false
 }: StudyTimerProps) {
   const [elapsedTime, setElapsedTime] = useState(initialSeconds);
-  const startTimeRef = useRef<number>(resetOnMount ? Date.now() : new Date(startTime).getTime());
+  const startTimeRef = useRef<number>(0);
   const animationFrameId = useRef<number | null>(null);
   const isVisibleRef = useRef<boolean>(true);
   const isMountedRef = useRef<boolean>(false);
+  const lastUpdateRef = useRef<number>(Date.now());
 
   // Função para calcular o tempo decorrido com precisão
   const calculateElapsedTime = (): number => {
-    if (resetOnMount && !isMountedRef.current) {
-      // Se estamos resetando no mount e ainda não foi montado, retorna 0
+    if (!startTimeRef.current) {
       return 0;
     }
-    return Math.floor((Date.now() - startTimeRef.current) / 1000) + initialSeconds;
+    
+    const now = Date.now();
+    return Math.floor((now - startTimeRef.current) / 1000) + initialSeconds;
   };
   
+  // Efeito para inicializar o tempo de início
   useEffect(() => {
-    // Marcar como montado
-    isMountedRef.current = true;
-    
-    // Se resetOnMount for true, definir o startTime como agora
+    // Definir o tempo de início
     if (resetOnMount) {
+      console.log('Resetando timer no mount');
       startTimeRef.current = Date.now();
-      setElapsedTime(0);
     } else {
-      // Inicializa o tempo decorrido
-      setElapsedTime(calculateElapsedTime());
+      try {
+        const parsedStartTime = new Date(startTime).getTime();
+        if (isNaN(parsedStartTime)) {
+          console.error('Data de início inválida:', startTime);
+          startTimeRef.current = Date.now();
+        } else {
+          console.log('Usando startTime fornecido:', new Date(parsedStartTime).toISOString());
+          startTimeRef.current = parsedStartTime;
+        }
+      } catch (error) {
+        console.error('Erro ao converter startTime:', error);
+        startTimeRef.current = Date.now();
+      }
     }
     
+    // Calcular tempo inicial
+    const initialElapsed = calculateElapsedTime();
+    console.log('Tempo inicial calculado:', initialElapsed, 'segundos');
+    setElapsedTime(initialElapsed);
+    
+    // Marcar como montado
+    isMountedRef.current = true;
+  }, [startTime, resetOnMount]);
+  
+  // Efeito para gerenciar o timer
+  useEffect(() => {
     if (!active) {
       console.log('Timer inativo, não iniciando contagem');
       return;
@@ -62,8 +84,15 @@ export default function StudyTimer({
         return;
       }
       
-      if (isVisibleRef.current) {
-        setElapsedTime(calculateElapsedTime());
+      const now = Date.now();
+      
+      // Atualizar apenas se o tempo desde a última atualização for significativo
+      // ou se a página acabou de ficar visível
+      if (now - lastUpdateRef.current >= 1000 || 
+          (isVisibleRef.current && document.visibilityState === 'visible')) {
+        const newElapsedTime = calculateElapsedTime();
+        setElapsedTime(newElapsedTime);
+        lastUpdateRef.current = now;
       }
       
       animationFrameId.current = requestAnimationFrame(updateTimer);
@@ -71,11 +100,15 @@ export default function StudyTimer({
     
     // Função para tratar mudanças de visibilidade da página
     const handleVisibilityChange = () => {
+      const wasVisible = isVisibleRef.current;
       isVisibleRef.current = document.visibilityState === 'visible';
       
       // Recalcula o tempo quando a página fica visível novamente
-      if (isVisibleRef.current && active) {
-        setElapsedTime(calculateElapsedTime());
+      if (isVisibleRef.current && !wasVisible && active) {
+        console.log('Página ficou visível, recalculando tempo');
+        const newElapsedTime = calculateElapsedTime();
+        setElapsedTime(newElapsedTime);
+        lastUpdateRef.current = Date.now();
       }
     };
     
@@ -94,7 +127,7 @@ export default function StudyTimer({
         animationFrameId.current = null;
       }
     };
-  }, [startTime, initialSeconds, active, resetOnMount]);
+  }, [active]);
   
   const formatTime = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);
@@ -110,10 +143,10 @@ export default function StudyTimer({
         return `${secs}s`;
       }
     } else {
-    if (hours > 0) {
-      return `${hours}h ${minutes.toString().padStart(2, '0')}m ${secs.toString().padStart(2, '0')}s`;
-    } else {
-      return `${minutes}m ${secs.toString().padStart(2, '0')}s`;
+      if (hours > 0) {
+        return `${hours}h ${minutes.toString().padStart(2, '0')}m ${secs.toString().padStart(2, '0')}s`;
+      } else {
+        return `${minutes}m ${secs.toString().padStart(2, '0')}s`;
       }
     }
   };

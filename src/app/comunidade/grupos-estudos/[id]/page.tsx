@@ -43,8 +43,17 @@ export default function GrupoEstudosPage() {
   const [isMember, setIsMember] = useState(false);
   const [joinTime, setJoinTime] = useState<string>('');
   const [isLeaving, setIsLeaving] = useState(false);
+  const [activeSection, setActiveSection] = useState<'chat' | 'info' | 'pomodoro'>('chat');
+  const [menuPosition, setMenuPosition] = useState({ left: 0 });
+  
+  // Chave única para forçar remontagem do timer quando necessário
+  const timerKey = useRef<string>(`timer-${Date.now()}`);
+  
+  // Estado para controle do timer persistente entre navegações
+  const pomodoroRef = useRef<React.ReactElement | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const { containerRef, scrollToBottom } = useChatScroll({
     messages,
     dependencies: [],
@@ -404,6 +413,8 @@ export default function GrupoEstudosPage() {
           if (memberData?.joined_at) {
             setJoinTime(memberData.joined_at);
             setIsActive(true);
+            // Gerar nova chave para forçar remontagem do timer
+            timerKey.current = `timer-${Date.now()}`;
             toast.success('Você entrou na sala. Seu tempo de estudo está sendo contabilizado.');
             
             // Atualizar a lista de membros
@@ -418,6 +429,44 @@ export default function GrupoEstudosPage() {
       toast.error('Ocorreu um erro ao entrar na sala');
     }
   };
+  
+  // Calcular posição do menu lateral
+  useEffect(() => {
+    const updateMenuPosition = () => {
+      if (contentRef.current) {
+        const rect = contentRef.current.getBoundingClientRect();
+        setMenuPosition({
+          left: rect.left - 35
+        });
+      }
+    };
+    
+    // Atualizar no carregamento e redimensionamento
+    updateMenuPosition();
+    window.addEventListener('resize', updateMenuPosition);
+    
+    return () => {
+      window.removeEventListener('resize', updateMenuPosition);
+    };
+  }, [loading]);
+  
+  // Inicializar o componente Pomodoro para garantir persistência
+  useEffect(() => {
+    if (!pomodoroRef.current && groupId) {
+      pomodoroRef.current = (
+        <PomodoroTimer 
+          onComplete={() => {
+            toast.success('Ciclo Pomodoro concluído!');
+          }}
+          onStateChange={(state) => {
+            console.log('Estado do Pomodoro:', state);
+          }}
+          groupId={groupId}
+          key={`pomodoro-${groupId}`} // Chave com ID do grupo para evitar recriação
+        />
+      );
+    }
+  }, [groupId]);
   
   if (loading) {
     return (
@@ -443,42 +492,48 @@ export default function GrupoEstudosPage() {
       {/* Background gradients */}
       <div className="fixed inset-0 -z-10 bg-gradient-to-br from-blue-50 via-white to-purple-50 opacity-70"></div>
       
-      {/* Header - Card moderno inspirado na imagem de referência */}
-      <div className="mb-8">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-3xl shadow-lg overflow-hidden">
-          <div className="p-5">
+      {/* Header - Card moderno com glassmorphism */}
+      <div className="mb-6">
+        <div className="bg-white/30 backdrop-blur-lg rounded-2xl shadow-[0_8px_32px_rgba(31,38,135,0.15)] border border-white/20 overflow-hidden relative hover:shadow-[0_12px_36px_rgba(31,38,135,0.18)] transition-shadow duration-300">
+          {/* Efeitos de luz de fundo */}
+          <div className="absolute -top-20 right-40 w-64 h-64 bg-blue-400/20 rounded-full blur-[80px] animate-pulse-slow"></div>
+          <div className="absolute -bottom-8 -left-10 w-40 h-40 bg-indigo-400/20 rounded-full blur-[60px] animate-pulse-slower"></div>
+          <div className="absolute top-1/3 right-1/4 w-20 h-20 bg-purple-300/20 rounded-full blur-[40px]"></div>
+          
+          <div className="relative z-10 p-5">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center">
             <Link 
               href="/comunidade/grupos-estudos" 
-                  className="mr-4 p-2.5 rounded-full bg-white/20 hover:bg-white/30 transition-all"
+                  className="mr-4 p-2.5 rounded-full bg-blue-500/80 text-white hover:bg-blue-600/90 transition-all shadow-sm hover:shadow-md hover:scale-105 duration-300"
               aria-label="Voltar"
             >
-                  <ArrowLeft className="h-5 w-5 text-white" />
+                  <ArrowLeft className="h-5 w-5" />
             </Link>
             <div>
-                  <h1 className="text-2xl font-bold text-white mb-1">{group.name}</h1>
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-white/90">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center ${
+                  <h1 className="text-2xl font-bold text-gray-800 mb-1">{group.name}</h1>
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center shadow-sm ${
                   group.is_private 
-                        ? 'bg-white/20 text-white' 
-                        : 'bg-green-500/30 text-white'
+                        ? 'bg-gray-200/70 text-gray-700' 
+                        : 'bg-green-100/80 text-green-700'
                 }`}>
                   {group.is_private ? 'Grupo privado' : 'Grupo público'}
                 </span>
-                    <span className="flex items-center bg-white/20 text-white px-2.5 py-1 rounded-full text-xs">
+                    <span className="flex items-center bg-blue-100/70 text-blue-700 px-3 py-1 rounded-full text-xs shadow-sm">
                       <Users className="h-3 w-3 mr-1.5" />
                   {members.filter(m => m.is_active).length} online
                 </span>
-                    <div className="flex items-center bg-white/20 px-2.5 py-1 rounded-full cursor-pointer hover:bg-white/30 transition-colors group" 
+                    <div 
+                      className="flex items-center bg-purple-100/60 px-3 py-1 rounded-full cursor-pointer hover:bg-purple-200/70 transition-colors group shadow-sm hover:shadow"
                       onClick={() => {
                         navigator.clipboard.writeText(group.access_code);
                         toast.success('Código copiado!');
                       }}
                     >
-                  <span className="text-xs mr-1">Código:</span>
-                  <span className="font-mono font-medium text-xs">{group.access_code}</span>
-                      <Copy className="h-3 w-3 ml-1.5 text-white/70 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <span className="text-xs mr-1 text-purple-700">Código:</span>
+                      <span className="font-mono font-medium text-xs text-purple-800">{group.access_code}</span>
+                      <Copy className="h-3 w-3 ml-1.5 text-purple-500 opacity-60 group-hover:opacity-100 transition-opacity" />
                 </div>
               </div>
             </div>
@@ -488,7 +543,7 @@ export default function GrupoEstudosPage() {
                 {!isActive && (
                   <Button 
                     onClick={handleEnterRoom}
-                    className="bg-white hover:bg-gray-100 text-blue-700 shadow-sm hover:shadow-md transition-all rounded-xl"
+                    className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 shadow hover:shadow-md hover:scale-[1.02] transition-all rounded-xl"
                   >
                     <Sparkles className="h-4 w-4 mr-1.5" />
                     Começar a estudar
@@ -496,18 +551,20 @@ export default function GrupoEstudosPage() {
                 )}
                 
             {isActive && joinTime && (
-                  <div className="bg-blue-500 rounded-xl shadow-md overflow-hidden">
-                    <div className="text-center text-white text-xs font-medium py-1.5 bg-blue-600">
+                  <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                    <div className="text-center text-white text-xs font-medium py-1.5 bg-blue-600/50 backdrop-blur-sm border-b border-blue-400/30">
                       Tempo no grupo
                     </div>
-                    <div className="p-3 bg-blue-500 flex justify-center items-center">
+                    <div className="px-4 py-2 flex justify-center items-center">
                       <Clock className="h-5 w-5 text-white/80 mr-2" />
                       <div className="text-white font-bold text-lg">
-              <GroupStudyTimer 
-                startTime={joinTime} 
-                isActive={isActive} 
-                resetOnMount={true}
-              />
+                        <GroupStudyTimer 
+                          startTime={joinTime} 
+                          isActive={isActive} 
+                          resetOnMount={false}
+                          showBackground={false}
+                          key={timerKey.current}
+                        />
                       </div>
                     </div>
                   </div>
@@ -516,7 +573,7 @@ export default function GrupoEstudosPage() {
             {isActive && (
               <Button 
                 variant="outline" 
-                    className="border-gray-200 bg-white text-gray-700 hover:bg-gray-50 rounded-xl shadow-sm"
+                    className="border-gray-200/50 bg-white/70 backdrop-blur-sm text-gray-700 hover:bg-gray-50 rounded-xl shadow hover:shadow-md hover:scale-[1.02] transition-all"
                 onClick={handleExitRoom}
                 disabled={isLeaving}
               >
@@ -527,7 +584,7 @@ export default function GrupoEstudosPage() {
             
             <Button 
               variant="outline" 
-                  className="border-red-100 bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-600 rounded-xl shadow-sm"
+                  className="border-red-100 bg-red-50/70 backdrop-blur-sm text-red-500 hover:bg-red-100/80 hover:text-red-600 rounded-xl shadow hover:shadow-md hover:scale-[1.02] transition-all"
               onClick={handleLeaveGroup}
             >
                   <LogOut className="h-4 w-4 mr-1.5" />
@@ -539,32 +596,81 @@ export default function GrupoEstudosPage() {
         </div>
       </div>
       
+      {/* Navegação horizontal */}
+      <div className="mb-6">
+        <div className="bg-white/30 backdrop-blur-lg rounded-xl shadow-[0_8px_32px_rgba(31,38,135,0.1)] border border-white/20 py-2 px-2 overflow-hidden relative">
+          {/* Efeito de luz de fundo */}
+          <div className="absolute -top-10 left-1/4 w-32 h-32 bg-blue-400/20 rounded-full blur-xl"></div>
+          <div className="absolute -bottom-10 right-1/4 w-32 h-32 bg-purple-400/20 rounded-full blur-xl"></div>
+          
+          <div className="relative flex items-center justify-center space-x-6">
+            <button
+              onClick={() => setActiveSection('chat')}
+              className={`px-4 py-2.5 rounded-xl transition-all duration-300 flex items-center ${
+                activeSection === 'chat' 
+                  ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/30' 
+                  : 'bg-white/40 text-gray-700 hover:bg-white/60'
+              }`}
+              title="Chat"
+            >
+              <MessageSquare className={`h-4 w-4 mr-2 ${activeSection === 'chat' ? 'drop-shadow-md' : ''}`} />
+              <span className="font-medium">Chat</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveSection('info')}
+              className={`px-4 py-2.5 rounded-xl transition-all duration-300 flex items-center ${
+                activeSection === 'info' 
+                  ? 'bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-md shadow-indigo-500/30' 
+                  : 'bg-white/40 text-gray-700 hover:bg-white/60'
+              }`}
+              title="Informações"
+            >
+              <Info className={`h-4 w-4 mr-2 ${activeSection === 'info' ? 'drop-shadow-md' : ''}`} />
+              <span className="font-medium">Informações</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveSection('pomodoro')}
+              className={`px-4 py-2.5 rounded-xl transition-all duration-300 flex items-center ${
+                activeSection === 'pomodoro' 
+                  ? 'bg-gradient-to-br from-purple-500 to-pink-600 text-white shadow-md shadow-purple-500/30' 
+                  : 'bg-white/40 text-gray-700 hover:bg-white/60'
+              }`}
+              title="Pomodoro"
+            >
+              <Timer className={`h-4 w-4 mr-2 ${activeSection === 'pomodoro' ? 'drop-shadow-md' : ''}`} />
+              <span className="font-medium">Pomodoro</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      
       {/* Conteúdo principal */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Painel principal (chat e informações) */}
-        <div className="lg:col-span-2">
-          <Tabs defaultValue="chat" className="w-full">
-            <TabsList className="w-full mb-4 p-1 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
-              <TabsTrigger value="chat" className="flex-1 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Chat
-              </TabsTrigger>
-              <TabsTrigger value="info" className="flex-1 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md">
-                <Info className="h-4 w-4 mr-2" />
-                Informações
-              </TabsTrigger>
-              <TabsTrigger value="pomodoro" className="flex-1 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md">
-                <Timer className="h-4 w-4 mr-2" />
-                Pomodoro
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="chat" className="mt-0">
-              <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+        <div className="lg:col-span-2 relative">
+            {/* Conteúdo das seções - removida a navegação lateral */}
+            <div ref={contentRef} className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-white/40 overflow-hidden">
+              {/* Chat */}
+              {activeSection === 'chat' && (
+                <>
+                  {/* Cabeçalho da seção */}
+                  <div className="bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 p-4 text-white shadow-sm relative overflow-hidden">
+                    {/* Efeito de luz de fundo */}
+                    <div className="absolute -bottom-6 right-12 w-24 h-24 bg-blue-300/30 rounded-full blur-xl"></div>
+                    <div className="absolute -top-6 left-12 w-20 h-20 bg-indigo-300/20 rounded-full blur-xl"></div>
+                    
+                    <h3 className="text-lg font-bold flex items-center relative z-10">
+                      <MessageSquare className="h-5 w-5 mr-2"/> 
+                      Chat do Grupo
+                    </h3>
+                  </div>
+                  
                 {/* Área de mensagens */}
                 <div 
                   ref={containerRef}
-                  className="h-[60vh] overflow-y-auto p-5 bg-gradient-to-b from-gray-50/80 to-white/90"
+                    className="h-[60vh] overflow-y-auto p-5 bg-gradient-to-b from-gray-50/60 to-white/70"
                 >
                   {messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
@@ -635,14 +741,19 @@ export default function GrupoEstudosPage() {
                     </Button>
                   </div>
                 </form>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="info" className="mt-0">
-              <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden border border-gray-100">
-                <div className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 p-6 text-white">
-                  <h3 className="text-lg font-bold mb-2 flex items-center"><Info className="h-5 w-5 mr-2"/> Sobre o Grupo</h3>
-                  <p className="text-white/90 text-sm">
+                </>
+              )}
+              
+              {/* Informações */}
+              {activeSection === 'info' && (
+                <>
+                  <div className="bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 p-6 text-white shadow-sm relative overflow-hidden">
+                    {/* Efeito de luz de fundo */}
+                    <div className="absolute -bottom-6 right-12 w-24 h-24 bg-indigo-300/30 rounded-full blur-xl"></div>
+                    <div className="absolute -top-6 left-12 w-20 h-20 bg-purple-300/20 rounded-full blur-xl"></div>
+                    
+                    <h3 className="text-lg font-bold mb-2 flex items-center relative z-10"><Info className="h-5 w-5 mr-2"/> Sobre o Grupo</h3>
+                    <p className="text-white/90 text-sm relative z-10">
                     {group.description || 'Grupo de estudos personalizado para colaboração e aprendizado.'}
                   </p>
                 </div>
@@ -654,7 +765,7 @@ export default function GrupoEstudosPage() {
                         <BookOpen className="h-6 w-6 text-blue-600" />
                       </div>
                       <div>
-                        <h4 className="font-medium text-sm text-gray-500 mb-1">Disciplina</h4>
+                      <h4 className="font-medium text-sm text-gray-500 mb-1">Disciplina</h4>
                         <p className="text-gray-800 font-semibold text-lg">{`Disciplina ${group.discipline_id}`}</p>
                       </div>
                     </div>
@@ -667,11 +778,11 @@ export default function GrupoEstudosPage() {
                     <div>
                       <h4 className="font-medium text-sm text-gray-500 mb-1">Criado em</h4>
                       <p className="text-gray-800 font-semibold text-lg">
-                        {new Date(group.created_at).toLocaleDateString('pt-BR', {
-                          day: '2-digit',
-                          month: 'long',
-                        })}
-                      </p>
+                      {new Date(group.created_at).toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: 'long',
+                      })}
+                    </p>
                     </div>
                   </div>
                   
@@ -681,49 +792,46 @@ export default function GrupoEstudosPage() {
                     </div>
                     <div className="flex-1">
                       <h4 className="font-medium text-sm text-gray-500 mb-2">Código de acesso</h4>
-                      <div className="flex items-center">
+                    <div className="flex items-center">
                         <span className="bg-gray-100 px-4 py-2 rounded-lg font-mono text-gray-800 tracking-wider text-lg">
-                          {group.access_code}
-                        </span>
-                        <Button 
-                          variant="ghost" 
+                        {group.access_code}
+                      </span>
+                      <Button 
+                        variant="ghost" 
                           className="ml-2 h-10 w-10 p-0 rounded-full hover:bg-blue-100"
-                          onClick={() => {
-                            navigator.clipboard.writeText(group.access_code);
-                            toast.success('Código copiado!');
-                          }}
-                        >
+                        onClick={() => {
+                          navigator.clipboard.writeText(group.access_code);
+                          toast.success('Código copiado!');
+                        }}
+                      >
                           <Copy className="h-5 w-5 text-blue-600" />
-                        </Button>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">
-                        Compartilhe este código com colegas para que eles possam entrar no grupo.
-                      </p>
+                      </Button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Compartilhe este código com colegas para que eles possam entrar no grupo.
+                    </p>
                     </div>
                   </div>
                 </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="pomodoro" className="mt-0">
-              <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden border border-gray-100">
-                <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 p-6 text-white">
-                  <h3 className="text-lg font-bold mb-2 flex items-center"><Timer className="h-5 w-5 mr-2"/> Técnica Pomodoro</h3>
-                  <p className="text-white/90 text-sm">
-                    Use o método Pomodoro para aumentar sua produtividade: alterne entre períodos de foco intenso e pequenas pausas.
-                  </p>
-                </div>
+                </>
+              )}
+              
+              {/* Pomodoro */}
+              {activeSection === 'pomodoro' && (
+                <>
+                  <div className="bg-gradient-to-r from-purple-500 via-pink-600 to-red-600 p-6 text-white shadow-sm relative overflow-hidden">
+                    {/* Efeito de luz de fundo */}
+                    <div className="absolute -bottom-6 right-12 w-24 h-24 bg-pink-300/30 rounded-full blur-xl"></div>
+                    <div className="absolute -top-6 left-12 w-20 h-20 bg-purple-300/20 rounded-full blur-xl"></div>
+                    
+                    <h3 className="text-lg font-bold mb-2 flex items-center relative z-10"><Timer className="h-5 w-5 mr-2"/> Técnica Pomodoro</h3>
+                    <p className="text-white/90 text-sm relative z-10">
+                      Use o método Pomodoro para aumentar sua produtividade: alterne entre períodos de foco intenso e pequenas pausas.
+                    </p>
+                  </div>
                 
-                                 <div className="p-6">
-                  <PomodoroTimer 
-                    onComplete={() => {
-                      toast.success('Ciclo Pomodoro concluído!');
-                    }}
-                    onStateChange={(state) => {
-                      console.log('Estado do Pomodoro:', state);
-                    }}
-                    groupId={groupId}
-                  />
+                  <div className="p-6">
+                    {pomodoroRef.current}
                   
                   <div className="mt-6 bg-blue-50 rounded-xl p-4 border border-blue-100">
                     <h4 className="font-medium text-blue-800 mb-2">Como funciona o método Pomodoro?</h4>
@@ -745,9 +853,9 @@ export default function GrupoEstudosPage() {
                     </div>
                   </div>
                 </div>
+                </>
+              )}
               </div>
-            </TabsContent>
-          </Tabs>
         </div>
         
         {/* Painel lateral (membros e ranking) */}
@@ -783,21 +891,21 @@ export default function GrupoEstudosPage() {
                           <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-800">
-                            {member.username}
-                          </p>
+                            <p className="text-sm font-medium text-gray-800">
+                              {member.username}
+                            </p>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          {member.is_admin && (
+                              {member.is_admin && (
                             <span title="Administrador" className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-medium">
-                              Admin
-                            </span>
-                          )}
-                          {member.user_id === user?.id && (
+                                  Admin
+                                </span>
+                              )}
+                              {member.user_id === user?.id && (
                             <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium">
-                              Você
-                            </span>
-                          )}
+                                  Você
+                                </span>
+                              )}
                         </div>
                       </li>
                     ))}
