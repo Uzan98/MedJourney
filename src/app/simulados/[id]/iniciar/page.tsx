@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { FaArrowLeft, FaArrowRight, FaFlag, FaClock, FaCheckCircle } from 'react-icons/fa';
+import { FaArrowLeft, FaArrowRight, FaFlag, FaClock, FaCheckCircle, FaCut } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { Exam, ExamQuestion, ExamAttempt, ExamAnswer, ExamsService } from '@/services/exams.service';
 import { QuestionsBankService } from '@/services/questions-bank.service';
@@ -538,57 +538,104 @@ function MultipleChoiceQuestion({
 }) {
   const [options, setOptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  // Novo estado para controlar alternativas riscadas
+  const [strikeThroughOptions, setStrikeThroughOptions] = useState<Set<number>>(new Set());
+
   useEffect(() => {
-    const loadOptions = async () => {
-      try {
-        const optionsData = await QuestionsBankService.getAnswerOptions(questionId);
-        setOptions(optionsData);
-      } catch (error) {
-        console.error('Erro ao carregar opções:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     loadOptions();
   }, [questionId]);
+
+  const loadOptions = async () => {
+    setLoading(true);
+    try {
+      const optionsData = await QuestionsBankService.getAnswerOptions(questionId);
+      if (optionsData) {
+        setOptions(optionsData);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar opções:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Nova função para alternar o estado riscado de uma opção
+  const toggleStrikeThrough = (optionId: number, e: React.MouseEvent) => {
+    // Previne a propagação para não selecionar a alternativa ao clicar na tesoura
+    e.stopPropagation();
+    
+    const newStrikeThroughOptions = new Set(strikeThroughOptions);
+    if (strikeThroughOptions.has(optionId)) {
+      newStrikeThroughOptions.delete(optionId);
+    } else {
+      newStrikeThroughOptions.add(optionId);
+    }
+    
+    setStrikeThroughOptions(newStrikeThroughOptions);
+  };
+
+  // Removemos o event listener de contextmenu pois não é mais necessário
   
   if (loading) {
-    return <div className="py-4 text-gray-500">Carregando opções...</div>;
+    return <div className="flex justify-center py-8"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
   }
-  
-  if (options.length === 0) {
-    return <div className="py-4 text-gray-500">Nenhuma opção disponível para esta questão</div>;
-  }
-  
+
   return (
-    <div className="space-y-3">
-      {options.map(option => (
-        <div 
-          key={option.id}
-          onClick={() => onSelect(questionId, option.id)}
-          className={`p-4 border rounded-lg cursor-pointer transition-colors duration-200 ${
-            selectedOptionId === option.id 
-              ? 'border-blue-500 bg-blue-50' 
-              : 'border-gray-200 hover:bg-gray-50'
-          }`}
-        >
-          <div className="flex items-start">
-            <div className={`w-5 h-5 mt-0.5 rounded-full border flex-shrink-0 flex items-center justify-center ${
-              selectedOptionId === option.id ? 'border-blue-600 bg-blue-600' : 'border-gray-300'
-            }`}>
-              {selectedOptionId === option.id && (
-                <div className="w-2 h-2 rounded-full bg-white"></div>
-              )}
+    <div className="space-y-4 multiple-choice-container">
+      {options.map((option) => {
+        const isSelected = selectedOptionId === option.id;
+        const isStrikeThrough = strikeThroughOptions.has(option.id);
+        
+        return (
+          <div 
+            key={option.id}
+            className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+              isSelected 
+                ? 'border-blue-500 bg-blue-50' 
+                : 'border-gray-200'
+            } ${isStrikeThrough ? 'relative' : ''}`}
+            onClick={() => onSelect(questionId, option.id)}
+          >
+            <div className="flex items-start">
+              <div className={`w-6 h-6 rounded-full border flex-shrink-0 flex items-center justify-center ${
+                isSelected ? 'border-blue-600 bg-blue-600' : 'border-gray-300'
+              }`}>
+                {isSelected && (
+                  <div className="w-3 h-3 rounded-full bg-white"></div>
+                )}
+              </div>
+              <div 
+                className={`ml-3 flex-grow ${isStrikeThrough ? 'line-through text-gray-400' : 'text-gray-700'}`}
+                dangerouslySetInnerHTML={{ __html: option.text }}
+              />
+              
+              {/* Botão de tesoura para riscar alternativa */}
+              <button 
+                onClick={(e) => toggleStrikeThrough(option.id, e)}
+                className={`ml-2 p-1.5 rounded-full transition-colors ${
+                  isStrikeThrough 
+                    ? 'bg-red-100 text-red-500 hover:bg-red-200' 
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+                title={isStrikeThrough ? "Desfazer risco" : "Riscar alternativa"}
+                aria-label={isStrikeThrough ? "Desfazer risco" : "Riscar alternativa"}
+              >
+                <FaCut size={14} />
+              </button>
             </div>
-            <div 
-              className="ml-3 text-gray-700" 
-              dangerouslySetInnerHTML={{ __html: option.text }}
-            />
           </div>
-        </div>
-      ))}
+        );
+      })}
+      
+      {/* Dica de uso */}
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700 flex items-center space-x-2 mt-4">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+        </svg>
+        <p>
+          <strong>Dica:</strong> Clique no ícone <FaCut className="inline text-gray-500" size={12} /> para riscar alternativas que você deseja eliminar.
+        </p>
+      </div>
     </div>
   );
 }
