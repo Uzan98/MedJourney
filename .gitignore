@@ -72,3 +72,23 @@ src/config/local.ts
 
 # Next.js dev server
 .next-dev/
+
+# Added by Task Master AI
+# Logs
+logs
+dev-debug.log
+# Dependency directories
+node_modules/
+# Environment variables
+.env
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+# OS specific
+
+.cursor

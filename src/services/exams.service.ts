@@ -633,12 +633,12 @@ export class ExamsService {
       const questionIds = answers.map(answer => answer.question_id);
       
       // Buscar informações das questões (incluindo disciplina)
-      const { data: questions, error: questionsError } = await supabase
+      const { data: questionsWithDisciplines, error: questionsError } = await supabase
         .from('questions')
         .select(`
           id,
           discipline_id,
-          disciplines:discipline_id (
+          disciplines (
             id,
             name
           )
@@ -646,7 +646,7 @@ export class ExamsService {
         .in('id', questionIds);
       
       if (questionsError) throw questionsError;
-      if (!questions || questions.length === 0) return [];
+      if (!questionsWithDisciplines || questionsWithDisciplines.length === 0) return [];
       
       // Agrupar por disciplina
       const disciplineMap: Record<number, {
@@ -657,7 +657,7 @@ export class ExamsService {
       }> = {};
       
       // Inicializar o mapa de disciplinas
-      questions.forEach(question => {
+      questionsWithDisciplines.forEach(question => {
         if (question.discipline_id && question.disciplines) {
           const disciplineId = question.discipline_id;
           if (!disciplineMap[disciplineId]) {
@@ -673,7 +673,7 @@ export class ExamsService {
       
       // Contar respostas corretas por disciplina
       answers.forEach(answer => {
-        const question = questions.find(q => q.id === answer.question_id);
+        const question = questionsWithDisciplines.find(q => q.id === answer.question_id);
         if (question && question.discipline_id) {
           const disciplineId = question.discipline_id;
           if (disciplineMap[disciplineId]) {
@@ -740,12 +740,12 @@ export class ExamsService {
       const questionIds = [...new Set(answers.map(answer => answer.question_id))];
       
       // Buscar informações das questões (incluindo disciplina)
-      const { data: questions, error: questionsError } = await supabase
+      const { data: questionsWithDisciplines, error: questionsError } = await supabase
         .from('questions')
         .select(`
           id,
           discipline_id,
-          disciplines:discipline_id (
+          disciplines (
             id,
             name
           )
@@ -753,7 +753,7 @@ export class ExamsService {
         .in('id', questionIds);
       
       if (questionsError) throw questionsError;
-      if (!questions || questions.length === 0) return [];
+      if (!questionsWithDisciplines || questionsWithDisciplines.length === 0) return [];
       
       // Agrupar por disciplina
       const disciplineMap: Record<number, {
@@ -764,7 +764,7 @@ export class ExamsService {
       }> = {};
       
       // Inicializar o mapa de disciplinas
-      questions.forEach(question => {
+      questionsWithDisciplines.forEach(question => {
         if (question.discipline_id && question.disciplines) {
           const disciplineId = question.discipline_id;
           if (!disciplineMap[disciplineId]) {
@@ -780,7 +780,7 @@ export class ExamsService {
       
       // Contar respostas corretas por disciplina
       answers.forEach(answer => {
-        const question = questions.find(q => q.id === answer.question_id);
+        const question = questionsWithDisciplines.find(q => q.id === answer.question_id);
         if (question && question.discipline_id) {
           const disciplineId = question.discipline_id;
           if (disciplineMap[disciplineId]) {
@@ -805,6 +805,215 @@ export class ExamsService {
       
     } catch (error) {
       console.error(`Erro ao calcular desempenho geral por disciplina:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Calcula o desempenho por assunto em uma tentativa de simulado
+   */
+  static async getAttemptPerformanceBySubject(attemptId: number): Promise<any[]> {
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      
+      if (!user || !user.user) {
+        throw new Error('Usuário não autenticado');
+      }
+      
+      // Buscar respostas do simulado
+      const { data: answers, error: answersError } = await supabase
+        .from('exam_answers')
+        .select(`
+          question_id,
+          is_correct
+        `)
+        .eq('attempt_id', attemptId);
+      
+      if (answersError) throw answersError;
+      if (!answers || answers.length === 0) return [];
+      
+      // Obter IDs das questões
+      const questionIds = answers.map(answer => answer.question_id);
+      
+      // Buscar informações das questões (incluindo assunto)
+      const { data: questionsWithSubjects, error: questionsError } = await supabase
+        .from('questions')
+        .select(`
+          id,
+          subject_id,
+          subjects (
+            id,
+            name,
+            title
+          )
+        `)
+        .in('id', questionIds);
+      
+      if (questionsError) throw questionsError;
+      if (!questionsWithSubjects || questionsWithSubjects.length === 0) return [];
+      
+      // Agrupar por assunto
+      const subjectMap: Record<number, {
+        id: number,
+        name: string,
+        total: number,
+        correct: number
+      }> = {};
+      
+      // Inicializar o mapa de assuntos
+      questionsWithSubjects.forEach(question => {
+        if (question.subject_id && question.subjects) {
+          const subjectId = question.subject_id;
+          if (!subjectMap[subjectId]) {
+            // Usar o nome se estiver disponível, senão o título
+            const subjectName = question.subjects.name || question.subjects.title;
+            subjectMap[subjectId] = {
+              id: subjectId,
+              name: subjectName,
+              total: 0,
+              correct: 0
+            };
+          }
+        }
+      });
+      
+      // Contar respostas corretas por assunto
+      answers.forEach(answer => {
+        const question = questionsWithSubjects.find(q => q.id === answer.question_id);
+        if (question && question.subject_id) {
+          const subjectId = question.subject_id;
+          if (subjectMap[subjectId]) {
+            subjectMap[subjectId].total += 1;
+            if (answer.is_correct) {
+              subjectMap[subjectId].correct += 1;
+            }
+          }
+        }
+      });
+      
+      // Converter para array e calcular porcentagem
+      return Object.values(subjectMap)
+        .filter(s => s.total > 0) // Filtrar apenas assuntos com questões
+        .map(subject => ({
+          name: subject.name,
+          questions: subject.total,
+          correct: subject.correct,
+          score: Math.round((subject.correct / subject.total) * 100)
+        }))
+        .sort((a, b) => b.score - a.score); // Ordenar por desempenho (decrescente)
+      
+    } catch (error) {
+      console.error(`Erro ao calcular desempenho por assunto:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Calcula o desempenho geral por assunto em todos os simulados do usuário
+   */
+  static async getUserPerformanceBySubject(): Promise<any[]> {
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      
+      if (!user || !user.user) {
+        throw new Error('Usuário não autenticado');
+      }
+      
+      // Buscar todas as tentativas concluídas do usuário
+      const { data: attempts, error: attemptsError } = await supabase
+        .from('exam_attempts')
+        .select('id')
+        .eq('user_id', user.user.id)
+        .not('completed_at', 'is', null);
+      
+      if (attemptsError) throw attemptsError;
+      if (!attempts || attempts.length === 0) return [];
+      
+      // Buscar todas as respostas de todas as tentativas
+      const attemptIds = attempts.map(attempt => attempt.id);
+      const { data: answers, error: answersError } = await supabase
+        .from('exam_answers')
+        .select(`
+          question_id,
+          is_correct
+        `)
+        .in('attempt_id', attemptIds);
+      
+      if (answersError) throw answersError;
+      if (!answers || answers.length === 0) return [];
+      
+      // Obter IDs das questões
+      const questionIds = [...new Set(answers.map(answer => answer.question_id))];
+      
+      // Buscar informações das questões (incluindo assunto)
+      const { data: questionsWithSubjects, error: questionsError } = await supabase
+        .from('questions')
+        .select(`
+          id,
+          subject_id,
+          subjects (
+            id,
+            name,
+            title
+          )
+        `)
+        .in('id', questionIds);
+      
+      if (questionsError) throw questionsError;
+      if (!questionsWithSubjects || questionsWithSubjects.length === 0) return [];
+      
+      // Agrupar por assunto
+      const subjectMap: Record<number, {
+        id: number,
+        name: string,
+        total: number,
+        correct: number
+      }> = {};
+      
+      // Inicializar o mapa de assuntos
+      questionsWithSubjects.forEach(question => {
+        if (question.subject_id && question.subjects) {
+          const subjectId = question.subject_id;
+          if (!subjectMap[subjectId]) {
+            // Usar o nome se estiver disponível, senão o título
+            const subjectName = question.subjects.name || question.subjects.title;
+            subjectMap[subjectId] = {
+              id: subjectId,
+              name: subjectName,
+              total: 0,
+              correct: 0
+            };
+          }
+        }
+      });
+      
+      // Contar respostas corretas por assunto
+      answers.forEach(answer => {
+        const question = questionsWithSubjects.find(q => q.id === answer.question_id);
+        if (question && question.subject_id) {
+          const subjectId = question.subject_id;
+          if (subjectMap[subjectId]) {
+            subjectMap[subjectId].total += 1;
+            if (answer.is_correct) {
+              subjectMap[subjectId].correct += 1;
+            }
+          }
+        }
+      });
+      
+      // Converter para array e calcular porcentagem
+      return Object.values(subjectMap)
+        .filter(s => s.total > 0) // Filtrar apenas assuntos com questões
+        .map(subject => ({
+          name: subject.name,
+          questions: subject.total,
+          correct: subject.correct,
+          score: Math.round((subject.correct / subject.total) * 100)
+        }))
+        .sort((a, b) => b.score - a.score); // Ordenar por desempenho (decrescente)
+        
+    } catch (error) {
+      console.error(`Erro ao calcular desempenho por assunto:`, error);
       return [];
     }
   }

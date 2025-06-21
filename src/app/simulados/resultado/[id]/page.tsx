@@ -24,7 +24,9 @@ export default function ResultadoSimulado({ params }: { params: { id: string } }
   const [answers, setAnswers] = useState<Record<number, ExamAnswer>>({});
   const [questionDetails, setQuestionDetails] = useState<Record<number, any>>({});
   const [disciplinePerformance, setDisciplinePerformance] = useState<DisciplinePerformance[]>([]);
+  const [subjectPerformance, setSubjectPerformance] = useState<DisciplinePerformance[]>([]);
   const [loadingPerformance, setLoadingPerformance] = useState(false);
+  const [loadingSubjectPerformance, setLoadingSubjectPerformance] = useState(false);
   
   useEffect(() => {
     loadResultData();
@@ -87,6 +89,9 @@ export default function ResultadoSimulado({ params }: { params: { id: string } }
       // Carregar desempenho por disciplina
       loadDisciplinePerformance(attemptId);
       
+      // Carregar desempenho por assunto
+      loadSubjectPerformance(attemptId);
+      
     } catch (error) {
       console.error('Erro ao carregar resultados:', error);
       toast.error('Ocorreu um erro ao carregar os resultados');
@@ -106,6 +111,19 @@ export default function ResultadoSimulado({ params }: { params: { id: string } }
       toast.error('Não foi possível carregar o desempenho por disciplina');
     } finally {
       setLoadingPerformance(false);
+    }
+  };
+  
+  const loadSubjectPerformance = async (attemptId: number) => {
+    setLoadingSubjectPerformance(true);
+    try {
+      const performanceData = await ExamsService.getAttemptPerformanceBySubject(attemptId);
+      setSubjectPerformance(performanceData);
+    } catch (error) {
+      console.error('Erro ao carregar desempenho por assunto:', error);
+      toast.error('Não foi possível carregar o desempenho por assunto');
+    } finally {
+      setLoadingSubjectPerformance(false);
     }
   };
   
@@ -447,6 +465,32 @@ export default function ResultadoSimulado({ params }: { params: { id: string } }
               <div className="bg-gray-50 rounded-lg p-8 text-center">
                 <p className="text-gray-500">
                   Não há dados suficientes para mostrar o desempenho por disciplina.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Desempenho por Assunto */}
+        <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
+          <div className="bg-gradient-to-r from-green-500 to-teal-600 px-6 py-5">
+            <h2 className="text-xl font-bold text-white flex items-center">
+              <FaChartPie className="mr-2" />
+              Desempenho por Assunto
+            </h2>
+          </div>
+          
+          <div className="p-6">
+            {loadingSubjectPerformance ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent mb-4"></div>
+              </div>
+            ) : subjectPerformance.length > 0 ? (
+              <DisciplinePerformanceChart data={subjectPerformance} height={350} />
+            ) : (
+              <div className="bg-gray-50 rounded-lg p-8 text-center">
+                <p className="text-gray-500">
+                  Não há dados suficientes para mostrar o desempenho por assunto.
                 </p>
               </div>
             )}
