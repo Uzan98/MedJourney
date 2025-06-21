@@ -7,7 +7,7 @@ import { Discipline, Subject } from '@/lib/supabase';
 import { 
   Book, List, Plus, ArrowLeft, AlertCircle, BookOpen, 
   Calendar, Clock, BarChart3, FileText, BookMarked, CheckCircle, Flag,
-  PlusCircle, Circle, ChevronsUpDown
+  PlusCircle, Circle, ChevronsUpDown, MoreVertical, Edit, Trash2
 } from 'lucide-react';
 import Link from 'next/link';
 import SubjectModal from '@/components/estudos/SubjectModal';
@@ -104,8 +104,13 @@ export default function DisciplineDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isStudySessionModalOpen, setIsStudySessionModalOpen] = useState(false);
   const [completingSubject, setCompletingSubject] = useState<number | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+  const [deletingSubjectId, setDeletingSubjectId] = useState<number | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
 
   // Função para carregar dados da disciplina e seus assuntos
   const loadDisciplineData = async () => {
@@ -139,6 +144,102 @@ export default function DisciplineDetailsPage() {
   useEffect(() => {
     loadDisciplineData();
   }, [disciplineId]);
+
+  // Adicionar event listener para fechar menus quando clicar fora
+  useEffect(() => {
+    // Função que fecha o menu quando clicar fora dele
+    const handleClickOutside = (event: MouseEvent) => {
+      // Não fechar o menu se o clique for em um botão de opções
+      const target = event.target as HTMLElement;
+      if (target.closest('[data-options-button]')) {
+        return;
+      }
+      closeAllMenus();
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
+
+  // Função para fechar todos os menus quando clicar fora
+  const closeAllMenus = () => {
+    setOpenMenuId(null);
+  };
+
+  // Função para gerenciar o menu de opções
+  const toggleOptionsMenu = (e: React.MouseEvent, subjectId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Se já está aberto, fecha. Se está fechado, abre
+    const newOpenMenuId = openMenuId === subjectId ? null : subjectId;
+    console.log(`Toggling menu for subject ${subjectId}, current: ${openMenuId}, new: ${newOpenMenuId}`);
+    setOpenMenuId(newOpenMenuId);
+  };
+
+  // Função para iniciar a edição de um assunto
+  const handleEditClick = (e: React.MouseEvent, subject: Subject) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Pequeno atraso para evitar conflito com outros eventos
+    setTimeout(() => {
+      setEditingSubject(subject);
+      setIsEditModalOpen(true);
+      setOpenMenuId(null);
+    }, 10);
+  };
+
+  // Função chamada após editar com sucesso
+  const handleEditSuccess = () => {
+    loadDisciplineData(); // Recarregar os dados
+    setIsEditModalOpen(false);
+    setEditingSubject(null);
+  };
+
+  // Função para iniciar o processo de exclusão
+  const handleDeleteClick = (e: React.MouseEvent, subjectId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Pequeno atraso para evitar conflito com outros eventos
+    setTimeout(() => {
+      setDeletingSubjectId(subjectId);
+      setShowDeleteConfirm(true);
+      setOpenMenuId(null);
+    }, 10);
+  };
+
+  // Função para confirmar a exclusão
+  const confirmDelete = async () => {
+    if (!deletingSubjectId) return;
+    
+    try {
+      // Implementar a chamada para excluir o assunto
+      const success = await DisciplinesRestService.deleteSubject(deletingSubjectId);
+      
+      if (success) {
+        toast.success("Assunto excluído com sucesso!");
+        loadDisciplineData(); // Recarregar a lista
+      } else {
+        toast.error("Erro ao excluir assunto. Tente novamente.");
+      }
+    } catch (err) {
+      console.error("Erro ao excluir assunto:", err);
+      toast.error("Erro ao excluir assunto. Tente novamente.");
+    } finally {
+      setShowDeleteConfirm(false);
+      setDeletingSubjectId(null);
+    }
+  };
+
+  // Função para cancelar a exclusão
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setDeletingSubjectId(null);
+  };
 
   // Função para abrir o modal de criação de assunto
   const openCreateModal = () => {
@@ -222,23 +323,55 @@ export default function DisciplineDetailsPage() {
     return (
       <div className="mt-6 grid gap-5 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {subjects.map((subject) => (
-          <div key={subject.id} className="bg-white overflow-hidden shadow rounded-lg">
+          <div key={subject.id} className="bg-white overflow-hidden shadow rounded-lg relative group">
             <div className="p-5">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-900 truncate">{subject.title}</h3>
-                <span className={`px-2 py-1 text-xs font-medium rounded-full 
-                                  ${subject.difficulty === 'alta' ? 'bg-red-100 text-red-800' : 
-                                    subject.difficulty === 'média' ? 'bg-yellow-100 text-yellow-800' : 
-                                    'bg-green-100 text-green-800'}`}>
-                  {subject.difficulty}
-                </span>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-medium text-gray-900 truncate pr-2">{subject.title}</h3>
+                
+                {/* Menu de opções - posicionado no canto superior direito */}
+                <div className="relative flex-shrink-0">
+                  <button
+                    onClick={(e) => toggleOptionsMenu(e, subject.id)}
+                    className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors flex items-center justify-center"
+                    title="Opções"
+                    data-options-button="true"
+                    style={{ minWidth: '28px', minHeight: '28px' }}
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
+                  
+                  {/* Menu dropdown */}
+                  {openMenuId === subject.id && (
+                    <div 
+                      className="absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg z-10 py-1 border border-gray-200"
+                      data-options-button="true"
+                    >
+                      <button
+                        onClick={(e) => handleEditClick(e, subject)}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                        data-options-button="true"
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Editar assunto
+                      </button>
+                      <button
+                        onClick={(e) => handleDeleteClick(e, subject.id)}
+                        className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-gray-100 flex items-center"
+                        data-options-button="true"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Excluir assunto
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
               
-              <div className="mt-2 text-sm text-gray-500 line-clamp-3">
+              <div className="text-sm text-gray-500 line-clamp-3 mb-3">
                 {subject.content || 'Sem descrição'}
               </div>
               
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                   <Clock className="mr-1 h-3 w-3" />
                   {subject.estimated_hours || 0}h estimadas
@@ -249,7 +382,15 @@ export default function DisciplineDetailsPage() {
                                    subject.importance === 'média' ? 'bg-blue-100 text-blue-800' : 
                                    'bg-gray-100 text-gray-800'}`}>
                   <Flag className="mr-1 h-3 w-3" />
-                  {subject.importance}
+                  Importância: {subject.importance}
+                </span>
+                
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                 ${subject.difficulty === 'alta' ? 'bg-red-100 text-red-800' : 
+                                   subject.difficulty === 'média' ? 'bg-yellow-100 text-yellow-800' : 
+                                   'bg-green-100 text-green-800'}`}>
+                  <BookOpen className="mr-1 h-3 w-3" />
+                  Dificuldade: {subject.difficulty}
                 </span>
               </div>
             </div>
@@ -346,8 +487,6 @@ export default function DisciplineDetailsPage() {
               </div>
               
               <div className="flex-1">
-                <h1 className="text-3xl font-bold mb-2">{discipline.name}</h1>
-                
                 {discipline.description && (
                   <p className="text-white/90 mb-4 max-w-2xl">{discipline.description}</p>
                 )}
@@ -419,6 +558,21 @@ export default function DisciplineDetailsPage() {
         />
       )}
       
+      {/* Modal para editar assunto */}
+      {discipline && editingSubject && (
+        <SubjectModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setEditingSubject(null);
+          }}
+          onSuccess={handleEditSuccess}
+          disciplineId={disciplineId}
+          disciplineName={discipline.name}
+          subjectToEdit={editingSubject}
+        />
+      )}
+      
       {/* Modal para registrar sessão de estudo */}
       <QuickStudySessionModal
         isOpen={isStudySessionModalOpen}
@@ -427,6 +581,33 @@ export default function DisciplineDetailsPage() {
         disciplineId={disciplineId}
         disciplineName={discipline?.name || ''}
       />
+
+      {/* Modal de confirmação de exclusão */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/30">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Confirmar exclusão</h2>
+            <p className="text-gray-600 mb-6">
+              Tem certeza que deseja excluir este assunto? Essa ação não pode ser desfeita.
+            </p>
+            
+            <div className="flex space-x-3 justify-end">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

@@ -25,33 +25,42 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Discipline } from '@/lib/supabase';
 
 interface DisciplineModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  disciplineToEdit?: Discipline | null;
 }
 
 const DisciplineModal: React.FC<DisciplineModalProps> = ({ 
   isOpen, 
   onClose, 
-  onSuccess
+  onSuccess,
+  disciplineToEdit
 }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [theme, setTheme] = useState('azul'); // tema padrão
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isEditing = !!disciplineToEdit;
 
-  // Redefinir formulário ao fechar
+  // Preencher o formulário com os dados da disciplina a ser editada
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen && disciplineToEdit) {
+      setName(disciplineToEdit.name || '');
+      setDescription(disciplineToEdit.description || '');
+      setTheme(disciplineToEdit.theme || 'azul');
+    } else if (isOpen && !disciplineToEdit) {
+      // Resetar o formulário para criação
       setName('');
       setDescription('');
       setTheme('azul');
-      setError(null);
     }
-  }, [isOpen]);
+    setError(null);
+  }, [isOpen, disciplineToEdit]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,23 +78,46 @@ const DisciplineModal: React.FC<DisciplineModalProps> = ({
       setLoading(true);
       setError("");
 
-      const discipline = await DisciplinesRestService.createDiscipline({
-        name,
-        description,
-        theme,
-      });
+      let success;
+      
+      if (isEditing && disciplineToEdit) {
+        // Atualizar disciplina existente
+        success = await DisciplinesRestService.updateDiscipline(disciplineToEdit.id, {
+          name,
+          description,
+          theme,
+        });
+        
+        if (success) {
+          toast.success("Disciplina atualizada com sucesso!");
+        } else {
+          toast.error("Erro ao atualizar disciplina. Tente novamente.");
+        }
+      } else {
+        // Criar nova disciplina
+        const discipline = await DisciplinesRestService.createDiscipline({
+          name,
+          description,
+          theme,
+        });
+        
+        success = !!discipline;
+        
+        if (success) {
+          toast.success("Disciplina criada com sucesso!");
+        } else {
+          toast.error("Erro ao criar disciplina. Tente novamente.");
+        }
+      }
 
-      if (discipline) {
-        toast.success("Disciplina criada com sucesso!");
+      if (success) {
         resetForm();
         onClose();
         onSuccess();
-      } else {
-        toast.error("Erro ao criar disciplina. Tente novamente.");
       }
     } catch (err) {
-      console.error("Error creating discipline:", err);
-      toast.error("Erro ao criar disciplina. Tente novamente.");
+      console.error(isEditing ? "Error updating discipline:" : "Error creating discipline:", err);
+      toast.error(isEditing ? "Erro ao atualizar disciplina." : "Erro ao criar disciplina.");
     } finally {
       setLoading(false);
     }
@@ -106,7 +138,7 @@ const DisciplineModal: React.FC<DisciplineModalProps> = ({
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-gray-800">
-              Adicionar Nova Disciplina
+              {isEditing ? 'Editar Disciplina' : 'Adicionar Nova Disciplina'}
             </h2>
             <button 
               onClick={onClose}
@@ -182,7 +214,7 @@ const DisciplineModal: React.FC<DisciplineModalProps> = ({
                   disabled={loading}
                   className="flex-1 py-2 px-4 border border-transparent rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Salvando...' : 'Adicionar Disciplina'}
+                  {loading ? 'Salvando...' : isEditing ? 'Salvar Alterações' : 'Adicionar Disciplina'}
                 </button>
               </div>
             </div>
