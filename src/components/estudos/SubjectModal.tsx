@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, BookOpen } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
+import { Subject } from '@/lib/supabase';
 
 interface SubjectModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface SubjectModalProps {
   onSuccess: () => void;
   disciplineId: number;
   disciplineName: string;
+  subjectToEdit?: Subject | null;
 }
 
 const difficultyOptions = [
@@ -30,7 +32,8 @@ const SubjectModal: React.FC<SubjectModalProps> = ({
   onClose, 
   onSuccess,
   disciplineId,
-  disciplineName
+  disciplineName,
+  subjectToEdit
 }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -39,18 +42,29 @@ const SubjectModal: React.FC<SubjectModalProps> = ({
   const [estimatedHours, setEstimatedHours] = useState<number>(2);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isEditing = !!subjectToEdit;
 
-  // Resetar formulário quando o modal é fechado
+  // Preencher o formulário quando o modal é aberto ou quando o assunto a ser editado muda
   useEffect(() => {
-    if (!isOpen) {
-      setTitle('');
-      setContent('');
-      setDifficulty('média');
-      setImportance('média');
-      setEstimatedHours(2);
+    if (isOpen) {
+      if (subjectToEdit) {
+        // Modo de edição: preencher com os dados do assunto
+        setTitle(subjectToEdit.title || '');
+        setContent(subjectToEdit.content || '');
+        setDifficulty(subjectToEdit.difficulty || 'média');
+        setImportance(subjectToEdit.importance || 'média');
+        setEstimatedHours(subjectToEdit.estimated_hours || 2);
+      } else {
+        // Modo de criação: resetar o formulário
+        setTitle('');
+        setContent('');
+        setDifficulty('média');
+        setImportance('média');
+        setEstimatedHours(2);
+      }
       setError(null);
     }
-  }, [isOpen]);
+  }, [isOpen, subjectToEdit]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,36 +78,70 @@ const SubjectModal: React.FC<SubjectModalProps> = ({
     setError(null);
     
     try {
-      console.log('Criando assunto:', {
-        disciplineId,
-        title,
-        content,
-        difficulty,
-        importance,
-        estimatedHours
-      });
+      let success;
       
-      // Criar o assunto usando o serviço
-      const newSubject = await DisciplinesRestService.createSubject(
-        disciplineId,
-        title,
-        content,
-        difficulty,
-        importance,
-        estimatedHours
-      );
-      
-      if (!newSubject) {
-        throw new Error('Erro ao criar assunto');
+      if (isEditing && subjectToEdit) {
+        // Modo de edição: atualizar o assunto existente
+        console.log('Atualizando assunto:', {
+          id: subjectToEdit.id,
+          title,
+          content,
+          difficulty,
+          importance,
+          estimatedHours
+        });
+        
+        success = await DisciplinesRestService.updateSubject(
+          subjectToEdit.id,
+          {
+            title,
+            content,
+            difficulty,
+            importance,
+            estimated_hours: estimatedHours
+          }
+        );
+        
+        if (success) {
+          toast.success(`Assunto "${title}" atualizado com sucesso!`);
+          onSuccess();
+          onClose();
+        } else {
+          throw new Error('Erro ao atualizar assunto');
+        }
+      } else {
+        // Modo de criação: criar um novo assunto
+        console.log('Criando assunto:', {
+          disciplineId,
+          title,
+          content,
+          difficulty,
+          importance,
+          estimatedHours
+        });
+        
+        // Criar o assunto usando o serviço
+        const newSubject = await DisciplinesRestService.createSubject(
+          disciplineId,
+          title,
+          content,
+          difficulty,
+          importance,
+          estimatedHours
+        );
+        
+        if (!newSubject) {
+          throw new Error('Erro ao criar assunto');
+        }
+        
+        toast.success(`Assunto "${title}" criado com sucesso!`);
+        onSuccess();
+        onClose();
       }
-      
-      toast.success(`Assunto "${title}" criado com sucesso!`);
-      onSuccess();
-      onClose();
     } catch (error) {
-      console.error('Erro ao criar assunto:', error);
-      setError('Não foi possível criar o assunto. Tente novamente.');
-      toast.error('Erro ao criar assunto');
+      console.error(isEditing ? 'Erro ao atualizar assunto:' : 'Erro ao criar assunto:', error);
+      setError(`Não foi possível ${isEditing ? 'atualizar' : 'criar'} o assunto. Tente novamente.`);
+      toast.error(isEditing ? 'Erro ao atualizar assunto' : 'Erro ao criar assunto');
     } finally {
       setLoading(false);
     }
@@ -107,7 +155,7 @@ const SubjectModal: React.FC<SubjectModalProps> = ({
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-gray-800">
-              Adicionar Assunto a {disciplineName}
+              {isEditing ? `Editar Assunto de ${disciplineName}` : `Adicionar Assunto a ${disciplineName}`}
             </h2>
             <button 
               onClick={onClose}
@@ -236,7 +284,7 @@ const SubjectModal: React.FC<SubjectModalProps> = ({
                   disabled={loading}
                   className="flex-1 py-2 px-4 border border-transparent rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Salvando...' : 'Adicionar Assunto'}
+                  {loading ? 'Salvando...' : isEditing ? 'Salvar Alterações' : 'Adicionar Assunto'}
                 </button>
               </div>
             </div>

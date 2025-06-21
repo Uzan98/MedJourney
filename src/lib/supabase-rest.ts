@@ -360,6 +360,245 @@ export const DisciplinesRestService = {
   },
   
   /**
+   * Atualiza uma disciplina existente
+   * @param disciplineId ID da disciplina a ser atualizada
+   * @param disciplineData Dados atualizados da disciplina
+   */
+  async updateDiscipline(
+    disciplineId: number,
+    disciplineData: {
+      name?: string;
+      description?: string | null;
+      theme?: string | null;
+    }
+  ): Promise<boolean> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+      
+      console.log('Atualizando disciplina:', disciplineId);
+      
+      // Verificar se a disciplina pertence ao usuário atual
+      const { data: discipline, error: fetchError } = await supabase
+        .from('disciplines')
+        .select('*')
+        .eq('id', disciplineId)
+        .single();
+      
+      if (fetchError) {
+        console.error('Erro ao verificar disciplina:', fetchError);
+        return false;
+      }
+      
+      if (!discipline) {
+        console.error('Disciplina não encontrada');
+        return false;
+      }
+      
+      if (discipline.user_id !== user.id) {
+        console.error('Sem permissão para editar essa disciplina');
+        return false;
+      }
+      
+      // Tentar atualizar a disciplina diretamente pelo cliente Supabase
+      const { error: updateError } = await supabase
+        .from('disciplines')
+        .update(disciplineData)
+        .eq('id', disciplineId);
+      
+      if (updateError) {
+        console.error('Erro ao atualizar disciplina via cliente Supabase:', updateError);
+        console.log('Tentando via API REST...');
+        
+        const headers = await getAuthHeaders();
+        const url = `${getSupabaseRestUrl()}disciplines?id=eq.${disciplineId}`;
+        
+        const response = await fetch(url, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify(disciplineData)
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          console.error('Erro ao atualizar disciplina via API REST:', error);
+          return false;
+        }
+        
+        return response.status === 204 || response.status === 200;
+      }
+      
+      console.log('Disciplina atualizada com sucesso');
+      return true;
+    } catch (error) {
+      console.error('Erro ao atualizar disciplina:', error);
+      return false;
+    }
+  },
+  
+  /**
+   * Atualiza um assunto existente
+   * @param subjectId ID do assunto a ser atualizado
+   * @param subjectData Dados atualizados do assunto
+   */
+  async updateSubject(
+    subjectId: number,
+    subjectData: {
+      title?: string;
+      content?: string | null;
+      difficulty?: 'baixa' | 'média' | 'alta';
+      importance?: 'baixa' | 'média' | 'alta';
+      estimated_hours?: number;
+    }
+  ): Promise<boolean> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+      
+      console.log('Atualizando assunto:', subjectId);
+      
+      // Verificar se o assunto pertence ao usuário atual
+      const { data: subject, error: fetchError } = await supabase
+        .from('subjects')
+        .select('*')
+        .eq('id', subjectId)
+        .single();
+      
+      if (fetchError) {
+        console.error('Erro ao verificar assunto:', fetchError);
+        return false;
+      }
+      
+      if (!subject) {
+        console.error('Assunto não encontrado');
+        return false;
+      }
+      
+      if (subject.user_id !== user.id) {
+        console.error('Sem permissão para editar esse assunto');
+        return false;
+      }
+      
+      // Atualizar também o campo name para manter compatibilidade
+      const updateData = {
+        ...subjectData,
+        name: subjectData.title || subject.title
+      };
+      
+      // Tentar atualizar o assunto diretamente pelo cliente Supabase
+      const { error: updateError } = await supabase
+        .from('subjects')
+        .update(updateData)
+        .eq('id', subjectId);
+      
+      if (updateError) {
+        console.error('Erro ao atualizar assunto via cliente Supabase:', updateError);
+        console.log('Tentando via API REST...');
+        
+        const headers = await getAuthHeaders();
+        const url = `${getSupabaseRestUrl()}subjects?id=eq.${subjectId}`;
+        
+        const response = await fetch(url, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify(updateData)
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          console.error('Erro ao atualizar assunto via API REST:', error);
+          return false;
+        }
+        
+        return response.status === 204 || response.status === 200;
+      }
+      
+      console.log('Assunto atualizado com sucesso');
+      return true;
+    } catch (error) {
+      console.error('Erro ao atualizar assunto:', error);
+      return false;
+    }
+  },
+
+  /**
+   * Remove um assunto
+   * @param subjectId ID do assunto a ser removido
+   */
+  async deleteSubject(subjectId: number): Promise<boolean> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+      
+      console.log('Removendo assunto:', subjectId);
+      
+      // Verificar se o assunto pertence ao usuário atual
+      const { data: subject, error: fetchError } = await supabase
+        .from('subjects')
+        .select('*')
+        .eq('id', subjectId)
+        .single();
+      
+      if (fetchError) {
+        console.error('Erro ao verificar assunto:', fetchError);
+        return false;
+      }
+      
+      if (!subject) {
+        console.error('Assunto não encontrado');
+        return false;
+      }
+      
+      if (subject.user_id !== user.id) {
+        console.error('Sem permissão para excluir esse assunto');
+        return false;
+      }
+      
+      // Tentar excluir o assunto diretamente pelo cliente Supabase
+      const { error: deleteError } = await supabase
+        .from('subjects')
+        .delete()
+        .eq('id', subjectId);
+      
+      if (deleteError) {
+        console.error('Erro ao excluir assunto via cliente Supabase:', deleteError);
+        console.log('Tentando via API REST...');
+        
+        const headers = await getAuthHeaders();
+        const url = `${getSupabaseRestUrl()}subjects?id=eq.${subjectId}`;
+        
+        const response = await fetch(url, {
+          method: 'DELETE',
+          headers
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          console.error('Erro ao excluir assunto via API REST:', error);
+          return false;
+        }
+        
+        return response.status === 204 || response.status === 200;
+      }
+      
+      console.log('Assunto excluído com sucesso');
+      return true;
+    } catch (error) {
+      console.error('Erro ao excluir assunto:', error);
+      return false;
+    }
+  },
+  
+  /**
    * Remove uma disciplina
    * @param disciplineId ID da disciplina a ser removida
    */

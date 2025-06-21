@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 import { Discipline } from '@/lib/supabase';
-import { Plus, Book, ChevronRight, AlertCircle, Bookmark, Clock, Calendar, FileText, Trash2 } from 'lucide-react';
+import { Plus, Book, ChevronRight, AlertCircle, Bookmark, Clock, Calendar, FileText, Trash2, MoreVertical, Edit } from 'lucide-react';
 import DisciplineModal from './DisciplineModal';
 import { toast } from '../ui/toast-interface';
 import Link from 'next/link';
@@ -128,8 +128,11 @@ export default function DisciplinesList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deletingDisciplineId, setDeletingDisciplineId] = useState<number | null>(null);
+  const [editingDiscipline, setEditingDiscipline] = useState<Discipline | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
 
   // Função para carregar disciplinas
   const loadDisciplines = async () => {
@@ -151,6 +154,24 @@ export default function DisciplinesList() {
   // Carregar disciplinas quando o componente montar
   useEffect(() => {
     loadDisciplines();
+  }, []);
+  
+  // Adicionar event listener para fechar menus quando clicar fora
+  useEffect(() => {
+    // Função que fecha o menu quando clicar fora dele
+    const handleClickOutside = (event: MouseEvent) => {
+      // Não fechar o menu se o clique for em um botão de opções
+      const target = event.target as HTMLElement;
+      if (target.closest('[data-options-button]')) {
+        return;
+      }
+      closeAllMenus();
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
   }, []);
 
   // Função para abrir o modal de criação
@@ -177,8 +198,13 @@ export default function DisciplinesList() {
   const handleDeleteClick = (e: React.MouseEvent, disciplineId: number) => {
     e.preventDefault(); // Impede a navegação para a página de detalhes
     e.stopPropagation(); // Impede que o evento se propague
-    setDeletingDisciplineId(disciplineId);
-    setShowDeleteConfirm(true);
+    
+    // Pequeno atraso para evitar conflito com outros eventos
+    setTimeout(() => {
+      setDeletingDisciplineId(disciplineId);
+      setShowDeleteConfirm(true);
+      setOpenMenuId(null);
+    }, 10);
   };
 
   // Função para confirmar a exclusão
@@ -206,6 +232,42 @@ export default function DisciplinesList() {
   const cancelDelete = () => {
     setShowDeleteConfirm(false);
     setDeletingDisciplineId(null);
+  };
+
+  // Função para gerenciar o menu de opções
+  const toggleOptionsMenu = (e: React.MouseEvent, disciplineId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Se já está aberto, fecha. Se está fechado, abre
+    const newOpenMenuId = openMenuId === disciplineId ? null : disciplineId;
+    console.log(`Toggling menu for discipline ${disciplineId}, current: ${openMenuId}, new: ${newOpenMenuId}`);
+    setOpenMenuId(newOpenMenuId);
+  };
+
+  // Função para fechar todos os menus quando clicar fora
+  const closeAllMenus = () => {
+    setOpenMenuId(null);
+  };
+
+  // Função para iniciar a edição de uma disciplina
+  const handleEditClick = (e: React.MouseEvent, discipline: Discipline) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Pequeno atraso para evitar conflito com outros eventos
+    setTimeout(() => {
+      setEditingDiscipline(discipline);
+      setIsEditModalOpen(true);
+      setOpenMenuId(null);
+    }, 10);
+  };
+
+  // Função chamada após editar com sucesso
+  const handleEditSuccess = () => {
+    loadDisciplines(); // Recarregar a lista
+    setIsEditModalOpen(false);
+    setEditingDiscipline(null);
   };
 
   return (
@@ -284,22 +346,53 @@ export default function DisciplinesList() {
                     </p>
                   )}
                   
-                  <div className="mt-4 pt-3 border-t border-gray-200 flex justify-between items-center">
+                  <div className="mt-4 pt-3 border-t border-gray-200 flex items-center">
                     <span className="text-xs text-gray-500 flex items-center">
                       <Calendar className="h-3 w-3 mr-1" />
                       {formatDate(discipline.created_at)}
                     </span>
+                    {/* Espaço reservado para o botão de opções */}
+                    <div className="w-7"></div>
                   </div>
                 </Link>
-
-                {/* Botão de exclusão */}
-                <button
-                  onClick={(e) => handleDeleteClick(e, discipline.id)}
-                  className="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                  title="Excluir disciplina"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                
+                {/* Menu de opções - posicionado no canto inferior direito */}
+                <div className="absolute bottom-[1.15rem] right-3">
+                  <button
+                    onClick={(e) => toggleOptionsMenu(e, discipline.id)}
+                    className="p-3 rounded-full bg-white/80 hover:bg-gray-100 text-gray-500 transition-colors flex items-center justify-center shadow-sm"
+                    title="Opções"
+                    data-options-button="true"
+                    style={{ minWidth: '36px', minHeight: '36px' }}
+                  >
+                    <MoreVertical className="h-5 w-5" />
+                  </button>
+                  
+                  {/* Menu dropdown - posicionado para cima para não sair da tela */}
+                  {openMenuId === discipline.id && (
+                    <div 
+                      className="absolute right-0 bottom-full mb-1 w-48 bg-white rounded-md shadow-lg z-10 py-1 border border-gray-200"
+                      data-options-button="true"
+                    >
+                      <button
+                        onClick={(e) => handleEditClick(e, discipline)}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                        data-options-button="true"
+                      >
+                        <Edit className="h-5 w-5 mr-2" />
+                        Editar disciplina
+                      </button>
+                      <button
+                        onClick={(e) => handleDeleteClick(e, discipline.id)}
+                        className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-gray-100 flex items-center"
+                        data-options-button="true"
+                      >
+                        <Trash2 className="h-5 w-5 mr-2" />
+                        Excluir disciplina
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -311,6 +404,17 @@ export default function DisciplinesList() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleCreateSuccess}
+      />
+
+      {/* Modal de edição de disciplina */}
+      <DisciplineModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingDiscipline(null);
+        }}
+        onSuccess={handleEditSuccess}
+        disciplineToEdit={editingDiscipline}
       />
 
       {/* Modal de confirmação de exclusão */}
