@@ -26,10 +26,12 @@ import {
   FileQuestion,
   Users,
   Clock,
-  User
+  User,
+  LogOut
 } from 'lucide-react';
 import MobileMenu from './MobileMenu';
 import SidebarMenu from './SidebarMenu';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -54,6 +56,11 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   const pathname = usePathname();
   // Flag para controlar se o sidebar pode ser aberto em dispositivos móveis
   const [isMobileSidebarLocked, setIsMobileSidebarLocked] = useState(false);
+  // Estado para controlar o dropdown de perfil
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  
+  // Obtém dados do usuário do contexto de autenticação
+  const { user, signOut } = useAuth();
 
   // Definição dos menus e submenus
   const menuItems: MenuItem[] = [
@@ -311,6 +318,39 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     );
   };
 
+  // Função para alternar o dropdown de perfil
+  const handleProfileToggle = () => {
+    setIsProfileOpen(!isProfileOpen);
+  };
+  
+  // Função para lidar com o logout
+  const handleSignOut = async () => {
+    await signOut();
+  };
+  
+  // Fecha o dropdown quando clicar fora dele
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const profileButton = document.getElementById('profile-button');
+      const profileDropdown = document.getElementById('profile-dropdown');
+      
+      if (
+        isProfileOpen && 
+        profileButton && 
+        profileDropdown && 
+        !profileButton.contains(event.target as Node) && 
+        !profileDropdown.contains(event.target as Node)
+      ) {
+        setIsProfileOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isProfileOpen]);
+
   return (
     <div className="flex h-screen">
       {/* Sidebar - Desktop */}
@@ -434,7 +474,14 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             >
               <Menu className="h-6 w-6" />
             </button>
-            <h1 className="text-xl font-semibold text-gray-800">MedJourney</h1>
+            <div className="flex items-center">
+              <div className="bg-blue-500 p-1.5 rounded-md mr-2 hidden sm:flex">
+                <div className="h-6 w-6 bg-blue-100 rounded-md flex items-center justify-center">
+                  <BookOpen className="h-4 w-4 text-blue-600" />
+                </div>
+              </div>
+              <h1 className="text-xl font-semibold text-blue-800">MedJourney</h1>
+            </div>
           </div>
           
           <div className="flex items-center space-x-4">
@@ -454,12 +501,71 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
             </button>
             
-            {/* User */}
-            <div className="flex items-center space-x-2">
-              <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
-                <User className="h-4 w-4" />
-              </div>
-              <span className="font-medium text-sm hidden sm:inline-block">Usuário</span>
+            {/* User Profile Dropdown */}
+            <div className="relative">
+              <button 
+                id="profile-button"
+                onClick={handleProfileToggle}
+                className="flex items-center space-x-2 p-1 rounded-full hover:bg-gray-100"
+              >
+                <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center overflow-hidden">
+                  {user?.user_metadata?.avatar_url ? (
+                    <img 
+                      src={user.user_metadata.avatar_url} 
+                      alt="Avatar" 
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-4 w-4 text-white" />
+                  )}
+                </div>
+                <span className="font-medium text-sm hidden sm:inline-block">
+                  {user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário'}
+                </span>
+              </button>
+              
+              {isProfileOpen && (
+                <div 
+                  id="profile-dropdown"
+                  className="absolute right-0 mt-2 w-60 bg-white rounded-lg shadow-lg py-2 z-50 animate-fade-in"
+                >
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <p className="text-sm font-medium text-gray-900">
+                      {user?.user_metadata?.name || 'Usuário'}
+                    </p>
+                    <p className="text-sm text-gray-500 truncate">
+                      {user?.email || ''}
+                    </p>
+                  </div>
+                  
+                  <div className="py-1">
+                    <Link 
+                      href="/perfil" 
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <User className="h-4 w-4 mr-3 text-gray-500" />
+                      Meu Perfil
+                    </Link>
+                    <Link 
+                      href="/configuracoes" 
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <Settings className="h-4 w-4 mr-3 text-gray-500" />
+                      Configurações
+                    </Link>
+                  </div>
+                  
+                  <div className="py-1 border-t border-gray-100">
+                    <button 
+                      onClick={handleSignOut}
+                      className="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                    >
+                      <LogOut className="h-4 w-4 mr-3 text-red-500" />
+                      Sair
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>

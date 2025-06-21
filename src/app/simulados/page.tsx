@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { FaPlus, FaPlay, FaEdit, FaTrash, FaClipboard, FaHistory } from 'react-icons/fa';
+import { FaPlus, FaPlay, FaEdit, FaTrash, FaClipboard, FaHistory, FaSearch, FaTimes } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { Exam, ExamsService } from '@/services/exams.service';
 import { Modal } from '@/components/ui/modal';
@@ -28,25 +28,77 @@ export default function SimuladosPage() {
   const [deleteExamId, setDeleteExamId] = useState<number | null>(null);
   const [showExamInfo, setShowExamInfo] = useState<Exam | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   
   useEffect(() => {
     loadExams();
   }, []);
   
+  // Efeito para depuração quando a aba muda
+  useEffect(() => {
+    if (!showMyExams) {
+      console.log('Aba de simulados públicos ativa. Verificando dados:', publicExams);
+      // Se não tiver simulados públicos, tenta carregar novamente
+      if (publicExams.length === 0) {
+        console.log('Recarregando simulados públicos...');
+        const loadPublicExams = async () => {
+          try {
+            // Carregar simulados do usuário para marcar quais são próprios
+            const userExams = await ExamsService.getUserExams();
+            
+            // Carregar simulados públicos
+            const pubExams = await ExamsService.getPublicExams();
+            console.log('Simulados públicos recarregados:', pubExams.length, pubExams);
+            
+            // Marcar quais simulados são do usuário atual
+            const processedPublicExams = pubExams.map(exam => ({
+              ...exam,
+              isOwn: userExams.some(myExam => myExam.id === exam.id)
+            }));
+            
+            console.log('Simulados públicos processados após recarga:', processedPublicExams.length);
+            
+            setPublicExams(processedPublicExams);
+          } catch (error) {
+            console.error('Erro ao recarregar simulados públicos:', error);
+          }
+        };
+        loadPublicExams();
+      }
+    }
+  }, [showMyExams, publicExams.length]);
+  
+  // Filtrar simulados públicos com base na pesquisa
+  const filteredPublicExams = publicExams.filter(exam => {
+    // Filtrar por termo de pesquisa (título, descrição ou nome do criador)
+    return searchTerm.trim() === '' || 
+      (exam.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+       exam.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+       exam.creator_name?.toLowerCase().includes(searchTerm.toLowerCase()));
+  });
+
   const loadExams = async () => {
     setLoading(true);
     try {
       // Carregar simulados do usuário
       const exams = await ExamsService.getUserExams();
       setMyExams(exams);
+      console.log('Simulados do usuário carregados:', exams.length);
       
       // Carregar simulados públicos
       const pubExams = await ExamsService.getPublicExams();
-      // Filtrar para não mostrar os próprios simulados novamente
-      const filteredPublicExams = pubExams.filter(exam => 
-        !exams.some(myExam => myExam.id === exam.id)
-      );
-      setPublicExams(filteredPublicExams);
+      console.log('Simulados públicos recebidos do serviço:', pubExams.length, pubExams);
+      
+      // Não filtrar os próprios simulados, mas marcar quais são do usuário atual
+      const processedPublicExams = pubExams.map(exam => ({
+        ...exam,
+        isOwn: exams.some(myExam => myExam.id === exam.id)
+      }));
+      
+      console.log('Simulados públicos processados:', processedPublicExams.length);
+      
+      setPublicExams(processedPublicExams);
+      console.log('Estado publicExams atualizado:', processedPublicExams.length);
     } catch (error) {
       console.error('Erro ao carregar simulados:', error);
       toast.error('Ocorreu um erro ao carregar os simulados');
@@ -133,11 +185,42 @@ export default function SimuladosPage() {
               ? 'text-blue-600 border-b-2 border-blue-600'
               : 'text-gray-500 hover:text-gray-700'
           }`}
-          onClick={() => setShowMyExams(false)}
+          onClick={() => {
+            setShowMyExams(false);
+            console.log('Mudou para aba de Simulados Públicos. Quantidade:', publicExams.length);
+          }}
         >
           Simulados Públicos
         </button>
       </div>
+      
+      {/* Barra de pesquisa e filtros (apenas para simulados públicos) */}
+      {!showMyExams && (
+        <div className="mb-6">
+          <div className="flex flex-col md:flex-row gap-4 mb-4">
+            <div className="flex-1">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Pesquisar simulados públicos..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <FaSearch className="text-gray-400" />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-center text-sm text-gray-500">
+            <div>
+              {filteredPublicExams.length} simulados encontrados
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Simulados Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -221,7 +304,7 @@ export default function SimuladosPage() {
             </div>
           )
         ) : publicExams.length > 0 ? (
-          publicExams.map(exam => (
+          filteredPublicExams.map(exam => (
             <div key={exam.id} className="bg-white rounded-xl shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
@@ -243,6 +326,18 @@ export default function SimuladosPage() {
                   </span>
                   <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full">
                     Público
+                  </span>
+                  {exam.isOwn && (
+                    <span className="ml-2 bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+                      Seu simulado
+                    </span>
+                  )}
+                </div>
+                
+                {/* Mostrar o criador do simulado */}
+                <div className="flex items-center mb-4">
+                  <span className="text-sm text-gray-600">
+                    Criado por: <span className="font-medium">{exam.isOwn ? 'Você' : exam.creator_name || 'Usuário anônimo'}</span>
                   </span>
                 </div>
                 

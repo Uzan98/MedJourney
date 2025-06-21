@@ -1,18 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { FaArrowLeft, FaSave, FaPlus, FaQuestionCircle } from 'react-icons/fa';
+import { FaArrowLeft, FaSave, FaEdit, FaTrash } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { Exam, ExamsService } from '@/services/exams.service';
+import Loading from '@/components/Loading';
 
-export default function NovoSimuladoPage() {
+export default function EditarSimuladoPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { user } = useAuth();
+  const examId = parseInt(params.id);
   
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [exam, setExam] = useState<Exam | null>(null);
+  
+  // Campos do formulário
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [timeLimit, setTimeLimit] = useState<string>('60');
@@ -20,6 +26,46 @@ export default function NovoSimuladoPage() {
   const [isPublic, setIsPublic] = useState(false);
   const [shuffleQuestions, setShuffleQuestions] = useState(true);
   const [showAnswers, setShowAnswers] = useState(true);
+  
+  useEffect(() => {
+    loadExamData();
+  }, [examId]);
+  
+  const loadExamData = async () => {
+    setLoading(true);
+    try {
+      // Carregar dados do simulado
+      const examData = await ExamsService.getExamById(examId);
+      if (!examData) {
+        toast.error('Simulado não encontrado');
+        router.push('/simulados');
+        return;
+      }
+      
+      // Verificar se o usuário é o proprietário do simulado
+      if (examData.user_id !== user?.id) {
+        toast.error('Você não tem permissão para editar este simulado');
+        router.push('/simulados');
+        return;
+      }
+      
+      setExam(examData);
+      
+      // Preencher os campos do formulário com os dados do simulado
+      setTitle(examData.title || '');
+      setDescription(examData.description || '');
+      setTimeLimit(examData.time_limit?.toString() || '60');
+      setUnlimitedTime(examData.time_limit === null);
+      setIsPublic(examData.is_public || false);
+      setShuffleQuestions(examData.shuffle_questions || true);
+      setShowAnswers(examData.show_answers || true);
+    } catch (error) {
+      console.error('Erro ao carregar dados do simulado:', error);
+      toast.error('Ocorreu um erro ao carregar o simulado');
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +77,7 @@ export default function NovoSimuladoPage() {
     
     setSaving(true);
     try {
-      const newExam: Exam = {
+      const updatedExam: Exam = {
         title: title.trim(),
         description: description.trim() || undefined,
         time_limit: unlimitedTime ? null : parseInt(timeLimit) || 60,
@@ -40,14 +86,13 @@ export default function NovoSimuladoPage() {
         show_answers: showAnswers,
       };
       
-      const examId = await ExamsService.addExam(newExam);
+      const success = await ExamsService.updateExam(examId, updatedExam);
       
-      if (examId) {
-        toast.success('Simulado criado com sucesso!');
-        // Redirecionar para a página de adicionar questões
-        router.push(`/simulados/${examId}/editar/questoes`);
+      if (success) {
+        toast.success('Simulado atualizado com sucesso!');
+        router.push(`/simulados/${examId}`);
       } else {
-        toast.error('Erro ao criar simulado');
+        toast.error('Erro ao atualizar simulado');
       }
     } catch (error) {
       console.error('Erro ao salvar simulado:', error);
@@ -57,6 +102,10 @@ export default function NovoSimuladoPage() {
     }
   };
   
+  if (loading) {
+    return <Loading message="Carregando simulado..." />;
+  }
+  
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-3xl mx-auto">
@@ -64,25 +113,33 @@ export default function NovoSimuladoPage() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
             <Link 
-              href="/simulados" 
+              href={`/simulados/${examId}`}
               className="mr-4 p-2 rounded-full hover:bg-gray-100"
               aria-label="Voltar"
             >
               <FaArrowLeft className="text-gray-600" />
             </Link>
-            <h1 className="text-2xl font-bold text-gray-800">Novo Simulado</h1>
+            <h1 className="text-2xl font-bold text-gray-800">Editar Simulado</h1>
           </div>
-          <button
-            onClick={handleSubmit}
-            disabled={saving || !title.trim()}
-            className={`inline-flex items-center px-5 py-2.5 ${
-              saving || !title.trim()
-                ? 'bg-gray-300 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700'
-            } text-white font-medium rounded-lg transition duration-300`}
-          >
-            <FaSave className="mr-2" /> {saving ? 'Salvando...' : 'Salvar e Continuar'}
-          </button>
+          <div className="flex space-x-3">
+            <Link
+              href={`/simulados/${examId}/editar/questoes`}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-gray-700 rounded-md hover:bg-gray-50"
+            >
+              <FaEdit className="mr-2" /> Gerenciar Questões
+            </Link>
+            <button
+              onClick={handleSubmit}
+              disabled={saving || !title.trim()}
+              className={`inline-flex items-center px-5 py-2.5 ${
+                saving || !title.trim()
+                  ? 'bg-gray-300 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700'
+              } text-white font-medium rounded-lg transition duration-300`}
+            >
+              <FaSave className="mr-2" /> {saving ? 'Salvando...' : 'Salvar Alterações'}
+            </button>
+          </div>
         </div>
         
         {/* Form Card */}
@@ -210,20 +267,32 @@ export default function NovoSimuladoPage() {
           </div>
         </div>
         
-        {/* Info Card */}
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-          <div className="flex items-start">
-            <div className="flex-shrink-0 mt-0.5">
-              <FaQuestionCircle className="h-5 w-5 text-blue-500" />
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-800">Próximos passos</h3>
-              <div className="mt-2 text-sm text-blue-700">
-                <p>
-                  Após criar o simulado, você poderá adicionar questões do seu banco de questões
-                  ou criar novas questões específicas para este simulado.
-                </p>
+        {/* Danger Zone */}
+        <div className="bg-white rounded-xl shadow-md overflow-hidden mt-8">
+          <div className="p-6">
+            <h2 className="text-lg font-medium text-red-600 mb-4">Zona de Perigo</h2>
+            <div className="flex items-center justify-between p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div>
+                <h3 className="font-medium text-red-800">Excluir Simulado</h3>
+                <p className="text-sm text-red-600">Esta ação não pode ser desfeita.</p>
               </div>
+              <button
+                onClick={() => {
+                  if (confirm('Tem certeza que deseja excluir este simulado? Esta ação não pode ser desfeita.')) {
+                    ExamsService.deleteExam(examId).then((success) => {
+                      if (success) {
+                        toast.success('Simulado excluído com sucesso');
+                        router.push('/simulados');
+                      } else {
+                        toast.error('Erro ao excluir simulado');
+                      }
+                    });
+                  }
+                }}
+                className="px-4 py-2 bg-white border border-red-300 text-red-700 rounded-md hover:bg-red-50"
+              >
+                <FaTrash className="inline-block mr-2" /> Excluir
+              </button>
             </div>
           </div>
         </div>

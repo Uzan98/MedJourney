@@ -13,6 +13,9 @@ export interface Exam {
   show_answers?: boolean;
   created_at?: string;
   updated_at?: string;
+  creator_name?: string; // Nome do criador do simulado (para exibição)
+  category?: string; // Categoria do simulado (opcional)
+  isOwn?: boolean; // Indica se o simulado pertence ao usuário atual
 }
 
 export interface ExamQuestion {
@@ -85,17 +88,58 @@ export class ExamsService {
    */
   static async getPublicExams(): Promise<Exam[]> {
     try {
-      const { data, error } = await supabase
+      console.log('Buscando simulados públicos...');
+      
+      // Buscar simulados públicos
+      const { data: exams, error: examsError } = await supabase
         .from('exams')
         .select('*')
         .eq('is_public', true)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        throw error;
+      if (examsError) {
+        console.error('Erro ao buscar simulados públicos:', examsError);
+        throw examsError;
       }
 
-      return data || [];
+      // Se tiver simulados, buscar informações dos criadores
+      if (exams && exams.length > 0) {
+        // Obter IDs únicos dos usuários
+        const userIds = [...new Set(exams.map(exam => exam.user_id))];
+        
+        // Buscar perfis dos usuários
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, username, full_name')
+          .in('id', userIds);
+        
+        if (profilesError) {
+          console.error('Erro ao buscar perfis dos criadores:', profilesError);
+        }
+        
+        // Mapear os perfis por ID para fácil acesso
+        const profilesMap = new Map();
+        if (profiles) {
+          profiles.forEach(profile => {
+            profilesMap.set(profile.id, profile);
+          });
+        }
+        
+        // Adicionar nome do criador a cada simulado
+        const examsWithCreators = exams.map(exam => {
+          const profile = profilesMap.get(exam.user_id);
+          return {
+            ...exam,
+            creator_name: profile ? (profile.full_name || profile.username || 'Usuário anônimo') : 'Usuário anônimo'
+          };
+        });
+        
+        console.log('Simulados públicos encontrados:', examsWithCreators.length);
+        return examsWithCreators;
+      }
+      
+      console.log('Nenhum simulado público encontrado');
+      return exams || [];
     } catch (error) {
       console.error('Erro ao buscar simulados públicos:', error);
       return [];

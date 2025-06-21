@@ -11,6 +11,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { Exam, ExamQuestion, ExamsService } from '@/services/exams.service';
 import Loading from '@/components/Loading';
+import { supabase } from '@/lib/supabase';
 
 export default function SimuladoDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -35,6 +36,23 @@ export default function SimuladoDetailPage({ params }: { params: { id: string } 
         toast.error('Simulado não encontrado');
         router.push('/simulados');
         return;
+      }
+      
+      // Se for um simulado público e não for do usuário atual, buscar informações do criador
+      if (examData.is_public && examData.user_id !== user?.id) {
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('username, full_name')
+            .eq('id', examData.user_id)
+            .single();
+          
+          if (data) {
+            examData.creator_name = data.full_name || data.username || 'Usuário anônimo';
+          }
+        } catch (error) {
+          console.error('Erro ao buscar informações do criador:', error);
+        }
       }
       
       setExam(examData);
@@ -159,6 +177,19 @@ export default function SimuladoDetailPage({ params }: { params: { id: string } 
                   <p className="text-purple-700 font-medium">{exam.is_public ? 'Público' : 'Privado'}</p>
                 </div>
               </div>
+              
+              {/* Mostrar criador se for público e não for o proprietário */}
+              {exam.is_public && exam.creator_name && !isOwner && (
+                <div className="bg-amber-50 p-4 rounded-lg flex items-start">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="text-amber-500 mt-1 mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <div>
+                    <h3 className="font-medium text-gray-800">Criado por</h3>
+                    <p className="text-amber-700 font-medium">{exam.creator_name}</p>
+                  </div>
+                </div>
+              )}
             </div>
             
             <div className="flex flex-wrap gap-3">
