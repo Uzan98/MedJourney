@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { PlanningService, StudyPlanSession } from '@/services/planning.service';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { format, addDays, startOfWeek, endOfWeek, isWithinInterval, parseISO, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -423,26 +422,27 @@ export default function PlanejamentoPage() {
             <div className="absolute bottom-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600"></div>
           </div>
 
-          {/* Abas melhoradas */}
-            <Tabs defaultValue="semana" className="w-full" onValueChange={(value) => setActiveTab(value)}>
-            <TabsList className="grid w-full grid-cols-2 p-1 bg-gray-100/80 backdrop-blur-sm rounded-xl mb-6">
-                <TabsTrigger 
-                  value="semana" 
-                  className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm"
+          {/* Abas substituídas por botões */}
+            <div className="w-full">
+              <div className="flex justify-center space-x-4 mb-6">
+                <Button
+                  variant={activeTab === 'semana' ? 'default' : 'outline'}
+                  onClick={() => setActiveTab('semana')}
                 >
                   <ListTodo className="h-4 w-4 mr-2" />
                   Visão Semanal
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="calendario"
-                  className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm"
+                </Button>
+                <Button
+                  variant={activeTab === 'calendario' ? 'default' : 'outline'}
+                  onClick={() => setActiveTab('calendario')}
                 >
                   <CalendarIcon className="h-4 w-4 mr-2" />
                   Calendário
-                </TabsTrigger>
-              </TabsList>
+                </Button>
+              </div>
               
-            <TabsContent value="semana" className="mt-2">
+                          {activeTab === 'semana' && (
+                <div className="mt-2">
                 {isLoading ? (
                   <div className="flex justify-center items-center h-64">
                     <div className="flex flex-col items-center">
@@ -791,11 +791,13 @@ export default function PlanejamentoPage() {
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </TabsContent>
+                                      </div>
+                  )}
+                </div>
+              )}
               
-            <TabsContent value="calendario" className="mt-2">
+                          {activeTab === 'calendario' && (
+                <div className="mt-2">
               <div className="space-y-6">
                 {/* Header simplificado do calendário */}
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg overflow-hidden">
@@ -1325,9 +1327,10 @@ export default function PlanejamentoPage() {
                   </div>
                 </div>
               </div>
-            </TabsContent>
-            </Tabs>
-    </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
