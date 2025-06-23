@@ -25,9 +25,90 @@ import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import SmartPlanningService, { SmartPlan, SmartPlanSession, difficultyColorMap, importanceColorMap } from '@/services/smart-planning.service';
 import { supabase } from '@/lib/supabase';
+import { Calendar as ReactCalendar, dateFnsLocalizer } from 'react-big-calendar';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { format, parseISO, startOfWeek, getDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+// Configurando o localizador de datas para o calendário
+const locales = {
+  'pt-BR': ptBR,
+}
+
+// Configurando o localizador para react-big-calendar
+const localizer = dateFnsLocalizer({
+  format,
+  parse: parseISO,
+  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 0 }),
+  getDay: (date: Date) => date.getDay(),
+  locales,
+});
+
+// Mensagens em português para o calendário
+const messages = {
+  allDay: 'Dia inteiro',
+  previous: 'Anterior',
+  next: 'Próximo',
+  today: 'Hoje',
+  month: 'Mês',
+  week: 'Semana',
+  day: 'Dia',
+  agenda: 'Agenda',
+  date: 'Data',
+  time: 'Hora',
+  event: 'Evento',
+  noEventsInRange: 'Não há sessões neste período.',
+  showMore: (total: number) => `+ ${total} mais`,
+};
 
 type GroupedSessions = {
   [date: string]: SmartPlanSession[];
+};
+
+// Componente personalizado para a barra de ferramentas do calendário
+const CalendarToolbar = (toolbar: any) => {
+  const goToBack = () => {
+    toolbar.onNavigate('PREV');
+  };
+  
+  const goToNext = () => {
+    toolbar.onNavigate('NEXT');
+  };
+  
+  const goToCurrent = () => {
+    toolbar.onNavigate('TODAY');
+  };
+
+  // Traduz os nomes das visualizações
+  const viewNames: Record<string, string> = {
+    month: 'Mês',
+    week: 'Semana',
+    day: 'Dia',
+    agenda: 'Agenda'
+  };
+  
+  return (
+    <div className="rbc-toolbar">
+      <span className="rbc-btn-group">
+        <button type="button" onClick={goToBack}>Anterior</button>
+        <button type="button" onClick={goToCurrent}>Hoje</button>
+        <button type="button" onClick={goToNext}>Próximo</button>
+      </span>
+      <span className="rbc-toolbar-label">{toolbar.label}</span>
+      <span className="rbc-btn-group">
+        {toolbar.views.map((view: string) => (
+          <button
+            key={view}
+            type="button"
+            onClick={() => toolbar.onView(view)}
+            className={toolbar.view === view ? 'rbc-active' : ''}
+          >
+            {viewNames[view] || view}
+          </button>
+        ))}
+      </span>
+    </div>
+  );
 };
 
 export default function ViewPlanPage() {
@@ -40,11 +121,13 @@ export default function ViewPlanPage() {
   const [tab, setTab] = useState<'calendar' | 'sessions' | 'stats'>('sessions');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [calendarView, setCalendarView] = useState<'month' | 'week' | 'day' | 'agenda'>('month');
+  const [calendarDate, setCalendarDate] = useState(new Date());
   
   useEffect(() => {
     if (isNaN(planId)) {
       toast.error('ID do plano inválido');
-      router.push('/planejamento');
+      router.push('/planejamento/inteligente');
       return;
     }
     
@@ -68,7 +151,7 @@ export default function ViewPlanPage() {
       
         if (!planData) {
           toast.error('Plano não encontrado');
-          router.push('/planejamento');
+          router.push('/planejamento/inteligente');
           return;
         }
         
@@ -219,14 +302,18 @@ export default function ViewPlanPage() {
   // Obter cor de destaque para a disciplina
   const getDisciplineColor = (index: number): string => {
     const colors = [
-      'from-blue-500 to-blue-400',
-      'from-purple-500 to-purple-400',
-      'from-green-500 to-green-400',
-      'from-amber-500 to-amber-400',
-      'from-pink-500 to-pink-400',
-      'from-indigo-500 to-indigo-400',
-      'from-teal-500 to-teal-400'
+      'from-blue-500 to-blue-600',
+      'from-purple-500 to-purple-600',
+      'from-green-500 to-green-600',
+      'from-amber-500 to-amber-600',
+      'from-pink-500 to-pink-600',
+      'from-indigo-500 to-indigo-600',
+      'from-teal-500 to-teal-600',
+      'from-red-500 to-red-600',
+      'from-cyan-500 to-cyan-600'
     ];
+    
+    // Se o index for maior que o tamanho do array, faz um loop
     return colors[index % colors.length];
   };
   
@@ -270,6 +357,67 @@ export default function ViewPlanPage() {
     router.push(`/estudos?session=${convertedSession.id}&start=true`);
   };
   
+  // Função para converter sessões no formato esperado pelo BigCalendar
+  const createCalendarEvents = (sessions: SmartPlanSession[]) => {
+    return sessions.map(session => {
+      // Extrair componentes da data
+      const dateStr = session.date; // Formato 'YYYY-MM-DD'
+      const timeStr = session.start_time; // Formato 'HH:MM'
+      
+      // Extrair os componentes da data e hora para criar objeto Date no fuso horário local
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      
+      // Criar data usando constructor que respeita o fuso horário local
+      const startDate = new Date(year, month - 1, day, hours, minutes, 0);
+      
+      console.log(`Evento: ${session.title}, Data: ${dateStr}, Hora: ${timeStr}`);
+      console.log(`Data criada: ${startDate.toLocaleString('pt-BR')}, Dia da semana: ${startDate.getDay()}`);
+      
+      // Criar data de fim baseada na duração
+      const endDate = new Date(startDate.getTime());
+      endDate.setMinutes(endDate.getMinutes() + session.duration_minutes);
+      
+      // Determinar cor com base na disciplina
+      const disciplineColor = getDisciplineColor(Number(session.discipline_id));
+      
+      return {
+        id: session.id,
+        title: session.title,
+        start: startDate,
+        end: endDate,
+        allDay: false,
+        resource: {
+          ...session,
+          color: disciplineColor
+        }
+      };
+    });
+  };
+  
+  // Função para obter a classe de cor para o evento no calendário
+  const getEventStyle = (event: any) => {
+    const colorClasses: Record<string, string> = {
+      'from-blue-500 to-blue-600': 'bg-blue-500 hover:bg-blue-600',
+      'from-purple-500 to-purple-600': 'bg-purple-500 hover:bg-purple-600',
+      'from-green-500 to-green-600': 'bg-green-500 hover:bg-green-600',
+      'from-amber-500 to-amber-600': 'bg-amber-500 hover:bg-amber-600',
+      'from-pink-500 to-pink-600': 'bg-pink-500 hover:bg-pink-600',
+      'from-indigo-500 to-indigo-600': 'bg-indigo-500 hover:bg-indigo-600',
+      'from-teal-500 to-teal-600': 'bg-teal-500 hover:bg-teal-600',
+      'from-red-500 to-red-600': 'bg-red-500 hover:bg-red-600',
+      'from-cyan-500 to-cyan-600': 'bg-cyan-500 hover:bg-cyan-600'
+    };
+    
+    return {
+      className: colorClasses[event.resource.color] || 'bg-blue-500 hover:bg-blue-600',
+      style: {
+        color: 'white',
+        fontWeight: 500
+      }
+    };
+  };
+  
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -299,9 +447,9 @@ export default function ViewPlanPage() {
       {/* Cabeçalho com breadcrumb e informações do plano */}
       <div className="mb-6">
         <div className="flex items-center text-sm text-gray-500 mb-4">
-          <Link href="/planejamento" className="hover:text-indigo-600 flex items-center">
+          <Link href="/planejamento/inteligente" className="hover:text-indigo-600 flex items-center">
             <ArrowLeft className="h-4 w-4 mr-1" />
-            Voltar para Planejamento
+            Voltar para Planejamento Inteligente
           </Link>
         </div>
       
@@ -520,12 +668,220 @@ export default function ViewPlanPage() {
           
         {tab === 'calendar' && (
           <div className="bg-white p-6 rounded-lg border border-gray-200">
-              <div className="text-center py-16 bg-gray-50 rounded-xl border border-dashed border-gray-300">
-                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-800 mb-2">Visualização de calendário</h3>
-                <p className="text-gray-600 max-w-md mx-auto">
-                  Esta funcionalidade será implementada em breve.
-                </p>
+            <div className="h-[650px] w-full">
+              <style jsx global>{`
+                .rbc-calendar {
+                  font-family: var(--font-inter);
+                  border-radius: 0;
+                  background-color: #fff;
+                  border: none;
+                }
+                
+                .rbc-toolbar {
+                  padding: 20px;
+                  background-color: #f8fafc;
+                  border-bottom: 1px solid #e2e8f0;
+                  margin-bottom: 0;
+                }
+                
+                .rbc-toolbar-label {
+                  font-size: 1.4rem;
+                  font-weight: 700;
+                  text-transform: capitalize;
+                  color: #1e293b;
+                  letter-spacing: -0.3px;
+                }
+                
+                .rbc-header {
+                  padding: 14px 6px;
+                  font-weight: 600;
+                  text-transform: uppercase;
+                  font-size: 0.75rem;
+                  color: #64748b;
+                  background-color: #f1f5f9;
+                  border-bottom: 1px solid #e2e8f0;
+                }
+                
+                .rbc-month-view {
+                  border: none;
+                  background-color: #fff;
+                  border-radius: 0;
+                  overflow: hidden;
+                }
+                
+                .rbc-month-row {
+                  overflow: visible !important;
+                  border-top: 1px solid #e2e8f0;
+                  min-height: 110px;
+                }
+                
+                .rbc-day-bg {
+                  transition: all 0.2s ease-in-out;
+                }
+                
+                .rbc-day-bg:hover {
+                  background-color: #f1f5f9;
+                  cursor: pointer;
+                }
+                
+                .rbc-date-cell {
+                  padding: 8px;
+                  text-align: center;
+                  font-size: 0.9rem;
+                  color: #475569;
+                }
+                
+                .rbc-date-cell.rbc-now {
+                  font-weight: 700;
+                  color: #2563eb;
+                }
+                
+                .rbc-today {
+                  background-color: rgba(219, 234, 254, 0.5);
+                }
+                
+                .rbc-off-range-bg {
+                  background-color: #f8fafc;
+                }
+                
+                .rbc-off-range {
+                  color: #94a3b8;
+                }
+                
+                .rbc-show-more {
+                  font-size: 0.75rem;
+                  font-weight: 500;
+                  color: #2563eb !important;
+                  background-color: transparent !important;
+                  padding: 2px 5px;
+                }
+                
+                .rbc-show-more:hover {
+                  text-decoration: none;
+                  color: #1d4ed8 !important;
+                  background-color: #eff6ff !important;
+                }
+                
+                .rbc-event {
+                  border-radius: 6px;
+                  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+                  padding: 4px 8px;
+                  margin: 2px;
+                  font-size: 0.75rem;
+                  font-weight: 500;
+                  cursor: pointer;
+                  transition: all 0.2s;
+                  border: none;
+                  position: relative;
+                }
+                
+                .rbc-event:hover {
+                  transform: translateY(-1px);
+                  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+                }
+                
+                .rbc-event:before {
+                  content: '';
+                  position: absolute;
+                  left: 0;
+                  top: 0;
+                  bottom: 0;
+                  width: 3px;
+                  background-color: rgba(255, 255, 255, 0.5);
+                  border-radius: 3px 0 0 3px;
+                }
+                
+                .rbc-event-label {
+                  display: none;
+                }
+                
+                .rbc-event-content {
+                  white-space: nowrap;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  line-height: 1.4;
+                }
+                
+                .rbc-toolbar button {
+                  border-radius: 6px;
+                  padding: 6px 12px;
+                  color: #475569;
+                  transition: all 0.15s;
+                  border: 1px solid #e2e8f0;
+                  font-weight: 500;
+                  margin: 0 3px;
+                }
+                
+                .rbc-toolbar button:hover {
+                  background-color: #f1f5f9;
+                  border-color: #cbd5e1;
+                  color: #1e293b;
+                }
+                
+                .rbc-active {
+                  background-color: #eff6ff !important;
+                  color: #2563eb !important;
+                  border-color: #bfdbfe !important;
+                  font-weight: 600 !important;
+                }
+                
+                .rbc-row-segment {
+                  padding: 0 1px;
+                }
+              `}</style>
+
+              <ReactCalendar
+                localizer={localizer}
+                events={createCalendarEvents(sessions)}
+                startAccessor="start"
+                endAccessor="end"
+                views={['month', 'week', 'day', 'agenda']}
+                view={calendarView}
+                onView={(view) => setCalendarView(view as 'month' | 'week' | 'day' | 'agenda')}
+                defaultView="month"
+                date={calendarDate}
+                onNavigate={(date) => setCalendarDate(date)}
+                onSelectEvent={(event: any) => {
+                  handleStartSession(event.resource);
+                }}
+                onSelectSlot={({ start }: { start: Date }) => {
+                  // Potencialmente adicionar funcionalidade para criar novas sessões aqui
+                }}
+                selectable={true}
+                style={{ height: '100%' }}
+                messages={messages}
+                popup={true}
+                eventPropGetter={getEventStyle}
+                formats={{
+                  monthHeaderFormat: (date: Date) => format(date, "MMMM 'de' yyyy", { locale: ptBR }),
+                  weekdayFormat: (date: Date) => format(date, 'EEE', { locale: ptBR }).toUpperCase(),
+                  dayFormat: (date: Date) => format(date, 'dd EEE', { locale: ptBR }),
+                  dayHeaderFormat: (date: Date) => format(date, "dd 'de' MMMM", { locale: ptBR }),
+                  dayRangeHeaderFormat: ({ start, end }: { start: Date; end: Date }) => 
+                    `${format(start, 'd', { locale: ptBR })} - ${format(end, 'd MMM', { locale: ptBR })}`
+                }}
+                culture='pt-BR'
+                components={{
+                  toolbar: CalendarToolbar,
+                  agenda: {
+                    event: ({ event }) => (
+                      <div className="rbc-agenda-event">
+                        <span className="text-sm font-medium">{event.title}</span>
+                      </div>
+                    ),
+                    date: ({ day }) => (
+                      <span className="text-sm font-medium">
+                        {format(day, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                      </span>
+                    ),
+                    time: ({ event }) => (
+                      <span className="text-sm">
+                        {format(event.start, 'HH:mm', { locale: ptBR })} - {format(event.end, 'HH:mm', { locale: ptBR })}
+                      </span>
+                    )
+                  }
+                }}
+              />
               </div>
                 </div>
         )}
