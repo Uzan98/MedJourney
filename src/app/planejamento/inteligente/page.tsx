@@ -80,7 +80,7 @@ export default function SmartPlanningPage() {
               </p>
               <Button 
                 onClick={() => router.push('/planejamento/inteligente/criar')}
-                className="bg-white text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800 shadow-lg transition-all duration-300 rounded-full px-8 py-6 text-lg font-semibold"
+                className="bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg transition-all duration-300 rounded-full px-8 py-6 text-lg font-semibold"
               >
                 Criar Novo Plano <Plus className="ml-2 h-5 w-5" />
               </Button>
