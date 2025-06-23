@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { PlanningService, StudyPlanSession } from '@/services/planning.service';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { format, addDays, startOfWeek, endOfWeek, isWithinInterval, parseISO, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -74,11 +73,58 @@ const messages = {
   showMore: total => `+ ${total} mais`,
 };
 
+// Componente para a barra de ferramentas personalizada do calendário
+const CustomToolbar = (toolbar: any) => {
+  const goToBack = () => {
+    toolbar.onNavigate('PREV');
+  };
+  
+  const goToNext = () => {
+    toolbar.onNavigate('NEXT');
+  };
+  
+  const goToCurrent = () => {
+    toolbar.onNavigate('TODAY');
+  };
+
+  // Traduz os nomes das visualizações
+  const viewNames: Record<string, string> = {
+    month: 'Mês',
+    week: 'Semana',
+    day: 'Dia',
+    agenda: 'Agenda'
+  };
+  
+  return (
+    <div className="rbc-toolbar">
+      <span className="rbc-btn-group">
+        <button type="button" onClick={goToBack} className="hover:bg-gray-100">Anterior</button>
+        <button type="button" onClick={goToCurrent} className="hover:bg-gray-100">Hoje</button>
+        <button type="button" onClick={goToNext} className="hover:bg-gray-100">Próximo</button>
+      </span>
+      <span className="rbc-toolbar-label">{toolbar.label}</span>
+      <span className="rbc-btn-group">
+        {toolbar.views.map((view: string) => (
+          <button
+            key={view}
+            type="button"
+            onClick={() => toolbar.onView(view)}
+            className={`hover:bg-gray-100 ${toolbar.view === view ? 'rbc-active' : ''}`}
+          >
+            {viewNames[view] || view}
+          </button>
+        ))}
+      </span>
+    </div>
+  );
+};
+
 export default function PlanejamentoPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [weekSessions, setWeekSessions] = useState<StudyPlanSession[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState('semana');
+  const [calendarView, setCalendarView] = useState('month');
   const [disciplineNames, setDisciplineNames] = useState<Record<number, string>>({});
   const [metrics, setMetrics] = useState({
     totalPlanned: 0,
@@ -267,18 +313,20 @@ export default function PlanejamentoPage() {
         <div className="relative">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Planejamento de Estudos</h1>
-                <p className="text-gray-600 mt-1 md:mt-2">
+                <h1 className="text-2xl md:text-3xl font-bold text-white">Planejamento de Estudos</h1>
+                <p className="text-blue-100 mt-1 md:mt-2 mb-4">
                   Organize suas semanas de estudo e acompanhe seu progresso
                 </p>
               </div>
               
               <div className="flex items-center gap-2">
-                <button className="px-4 py-2 rounded-lg bg-white border border-gray-200 shadow-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2">
+                <button className="px-4 py-2 rounded-lg bg-white border border-gray-200 shadow-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                  onClick={() => router.push('/planejamento/nova-sessao')}>
                   <Settings className="h-4 w-4" />
                   <span>Configurações</span>
                 </button>
-                <button className="px-4 py-2 rounded-lg bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 transition-colors flex items-center gap-2">
+                <button className="px-4 py-2 rounded-lg bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                  onClick={() => router.push('/planejamento/nova-sessao')}>
                   <PlusCircle className="h-4 w-4" />
                   <span>Nova Sessão</span>
                 </button>
@@ -374,26 +422,27 @@ export default function PlanejamentoPage() {
             <div className="absolute bottom-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600"></div>
           </div>
 
-          {/* Abas melhoradas */}
-            <Tabs defaultValue="semana" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 p-1 bg-gray-100/80 backdrop-blur-sm rounded-xl mb-6">
-                <TabsTrigger 
-                  value="semana" 
-                  className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm"
+          {/* Abas substituídas por botões */}
+            <div className="w-full">
+              <div className="flex justify-center space-x-4 mb-6">
+                <Button
+                  variant={activeTab === 'semana' ? 'default' : 'outline'}
+                  onClick={() => setActiveTab('semana')}
                 >
                   <ListTodo className="h-4 w-4 mr-2" />
                   Visão Semanal
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="calendario"
-                  className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm"
+                </Button>
+                <Button
+                  variant={activeTab === 'calendario' ? 'default' : 'outline'}
+                  onClick={() => setActiveTab('calendario')}
                 >
                   <CalendarIcon className="h-4 w-4 mr-2" />
                   Calendário
-                </TabsTrigger>
-              </TabsList>
+                </Button>
+              </div>
               
-            <TabsContent value="semana" className="mt-2">
+                          {activeTab === 'semana' && (
+                <div className="mt-2">
                 {isLoading ? (
                   <div className="flex justify-center items-center h-64">
                     <div className="flex flex-col items-center">
@@ -727,7 +776,14 @@ export default function PlanejamentoPage() {
                           <Button 
                             variant="outline"
                             className="border-blue-200 text-blue-700 hover:bg-blue-50"
-                            onClick={() => document.querySelector('[data-value="calendario"]')?.dispatchEvent(new Event('click'))}
+                            onClick={() => {
+                              setActiveTab('calendario');
+                              // Encontra o elemento TabsTrigger com value="calendario" e clica nele
+                              const tabsElement = document.querySelector('[value="calendario"]') as HTMLElement;
+                              if (tabsElement) {
+                                tabsElement.click();
+                              }
+                            }}
                           >
                             <CalendarIcon className="h-4 w-4 mr-2" />
                             Ver Calendário Completo
@@ -735,11 +791,13 @@ export default function PlanejamentoPage() {
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </TabsContent>
+                                      </div>
+                  )}
+                </div>
+              )}
               
-            <TabsContent value="calendario" className="mt-2">
+                          {activeTab === 'calendario' && (
+                <div className="mt-2">
               <div className="space-y-6">
                 {/* Header simplificado do calendário */}
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg overflow-hidden">
@@ -943,6 +1001,7 @@ export default function PlanejamentoPage() {
                           color: #2563eb !important;
                           border-color: #bfdbfe !important;
                           font-weight: 600 !important;
+                          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
                         }
                         
                         .rbc-row-segment {
@@ -1015,11 +1074,19 @@ export default function PlanejamentoPage() {
                         startAccessor="start"
                         endAccessor="end"
                         views={['month', 'week', 'day', 'agenda']}
-                        defaultView="month"
-                        defaultDate={selectedDate}
+                        view={calendarView}
+                        date={selectedDate}
                         onNavigate={(date: Date) => setSelectedDate(date)}
+                        onView={(view) => setCalendarView(view)}
                         onSelectEvent={(event: any) => {
                           setSelectedDate(event.start);
+                          if (activeTab !== 'semana') {
+                            setActiveTab('semana');
+                            const tabsElement = document.querySelector('[value="semana"]') as HTMLElement;
+                            if (tabsElement) {
+                              tabsElement.click();
+                            }
+                          }
                         }}
                         onSelectSlot={({ start }: { start: Date }) => {
                           setSelectedDate(start);
@@ -1035,6 +1102,9 @@ export default function PlanejamentoPage() {
                           dayHeaderFormat: (date: Date) => format(date, "dd 'de' MMMM", { locale: ptBR }),
                           dayRangeHeaderFormat: ({ start, end }: { start: Date; end: Date }) => 
                             `${format(start, 'd', { locale: ptBR })} - ${format(end, 'd MMM', { locale: ptBR })}`
+                        }}
+                        components={{
+                          toolbar: CustomToolbar
                         }}
                         eventPropGetter={(event: any) => {
                           // Usar a cor associada à disciplina
@@ -1257,9 +1327,10 @@ export default function PlanejamentoPage() {
                   </div>
                 </div>
               </div>
-            </TabsContent>
-            </Tabs>
-    </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

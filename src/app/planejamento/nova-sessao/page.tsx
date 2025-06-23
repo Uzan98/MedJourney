@@ -84,16 +84,28 @@ export default function NovaSessaoPage() {
       const scheduledDate = new Date(date);
       scheduledDate.setHours(hours, minutes, 0, 0);
 
+      // Criamos uma string de data ISO no formato local, sem conversão para UTC
+      // Formato: 'YYYY-MM-DDT00:00:00.000-03:00'
+      const isoDateString = scheduledDate.getFullYear() + '-' + 
+                            String(scheduledDate.getMonth() + 1).padStart(2, '0') + '-' +
+                            String(scheduledDate.getDate()).padStart(2, '0') + 'T' +
+                            String(scheduledDate.getHours()).padStart(2, '0') + ':' +
+                            String(scheduledDate.getMinutes()).padStart(2, '0') + ':00';
+
       // Criar objeto da sessão
       const sessionData: Omit<StudyPlanSession, 'id' | 'created_at' | 'updated_at'> = {
         title: title || 'Sessão de estudo',
         notes: description,
         discipline_id: parseInt(disciplineId),
-        scheduled_date: scheduledDate.toISOString(),
+        scheduled_date: scheduledDate.toISOString(), // Mantemos toISOString() por compatibilidade com API
         duration_minutes: parseInt(duration),
         status: 'agendada',
         user_id: '' // Será preenchido pelo serviço
       };
+
+      console.log('Data original:', scheduledDate);
+      console.log('Data em ISO:', sessionData.scheduled_date);
+      console.log('Hora local Brasil:', new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }));
 
       // Salvar no banco de dados
       const result = await PlanningService.createPlannedSession(sessionData);
@@ -130,11 +142,11 @@ export default function NovaSessaoPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <Link 
           href="/planejamento" 
-          className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors mb-6 group"
+          className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors mb-8 group"
         >
           <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-2 group-hover:bg-blue-200 transition-colors">
             <ArrowLeft className="h-4 w-4" />
@@ -150,8 +162,8 @@ export default function NovaSessaoPage() {
           <Card className="border-0 shadow-lg overflow-hidden bg-white/80 backdrop-blur-sm">
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
             
-            <CardHeader className="pb-0">
-              <div className="flex items-center space-x-2 mb-2">
+            <CardHeader className="pb-4 pt-8 px-8">
+              <div className="flex items-center space-x-3 mb-3">
                 <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg text-white">
                   <CalendarFull className="h-5 w-5" />
                 </div>
@@ -159,42 +171,44 @@ export default function NovaSessaoPage() {
                   Nova Sessão de Estudo
                 </CardTitle>
               </div>
-              <CardDescription className="text-gray-500">
+              <CardDescription className="text-gray-500 text-base">
                 Planeje uma nova sessão de estudo para otimizar seu aprendizado
               </CardDescription>
             </CardHeader>
             
             <form onSubmit={handleSubmit}>
-              <CardContent className="space-y-6 pt-6">
+              <CardContent className="space-y-8 pt-6 px-8">
                 {/* Título e disciplina na mesma linha em telas maiores */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
                     <Label htmlFor="title" className="text-sm font-medium flex items-center">
                       <FileText className="h-4 w-4 mr-1.5 text-blue-500" />
                       Título da sessão
                     </Label>
+                    <div className="h-11">
                     <Input
                       id="title"
                       placeholder="Ex: Revisão de anatomia"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                        className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 h-11"
                     />
+                    </div>
                   </div>
                   
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label htmlFor="discipline" className="text-sm font-medium flex items-center">
                       <BookOpen className="h-4 w-4 mr-1.5 text-blue-500" />
                       Disciplina
                     </Label>
                     {isLoading ? (
-                      <div className="flex items-center space-x-2 h-10 border rounded-md px-3 border-gray-200 bg-gray-50">
+                      <div className="flex items-center space-x-2 h-11 border rounded-md px-3 border-gray-200 bg-gray-50">
                         <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
                         <span className="text-sm text-gray-500">Carregando disciplinas...</span>
                       </div>
                     ) : (
                       <Select value={disciplineId} onValueChange={setDisciplineId}>
-                        <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500">
+                        <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 h-11">
                           <SelectValue placeholder="Selecione uma disciplina" />
                         </SelectTrigger>
                         <SelectContent>
@@ -223,8 +237,8 @@ export default function NovaSessaoPage() {
                 </div>
                 
                 {/* Data, hora e duração */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="space-y-3">
                     <Label className="text-sm font-medium flex items-center">
                       <CalendarIcon className="h-4 w-4 mr-1.5 text-blue-500" />
                       Data
@@ -234,7 +248,7 @@ export default function NovaSessaoPage() {
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full justify-start text-left font-normal border-gray-200 hover:bg-blue-50 hover:text-blue-600",
+                            "w-full justify-start text-left font-normal border-gray-200 hover:bg-blue-50 hover:text-blue-600 h-11",
                             !date && "text-muted-foreground"
                           )}
                         >
@@ -255,32 +269,29 @@ export default function NovaSessaoPage() {
                     </Popover>
                   </div>
                   
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label htmlFor="time" className="text-sm font-medium flex items-center">
                       <Clock className="h-4 w-4 mr-1.5 text-blue-500" />
                       Horário
                     </Label>
-                    <div className="relative">
+                    <div className="relative flex items-center">
                       <Input
                         id="time"
                         type="time"
                         value={time}
                         onChange={(e) => setTime(e.target.value)}
-                        className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                        className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 h-11"
                       />
-                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-500">
-                        <Clock className="h-4 w-4" />
-                      </div>
                     </div>
                   </div>
                   
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label htmlFor="duration" className="text-sm font-medium flex items-center">
                       <Timer className="h-4 w-4 mr-1.5 text-blue-500" />
                       Duração
                     </Label>
                     <Select value={duration} onValueChange={setDuration}>
-                      <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500">
+                      <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 h-11">
                         <SelectValue placeholder="Selecione a duração" />
                       </SelectTrigger>
                       <SelectContent>
@@ -296,7 +307,7 @@ export default function NovaSessaoPage() {
                 </div>
                 
                 {/* Descrição */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label htmlFor="description" className="text-sm font-medium flex items-center">
                     <GraduationCap className="h-4 w-4 mr-1.5 text-blue-500" />
                     Descrição (opcional)
@@ -312,14 +323,14 @@ export default function NovaSessaoPage() {
                 </div>
                 
                 {/* Dica para estudo eficiente */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-5 border border-blue-100">
                   <div className="flex items-start">
-                    <div className="p-1.5 bg-blue-100 rounded-full text-blue-600 mr-3">
+                    <div className="p-1.5 bg-blue-100 rounded-full text-blue-600 mr-3 mt-0.5">
                       <Sparkles className="h-4 w-4" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium text-blue-800 mb-1">Dica para estudo eficiente</h4>
-                      <p className="text-xs text-blue-700">
+                      <h4 className="text-sm font-medium text-blue-800 mb-1.5">Dica para estudo eficiente</h4>
+                      <p className="text-xs text-blue-700 leading-relaxed">
                         Estudos mostram que sessões de 25-45 minutos com pequenos intervalos maximizam a retenção de informações.
                         Considere usar a técnica Pomodoro para melhorar seu foco e produtividade.
                       </p>
@@ -328,12 +339,12 @@ export default function NovaSessaoPage() {
                 </div>
               </CardContent>
               
-              <CardFooter className="flex justify-between pt-2 pb-6 px-6 border-t border-gray-100">
+              <CardFooter className="flex justify-between pt-4 pb-8 px-8 border-t border-gray-100 mt-4">
                 <Button 
                   type="button" 
                   variant="outline" 
                   onClick={() => router.push('/planejamento')}
-                  className="border-gray-200 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                  className="border-gray-200 hover:bg-gray-50 hover:text-gray-900 transition-colors h-11 px-5"
                 >
                   Cancelar
                 </Button>
@@ -341,7 +352,7 @@ export default function NovaSessaoPage() {
                 <Button 
                   type="submit" 
                   disabled={isSaving || !disciplineId}
-                  className={`bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all ${!disciplineId ? 'opacity-70' : ''}`}
+                  className={`bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all h-11 px-5 ${!disciplineId ? 'opacity-70' : ''}`}
                 >
                   {isSaving ? (
                     <>
