@@ -15,7 +15,8 @@ import {
   Home,
   ChevronDown,
   ChevronRight,
-  Brain
+  Brain,
+  Trophy
 } from 'lucide-react';
 
 interface SidebarMenuProps {
@@ -92,6 +93,16 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
           path: "/comunidade/sala-estudos",
           label: "Sala de Estudos",
           icon: <Users className="h-5 w-5 flex-shrink-0" />
+        },
+        {
+          path: "/comunidade/grupos-estudos",
+          label: "Grupos de Estudos",
+          icon: <Users className="h-5 w-5 flex-shrink-0" />
+        },
+        {
+          path: "/comunidade/desafios",
+          label: "Desafios",
+          icon: <Trophy className="h-5 w-5 flex-shrink-0" />
         }
       ]
     }

@@ -172,17 +172,48 @@ export class StudyStreakService {
     disciplineId?: number,
     sessionId?: number
   ): Promise<boolean> {
-    // Se temos um disciplineId, vamos usá-lo como referência
-    if (disciplineId) {
-      return this.recordActivity(
-        'study_session', 
-        disciplineId, 
-        'discipline', 
-        durationMinutes
-      );
+    try {
+      // Se temos um disciplineId, vamos usá-lo como referência
+      if (disciplineId) {
+        await this.recordActivity(
+          'study_session', 
+          disciplineId, 
+          'discipline', 
+          durationMinutes
+        );
+      }
+      // Caso contrário, usamos o sessionId como referência (comportamento anterior)
+      else {
+        await this.recordActivity('study_session', sessionId, 'session', durationMinutes);
+      }
+      
+      // Atualizar os desafios de tempo de estudo
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+        
+        if (userId) {
+          // Chamar a função RPC para registrar o tempo de estudo nos desafios
+          // Esta função vai atualizar os desafios do tipo 'study_time'
+          const { error } = await supabase.rpc('register_study_time_in_challenges', {
+            p_user_id: userId,
+            p_duration_minutes: durationMinutes
+          });
+          
+          if (error) {
+            console.warn('Erro ao atualizar desafios de tempo de estudo:', error);
+          }
+        }
+      } catch (challengeError) {
+        // Apenas registrar o erro, mas não falhar a operação principal
+        console.warn('Erro ao atualizar desafios de tempo de estudo:', challengeError);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erro ao registrar sessão de estudo:', error);
+      return false;
     }
-    // Caso contrário, usamos o sessionId como referência (comportamento anterior)
-    return this.recordActivity('study_session', sessionId, 'session', durationMinutes);
   }
   
   /**
@@ -242,6 +273,19 @@ export class StudyStreakService {
           console.error('Erro ao criar registro de sequência:', error);
           return false;
         }
+      }
+      
+      // Atualizar desafios do tipo 'study_streak' se houver
+      try {
+        if (userId && streak.currentStreak > 0) {
+          // Chamar a função RPC para atualizar desafios de streak
+          await supabase.rpc('update_streak_challenges', {
+            p_user_id: userId,
+            p_streak_value: streak.currentStreak
+          });
+        }
+      } catch (challengeError) {
+        console.warn('Erro ao atualizar desafios de streak:', challengeError);
       }
       
       return true;
