@@ -33,6 +33,8 @@ import {
 } from 'lucide-react';
 import QuickStudySessionModal from '@/components/estudos/QuickStudySessionModal';
 import MobileDashboard from '@/components/MobileDashboard';
+import AchievementsWidget from '@/components/gamification/AchievementsWidget';
+import LevelProgressWidget from '@/components/gamification/LevelProgressWidget';
 
 // Função auxiliar para gerar dias da semana
 const getDaysOfWeek = () => {
@@ -610,6 +612,11 @@ export default function DashboardPage() {
       </div>
       
       <div className="container mx-auto px-6 py-8">
+        {/* Widget de Progresso de Nível */}
+        <div className="mb-8">
+          <LevelProgressWidget />
+        </div>
+        
         {/* Seção de Sequência de Estudos */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
@@ -854,6 +861,9 @@ export default function DashboardPage() {
               
               {renderImportanceChart()}
             </div>
+            
+            {/* Widget de Conquistas */}
+            <AchievementsWidget />
             
             {/* Acesso rápido */}
             <div className="bg-white rounded-xl shadow-sm p-6">

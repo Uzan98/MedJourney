@@ -7,14 +7,8 @@ import {
   LayoutDashboard, 
   BookOpen, 
   Home,
-  FileQuestion, 
-  BookText,
-  Users,
-  Plus,
   Calendar,
-  ClipboardList,
-  Settings,
-  GraduationCap
+  MoreHorizontal
 } from 'lucide-react';
 
 interface MobileMenuProps {
@@ -49,7 +43,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
   // Check if we should render the menu
   // Don't render on protected routes unless forceShow is true
   useEffect(() => {
-    const protectedPaths = ['/dashboard', '/estudos', '/banco-questoes', '/simulados', '/comunidade', '/planejamento', '/configuracoes', '/disciplinas'];
+    const protectedPaths = ['/dashboard', '/estudos', '/banco-questoes', '/simulados', '/comunidade', '/planejamento', '/configuracoes', '/disciplinas', '/mais'];
     
     // Check if current path is a protected path or a subpath of one
     const isProtectedRoute = protectedPaths.some(path => 
@@ -60,7 +54,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
     setShouldRender(!isProtectedRoute || forceShow);
   }, [pathname, forceShow]);
 
-  // Primary menu items (always visible)
+  // Menu items reduzido
   const primaryMenuItems = [
     {
       path: "/dashboard",
@@ -78,24 +72,9 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
       icon: <Calendar className="h-5 w-5" />
     },
     {
-      path: "/estudos",
-      label: "Estudos",
-      icon: <BookText className="h-5 w-5" />
-    },
-    {
-      path: "/banco-questoes",
-      label: "Questões",
-      icon: <FileQuestion className="h-5 w-5" />
-    },
-    {
-      path: "/simulados",
-      label: "Simulados",
-      icon: <ClipboardList className="h-5 w-5" />
-    },
-    {
-      path: "/comunidade",
-      label: "Social",
-      icon: <Users className="h-5 w-5" />
+      path: "/mais",
+      label: "Mais",
+      icon: <MoreHorizontal className="h-5 w-5" />
     }
   ];
 

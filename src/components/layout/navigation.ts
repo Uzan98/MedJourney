@@ -8,6 +8,7 @@ import {
   Briefcase,
   Calendar,
   FileQuestion,
+  MoreHorizontal,
 } from "lucide-react";
 
 export const navbarMenu = [
@@ -34,5 +35,33 @@ export const navbarMenu = [
     href: "/banco-questoes",
     icon: FileQuestion,
     color: "text-indigo-500",
+  },
+];
+
+// Rotas para o menu "Mais" no mobile
+export const maisMenu = [
+  {
+    title: "Estudos",
+    href: "/estudos",
+    icon: BookOpen,
+    description: "Sessões de estudo e anotações",
+  },
+  {
+    title: "Banco de Questões",
+    href: "/banco-questoes",
+    icon: FileQuestion,
+    description: "Pratique com questões",
+  },
+  {
+    title: "Simulados",
+    href: "/simulados",
+    icon: ClipboardList,
+    description: "Prepare-se com simulados",
+  },
+  {
+    title: "Comunidade",
+    href: "/comunidade",
+    icon: Users,
+    description: "Estude com outros alunos",
   },
 ]; 

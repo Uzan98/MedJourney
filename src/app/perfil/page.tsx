@@ -20,7 +20,12 @@ import {
   ClipboardList,
   FileQuestion,
   Users,
-  LogOut
+  LogOut,
+  Trophy,
+  Star,
+  Target,
+  TrendingUp,
+  ChevronRight
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
@@ -47,7 +52,10 @@ export default function ProfilePage() {
     completedSessions: 0,
     completedExams: 0,
     questionsAnswered: 0,
-    streak: 0
+    streak: 0,
+    level: 1,
+    xp: 0,
+    achievements: 0
   });
 
   // Lista de especialidades médicas para o select
@@ -87,7 +95,10 @@ export default function ProfilePage() {
           completedSessions: 42,
           completedExams: 15,
           questionsAnswered: 534,
-          streak: 12
+          streak: 12,
+          level: 5,
+          xp: 2350,
+          achievements: 8
         });
       } catch (error) {
         console.error('Erro ao buscar estatísticas:', error);
@@ -454,7 +465,83 @@ export default function ProfilePage() {
       </div>
       
       {/* Seções adicionais */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Bloco de Gamificação */}
+        <div className="bg-white rounded-xl shadow-md border border-gray-100 mb-8">
+          <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+            <h2 className="text-lg font-bold text-gray-900">Gamificação</h2>
+            <Link href="/perfil/gamificacao" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+              Ver tudo
+            </Link>
+          </div>
+          
+          <div className="p-6">
+            {/* Resumo de Nível e Conquistas */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+              <div className="flex items-center mb-4 md:mb-0">
+                <div className="p-3 bg-blue-100 rounded-full mr-4">
+                  <Trophy className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">Nível {stats.level || 1}</h3>
+                  <p className="text-sm text-gray-600">{stats.xp || 0} XP</p>
+                </div>
+              </div>
+              <div className="flex items-center">
+                <div className="p-3 bg-amber-100 rounded-full mr-4">
+                  <Award className="h-6 w-6 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">{stats.achievements || 0}</h3>
+                  <p className="text-sm text-gray-600">Conquistas</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Links para perfil de gamificação */}
+            <div className="space-y-3">
+              <Link 
+                href="/perfil/gamificacao" 
+                className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <div className="flex items-center">
+                  <div className="p-2 bg-blue-100 rounded-md mr-3">
+                    <Star className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <span className="text-gray-700">Conquistas e Distintivos</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+              </Link>
+              
+              <Link 
+                href="/perfil/gamificacao" 
+                className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <div className="flex items-center">
+                  <div className="p-2 bg-purple-100 rounded-md mr-3">
+                    <Target className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <span className="text-gray-700">Desafios Ativos</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+              </Link>
+              
+              <Link 
+                href="/perfil/gamificacao" 
+                className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <div className="flex items-center">
+                  <div className="p-2 bg-amber-100 rounded-md mr-3">
+                    <TrendingUp className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <span className="text-gray-700">Rankings e Classificações</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Atividades Recentes */}
         <div className="bg-white rounded-xl shadow-md border border-gray-100 lg:col-span-2">
           <div className="p-6 border-b border-gray-100">

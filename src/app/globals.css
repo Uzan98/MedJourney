@@ -6,6 +6,18 @@
   /* Definição global de fontes */
   html {
     font-family: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* Estilo base para botões da landing page */
+  .btn {
+    @apply inline-block justify-center px-5 py-3 font-medium text-center transition duration-150 ease-in-out rounded-lg shadow-md;
+  }
+
+  .btn-sm {
+    @apply inline-block justify-center px-4 py-2 font-medium text-center transition duration-150 ease-in-out rounded-md shadow-sm;
   }
 }
 
