@@ -133,6 +133,9 @@ export class StudyStreakService {
         }
       }
       
+      // Após registrar uma atividade, atualizar a streak do usuário
+      await this.getStudyStreak();
+      
       return true;
     } catch (error) {
       console.error('Erro ao registrar atividade de estudo:', error);
@@ -183,6 +186,72 @@ export class StudyStreakService {
   }
   
   /**
+   * Atualiza ou cria o registro de sequência do usuário
+   * @param streak Dados de sequência calculados
+   * @returns Promise com o resultado da operação
+   */
+  static async updateStudyStreakRecord(streak: StudyStreak): Promise<boolean> {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      
+      if (!userId) {
+        console.error('Usuário não autenticado');
+        return false;
+      }
+      
+      // Verificar se já existe um registro para o usuário
+      const { data: existingRecord } = await supabase
+        .from('study_streaks')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      const today = format(new Date(), 'yyyy-MM-dd');
+      
+      if (existingRecord) {
+        // Atualizar registro existente, mantendo o longest_streak se for maior
+        const longestStreak = Math.max(existingRecord.longest_streak, streak.longestStreak);
+        
+        const { error } = await supabase
+          .from('study_streaks')
+          .update({
+            current_streak: streak.currentStreak,
+            longest_streak: longestStreak,
+            last_study_date: today,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', userId);
+        
+        if (error) {
+          console.error('Erro ao atualizar registro de sequência:', error);
+          return false;
+        }
+      } else {
+        // Criar novo registro
+        const { error } = await supabase
+          .from('study_streaks')
+          .insert({
+            user_id: userId,
+            current_streak: streak.currentStreak,
+            longest_streak: streak.longestStreak,
+            last_study_date: today
+          });
+        
+        if (error) {
+          console.error('Erro ao criar registro de sequência:', error);
+          return false;
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erro ao persistir dados de sequência:', error);
+      return false;
+    }
+  }
+  
+  /**
    * Obtém os dados de sequência (streak) de estudo do usuário atual
    * @returns Promise com os dados de sequência
    */
@@ -208,23 +277,33 @@ export class StudyStreakService {
       }
       
       if (!data || data.length === 0) {
-        return {
+        const emptyStreak = {
           currentStreak: 0,
           longestStreak: 0,
           totalDaysStudied: 0,
           weekDays: this.generateWeekDays([])
         };
+        
+        // Persistir os dados vazios
+        await this.updateStudyStreakRecord(emptyStreak);
+        
+        return emptyStreak;
       }
       
       const streakData = data[0];
       
       // Preparar os dados para a visualização
-      return {
+      const streak = {
         currentStreak: streakData.current_streak || 0,
         longestStreak: streakData.longest_streak || 0,
         totalDaysStudied: streakData.total_days || 0,
         weekDays: this.generateWeekDays(streakData.streak_dates || [])
       };
+      
+      // Persistir os dados calculados
+      await this.updateStudyStreakRecord(streak);
+      
+      return streak;
     } catch (error) {
       console.error('Erro ao obter dados de sequência:', error);
       return null;
