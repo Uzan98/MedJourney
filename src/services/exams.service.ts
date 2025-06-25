@@ -1064,4 +1064,204 @@ export class ExamsService {
       return [];
     }
   }
+
+  /**
+   * Obter dados de desempenho em simulados por disciplina para o gráfico
+   */
+  static async getPerformanceByDisciplineForChart(): Promise<any[]> {
+    try {
+      console.log('Obtendo dados de desempenho por disciplina para o gráfico...');
+      
+      // Obter desempenho por disciplina
+      const performanceData = await this.getUserPerformanceByDiscipline();
+      
+      if (!performanceData || performanceData.length === 0) {
+        console.log('Nenhum dado de desempenho por disciplina encontrado');
+        return [];
+      }
+      
+      // Obter dados históricos (tentativas ao longo do tempo)
+      const attempts = await this.getUserAttempts();
+      
+      if (!attempts || attempts.length === 0) {
+        console.log('Nenhuma tentativa de simulado encontrada');
+        return [];
+      }
+      
+      // Filtrar apenas tentativas completas e ordenar por data
+      const completedAttempts = attempts
+        .filter(attempt => attempt.completed_at)
+        .sort((a, b) => {
+          const dateA = new Date(a.completed_at || a.created_at || '');
+          const dateB = new Date(b.completed_at || b.created_at || '');
+          return dateA.getTime() - dateB.getTime();
+        });
+      
+      // Agrupar tentativas por data
+      const attemptsByDate = new Map<string, any[]>();
+      
+      completedAttempts.forEach(attempt => {
+        const date = new Date(attempt.completed_at || attempt.created_at || '');
+        const dateStr = date.toLocaleDateString('pt-BR');
+        
+        if (!attemptsByDate.has(dateStr)) {
+          attemptsByDate.set(dateStr, []);
+        }
+        
+        attemptsByDate.get(dateStr)?.push(attempt);
+      });
+      
+      // Calcular desempenho por disciplina para cada data
+      const dates = Array.from(attemptsByDate.keys());
+      const disciplineData: Record<string, { name: string, data: number[], dates: string[] }> = {};
+      
+      for (const discipline of performanceData) {
+        disciplineData[discipline.name] = {
+          name: discipline.name,
+          data: [],
+          dates: []
+        };
+      }
+      
+      // Para cada data, calcular o desempenho por disciplina
+      for (const date of dates) {
+        const attemptsForDate = attemptsByDate.get(date) || [];
+        
+        // Para cada tentativa nesta data, obter desempenho por disciplina
+        for (const attempt of attemptsForDate) {
+          if (!attempt.id) continue;
+          
+          const attemptPerformance = await this.getAttemptPerformanceByDiscipline(attempt.id);
+          
+          // Atualizar dados de desempenho para cada disciplina
+          for (const discipline of attemptPerformance) {
+            if (!disciplineData[discipline.name]) {
+              disciplineData[discipline.name] = {
+                name: discipline.name,
+                data: [],
+                dates: []
+              };
+            }
+            
+            disciplineData[discipline.name].data.push(discipline.score);
+            disciplineData[discipline.name].dates.push(date);
+          }
+        }
+      }
+      
+      // Converter para array
+      return Object.values(disciplineData)
+        .filter(d => d.data.length > 0) // Filtrar apenas disciplinas com dados
+        .sort((a, b) => {
+          // Calcular média de desempenho
+          const avgA = a.data.reduce((sum, val) => sum + val, 0) / a.data.length;
+          const avgB = b.data.reduce((sum, val) => sum + val, 0) / b.data.length;
+          return avgB - avgA; // Ordenar por média (decrescente)
+        });
+      
+    } catch (error) {
+      console.error('Erro ao obter dados de desempenho por disciplina para o gráfico:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Obter dados de desempenho em simulados por assunto para o gráfico
+   */
+  static async getPerformanceBySubjectForChart(): Promise<any[]> {
+    try {
+      console.log('Obtendo dados de desempenho por assunto para o gráfico...');
+      
+      // Obter desempenho por assunto
+      const performanceData = await this.getUserPerformanceBySubject();
+      
+      if (!performanceData || performanceData.length === 0) {
+        console.log('Nenhum dado de desempenho por assunto encontrado');
+        return [];
+      }
+      
+      // Obter dados históricos (tentativas ao longo do tempo)
+      const attempts = await this.getUserAttempts();
+      
+      if (!attempts || attempts.length === 0) {
+        console.log('Nenhuma tentativa de simulado encontrada');
+        return [];
+      }
+      
+      // Filtrar apenas tentativas completas e ordenar por data
+      const completedAttempts = attempts
+        .filter(attempt => attempt.completed_at)
+        .sort((a, b) => {
+          const dateA = new Date(a.completed_at || a.created_at || '');
+          const dateB = new Date(b.completed_at || b.created_at || '');
+          return dateA.getTime() - dateB.getTime();
+        });
+      
+      // Agrupar tentativas por data
+      const attemptsByDate = new Map<string, any[]>();
+      
+      completedAttempts.forEach(attempt => {
+        const date = new Date(attempt.completed_at || attempt.created_at || '');
+        const dateStr = date.toLocaleDateString('pt-BR');
+        
+        if (!attemptsByDate.has(dateStr)) {
+          attemptsByDate.set(dateStr, []);
+        }
+        
+        attemptsByDate.get(dateStr)?.push(attempt);
+      });
+      
+      // Calcular desempenho por assunto para cada data
+      const dates = Array.from(attemptsByDate.keys());
+      const subjectData: Record<string, { name: string, data: number[], dates: string[] }> = {};
+      
+      for (const subject of performanceData) {
+        subjectData[subject.name] = {
+          name: subject.name,
+          data: [],
+          dates: []
+        };
+      }
+      
+      // Para cada data, calcular o desempenho por assunto
+      for (const date of dates) {
+        const attemptsForDate = attemptsByDate.get(date) || [];
+        
+        // Para cada tentativa nesta data, obter desempenho por assunto
+        for (const attempt of attemptsForDate) {
+          if (!attempt.id) continue;
+          
+          const attemptPerformance = await this.getAttemptPerformanceBySubject(attempt.id);
+          
+          // Atualizar dados de desempenho para cada assunto
+          for (const subject of attemptPerformance) {
+            if (!subjectData[subject.name]) {
+              subjectData[subject.name] = {
+                name: subject.name,
+                data: [],
+                dates: []
+              };
+            }
+            
+            subjectData[subject.name].data.push(subject.score);
+            subjectData[subject.name].dates.push(date);
+          }
+        }
+      }
+      
+      // Converter para array
+      return Object.values(subjectData)
+        .filter(s => s.data.length > 0) // Filtrar apenas assuntos com dados
+        .sort((a, b) => {
+          // Calcular média de desempenho
+          const avgA = a.data.reduce((sum, val) => sum + val, 0) / a.data.length;
+          const avgB = b.data.reduce((sum, val) => sum + val, 0) / b.data.length;
+          return avgB - avgA; // Ordenar por média (decrescente)
+        });
+      
+    } catch (error) {
+      console.error('Erro ao obter dados de desempenho por assunto para o gráfico:', error);
+      return [];
+    }
+  }
 } 

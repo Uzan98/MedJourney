@@ -12,6 +12,7 @@ import { QuestionsBankService, Question } from '@/services/questions-bank.servic
 import { ExamsService, Exam, ExamAttempt } from '@/services/exams.service';
 import { StudyRoomService, StudyRoom } from '@/services/study-room.service';
 import { setupMockStudyRooms } from '@/mocks/study-rooms-mock';
+import SimuladosPerformanceChart from '@/components/dashboard/SimuladosPerformanceChart';
 import {
   BookOpen,
   Clock,
@@ -631,6 +632,11 @@ const MobileDashboard = () => {
               </div>
             </div>
             
+            {/* Desempenho em simulados */}
+            <div className="bg-white rounded-xl p-3.5 mt-3 shadow-sm">
+              <SimuladosPerformanceChart />
+            </div>
+            
             {/* Tempo de estudo */}
             <div className="bg-white rounded-xl p-3.5 mt-3 shadow-sm">
               <div className="flex items-center justify-between mb-3">
@@ -643,24 +649,24 @@ const MobileDashboard = () => {
               {renderStudyByDisciplineChart()}
             </div>
             
-            {/* Gráficos em tabs */}
+            {/* Gráficos com botões simples */}
             <div className="bg-white rounded-xl p-3.5 mt-3 shadow-sm">
-              <div className="flex border-b border-gray-200 mb-3 pb-1">
+              <div className="flex gap-2 mb-3">
                 <button 
                   onClick={() => setActiveChart('dificuldade')}
-                  className={`py-1.5 px-3 text-sm font-medium rounded-t-lg transition-colors
+                  className={`py-1.5 px-3 text-sm font-medium rounded-md transition-colors
                     ${activeChart === 'dificuldade' ? 
-                      'bg-blue-50 text-blue-600 border-b-2 border-blue-500' : 
-                      'text-gray-500 hover:text-gray-700'}`}
+                      'bg-blue-600 text-white shadow-sm' : 
+                      'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                 >
                   Dificuldade
                 </button>
                 <button 
                   onClick={() => setActiveChart('importancia')}
-                  className={`py-1.5 px-3 text-sm font-medium rounded-t-lg transition-colors
+                  className={`py-1.5 px-3 text-sm font-medium rounded-md transition-colors
                     ${activeChart === 'importancia' ? 
-                      'bg-purple-50 text-purple-600 border-b-2 border-purple-500' : 
-                      'text-gray-500 hover:text-gray-700'}`}
+                      'bg-purple-600 text-white shadow-sm' : 
+                      'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                 >
                   Importância
                 </button>
@@ -1318,6 +1324,8 @@ const MobileDashboard = () => {
                 )}
               </div>
             )}
+            
+
             
             {/* Caixa de dica */}
             <div className="bg-purple-50 rounded-xl p-3.5 border-l-4 border-purple-500 shadow-sm">

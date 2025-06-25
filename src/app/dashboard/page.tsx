@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import QuickStudySessionModal from '@/components/estudos/QuickStudySessionModal';
 import MobileDashboard from '@/components/MobileDashboard';
+import SimuladosPerformanceChart from '@/components/dashboard/SimuladosPerformanceChart';
 
 // Função auxiliar para gerar dias da semana
 const getDaysOfWeek = () => {
@@ -698,6 +699,11 @@ export default function DashboardPage() {
           </div>
         </div>
         
+        {/* Gráfico de desempenho em simulados */}
+        <div className="mt-8 mb-8">
+          <SimuladosPerformanceChart />
+        </div>
+        
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Área principal */}
           <div className="lg:col-span-2 space-y-6">
@@ -901,6 +907,8 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+        
+
         
         {/* Dica para estudos */}
         <div className="mt-8 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl shadow-sm p-6 text-white">
