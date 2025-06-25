@@ -15,7 +15,7 @@ import {
   Filler
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
-import { BarChart3, BookOpen, ArrowUpRight, ListFilter } from 'lucide-react';
+import { BarChart3, BookOpen, ArrowUpRight, ListFilter, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { ExamsService } from '@/services/exams.service';
 import { Discipline } from '@/lib/supabase';
@@ -62,6 +62,8 @@ const SimuladosPerformanceChart = () => {
   const [examsBySubject, setExamsBySubject] = useState<GroupedPerformance[]>([]);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [selectedDiscipline, setSelectedDiscipline] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 7; // Mostrar 7 simulados por vez
 
   // Função para gerar cores
   const generateColor = (index: number) => {
@@ -171,12 +173,80 @@ const SimuladosPerformanceChart = () => {
       })
     : examsBySubject;
 
+  // Obter os dados com base na página atual
+  const getPagedData = () => {
+    const allData = viewMode === 'disciplines' ? examsByDiscipline : filteredSubjects;
+    
+    // Se não houver dados suficientes, retornar todos
+    if (allData.length === 0 || allData[0]?.dates.length <= itemsPerPage) {
+      // Inverter a ordem para mostrar os mais recentes primeiro
+      return {
+        datasets: allData.map(group => ({
+          ...group,
+          data: [...group.data].reverse(),
+          dates: [...group.dates].reverse()
+        })),
+        labels: allData.length > 0 && allData[0]?.dates ? [...allData[0].dates].reverse() : [],
+        totalPages: 1
+      };
+    }
+    
+    // Inverter os dados para mostrar os mais recentes primeiro
+    const reversedData = allData.map(group => ({
+      ...group,
+      data: [...group.data].reverse(),
+      dates: [...group.dates].reverse()
+    }));
+    
+    // Calcular o número total de páginas
+    const totalPages = Math.ceil(reversedData[0].dates.length / itemsPerPage);
+    
+    // Garantir que a página atual é válida
+    const validPage = Math.min(Math.max(0, currentPage), totalPages - 1);
+    if (validPage !== currentPage) {
+      setCurrentPage(validPage);
+    }
+    
+    // Calcular os índices de início e fim para a página atual
+    const startIndex = validPage * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, reversedData[0].dates.length);
+    
+    // Obter os rótulos (datas) para a página atual
+    const pagedLabels = reversedData[0].dates.slice(startIndex, endIndex);
+    
+    // Obter os dados para a página atual
+    const pagedDatasets = reversedData.map(group => ({
+      ...group,
+      data: group.data.slice(startIndex, endIndex)
+    }));
+    
+    return {
+      datasets: pagedDatasets,
+      labels: pagedLabels,
+      totalPages
+    };
+  };
+  
+  // Obter dados paginados
+  const pagedData = getPagedData();
+  
+  // Funções para navegar entre as páginas
+  const goToPreviousPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+  
+  const goToNextPage = () => {
+    if (currentPage < pagedData.totalPages - 1) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
   // Configurar dados para o gráfico
   const chartData = {
-    labels: viewMode === 'disciplines' 
-      ? examsByDiscipline.length > 0 ? examsByDiscipline[0].dates : []
-      : filteredSubjects.length > 0 ? filteredSubjects[0].dates : [],
-    datasets: (viewMode === 'disciplines' ? examsByDiscipline : filteredSubjects).map(group => ({
+    labels: pagedData.labels,
+    datasets: pagedData.datasets.map(group => ({
       label: group.name,
       data: group.data,
       backgroundColor: group.color,
@@ -238,7 +308,7 @@ const SimuladosPerformanceChart = () => {
           color: '#64748b',
           font: {
             size: 11,
-            weight: 'bold',
+            weight: 'bold' as const,
           },
           // Definir marcações específicas para evitar mostrar valores acima de 100%
           callback: function(value: string | number) {
@@ -256,7 +326,7 @@ const SimuladosPerformanceChart = () => {
           color: '#64748b',
           font: {
             size: 12,
-            weight: 'bold',
+            weight: 'bold' as const,
           },
           padding: {top: 0, bottom: 10}
         }
@@ -272,7 +342,7 @@ const SimuladosPerformanceChart = () => {
           color: '#64748b',
           font: {
             size: 11,
-            weight: 'bold',
+            weight: 'bold' as const,
           },
           maxRotation: 45,
           minRotation: 45,
@@ -283,7 +353,7 @@ const SimuladosPerformanceChart = () => {
           color: '#64748b',
           font: {
             size: 12,
-            weight: 'bold',
+            weight: 'bold' as const,
           },
           padding: {top: 10, bottom: 0}
         }
@@ -387,9 +457,44 @@ const SimuladosPerformanceChart = () => {
             </Link>
           </div>
         ) : (
-          <div style={{ height: '500px' }} className="mt-4 px-4">
-            <Bar data={chartData} options={chartOptions} />
-          </div>
+          <>
+            <div style={{ height: '500px' }} className="mt-4 px-4">
+              <Bar data={chartData} options={chartOptions} />
+            </div>
+            
+            {/* Controles de navegação */}
+            {pagedData.totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4 mt-6">
+                <button 
+                  onClick={goToPreviousPage}
+                  disabled={currentPage === 0}
+                  className={`p-2 rounded-full ${
+                    currentPage === 0 
+                      ? 'text-gray-400 cursor-not-allowed' 
+                      : 'text-indigo-600 hover:bg-indigo-50'
+                  }`}
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                
+                <span className="text-sm text-gray-600">
+                  Página {currentPage + 1} de {pagedData.totalPages}
+                </span>
+                
+                <button 
+                  onClick={goToNextPage}
+                  disabled={currentPage >= pagedData.totalPages - 1}
+                  className={`p-2 rounded-full ${
+                    currentPage >= pagedData.totalPages - 1
+                      ? 'text-gray-400 cursor-not-allowed' 
+                      : 'text-indigo-600 hover:bg-indigo-50'
+                  }`}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
