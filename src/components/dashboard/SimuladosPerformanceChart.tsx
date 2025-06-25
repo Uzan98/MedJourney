@@ -8,13 +8,14 @@ import {
   LinearScale, 
   PointElement,
   LineElement,
+  BarElement,
   Title, 
   Tooltip, 
   Legend,
   Filler
 } from 'chart.js';
-import { Line } from 'react-chartjs-2';
-import { LineChart, BookOpen, ArrowUpRight, ListFilter } from 'lucide-react';
+import { Bar } from 'react-chartjs-2';
+import { BarChart3, BookOpen, ArrowUpRight, ListFilter } from 'lucide-react';
 import Link from 'next/link';
 import { ExamsService } from '@/services/exams.service';
 import { Discipline } from '@/lib/supabase';
@@ -26,6 +27,7 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
@@ -177,14 +179,13 @@ const SimuladosPerformanceChart = () => {
     datasets: (viewMode === 'disciplines' ? examsByDiscipline : filteredSubjects).map(group => ({
       label: group.name,
       data: group.data,
+      backgroundColor: group.color,
       borderColor: group.color,
-      backgroundColor: `${group.color}20`, // Cor com transparência
-      tension: 0.3,
-      fill: false,
-      pointBackgroundColor: '#fff',
-      pointBorderColor: group.color,
-      pointBorderWidth: 2,
-      pointRadius: 4,
+      borderWidth: 1,
+      borderRadius: 4,
+      barThickness: 16,
+      maxBarThickness: 30,
+      minBarLength: 2,
     }))
   };
 
@@ -195,8 +196,8 @@ const SimuladosPerformanceChart = () => {
         position: 'bottom' as const,
         labels: {
           usePointStyle: true,
-          boxWidth: 8,
-          boxHeight: 8,
+          boxWidth: 12,
+          boxHeight: 12,
           padding: 15,
           font: {
             size: 11,
@@ -211,7 +212,7 @@ const SimuladosPerformanceChart = () => {
         borderWidth: 1,
         padding: 10,
         boxPadding: 5,
-        usePointStyle: true,
+        usePointStyle: false,
         boxWidth: 8,
         boxHeight: 8,
         cornerRadius: 4,
@@ -234,9 +235,10 @@ const SimuladosPerformanceChart = () => {
           display: false,
         },
         ticks: {
-          color: '#94a3b8',
+          color: '#64748b',
           font: {
             size: 11,
+            weight: 'bold',
           },
           // Definir marcações específicas para evitar mostrar valores acima de 100%
           callback: function(value: string | number) {
@@ -248,6 +250,16 @@ const SimuladosPerformanceChart = () => {
           // Incluir valores específicos para mostrar no eixo Y
           stepSize: 20,
         },
+        title: {
+          display: true,
+          text: 'Pontuação (%)',
+          color: '#64748b',
+          font: {
+            size: 12,
+            weight: 'bold',
+          },
+          padding: {top: 0, bottom: 10}
+        }
       },
       x: {
         grid: {
@@ -257,14 +269,29 @@ const SimuladosPerformanceChart = () => {
           display: false,
         },
         ticks: {
-          color: '#94a3b8',
+          color: '#64748b',
           font: {
             size: 11,
+            weight: 'bold',
           },
+          maxRotation: 45,
+          minRotation: 45,
         },
+        title: {
+          display: true,
+          text: 'Data',
+          color: '#64748b',
+          font: {
+            size: 12,
+            weight: 'bold',
+          },
+          padding: {top: 10, bottom: 0}
+        }
       },
     },
     maintainAspectRatio: false,
+    barPercentage: 0.8,
+    categoryPercentage: 0.8,
   };
 
   return (
@@ -273,7 +300,7 @@ const SimuladosPerformanceChart = () => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-md bg-indigo-100 text-indigo-600">
-              <LineChart className="h-5 w-5" />
+              <BarChart3 className="h-5 w-5" />
             </div>
             <h2 className="text-xl font-semibold text-gray-800">
               Desempenho em Simulados
@@ -343,7 +370,7 @@ const SimuladosPerformanceChart = () => {
         ) : (viewMode === 'disciplines' && examsByDiscipline.length === 0) || 
            (viewMode === 'subjects' && (selectedDiscipline ? filteredSubjects.length === 0 : examsBySubject.length === 0)) ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <LineChart className="h-12 w-12 text-gray-300 mb-3" />
+            <BarChart3 className="h-12 w-12 text-gray-300 mb-3" />
             <p className="text-gray-700 font-medium">Sem dados de simulados</p>
             <p className="text-sm text-gray-500 mt-1 max-w-md">
               {viewMode === 'subjects' && selectedDiscipline ? (
@@ -360,8 +387,8 @@ const SimuladosPerformanceChart = () => {
             </Link>
           </div>
         ) : (
-          <div style={{ height: '450px' }} className="mt-4 px-2">
-            <Line data={chartData} options={chartOptions} />
+          <div style={{ height: '500px' }} className="mt-4 px-4">
+            <Bar data={chartData} options={chartOptions} />
           </div>
         )}
       </div>
