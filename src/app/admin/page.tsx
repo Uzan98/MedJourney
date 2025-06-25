@@ -36,14 +36,14 @@ export default function AdminPage() {
       // Verificar status de administrador
       const adminStatus = await checkAdminStatus();
       console.log("Admin: Status de administrador:", adminStatus);
-      
+        
       if (!adminStatus) {
         console.log("Admin: Usuário não é administrador, redirecionando para dashboard");
-        router.push('/dashboard');
-        return;
-      }
-      
-      setLoading(false);
+          router.push('/dashboard');
+          return;
+        }
+        
+        setLoading(false);
     }
     
     verifyAccess();

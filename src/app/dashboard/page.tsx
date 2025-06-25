@@ -29,11 +29,15 @@ import {
   Settings,
   LogOut,
   ChevronDown,
-  Bell
+  Bell,
+  BookOpenCheck,
+  Lightbulb
 } from 'lucide-react';
 import QuickStudySessionModal from '@/components/estudos/QuickStudySessionModal';
 import MobileDashboard from '@/components/MobileDashboard';
 import SimuladosPerformanceChart from '@/components/dashboard/SimuladosPerformanceChart';
+import ImageCarousel from '@/components/dashboard/ImageCarousel';
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 // Função auxiliar para gerar dias da semana
 const getDaysOfWeek = () => {
@@ -86,6 +90,7 @@ export default function DashboardPage() {
   });
   const [isStudySessionModalOpen, setIsStudySessionModalOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [carouselImages, setCarouselImages] = useState<any[]>([]);
   
   // Checar se o dispositivo é mobile
   useEffect(() => {
@@ -236,6 +241,28 @@ export default function DashboardPage() {
     loadDashboardData();
     
     return () => clearTimeout(safetyTimeout);
+  }, []);
+  
+  useEffect(() => {
+    async function fetchCarouselImages() {
+      const supabase = createClientComponentClient();
+      const { data, error } = await supabase
+        .from("dashboard_carousel")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (!error && data) {
+        setCarouselImages(
+          data.map((img: any) => ({
+            src: img.image_url,
+            alt: img.title || "",
+            title: img.title,
+            description: img.description,
+            link: img.link
+          }))
+        );
+      }
+    }
+    fetchCarouselImages();
   }, []);
   
   const handleSignOut = async () => {
@@ -611,7 +638,20 @@ export default function DashboardPage() {
       </div>
       
       <div className="container mx-auto px-6 py-8">
-        {/* Seção de Sequência de Estudos */}
+        {/* Carrossel de imagens */}
+        <div className="mb-8 bg-white rounded-xl shadow-sm p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+              <div className="p-2 rounded-md bg-blue-100 text-blue-600 mr-3">
+                <Lightbulb className="h-5 w-5" />
+              </div>
+              Dicas e Recursos
+            </h2>
+          </div>
+          <ImageCarousel images={carouselImages} />
+        </div>
+
+        {/* Sequência de Estudos */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-gray-800 flex items-center">
@@ -907,8 +947,6 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-        
-
         
         {/* Dica para estudos */}
         <div className="mt-8 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl shadow-sm p-6 text-white">

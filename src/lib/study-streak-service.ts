@@ -173,16 +173,16 @@ export class StudyStreakService {
     sessionId?: number
   ): Promise<boolean> {
     try {
-      // Se temos um disciplineId, vamos usá-lo como referência
-      if (disciplineId) {
+    // Se temos um disciplineId, vamos usá-lo como referência
+    if (disciplineId) {
         await this.recordActivity(
-          'study_session', 
-          disciplineId, 
-          'discipline', 
-          durationMinutes
-        );
-      }
-      // Caso contrário, usamos o sessionId como referência (comportamento anterior)
+        'study_session', 
+        disciplineId, 
+        'discipline', 
+        durationMinutes
+      );
+    }
+    // Caso contrário, usamos o sessionId como referência (comportamento anterior)
       else {
         await this.recordActivity('study_session', sessionId, 'session', durationMinutes);
       }
