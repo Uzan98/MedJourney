@@ -133,6 +133,9 @@ export class StudyStreakService {
         }
       }
       
+      // Após registrar uma atividade, atualizar a streak do usuário
+      await this.getStudyStreak();
+      
       return true;
     } catch (error) {
       console.error('Erro ao registrar atividade de estudo:', error);
@@ -169,17 +172,137 @@ export class StudyStreakService {
     disciplineId?: number,
     sessionId?: number
   ): Promise<boolean> {
-    // Se temos um disciplineId, vamos usá-lo como referência
-    if (disciplineId) {
-      return this.recordActivity(
-        'study_session', 
-        disciplineId, 
-        'discipline', 
-        durationMinutes
-      );
+    try {
+      // Se temos um disciplineId, vamos usá-lo como referência
+      if (disciplineId) {
+        await this.recordActivity(
+          'study_session', 
+          disciplineId, 
+          'discipline', 
+          durationMinutes
+        );
+      }
+      // Caso contrário, usamos o sessionId como referência (comportamento anterior)
+      else {
+        await this.recordActivity('study_session', sessionId, 'session', durationMinutes);
+      }
+      
+      // Atualizar os desafios de tempo de estudo
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+        
+        if (userId) {
+          // Verificar se a função RPC existe antes de chamá-la
+          const { error: functionCheckError } = await supabase.rpc('register_study_time_in_challenges', {
+            p_user_id: userId,
+            p_duration_minutes: durationMinutes
+          }).select('*').maybeSingle();
+          
+          // Se houver erro, provavelmente a função não existe ou tem problemas
+          if (functionCheckError) {
+            console.warn('Função register_study_time_in_challenges não disponível ou com erro:', functionCheckError);
+            console.log('Ignorando atualização de desafios de tempo de estudo devido ao erro');
+            // Não propagar o erro para não interromper o fluxo principal
+          }
+        }
+      } catch (challengeError) {
+        // Apenas registrar o erro, mas não falhar a operação principal
+        console.warn('Erro ao atualizar desafios de tempo de estudo:', challengeError);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erro ao registrar sessão de estudo:', error);
+      return false;
     }
-    // Caso contrário, usamos o sessionId como referência (comportamento anterior)
-    return this.recordActivity('study_session', sessionId, 'session', durationMinutes);
+  }
+  
+  /**
+   * Atualiza ou cria o registro de sequência do usuário
+   * @param streak Dados de sequência calculados
+   * @returns Promise com o resultado da operação
+   */
+  static async updateStudyStreakRecord(streak: StudyStreak): Promise<boolean> {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      
+      if (!userId) {
+        console.error('Usuário não autenticado');
+        return false;
+      }
+      
+      // Verificar se já existe um registro para o usuário
+      const { data: existingRecord } = await supabase
+        .from('study_streaks')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      const today = format(new Date(), 'yyyy-MM-dd');
+      
+      if (existingRecord) {
+        // Atualizar registro existente, mantendo o longest_streak se for maior
+        const longestStreak = Math.max(existingRecord.longest_streak, streak.longestStreak);
+        
+        const { error } = await supabase
+          .from('study_streaks')
+          .update({
+            current_streak: streak.currentStreak,
+            longest_streak: longestStreak,
+            last_study_date: today,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', userId);
+        
+        if (error) {
+          console.error('Erro ao atualizar registro de sequência:', error);
+          return false;
+        }
+      } else {
+        // Criar novo registro
+        const { error } = await supabase
+          .from('study_streaks')
+          .insert({
+            user_id: userId,
+            current_streak: streak.currentStreak,
+            longest_streak: streak.longestStreak,
+            last_study_date: today
+          });
+        
+        if (error) {
+          console.error('Erro ao criar registro de sequência:', error);
+          return false;
+        }
+      }
+      
+      // Atualizar desafios do tipo 'study_streak' se houver
+      try {
+        if (userId && streak.currentStreak > 0) {
+          // Verificar se a função RPC existe antes de chamá-la
+          const { error: functionCheckError } = await supabase.rpc('update_streak_challenges', {
+            p_user_id: userId,
+            p_streak_value: streak.currentStreak
+          }).select('*').maybeSingle();
+          
+          // Se houver erro, provavelmente a função não existe ou tem problemas
+          if (functionCheckError) {
+            console.warn('Função update_streak_challenges não disponível ou com erro:', functionCheckError);
+            console.log('Ignorando atualização de desafios de streak devido ao erro');
+            // Não propagar o erro para não interromper o fluxo principal
+          }
+        }
+      } catch (challengeError) {
+        // Apenas registrar o erro, mas não falhar a operação principal
+        console.warn('Erro ao atualizar desafios de streak:', challengeError);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erro ao persistir dados de sequência:', error);
+      return false;
+    }
   }
   
   /**
@@ -208,23 +331,33 @@ export class StudyStreakService {
       }
       
       if (!data || data.length === 0) {
-        return {
+        const emptyStreak = {
           currentStreak: 0,
           longestStreak: 0,
           totalDaysStudied: 0,
           weekDays: this.generateWeekDays([])
         };
+        
+        // Persistir os dados vazios
+        await this.updateStudyStreakRecord(emptyStreak);
+        
+        return emptyStreak;
       }
       
       const streakData = data[0];
       
       // Preparar os dados para a visualização
-      return {
+      const streak = {
         currentStreak: streakData.current_streak || 0,
         longestStreak: streakData.longest_streak || 0,
         totalDaysStudied: streakData.total_days || 0,
         weekDays: this.generateWeekDays(streakData.streak_dates || [])
       };
+      
+      // Persistir os dados calculados
+      await this.updateStudyStreakRecord(streak);
+      
+      return streak;
     } catch (error) {
       console.error('Erro ao obter dados de sequência:', error);
       return null;

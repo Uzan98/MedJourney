@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { StudyRoomService } from '@/services/study-room.service';
 import StudyTimeDisplay from '@/components/StudyTimeDisplay';
 import { setupMockStudyRooms } from '@/mocks/study-rooms-mock';
+import ChallengesWidget from '@/components/gamification/ChallengesWidget';
 
 export default function ComunidadePage() {
   const { user } = useAuth();
@@ -62,7 +63,7 @@ export default function ComunidadePage() {
     <div className="container mx-auto py-6 px-4 max-w-5xl">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">Comunidade de Estudos</h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Card para Sala de Estudos */}
         <Link href="/comunidade/sala-estudos" className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all">
           <div className="h-36 bg-gradient-to-r from-blue-500 to-blue-600 p-6 flex flex-col justify-between">
@@ -104,7 +105,30 @@ export default function ComunidadePage() {
           </div>
         </Link>
         
-        {/* Outros cards de recursos da comunidade podem ser adicionados aqui */}
+        {/* Card para Desafios da Comunidade */}
+        <Link href="/comunidade/desafios" className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all">
+          <div className="h-36 bg-gradient-to-r from-amber-500 to-amber-600 p-6 flex flex-col justify-between">
+            <h2 className="text-2xl font-bold text-white">Desafios da Comunidade</h2>
+            <p className="text-amber-100">Participe de desafios semanais e ganhe reconhecimento</p>
+          </div>
+          <div className="p-6">
+            <p className="text-gray-600 mb-4">
+              Supere desafios de estudo, simulados e sequências de estudo. Compita com outros estudantes e acompanhe seu progresso no ranking.
+            </p>
+            <div className="flex justify-between items-center">
+              <span className="bg-amber-50 text-amber-600 px-3 py-1 rounded-full text-sm font-medium">Competitivo</span>
+              <span className="text-amber-600 flex items-center">
+                <span className="mr-1 font-medium">Participar</span>
+                <ChevronRight size={18} />
+              </span>
+            </div>
+          </div>
+        </Link>
+      </div>
+      
+      {/* Widget de Desafios Ativos */}
+      <div className="mt-8">
+        <ChallengesWidget />
       </div>
     </div>
   );
