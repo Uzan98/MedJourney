@@ -21,6 +21,8 @@ type AuthContextType = {
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
   refreshSession: () => Promise<void>;
+  isAdmin: boolean;
+  checkAdminStatus: () => Promise<boolean>;
 };
 
 // Criar o contexto
@@ -40,9 +42,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Calcular se está autenticado
   const isAuthenticated = !!user;
+
+  // Função para verificar se o usuário é administrador
+  const checkAdminStatus = async (): Promise<boolean> => {
+    if (!user) return false;
+    
+    try {
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .single();
+      
+      const adminStatus = !!data;
+      setIsAdmin(adminStatus);
+      return adminStatus;
+    } catch (error) {
+      console.error('Erro ao verificar status de administrador:', error);
+      setIsAdmin(false);
+      return false;
+    }
+  };
 
   // Função para atualizar o estado de sessão
   const refreshSession = async () => {
@@ -55,9 +79,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } else if (session) {
         setSession(session);
         setUser(session.user);
+        // Verificar status de administrador quando a sessão é atualizada
+        await checkAdminStatus();
       } else {
         setSession(null);
         setUser(null);
+        setIsAdmin(false);
       }
     } catch (error) {
       console.error('Erro ao atualizar sessão:', error);
@@ -73,11 +100,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Assinar para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('AuthContext: Evento de autenticação:', event, 'User ID:', session?.user?.id);
         
         setSession(session);
         setUser(session?.user || null);
+        
+        // Verificar status de administrador quando o estado de autenticação muda
+        if (session?.user) {
+          await checkAdminStatus();
+        } else {
+          setIsAdmin(false);
+        }
+        
         setIsLoading(false);
         
         // Log detalhado do evento
@@ -189,6 +224,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signOut,
     isAuthenticated,
     refreshSession,
+    isAdmin,
+    checkAdminStatus,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

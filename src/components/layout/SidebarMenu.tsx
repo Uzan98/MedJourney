@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -16,8 +16,11 @@ import {
   ChevronDown,
   ChevronRight,
   Brain,
-  Trophy
+  Trophy,
+  Shield
 } from 'lucide-react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarMenuProps {
   collapsed?: boolean;
@@ -37,6 +40,7 @@ interface MenuItem {
   label: string;
   icon: React.ReactNode;
   submenu?: Submenu[];
+  adminOnly?: boolean;
 }
 
 const SidebarMenu: React.FC<SidebarMenuProps> = ({ 
@@ -46,6 +50,30 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
   className = '' 
 }) => {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const supabase = createClientComponentClient();
+
+  // Verificar se o usuário é administrador
+  useEffect(() => {
+    async function checkAdminStatus() {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('admin_users')
+          .select('user_id')
+          .eq('user_id', user.id)
+          .single();
+        
+        setIsAdmin(!!data);
+      } catch (error) {
+        console.error('Erro ao verificar status de administrador:', error);
+      }
+    }
+    
+    checkAdminStatus();
+  }, [user, supabase]);
 
   // Menu items definition
   const menuItems: MenuItem[] = [
@@ -105,6 +133,12 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
           icon: <Trophy className="h-5 w-5 flex-shrink-0" />
         }
       ]
+    },
+    {
+      path: "/admin",
+      label: "Admin",
+      icon: <Shield className="h-5 w-5 flex-shrink-0" />,
+      adminOnly: true
     }
   ];
 
@@ -167,6 +201,11 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
 
   // Render menu item
   const renderMenuItem = (item: MenuItem) => {
+    // Não renderizar itens de admin se o usuário não for admin
+    if (item.adminOnly && !isAdmin) {
+      return null;
+    }
+
     const isParentActive = isActiveSubmenu(item.path, item.submenu);
     const linkClasses = getNavLinkClasses(item.path, false, isParentActive);
 

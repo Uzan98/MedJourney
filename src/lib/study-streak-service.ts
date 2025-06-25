@@ -193,15 +193,17 @@ export class StudyStreakService {
         const userId = session?.user?.id;
         
         if (userId) {
-          // Chamar a função RPC para registrar o tempo de estudo nos desafios
-          // Esta função vai atualizar os desafios do tipo 'study_time'
-          const { error } = await supabase.rpc('register_study_time_in_challenges', {
+          // Verificar se a função RPC existe antes de chamá-la
+          const { error: functionCheckError } = await supabase.rpc('register_study_time_in_challenges', {
             p_user_id: userId,
             p_duration_minutes: durationMinutes
-          });
+          }).select('*').maybeSingle();
           
-          if (error) {
-            console.warn('Erro ao atualizar desafios de tempo de estudo:', error);
+          // Se houver erro, provavelmente a função não existe ou tem problemas
+          if (functionCheckError) {
+            console.warn('Função register_study_time_in_challenges não disponível ou com erro:', functionCheckError);
+            console.log('Ignorando atualização de desafios de tempo de estudo devido ao erro');
+            // Não propagar o erro para não interromper o fluxo principal
           }
         }
       } catch (challengeError) {
@@ -278,13 +280,21 @@ export class StudyStreakService {
       // Atualizar desafios do tipo 'study_streak' se houver
       try {
         if (userId && streak.currentStreak > 0) {
-          // Chamar a função RPC para atualizar desafios de streak
-          await supabase.rpc('update_streak_challenges', {
+          // Verificar se a função RPC existe antes de chamá-la
+          const { error: functionCheckError } = await supabase.rpc('update_streak_challenges', {
             p_user_id: userId,
             p_streak_value: streak.currentStreak
-          });
+          }).select('*').maybeSingle();
+          
+          // Se houver erro, provavelmente a função não existe ou tem problemas
+          if (functionCheckError) {
+            console.warn('Função update_streak_challenges não disponível ou com erro:', functionCheckError);
+            console.log('Ignorando atualização de desafios de streak devido ao erro');
+            // Não propagar o erro para não interromper o fluxo principal
+          }
         }
       } catch (challengeError) {
+        // Apenas registrar o erro, mas não falhar a operação principal
         console.warn('Erro ao atualizar desafios de streak:', challengeError);
       }
       

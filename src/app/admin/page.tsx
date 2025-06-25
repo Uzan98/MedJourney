@@ -16,46 +16,38 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 
 export default function AdminPage() {
   const router = useRouter();
-  const { user } = useAuth();
-  const supabase = createClientComponentClient();
+  const { user, isAdmin, checkAdminStatus } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   
   useEffect(() => {
-    async function checkAdminStatus() {
+    async function verifyAccess() {
+      setLoading(true);
+      
       if (!user) {
+        console.log("Admin: Nenhum usuário autenticado, redirecionando para dashboard");
         router.push('/dashboard');
         return;
       }
       
-      try {
-        // Verificar se o usuário é um administrador
-        const { data, error } = await supabase
-          .from('admin_users')
-          .select('user_id')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (error || !data) {
-          router.push('/dashboard');
-          return;
-        }
-        
-        setIsAdmin(true);
-      } catch (error) {
-        console.error('Erro ao verificar status de administrador:', error);
+      // Verificar status de administrador
+      const adminStatus = await checkAdminStatus();
+      console.log("Admin: Status de administrador:", adminStatus);
+      
+      if (!adminStatus) {
+        console.log("Admin: Usuário não é administrador, redirecionando para dashboard");
         router.push('/dashboard');
-      } finally {
-        setLoading(false);
+        return;
       }
+      
+      setLoading(false);
     }
     
-    checkAdminStatus();
-  }, [user, router, supabase]);
+    verifyAccess();
+  }, [user, router, checkAdminStatus]);
   
   if (loading) {
     return (
@@ -63,10 +55,6 @@ export default function AdminPage() {
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
-  }
-  
-  if (!isAdmin) {
-    return null; // Redirecionado pelo useEffect
   }
   
   const adminModules = [
@@ -83,6 +71,27 @@ export default function AdminPage() {
       icon: Trophy,
       href: '/admin/desafios',
       color: 'bg-yellow-500'
+    },
+    {
+      title: 'Usuários',
+      description: 'Gerencie usuários e permissões',
+      icon: Users,
+      href: '/admin/usuarios',
+      color: 'bg-green-500'
+    },
+    {
+      title: 'Banco de Questões',
+      description: 'Gerencie o banco de questões do sistema',
+      icon: BookOpen,
+      href: '/admin/banco-questoes',
+      color: 'bg-purple-500'
+    },
+    {
+      title: 'Estatísticas',
+      description: 'Visualize métricas e estatísticas do sistema',
+      icon: BarChart3,
+      href: '/admin/estatisticas',
+      color: 'bg-indigo-500'
     }
   ];
   

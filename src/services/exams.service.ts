@@ -485,6 +485,9 @@ export class ExamsService {
         throw error;
       }
       
+      // O trigger process_exam_completion será executado automaticamente no banco de dados
+      // para atualizar os desafios de respostas corretas
+      
       return data;
     } catch (error) {
       console.error(`Erro ao finalizar tentativa ${attemptId}:`, error);
