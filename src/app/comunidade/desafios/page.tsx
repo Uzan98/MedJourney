@@ -6,7 +6,7 @@ import { ArrowLeft, Trophy, Clock, Users, ChevronRight, RefreshCw, Target, Award
 import { toast } from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { CommunityChallenge, CommunityChallengService } from '@/services/community-challenges.service';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import UserRanking from '@/components/comunidade/UserRanking';
 
 export default function DesafiosComunidadePage() {

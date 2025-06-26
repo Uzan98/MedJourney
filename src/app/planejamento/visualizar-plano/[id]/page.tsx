@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { 
   Calendar, 
   ListChecks,
@@ -19,7 +19,8 @@ import {
   Star,
   Trash,
   PenSquare,
-  PlayCircle
+  PlayCircle,
+  CheckCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
@@ -29,6 +30,14 @@ import { Calendar as ReactCalendar, dateFnsLocalizer } from 'react-big-calendar'
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { format, parseISO, startOfWeek, getDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
+import Loading from '@/components/Loading';
+import StudySessionTimer from '@/components/estudos/StudySessionTimer';
 
 // Configurando o localizador de datas para o calendário
 const locales = {
@@ -40,30 +49,22 @@ const localizer = dateFnsLocalizer({
   format,
   parse: parseISO,
   startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 0 }),
-  getDay: (date: Date) => date.getDay(),
+  getDay,
   locales,
 });
-
-// Mensagens em português para o calendário
-const messages = {
-  allDay: 'Dia inteiro',
-  previous: 'Anterior',
-  next: 'Próximo',
-  today: 'Hoje',
-  month: 'Mês',
-  week: 'Semana',
-  day: 'Dia',
-  agenda: 'Agenda',
-  date: 'Data',
-  time: 'Hora',
-  event: 'Evento',
-  noEventsInRange: 'Não há sessões neste período.',
-  showMore: (total: number) => `+ ${total} mais`,
-};
 
 type GroupedSessions = {
   [date: string]: SmartPlanSession[];
 };
+
+// Dentro da interface SmartPlanSession, adicionar propriedades para status de conclusão
+export interface SmartPlanSession {
+  // ... propriedades existentes ...
+  metadata?: any; // Adicionando campo para acessar os metadados
+  completed?: boolean; // Campo para indicar se a sessão foi concluída
+  completed_at?: string; // Data de conclusão
+  actual_duration_minutes?: number; // Duração real da sessão
+}
 
 // Componente personalizado para a barra de ferramentas do calendário
 const CalendarToolbar = (toolbar: any) => {
@@ -107,6 +108,70 @@ const CalendarToolbar = (toolbar: any) => {
           </button>
         ))}
       </span>
+    </div>
+  );
+};
+
+const SessionCard = ({ session }: { session: SmartPlanSession }) => {
+  const dateObj = new Date(`${session.date}T${session.start_time}`);
+  const formattedDate = dateObj.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  
+  // Verificar se a sessão está concluída
+  const isCompleted = session.completed || false;
+  
+  // Estilo condicional para sessões concluídas
+  const cardStyle = isCompleted 
+    ? "border-green-300 bg-green-50" 
+    : "border-gray-200 hover:border-blue-300";
+  
+  const titleStyle = isCompleted 
+    ? "text-green-700" 
+    : "text-gray-800";
+  
+  return (
+    <div className={`border rounded-lg p-4 mb-4 transition-all ${cardStyle}`}>
+      {isCompleted && (
+        <div className="flex items-center mb-2 text-green-600">
+          <CheckCircle className="h-5 w-5 mr-2" />
+          <span className="text-sm font-medium">Concluída</span>
+        </div>
+      )}
+      <h3 className={`font-semibold text-lg mb-1 ${titleStyle}`}>
+        {isCompleted && <span className="line-through mr-1">{session.title}</span>}
+        {!isCompleted && session.title}
+      </h3>
+      <div className="flex items-center text-sm text-gray-500 mb-2">
+        <Calendar className="h-4 w-4 mr-1" />
+        <span>{formattedDate}</span>
+      </div>
+      <div className="flex items-center text-sm text-gray-500 mb-3">
+        <Clock className="h-4 w-4 mr-1" />
+        <span>{session.start_time} - {session.end_time}</span>
+      </div>
+      <div className="flex items-center text-sm mb-3">
+        <BookOpen className="h-4 w-4 mr-1 text-blue-500" />
+        <span className="text-blue-600">{session.discipline_name}</span>
+      </div>
+      {session.subject_title && (
+        <div className="text-sm text-gray-600 mb-2">
+          <span className="font-medium">Matéria:</span> {session.subject_title}
+        </div>
+      )}
+      <div className="flex items-center mt-2">
+        <div className="flex-1 flex items-center">
+          <Clock className="h-4 w-4 mr-1 text-gray-400" />
+          <span className="text-sm text-gray-500">
+            {isCompleted && session.actual_duration_minutes 
+              ? `${session.actual_duration_minutes} min (real)` 
+              : `${session.duration_minutes} min`}
+          </span>
+        </div>
+        {session.is_revision && (
+          <div className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded">
+            Revisão
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -177,9 +242,40 @@ export default function ViewPlanPage() {
       if (sessionsData) {
         console.log(`Sessões carregadas com sucesso, total: ${sessionsData.length}`);
         
+        // Processar metadados para cada sessão
+        const processedSessions = sessionsData.map(session => {
+          let completed = false;
+          let completed_at = undefined;
+          let actual_duration_minutes = undefined;
+          
+          // Verificar se há metadados e se a sessão está marcada como concluída
+          if (session.metadata) {
+            try {
+              const metadata = typeof session.metadata === 'string' 
+                ? JSON.parse(session.metadata) 
+                : session.metadata;
+                
+              if (metadata.completed) {
+                completed = true;
+                completed_at = metadata.completed_at;
+                actual_duration_minutes = metadata.actual_duration_minutes;
+              }
+            } catch (e) {
+              console.warn('Erro ao analisar metadados da sessão:', e);
+            }
+          }
+          
+          return {
+            ...session,
+            completed,
+            completed_at,
+            actual_duration_minutes
+          };
+        });
+        
         // Verificar datas e sessões de sexta-feira
         const datesMap = new Map<string, number[]>();
-        sessionsData.forEach(session => {
+        processedSessions.forEach(session => {
           const dateStr = session.date;
           const date = new Date(dateStr);
           const dayOfWeek = date.getDay();
@@ -197,7 +293,7 @@ export default function ViewPlanPage() {
         });
         
         // Verificar especificamente sessões de sexta-feira
-        const fridaySessions = sessionsData.filter(session => {
+        const fridaySessions = processedSessions.filter(session => {
           const date = new Date(session.date);
           return date.getDay() === 5;
         });
@@ -207,7 +303,7 @@ export default function ViewPlanPage() {
           console.log('⚠️ ALERTA: Nenhuma sessão encontrada para sexta-feira!');
         }
         
-        setSessions(sessionsData);
+        setSessions(processedSessions);
       } else {
         toast.error('Não foi possível carregar as sessões do plano');
       }
@@ -276,16 +372,23 @@ export default function ViewPlanPage() {
     const totalSessions = sessions.length;
     const totalTime = sessions.reduce((sum, session) => sum + session.duration_minutes, 0);
     
+    // Contar sessões concluídas
+    const completedSessions = sessions.filter(session => session.completed).length;
+    const completionRate = totalSessions > 0 ? Math.round((completedSessions / totalSessions) * 100) : 0;
+    
     // Contagem de sessões por disciplina
-    const disciplineCounts: {[key: string]: {count: number, minutes: number}} = {};
+    const disciplineCounts: {[key: string]: {count: number, minutes: number, completed: number}} = {};
     
     sessions.forEach(session => {
       const disciplineName = session.discipline_name;
       if (!disciplineCounts[disciplineName]) {
-        disciplineCounts[disciplineName] = { count: 0, minutes: 0 };
+        disciplineCounts[disciplineName] = { count: 0, minutes: 0, completed: 0 };
       }
       disciplineCounts[disciplineName].count += 1;
       disciplineCounts[disciplineName].minutes += session.duration_minutes;
+      if (session.completed) {
+        disciplineCounts[disciplineName].completed += 1;
+      }
     });
     
     // Ordenar por tempo total (decrescente)
@@ -295,6 +398,8 @@ export default function ViewPlanPage() {
     return {
       totalSessions,
       totalTime,
+      completedSessions,
+      completionRate,
       disciplineStats: sortedDisciplines
     };
   };
@@ -383,7 +488,7 @@ export default function ViewPlanPage() {
       
       return {
         id: session.id,
-        title: session.title,
+        title: `${session.completed ? '✓ ' : ''}${session.title}`,
         start: startDate,
         end: endDate,
         allDay: false,
@@ -397,25 +502,52 @@ export default function ViewPlanPage() {
   
   // Função para obter a classe de cor para o evento no calendário
   const getEventStyle = (event: any) => {
-    const colorClasses: Record<string, string> = {
-      'from-blue-500 to-blue-600': 'bg-blue-500 hover:bg-blue-600',
-      'from-purple-500 to-purple-600': 'bg-purple-500 hover:bg-purple-600',
-      'from-green-500 to-green-600': 'bg-green-500 hover:bg-green-600',
-      'from-amber-500 to-amber-600': 'bg-amber-500 hover:bg-amber-600',
-      'from-pink-500 to-pink-600': 'bg-pink-500 hover:bg-pink-600',
-      'from-indigo-500 to-indigo-600': 'bg-indigo-500 hover:bg-indigo-600',
-      'from-teal-500 to-teal-600': 'bg-teal-500 hover:bg-teal-600',
-      'from-red-500 to-red-600': 'bg-red-500 hover:bg-red-600',
-      'from-cyan-500 to-cyan-600': 'bg-cyan-500 hover:bg-cyan-600'
-    };
+    const session = event.resource;
+    const isCompleted = session.completed || false;
+    
+    // Cores diferentes para sessões concluídas
+    let backgroundColor = '#3b82f6'; // Azul padrão
+    let textColor = '#ffffff';
+    let border = 'none';
+    let opacity = 1;
+    
+    if (session.is_revision) {
+      backgroundColor = '#8b5cf6'; // Roxo para revisões
+    }
+    
+    if (isCompleted) {
+      backgroundColor = '#10b981'; // Verde para sessões concluídas
+      opacity = 0.7; // Mais transparente para indicar conclusão
+      border = '1px dashed #059669';
+    }
     
     return {
-      className: colorClasses[event.resource.color] || 'bg-blue-500 hover:bg-blue-600',
       style: {
-        color: 'white',
-        fontWeight: 500
+        backgroundColor,
+        color: textColor,
+        borderRadius: '4px',
+        border,
+        opacity,
+        padding: '2px 5px',
       }
     };
+  };
+  
+  // Função para renderizar o conteúdo do evento no calendário
+  const renderEventContent = (eventInfo: any) => {
+    const session = eventInfo.event.extendedProps.session;
+    const isCompleted = session.completed || false;
+    
+    return (
+      <div className={`p-1 ${isCompleted ? 'opacity-70' : ''}`}>
+        <div className="flex items-center justify-between">
+          <span className={`text-xs font-medium truncate ${isCompleted ? 'line-through' : ''}`}>
+            {eventInfo.timeText} {eventInfo.event.title}
+          </span>
+          {isCompleted && <CheckCircle className="h-3 w-3 text-white" />}
+        </div>
+      </div>
+    );
   };
   
   if (loading) {
@@ -439,7 +571,7 @@ export default function ViewPlanPage() {
     );
   }
   
-  const { totalSessions, totalTime, disciplineStats } = calculateStats();
+  const { totalSessions, totalTime, completedSessions, completionRate, disciplineStats } = calculateStats();
   const groupedSessions = groupSessionsByDate();
   
   return (
@@ -582,12 +714,12 @@ export default function ViewPlanPage() {
                             {daySessions.sort((a, b) => a.start_time.localeCompare(b.start_time)).map((session, index) => (
                               <div 
                                 key={session.id} 
-                                className="p-4 hover:bg-gray-50 transition-colors"
+                                className={`p-4 hover:bg-gray-50 transition-colors ${session.completed ? 'bg-green-50' : ''}`}
                               >
                                 <div className="flex items-start gap-4">
                                   {/* Horário e duração */}
                                   <div className="flex flex-col items-center min-w-[80px]">
-                                    <div className="bg-indigo-100 text-indigo-800 rounded-lg px-3 py-2 text-center w-full">
+                                    <div className={`${session.completed ? 'bg-green-100 text-green-800' : 'bg-indigo-100 text-indigo-800'} rounded-lg px-3 py-2 text-center w-full`}>
                                       <div className="text-sm font-bold">{formatTime(session.start_time)}</div>
                                       <div className="text-xs text-indigo-600">{session.duration_minutes} min</div>
                                     </div>
@@ -607,6 +739,14 @@ export default function ViewPlanPage() {
                                         Revisão {session.revision_interval ? `(${session.revision_interval} dias)` : ''}
                                       </span>
                                     )}
+                                    
+                                    {/* Adicionar badge de conclusão */}
+                                    {session.completed && (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                        <CheckCircle className="h-3 w-3" />
+                                        Concluída
+                                      </span>
+                                    )}
                                   </div>
                                     
                                     {/* Disciplina */}
@@ -614,6 +754,13 @@ export default function ViewPlanPage() {
                                       <GraduationCap className="h-4 w-4 text-indigo-500" />
                                       <span className="font-medium">{session.discipline_name}</span>
                                     </div>
+                                    
+                                    {/* Mostrar duração real se a sessão foi concluída */}
+                                    {session.completed && session.actual_duration_minutes && (
+                                      <div className="mt-2 text-sm text-gray-600">
+                                        <span className="font-medium">Duração real:</span> {session.actual_duration_minutes} minutos
+                                      </div>
+                                    )}
                                     
                                     {/* Tags de dificuldade e importância */}
                                     <div className="flex flex-wrap gap-2 mt-2">
@@ -636,15 +783,22 @@ export default function ViewPlanPage() {
                                     )}
                                   </div>
 
-                                  {/* Adicionar botão para iniciar sessão */}
+                                  {/* Adicionar botão para iniciar sessão ou mostrar concluída */}
                                   <div className="mt-3">
-                                    <button
-                                      onClick={() => handleStartSession(session)}
-                                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg text-xs font-medium transition-colors"
-                                    >
-                                      <PlayCircle className="h-3.5 w-3.5" />
-                                      Iniciar sessão
-                                    </button>
+                                    {!session.completed ? (
+                                      <button
+                                        onClick={() => handleStartSession(session)}
+                                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg text-xs font-medium transition-colors"
+                                      >
+                                        <PlayCircle className="h-3.5 w-3.5" />
+                                        Iniciar sessão
+                                      </button>
+                                    ) : (
+                                      <div className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium">
+                                        <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                                        Sessão concluída
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               </div>

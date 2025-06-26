@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 
 export default function AdminPage() {
   const router = useRouter();

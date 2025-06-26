@@ -59,6 +59,10 @@ export interface SmartPlanSession {
   original_session_id: number | null;
   plan_id: number;
   created_at?: string;
+  metadata?: string | Record<string, any>;  // Campo para armazenar metadados, incluindo informações de conclusão
+  completed?: boolean;
+  completed_at?: string;
+  actual_duration_minutes?: number;
 }
 
 export interface SmartPlan {
@@ -263,6 +267,21 @@ class SmartPlanningService {
         const dayOfWeek = sessionDate.getDay();
         const isFriday = dayOfWeek === 5;
         console.log(`- Sessão ID ${session.id}: Data ${session.date}, Dia da semana: ${dayOfWeek}${isFriday ? ' (SEXTA-FEIRA)' : ''}`);
+        
+        // Verificar se a sessão está marcada como concluída nos metadados
+        if (session.metadata) {
+          try {
+            const metadata = typeof session.metadata === 'string' 
+              ? JSON.parse(session.metadata) 
+              : session.metadata;
+              
+            if (metadata.completed) {
+              console.log(`  - Sessão ${session.id} está CONCLUÍDA`);
+            }
+          } catch (e) {
+            console.warn('Erro ao analisar metadados da sessão:', e);
+          }
+        }
       });
       
       // Contar sessões por dia da semana
@@ -321,9 +340,22 @@ class SmartPlanningService {
       const sessions: SmartPlanSession[] = sessionsData.map(session => {
         // Processar metadados se existirem
         let metadata: any = {};
+        let completed = false;
+        let completed_at: string | undefined = undefined;
+        let actual_duration_minutes: number | undefined = undefined;
+        
         if (session.metadata) {
           try {
-            metadata = JSON.parse(session.metadata);
+            metadata = typeof session.metadata === 'string' 
+              ? JSON.parse(session.metadata) 
+              : session.metadata;
+              
+            // Extrair informações de conclusão
+            if (metadata.completed) {
+              completed = true;
+              completed_at = metadata.completed_at;
+              actual_duration_minutes = metadata.actual_duration_minutes;
+            }
           } catch (e) {
             console.warn('Erro ao analisar metadados da sessão:', e);
           }
@@ -340,22 +372,27 @@ class SmartPlanningService {
         }
         
         return {
-        id: session.id,
+          id: session.id,
           plan_id: session.plan_id,
-        title: session.title,
-        discipline_id: session.discipline_id,
+          title: session.title,
+          discipline_id: session.discipline_id,
           discipline_name: disciplineMap[session.discipline_id] || 'Disciplina desconhecida',
-        subject_id: session.subject_id,
+          subject_id: session.subject_id,
           subject_title: subjectMap[session.subject_id]?.title || 'Matéria desconhecida',
           subject_difficulty: metadata.subject_difficulty || subjectMap[session.subject_id]?.difficulty,
           subject_importance: metadata.subject_importance || subjectMap[session.subject_id]?.importance,
           date: session.date,
-        start_time: session.start_time,
-        end_time: session.end_time,
-        duration_minutes: session.duration_minutes,
-        is_revision: session.is_revision,
-        original_session_id: session.original_session_id,
-          revision_interval: revisionInterval
+          start_time: session.start_time,
+          end_time: session.end_time,
+          duration_minutes: session.duration_minutes,
+          is_revision: session.is_revision,
+          original_session_id: session.original_session_id,
+          revision_interval: revisionInterval,
+          metadata: session.metadata,
+          // Adicionar campos de conclusão
+          completed,
+          completed_at,
+          actual_duration_minutes
         };
       });
       
@@ -1779,6 +1816,27 @@ class SmartPlanningService {
     // Criar objeto de data a partir da data e hora
     const dateObj = new Date(`${session.date}T${session.start_time}`);
     
+    // Verificar se a sessão está marcada como concluída nos metadados
+    let completed = false;
+    let status = 'agendada';
+    let actual_duration_minutes = undefined;
+    
+    if (session.metadata) {
+      try {
+        const metadata = typeof session.metadata === 'string' 
+          ? JSON.parse(session.metadata) 
+          : session.metadata;
+          
+        if (metadata.completed) {
+          completed = true;
+          status = 'concluida';
+          actual_duration_minutes = metadata.actual_duration_minutes;
+        }
+      } catch (e) {
+        console.warn('Erro ao analisar metadados da sessão:', e);
+      }
+    }
+    
     return {
       id: session.id,
       title: session.title,
@@ -1787,8 +1845,10 @@ class SmartPlanningService {
       subject_id: session.subject_id,
       scheduled_date: dateObj.toISOString(),
       duration_minutes: session.duration_minutes,
+      actual_duration_minutes,
       user_id: '', // Será preenchido automaticamente pelo serviço
-      status: 'agendada',
+      status,
+      completed,
       type: session.is_revision ? 'revision' : 'new-content'
     };
   }
