@@ -176,6 +176,23 @@ const SessionCard = ({ session }: { session: SmartPlanSession }) => {
   );
 };
 
+// Traduções para o react-big-calendar em português
+const messages = {
+  allDay: 'Dia inteiro',
+  previous: 'Anterior',
+  next: 'Próximo',
+  today: 'Hoje',
+  month: 'Mês',
+  week: 'Semana',
+  day: 'Dia',
+  agenda: 'Agenda',
+  date: 'Data',
+  time: 'Hora',
+  event: 'Evento',
+  noEventsInRange: 'Não há eventos neste período.',
+  showMore: total => `+ Ver mais (${total})`,
+};
+
 export default function ViewPlanPage() {
   const params = useParams();
   const router = useRouter();
@@ -786,13 +803,13 @@ export default function ViewPlanPage() {
                                   {/* Adicionar botão para iniciar sessão ou mostrar concluída */}
                                   <div className="mt-3">
                                     {!session.completed ? (
-                                      <button
-                                        onClick={() => handleStartSession(session)}
-                                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg text-xs font-medium transition-colors"
-                                      >
-                                        <PlayCircle className="h-3.5 w-3.5" />
-                                        Iniciar sessão
-                                      </button>
+                                    <button
+                                      onClick={() => handleStartSession(session)}
+                                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg text-xs font-medium transition-colors"
+                                    >
+                                      <PlayCircle className="h-3.5 w-3.5" />
+                                      Iniciar sessão
+                                    </button>
                                     ) : (
                                       <div className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium">
                                         <CheckCircle className="h-3.5 w-3.5 text-green-600" />

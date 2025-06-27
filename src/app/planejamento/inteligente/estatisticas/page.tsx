@@ -268,7 +268,7 @@ export default function SmartPlanningStatisticsPage() {
                 <PieChart className="h-5 w-5 mr-2 text-indigo-600" />
                 Distribuição por Disciplina
               </h2>
-              
+
               <div className="space-y-6">
                 {stats.topDisciplines.map((discipline, index) => {
                   // Calcular a porcentagem de conclusão para esta disciplina

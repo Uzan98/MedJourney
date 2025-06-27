@@ -32,6 +32,7 @@ import {
 import MobileMenu from './MobileMenu';
 import SidebarMenu from './SidebarMenu';
 import { useAuth } from '@/contexts/AuthContext';
+import NotificationPermission from '../NotificationPermission';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -578,6 +579,9 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
       {/* Mobile Menu - Passa a função de bloqueio para o MobileMenu */}
       <MobileMenu forceShow lockMobileSidebar={lockMobileSidebar} />
+
+      {/* Componente de permissão de notificação */}
+      <NotificationPermission />
     </div>
   );
 };

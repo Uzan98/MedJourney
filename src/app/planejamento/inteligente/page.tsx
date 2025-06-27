@@ -57,14 +57,55 @@ export default function SmartPlanningPage() {
       }
       
       if (plans) {
-        const active = plans.filter(plan => ['active', 'draft'].includes(plan.status));
-        const completed = plans.filter(plan => ['completed', 'archived'].includes(plan.status));
+        // Instanciar o serviço
+        const smartPlanningService = new SmartPlanningService();
+        console.log('Carregando planos e calculando taxas de conclusão...');
+        
+        // Calcular a taxa de conclusão para cada plano
+        const plansWithCompletionRate = await Promise.all(plans.map(async (plan) => {
+          try {
+            // Buscar as sessões do plano
+            const planSessions = await smartPlanningService.getPlanSessions(plan.id);
+            
+            if (planSessions && planSessions.length > 0) {
+              // Contar total de sessões e sessões concluídas
+              const totalSessions = planSessions.length;
+              const completedSessions = planSessions.filter(session => session.completed).length;
+              
+              // Calcular taxa de conclusão
+              const completionRate = Math.round((completedSessions / totalSessions) * 100);
+              
+              console.log(`Plano ${plan.id} (${plan.name}): ${completedSessions}/${totalSessions} sessões concluídas (${completionRate}%)`);
+              
+              // Adicionar taxa de conclusão ao plano
+              return {
+                ...plan,
+                completion_rate: completionRate,
+                completed_sessions: completedSessions,
+                total_sessions: totalSessions
+              };
+            }
+            
+            console.log(`Plano ${plan.id} (${plan.name}): Sem sessões ou não foi possível calcular taxa de conclusão`);
+            return { ...plan, completion_rate: 0, completed_sessions: 0 };
+          } catch (error) {
+            console.error(`Erro ao processar sessões do plano ${plan.id}:`, error);
+            return { ...plan, completion_rate: 0, completed_sessions: 0 };
+          }
+        }));
+        
+        // Separar planos ativos e concluídos
+        const active = plansWithCompletionRate.filter(plan => ['active', 'draft'].includes(plan.status));
+        const completed = plansWithCompletionRate.filter(plan => ['completed', 'archived'].includes(plan.status));
+        
+        console.log('Planos ativos com taxas de conclusão:', active);
+        console.log('Planos concluídos com taxas de conclusão:', completed);
         
         setActivePlans(active);
         setCompletedPlans(completed);
         
         // Calcular métricas gerais
-        calculateMetrics(plans);
+        calculateMetrics(plansWithCompletionRate);
       }
     } catch (error) {
       console.error('Erro ao carregar planos:', error);
@@ -76,18 +117,80 @@ export default function SmartPlanningPage() {
 
   // Função para calcular métricas gerais
   const calculateMetrics = async (plans: SmartPlan[]) => {
-    // Em uma implementação real, você buscaria todas as sessões de todos os planos
-    // e calcularia as métricas reais. Aqui vamos usar dados de exemplo.
-    
-    // Exemplo de dados simulados
-    const mockMetrics = {
-      totalSessions: 48,
-      completedSessions: 32,
-      completionRate: 67, // 67%
-      totalDisciplines: 12
-    };
-    
-    setMetrics(mockMetrics);
+    try {
+      // Inicializar contadores
+      let totalSessions = 0;
+      let completedSessions = 0;
+      const disciplinesSet = new Set<number>();
+      
+      // Instanciar o serviço
+      const smartPlanningService = new SmartPlanningService();
+      
+      // Processar cada plano para obter suas sessões
+      for (const plan of plans) {
+        try {
+          // Adicionar as sessões do plano ao contador total
+          if (plan.total_sessions) {
+            totalSessions += plan.total_sessions;
+          }
+          
+          // Buscar as sessões do plano para verificar as concluídas
+          const planSessions = await smartPlanningService.getPlanSessions(plan.id);
+          
+          if (planSessions && planSessions.length > 0) {
+            // Se não temos total_sessions no plano, adicionar o comprimento do array
+            if (!plan.total_sessions) {
+              totalSessions += planSessions.length;
+            }
+            
+            // Contar sessões concluídas e disciplinas únicas
+            for (const session of planSessions) {
+              // Adicionar disciplina ao conjunto de disciplinas únicas
+              if (session.discipline_id) {
+                disciplinesSet.add(session.discipline_id);
+              }
+              
+              // Verificar se a sessão está concluída
+              if (session.completed) {
+                completedSessions++;
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Erro ao processar sessões do plano ${plan.id}:`, error);
+        }
+      }
+      
+      // Calcular taxa de conclusão
+      const completionRate = totalSessions > 0 
+        ? Math.round((completedSessions / totalSessions) * 100) 
+        : 0;
+      
+      // Atualizar as métricas
+      setMetrics({
+        totalSessions,
+        completedSessions,
+        completionRate,
+        totalDisciplines: disciplinesSet.size
+      });
+      
+      console.log('Métricas calculadas:', {
+        totalSessions,
+        completedSessions,
+        completionRate,
+        totalDisciplines: disciplinesSet.size
+      });
+      
+    } catch (error) {
+      console.error('Erro ao calcular métricas:', error);
+      // Em caso de erro, definir valores padrão
+      setMetrics({
+        totalSessions: 0,
+        completedSessions: 0,
+        completionRate: 0,
+        totalDisciplines: 0
+      });
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -272,7 +375,7 @@ export default function SmartPlanningPage() {
                                 <CheckCircle className="h-4 w-4 text-green-600" />
                               </div>
                               <span className="font-medium">
-                                {Math.floor(65 - (index * 11))}% concluído
+                                {plan.completion_rate || 0}% concluído
                               </span>
                             </div>
                             
@@ -284,11 +387,11 @@ export default function SmartPlanningPage() {
                                     index % 3 === 1 ? 'bg-gradient-to-r from-emerald-500 to-teal-600' :
                                     'bg-gradient-to-r from-purple-500 to-fuchsia-600'
                                   }`}
-                                  style={{ width: `${65 - (index * 11)}%` }}
+                                  style={{ width: `${plan.completion_rate || 0}%` }}
                                 ></div>
                           </div>
                               <span className="text-xs ml-2 text-gray-500 font-medium">
-                                {65 - (index * 11)}%
+                                {plan.completion_rate || 0}%
                               </span>
                           </div>
                         </div>
@@ -344,8 +447,8 @@ export default function SmartPlanningPage() {
                       <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-blue-400 to-indigo-500 transform origin-left group-hover:scale-x-110 transition-transform duration-300"></div>
                       
                       <div className="relative">
-                        <CardHeader className="pb-3 pt-6 px-6">
-                          <div className="flex justify-between items-start">
+                      <CardHeader className="pb-3 pt-6 px-6">
+                        <div className="flex justify-between items-start">
                             <div className="flex items-start space-x-3">
                               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white mt-0.5 shadow-sm">
                                 <CheckCircle2 className="h-4 w-4" />
@@ -355,11 +458,11 @@ export default function SmartPlanningPage() {
                             <span className="px-2.5 py-1 text-xs font-medium rounded-full shadow-sm flex items-center space-x-1 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border border-blue-200">
                               <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
                               <span>Concluído</span>
-                            </span>
-                          </div>
+                          </span>
+                        </div>
                           <CardDescription className="text-gray-600 line-clamp-2 mt-4 ml-11">{plan.description || 'Sem descrição'}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="pb-4 px-6">
+                      </CardHeader>
+                      <CardContent className="pb-4 px-6">
                           <div className="flex flex-col space-y-4 ml-11">
                             <div className="flex items-center text-sm text-gray-700">
                               <div className="p-1.5 bg-blue-100 rounded-md mr-3">
@@ -373,16 +476,16 @@ export default function SmartPlanningPage() {
                               </div>
                               <span className="font-medium">100% concluído</span>
                             </div>
-                          </div>
-                        </CardContent>
+                        </div>
+                      </CardContent>
                         <CardFooter className="pt-4 pb-4 border-t border-gray-100 bg-gray-50 bg-opacity-80 relative px-6">
-                          <Link href={`/planejamento/visualizar-plano/${plan.id}`} className="w-full">
+                        <Link href={`/planejamento/visualizar-plano/${plan.id}`} className="w-full">
                             <Button variant="ghost" className="w-full justify-between text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 group-hover:bg-indigo-100/50 transition-colors">
-                              Ver detalhes
+                            Ver detalhes
                               <ChevronRight className="h-4 w-4 ml-2" />
-                            </Button>
-                          </Link>
-                        </CardFooter>
+                          </Button>
+                        </Link>
+                      </CardFooter>
                       </div>
                     </Card>
                   ))}

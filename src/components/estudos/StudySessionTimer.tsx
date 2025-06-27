@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Clock, Pause, Play, Check, X, BookOpen, BarChart, Timer } from 'lucide-react';
+import { playNotificationSound, initAudioContext } from '@/utils/sound';
 
 interface StudySessionTimerProps {
   sessionId: number;
@@ -36,6 +37,71 @@ const StudySessionTimer: React.FC<StudySessionTimerProps> = ({
   const lastPauseTimeRef = useRef<number>(0);
   // Flag para verificar se a página está visível
   const isVisibleRef = useRef<boolean>(true);
+  // Referência para o worker de segundo plano
+  const timerWorkerRef = useRef<Worker | null>(null);
+
+  // Inicializar o contexto de áudio quando o componente é montado
+  useEffect(() => {
+    // Inicializar o contexto de áudio
+    initAudioContext();
+    
+    // Criar um worker para continuar contando mesmo quando a guia está em segundo plano
+    if (typeof Worker !== 'undefined' && !timerWorkerRef.current) {
+      // Criar um worker inline
+      const workerBlob = new Blob([`
+        let timerId = null;
+        let isPaused = false;
+        
+        self.onmessage = function(e) {
+          if (e.data.action === 'start') {
+            // Iniciar o timer
+            isPaused = false;
+            if (timerId === null) {
+              timerId = setInterval(() => {
+                if (!isPaused) {
+                  self.postMessage({ type: 'tick' });
+                }
+              }, 1000);
+            }
+          } else if (e.data.action === 'pause') {
+            // Pausar o timer sem destruí-lo
+            isPaused = true;
+          } else if (e.data.action === 'stop') {
+            // Parar o timer
+            if (timerId !== null) {
+              clearInterval(timerId);
+              timerId = null;
+            }
+          }
+        };
+      `], { type: 'application/javascript' });
+      
+      const workerUrl = URL.createObjectURL(workerBlob);
+      timerWorkerRef.current = new Worker(workerUrl);
+      
+      // Configurar o handler de mensagens do worker
+      timerWorkerRef.current.onmessage = (e) => {
+        if (e.data.type === 'tick') {
+          // Atualizar os timers mesmo quando a guia está em segundo plano
+          if (!isPaused) {
+            updateTimers();
+          }
+        }
+      };
+      
+      // Iniciar o worker
+      timerWorkerRef.current.postMessage({ action: 'start' });
+    }
+    
+    // Limpar o worker quando o componente for desmontado
+    return () => {
+      if (timerWorkerRef.current) {
+        timerWorkerRef.current.postMessage({ action: 'stop' });
+        timerWorkerRef.current.terminate();
+        timerWorkerRef.current = null;
+      }
+    };
+  }, []);
 
   // Formatar o tempo para exibição
   const formatTime = (seconds: number): string => {
@@ -86,6 +152,9 @@ const StudySessionTimer: React.FC<StudySessionTimerProps> = ({
         cancelAnimationFrame(timerAnimationRef.current);
         timerAnimationRef.current = null;
       }
+      
+      // Tocar som de notificação
+      playNotificationSound();
       
       // Chamar a função de conclusão automaticamente
       const actualDurationMinutes = Math.ceil(currentElapsedTime / 60);
@@ -170,8 +239,18 @@ const StudySessionTimer: React.FC<StudySessionTimerProps> = ({
 
   // Alternar entre pausar e retomar
   const togglePause = () => {
+    // Inicializar o contexto de áudio na interação do usuário
+    initAudioContext();
+    
     setIsPaused(prev => {
       const newPausedState = !prev;
+      
+      // Atualizar o worker com o novo estado
+      if (timerWorkerRef.current) {
+        timerWorkerRef.current.postMessage({ 
+          action: newPausedState ? 'pause' : 'start'
+        });
+      }
       
       if (newPausedState) {
         // Se estamos pausando, armazenar a referência do tempo atual
@@ -190,10 +269,16 @@ const StudySessionTimer: React.FC<StudySessionTimerProps> = ({
 
   // Completar sessão
   const handleComplete = () => {
+    // Inicializar o contexto de áudio na interação do usuário
+    initAudioContext();
+    
     // Parar a animação
     if (timerAnimationRef.current !== null) {
       cancelAnimationFrame(timerAnimationRef.current);
     }
+    
+    // Tocar som de notificação
+    playNotificationSound();
     
     // Calcular quanto tempo realmente durou a sessão (em minutos)
     const actualDurationMinutes = Math.ceil(elapsedTime / 60);

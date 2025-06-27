@@ -87,6 +87,8 @@ export interface SmartPlan {
   total_minutes?: number;     // Total de minutos planejados
   created_at: string;
   updated_at: string;
+  completion_rate?: number;   // Taxa de conclusão do plano (porcentagem)
+  completed_sessions?: number; // Número de sessões concluídas
 }
 
 // Interface para representar a estrutura da sessão retornada pelo Supabase
@@ -1837,13 +1839,16 @@ class SmartPlanningService {
       }
     }
     
+    // Ajustar para o fuso horário local (Brasília)
+    const adjustedDate = this.adjustDateToLocalTimezone(`${session.date}T${session.start_time}`);
+    
     return {
       id: session.id,
       title: session.title,
       discipline_id: session.discipline_id,
       disciplineName: session.discipline_name,
       subject_id: session.subject_id,
-      scheduled_date: dateObj.toISOString(),
+      scheduled_date: adjustedDate,
       duration_minutes: session.duration_minutes,
       actual_duration_minutes,
       user_id: '', // Será preenchido automaticamente pelo serviço
@@ -1851,6 +1856,36 @@ class SmartPlanningService {
       completed,
       type: session.is_revision ? 'revision' : 'new-content'
     };
+  }
+  
+  /**
+   * Ajusta uma data para o fuso horário local (Brasília)
+   * Isso resolve problemas de datas que podem estar sendo interpretadas como UTC
+   * @param dateTimeString String de data e hora no formato ISO (YYYY-MM-DDTHH:MM:SS)
+   * @returns Data ISO ajustada para o fuso horário local
+   */
+  public static adjustDateToLocalTimezone(dateTimeString: string): string {
+    try {
+      // Extrair a data e hora da string
+      const [datePart, timePart] = dateTimeString.split('T');
+      
+      // Forçar a interpretação da data como sendo no fuso horário local
+      // Criando uma string de data no formato YYYY-MM-DDTHH:MM:SS sem o Z no final
+      // para que o JavaScript não interprete como UTC
+      const localDateString = `${datePart}T${timePart || '00:00:00'}`;
+      
+      // Criar um objeto de data no fuso horário local
+      const date = new Date(localDateString);
+      
+      // Adicionar 1 dia para compensar o problema de fuso horário
+      // Isso é uma solução temporária para garantir que a data seja exibida corretamente
+      date.setDate(date.getDate() + 1);
+      
+      return date.toISOString();
+    } catch (error) {
+      console.error('Erro ao ajustar fuso horário:', error);
+      return new Date(dateTimeString).toISOString(); // Fallback para o comportamento anterior
+    }
   }
 }
 
