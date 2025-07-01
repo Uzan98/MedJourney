@@ -26,6 +26,21 @@ export interface ChallengeParticipant {
   avatar_url?: string;
 }
 
+export interface UserRankingItem {
+  user_id: string;
+  username: string;
+  avatar_url?: string;
+  total_xp: number;
+}
+
+interface GlobalXPRankingItem {
+  user_id: string;
+  username: string;
+  avatar_url?: string;
+  total_xp: number;
+  rank: number;
+}
+
 export class CommunityChallengService {
   /**
    * Obter todos os desafios ativos
@@ -167,6 +182,64 @@ export class CommunityChallengService {
       return data || [];
     } catch (error) {
       console.error(`Erro ao buscar ranking do desafio ${challengeId}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Obter ranking geral de XP dos usuários
+   */
+  static async getGlobalXPRanking(limit: number = 10): Promise<UserRankingItem[]> {
+    try {
+      // Tentar usar a função SQL para obter o ranking de XP
+      const { data: xpData, error: xpError } = await supabase
+        .rpc('get_global_xp_ranking', { p_limit: limit });
+
+      // Se a função existe e retornou dados com sucesso
+      if (!xpError && xpData && xpData.length > 0) {
+        return xpData.map((user: GlobalXPRankingItem) => ({
+          user_id: user.user_id,
+          username: user.username || 'Usuário',
+          avatar_url: user.avatar_url,
+          total_xp: user.total_xp || 0
+        }));
+      }
+      
+      // Fallback: usar os dados dos participantes de desafios
+      const { data, error } = await supabase
+        .from('challenge_participants')
+        .select('user_id, username, avatar_url, current_value')
+        .order('current_value', { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+      
+      // Agrupar por usuário e somar o XP total
+      const userXpMap = new Map<string, UserRankingItem>();
+      
+      data.forEach(participant => {
+        const userId = participant.user_id;
+        if (!userXpMap.has(userId)) {
+          userXpMap.set(userId, {
+            user_id: userId,
+            username: participant.username || 'Usuário',
+            avatar_url: participant.avatar_url,
+            total_xp: participant.current_value || 0
+          });
+        } else {
+          const existingUser = userXpMap.get(userId)!;
+          existingUser.total_xp += participant.current_value || 0;
+        }
+      });
+      
+      // Converter o Map para array e ordenar por XP
+      const result = Array.from(userXpMap.values())
+        .sort((a, b) => b.total_xp - a.total_xp)
+        .slice(0, limit);
+      
+      return result;
+    } catch (error) {
+      console.error('Erro ao buscar ranking global de XP:', error);
       return [];
     }
   }

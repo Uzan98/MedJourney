@@ -12,7 +12,8 @@ import {
   BookOpen,
   Star, 
   BrainCog,
-  BarChart2
+  BarChart2,
+  CheckCircle
 } from 'lucide-react';
 import SmartPlanningService, { SmartPlan } from '@/services/smart-planning.service';
 import { toast } from 'react-hot-toast';
@@ -24,7 +25,9 @@ interface StatsSummary {
   totalSessionsPlanned: number;
   totalStudyHours: number;
   averageSessionsPerDay: number;
-  topDisciplines: {name: string, sessions: number, minutes: number}[];
+  completedSessions?: number;
+  completionRate?: number;
+  topDisciplines: {name: string, sessions: number, minutes: number, completedSessions?: number}[];
 }
 
 export default function SmartPlanningStatisticsPage() {
@@ -40,16 +43,114 @@ export default function SmartPlanningStatisticsPage() {
   const loadPlansAndCalculateStats = async () => {
     setIsLoading(true);
     try {
-      const { data: plans, error } = await SmartPlanningService.getPlans();
-      
-      if (error) {
-        throw error;
-      }
+      const smartPlanningService = new SmartPlanningService();
+      const plans = await smartPlanningService.getUserPlans();
       
       if (plans) {
         setPlans(plans);
-        const calculatedStats = calculateStats(plans);
-        setStats(calculatedStats);
+        
+        // Inicializar contadores
+        const activePlans = plans.filter(plan => plan.status === 'active').length;
+        const completedPlans = plans.filter(plan => plan.status === 'completed').length;
+        
+        let totalSessionsPlanned = 0;
+        let totalStudyHours = 0;
+        let completedSessions = 0;
+        let completionRate = 0;
+        
+        // Mapa para armazenar estatísticas por disciplina
+        const disciplineStats: Record<string, {
+          name: string, 
+          sessions: number, 
+          minutes: number,
+          completedSessions: number
+        }> = {};
+        
+        // Processar cada plano para obter suas sessões
+        for (const plan of plans) {
+          try {
+            const planSessions = await smartPlanningService.getPlanSessions(plan.id);
+            
+            if (planSessions && planSessions.length > 0) {
+              // Incrementar contadores gerais
+              totalSessionsPlanned += planSessions.length;
+              
+              // Processar cada sessão
+              for (const session of planSessions) {
+                // Adicionar à contagem total de horas
+                totalStudyHours += session.duration_minutes / 60;
+                
+                // Verificar se a sessão está concluída
+                if (session.completed) {
+                  completedSessions++;
+                }
+                
+                // Atualizar estatísticas da disciplina
+                const disciplineKey = `${session.discipline_id}-${session.discipline_name}`;
+                if (!disciplineStats[disciplineKey]) {
+                  disciplineStats[disciplineKey] = {
+                    name: session.discipline_name || `Disciplina ${session.discipline_id}`,
+                    sessions: 0,
+                    minutes: 0,
+                    completedSessions: 0
+                  };
+                }
+                
+                disciplineStats[disciplineKey].sessions++;
+                disciplineStats[disciplineKey].minutes += session.duration_minutes;
+                
+                if (session.completed) {
+                  disciplineStats[disciplineKey].completedSessions++;
+                }
+              }
+            }
+          } catch (error) {
+            console.error(`Erro ao buscar sessões do plano ${plan.id}:`, error);
+          }
+        }
+        
+        // Calcular taxa de conclusão
+        completionRate = totalSessionsPlanned > 0 
+          ? Math.round((completedSessions / totalSessionsPlanned) * 100) 
+          : 0;
+        
+        // Calcular média de sessões por dia
+        const allSessions = plans.reduce((total, plan) => total + (plan.total_sessions || 0), 0);
+        const allDays = plans.reduce((total, plan) => {
+          if (plan.start_date && plan.end_date) {
+            const start = new Date(plan.start_date);
+            const end = new Date(plan.end_date);
+            const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+            return total + days;
+          }
+          return total;
+        }, 0);
+        
+        const averageSessionsPerDay = allDays > 0 
+          ? Math.round((allSessions / allDays) * 10) / 10 
+          : 0;
+        
+        // Converter o mapa de disciplinas em um array e ordenar por número de sessões
+        const topDisciplines = Object.values(disciplineStats)
+          .sort((a, b) => b.sessions - a.sessions)
+          .map(d => ({
+            name: d.name,
+            sessions: d.sessions,
+            minutes: d.minutes,
+            completedSessions: d.completedSessions
+          }));
+        
+        setStats({
+          totalPlans: plans.length,
+          activePlans,
+          completedPlans,
+          totalSessionsPlanned,
+          totalStudyHours: Math.round(totalStudyHours),
+          averageSessionsPerDay,
+          completedSessions,
+          completionRate,
+          topDisciplines: topDisciplines.slice(0, 5) // Limitar a 5 disciplinas
+        });
       }
     } catch (error) {
       console.error('Erro ao carregar planos:', error);
@@ -57,34 +158,6 @@ export default function SmartPlanningStatisticsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const calculateStats = (plans: SmartPlan[]): StatsSummary => {
-    // Esta é uma versão simplificada. Em uma versão real, você iria buscar 
-    // as sessões de cada plano e fazer cálculos mais detalhados.
-    const activePlans = plans.filter(plan => plan.status === 'active').length;
-    const completedPlans = plans.filter(plan => plan.status === 'completed').length;
-    
-    // Dados de exemplo para simulação
-    const mockData = {
-      totalSessionsPlanned: 245,
-      totalStudyHours: 167,
-      averageSessionsPerDay: 2.8,
-      topDisciplines: [
-        {name: 'Anatomia', sessions: 45, minutes: 2850},
-        {name: 'Fisiologia', sessions: 38, minutes: 2280},
-        {name: 'Bioquímica', sessions: 27, minutes: 1620},
-        {name: 'Patologia', sessions: 25, minutes: 1500},
-        {name: 'Farmacologia', sessions: 22, minutes: 1320},
-      ]
-    };
-    
-    return {
-      totalPlans: plans.length,
-      activePlans,
-      completedPlans,
-      ...mockData
-    };
   };
 
   return (
@@ -172,6 +245,19 @@ export default function SmartPlanningStatisticsPage() {
                   </div>
                 </div>
               </div>
+
+              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-5 text-white shadow-md">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-white/20 rounded-full">
+                    <CheckCircle className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-green-100 mb-1">Sessões Concluídas</h3>
+                    <p className="text-3xl font-bold">{stats.completedSessions}</p>
+                    <p className="text-xs text-green-200 mt-1">Taxa de conclusão: {stats.completionRate}%</p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -185,45 +271,46 @@ export default function SmartPlanningStatisticsPage() {
 
               <div className="space-y-6">
                 {stats.topDisciplines.map((discipline, index) => {
-                  const percentage = Math.round((discipline.minutes / (stats.totalStudyHours * 60)) * 100);
-                  const colors = [
-                    'from-blue-500 to-blue-400',
-                    'from-purple-500 to-purple-400',
-                    'from-indigo-500 to-indigo-400',
-                    'from-green-500 to-green-400',
-                    'from-amber-500 to-amber-400',
-                  ];
-                  const bgGradient = colors[index % colors.length];
+                  // Calcular a porcentagem de conclusão para esta disciplina
+                  const completionPercentage = discipline.sessions > 0 
+                    ? Math.round(((discipline.completedSessions || 0) / discipline.sessions) * 100) 
+                    : 0;
+                  
+                  // Determinar a cor da barra de progresso com base na porcentagem
+                  let progressColor = 'bg-blue-500';
+                  if (completionPercentage >= 75) progressColor = 'bg-green-500';
+                  else if (completionPercentage >= 50) progressColor = 'bg-teal-500';
+                  else if (completionPercentage >= 25) progressColor = 'bg-amber-500';
+                  else if (completionPercentage > 0) progressColor = 'bg-orange-500';
                   
                   return (
-                    <div key={discipline.name} className="bg-gray-50 p-4 rounded-lg hover:shadow-sm transition-shadow">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${bgGradient} flex items-center justify-center text-white shadow-sm`}>
-                            <Star className="h-5 w-5" />
-                          </div>
-                          <span className="font-semibold text-gray-800">{discipline.name}</span>
+                    <div key={index} className="border-b border-gray-100 pb-4 last:border-b-0 last:pb-0">
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center">
+                          <div className={`w-3 h-3 rounded-full bg-indigo-${(index * 100) + 500} mr-2`}></div>
+                          <span className="font-medium text-gray-800">{discipline.name}</span>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-sm bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-full">
-                            {discipline.sessions} sessões
-                          </span>
-                          <span className="text-sm bg-purple-100 text-purple-800 px-2.5 py-1 rounded-full">
-                            {Math.floor(discipline.minutes / 60)}h {discipline.minutes % 60}min
-                          </span>
+                        <div className="text-sm text-gray-500">
+                          {discipline.sessions} sessões ({Math.round(discipline.minutes / 60)}h)
                         </div>
                       </div>
                       
-                      <div className="relative pt-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="text-xs font-semibold text-indigo-600 uppercase">Proporção do tempo total</div>
-                          <div className="text-xs font-bold text-indigo-800">{percentage}%</div>
+                      {/* Barra de progresso de conclusão */}
+                      <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full ${progressColor} rounded-full`}
+                          style={{ width: `${completionPercentage}%` }}
+                        ></div>
+                      </div>
+                      
+                      {/* Detalhes de conclusão */}
+                      <div className="flex justify-between items-center mt-2 text-sm">
+                        <div className="flex items-center text-gray-600">
+                          <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
+                          <span>{discipline.completedSessions} concluídas</span>
                         </div>
-                        <div className="overflow-hidden h-3 text-xs flex rounded-full bg-gray-200">
-                          <div 
-                            className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r ${bgGradient}`} 
-                            style={{ width: `${percentage}%` }}
-                          ></div>
+                        <div className="font-medium">
+                          {completionPercentage}% concluído
                         </div>
                       </div>
                     </div>

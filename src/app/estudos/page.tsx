@@ -862,11 +862,25 @@ export default function EstudosPage() {
   const groupSessionsByDate = () => {
     const groups: { [key: string]: StudySession[] } = {};
     
+    console.log("Agrupando sessões por data. Total de sessões:", sortedUpcomingSessions.length);
+    
     sortedUpcomingSessions.forEach(session => {
       if (session.scheduled_date) {
-        // Extrair apenas a data (sem o horário)
+        // Extrair apenas a data (sem o horário) usando o fuso horário de Brasília
         const date = new Date(session.scheduled_date);
-        const dateKey = date.toISOString().split('T')[0];
+        console.log(`Processando sessão: ${session.title}, Data: ${date.toISOString()}`);
+        
+        // Usar o formato YYYY-MM-DD para a chave, mas garantir que seja baseado no fuso horário local
+        const dateFormatter = new Intl.DateTimeFormat('fr-CA', { // fr-CA usa formato YYYY-MM-DD
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          timeZone: 'America/Sao_Paulo' // Forçar fuso horário de Brasília
+        });
+        
+        // Não precisamos mais adicionar 1 dia, pois já estamos usando o fuso horário correto
+        const dateKey = dateFormatter.format(date);
+        console.log(`  Chave de data gerada: ${dateKey}`);
         
         // Inicializar o grupo se não existir
         if (!groups[dateKey]) {
@@ -876,6 +890,12 @@ export default function EstudosPage() {
         // Adicionar a sessão ao grupo
         groups[dateKey].push(session);
       }
+    });
+    
+    // Verificar os grupos criados
+    console.log("Grupos de sessões criados:");
+    Object.keys(groups).forEach(key => {
+      console.log(`  Grupo ${key}: ${groups[key].length} sessões`);
     });
     
     return groups;
@@ -1019,13 +1039,20 @@ export default function EstudosPage() {
                   {/* Sessões agendadas - mostrar todas as não completadas */}
                   <div className="bg-white rounded-lg p-6 space-y-1">
                   {groupDates.map(dateKey => {
-                    const dateObj = new Date(dateKey);
-                      // Formatar a data em português
-                      const dateFormatted = formatDate(dateObj);
-                      
-                      // Verificar se a data é hoje
-                      const isToday = new Date(dateKey).toLocaleDateString() === new Date().toLocaleDateString();
-                    
+                    // Corrigir exibição do título do grupo
+                    const [year, month, day] = dateKey.split('-');
+                    const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
+                    const dateFormatted = new Intl.DateTimeFormat('pt-BR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      timeZone: 'America/Sao_Paulo'
+                    }).format(dateObj);
+
+                    // Verificar se é hoje
+                    const today = new Date();
+                    const isToday = dateObj.toLocaleDateString() === today.toLocaleDateString();
+
                     return (
                         <div key={dateKey} className="mb-4 last:mb-0">
                           <div className="flex items-center space-x-2 mb-2">

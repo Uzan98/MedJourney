@@ -19,6 +19,7 @@ export interface StudySession {
   type?: 'new-content' | 'revision' | 'practice' | 'exam-prep';
   created_at?: string;
   updated_at?: string;
+  disciplineName?: string; // Nome da disciplina para exibição
 }
 
 export class StudySessionService {
@@ -180,6 +181,8 @@ export class StudySessionService {
         return data;
       } 
       else if (smartSession) {
+        console.log('Completando sessão de plano inteligente:', smartSession.id);
+        
         // Completar sessão de plano inteligente
         // Como a tabela smart_plan_sessions pode não ter o campo 'completed',
         // vamos usar o campo metadata para guardar essa informação
@@ -188,7 +191,9 @@ export class StudySessionService {
         let metadata: any = {};
         if (smartSession.metadata) {
           try {
-            metadata = JSON.parse(smartSession.metadata);
+            metadata = typeof smartSession.metadata === 'string'
+              ? JSON.parse(smartSession.metadata)
+              : smartSession.metadata;
           } catch (e) {
             console.warn('Erro ao analisar metadados da sessão:', e);
           }
@@ -216,6 +221,8 @@ export class StudySessionService {
           return null;
         }
         
+        console.log('Sessão de plano inteligente atualizada com sucesso:', updatedSmartSession.id);
+        
         // Registrar a atividade de estudo
         await StudyStreakService.recordStudySession(
           actualDuration || smartSession.duration_minutes,
@@ -224,28 +231,28 @@ export class StudySessionService {
         );
         
         // Converter para o formato de sessão de estudo
-        const convertedSession = SmartPlanningService.convertToStudySession({
+        const dateObj = new Date(`${updatedSmartSession.date}T${updatedSmartSession.start_time}`);
+        
+        const convertedSession: StudySession = {
           id: updatedSmartSession.id,
           title: updatedSmartSession.title,
           discipline_id: updatedSmartSession.discipline_id,
-          discipline_name: updatedSmartSession.disciplines?.name || 'Disciplina',
           subject_id: updatedSmartSession.subject_id,
-          date: updatedSmartSession.date,
-          start_time: updatedSmartSession.start_time,
-          end_time: updatedSmartSession.end_time,
+          scheduled_date: this.adjustDateToLocalTimezone(`${updatedSmartSession.date}T${updatedSmartSession.start_time}`),
           duration_minutes: updatedSmartSession.duration_minutes,
-          is_revision: updatedSmartSession.is_revision,
-          original_session_id: updatedSmartSession.original_session_id,
-          plan_id: updatedSmartSession.plan_id
-        });
-        
-        // Adicionar informações de conclusão ao objeto convertido
-        return {
-          ...convertedSession,
-          completed: true,
+          actual_duration_minutes: actualDuration || updatedSmartSession.duration_minutes,
+          user_id: '', // Será preenchido automaticamente pelo serviço
           status: 'concluida',
-          actual_duration_minutes: actualDuration || smartSession.duration_minutes
+          completed: true,
+          type: updatedSmartSession.is_revision ? 'revision' : 'new-content'
         };
+        
+        // Adicionar o nome da disciplina como propriedade não tipada
+        (convertedSession as any).disciplineName = updatedSmartSession.disciplines?.name || 'Disciplina';
+        
+        console.log('Sessão convertida:', convertedSession);
+        
+        return convertedSession;
       }
       else {
         console.error('Sessão não encontrada em nenhuma das tabelas:', id);
@@ -298,6 +305,7 @@ export class StudySessionService {
 
       // Obter a data atual para filtragem
       const today = new Date();
+      console.log('getUserSessions: Data atual:', today.toISOString());
       
       // 1. Buscar sessões regulares
       let query = supabase
@@ -309,18 +317,9 @@ export class StudySessionService {
         // Filtrar por sessões não completadas
         query = query.eq('completed', false);
         
-        // Para sessões não completadas, vamos limitar a apenas as do dia atual
-        // Definimos o início e o fim do dia atual
-        const startOfDay = new Date(today);
-        startOfDay.setHours(0, 0, 0, 0);
-        
-        const endOfDay = new Date(today);
-        endOfDay.setHours(23, 59, 59, 999);
-        
-        // Aplicar filtro de data para o dia atual
-        query = query
-          .gte('scheduled_date', startOfDay.toISOString())
-          .lt('scheduled_date', endOfDay.toISOString());
+        // Para sessões não completadas, não vamos filtrar por data
+        // para garantir que todas as sessões não completadas sejam retornadas
+        // e possamos filtrar adequadamente no cliente
       }
 
       const { data: regularSessions, error } = await query.order('scheduled_date', { ascending: true });
@@ -331,6 +330,14 @@ export class StudySessionService {
       }
       
       console.log('getUserSessions: Regular sessions encontradas:', regularSessions?.length || 0);
+      if (regularSessions && regularSessions.length > 0) {
+        console.log('getUserSessions: Exemplo de sessão regular:', {
+          id: regularSessions[0].id,
+          title: regularSessions[0].title,
+          scheduled_date: regularSessions[0].scheduled_date,
+          completed: regularSessions[0].completed
+        });
+      }
 
       // 2. Buscar sessões do planejamento inteligente
       try {
@@ -366,44 +373,59 @@ export class StudySessionService {
           return regularSessions || [];
         }
 
-        // Obter a data atual para filtragem
-        const today = new Date();
+        console.log('getUserSessions: Smart sessions brutas encontradas:', smartSessions?.length || 0);
         
         // Converter sessões do planejamento inteligente para o formato de sessão regular
         let convertedSmartSessions = (smartSessions || []).map(session => {
-          return SmartPlanningService.convertToStudySession({
+          // Verificar se a sessão está marcada como concluída nos metadados
+          let completed = false;
+          let status = 'agendada';
+          let actual_duration_minutes = undefined;
+          
+          if (session.metadata) {
+            try {
+              const metadata = typeof session.metadata === 'string' 
+                ? JSON.parse(session.metadata) 
+                : session.metadata;
+                
+              if (metadata.completed) {
+                completed = true;
+                status = 'concluida';
+                actual_duration_minutes = metadata.actual_duration_minutes;
+              }
+            } catch (e) {
+              console.warn('Erro ao analisar metadados da sessão:', e);
+            }
+          }
+
+          // Criar a data da sessão
+          const sessionDate = new Date(`${session.date}T${session.start_time}`);
+          console.log(`Sessão ${session.id} (${session.title}): Data original = ${sessionDate.toISOString()}`);
+
+          return {
             id: session.id,
             title: session.title,
             discipline_id: session.discipline_id,
-            discipline_name: session.disciplines?.name || 'Disciplina',
+            disciplineName: session.disciplines?.name || 'Disciplina',
             subject_id: session.subject_id,
-            date: session.date,
-            start_time: session.start_time,
-            end_time: session.end_time,
+            scheduled_date: sessionDate.toISOString(),
             duration_minutes: session.duration_minutes,
-            is_revision: session.is_revision,
-            original_session_id: session.original_session_id,
-            plan_id: session.plan_id
-          });
+            actual_duration_minutes,
+            user_id: userId,
+            status,
+            completed,
+            type: session.is_revision ? 'revision' : 'new-content'
+          };
         });
         
-        // Filtrar sessões para mostrar apenas as do dia atual
+        // Filtrar sessões para mostrar apenas as não completadas se necessário
         if (!includeCompleted) {
-          convertedSmartSessions = convertedSmartSessions.filter(session => {
-            if (!session.scheduled_date) return false;
-            
-            const sessionDate = new Date(session.scheduled_date);
-            
-            // Comparar ano, mês e dia localmente (sem conversão para UTC)
-            return (
-              sessionDate.getFullYear() === today.getFullYear() &&
-              sessionDate.getMonth() === today.getMonth() &&
-              sessionDate.getDate() === today.getDate()
-            );
-          });
+          convertedSmartSessions = convertedSmartSessions.filter(session => !session.completed);
+          console.log('getUserSessions: Filtrando apenas sessões não completadas');
         }
 
-        console.log('getUserSessions: Smart sessions encontradas (após filtragem):', convertedSmartSessions.length);
+        console.log('getUserSessions: Smart sessions convertidas (após filtragem):', convertedSmartSessions.length);
+        console.log('getUserSessions: Smart sessions completadas:', convertedSmartSessions.filter(s => s.completed).length);
 
         // Combinar os dois tipos de sessões
         return [...regularSessions || [], ...convertedSmartSessions];
@@ -660,5 +682,52 @@ export class StudySessionService {
       console.error(`Erro ao buscar sessão por ID ${id}:`, error);
       return null;
     }
+  }
+
+  /**
+   * Ajusta uma data para o fuso horário local (Brasília)
+   * Isso resolve problemas de datas que podem estar sendo interpretadas como UTC
+   * @param dateTimeString String de data e hora no formato ISO (YYYY-MM-DDTHH:MM:SS)
+   * @returns Data ISO ajustada para o fuso horário local
+   */
+  private static adjustDateToLocalTimezone(dateTimeString: string): string {
+    try {
+      // Extrair a data e hora da string
+      const [datePart, timePart] = dateTimeString.split('T');
+      
+      // Forçar a interpretação da data como sendo no fuso horário local
+      // Criando uma string de data no formato YYYY-MM-DDTHH:MM:SS sem o Z no final
+      // para que o JavaScript não interprete como UTC
+      const localDateString = `${datePart}T${timePart || '00:00:00'}`;
+      
+      // Criar um objeto de data no fuso horário local
+      const date = new Date(localDateString);
+      
+      // Adicionar 1 dia para compensar o problema de fuso horário
+      // Isso é uma solução temporária para garantir que a data seja exibida corretamente
+      date.setDate(date.getDate() + 1);
+      
+      console.log(`Ajustando data: ${dateTimeString} -> ${date.toISOString()}`);
+      
+      return date.toISOString();
+    } catch (error) {
+      console.error('Erro ao ajustar fuso horário:', error);
+      return new Date(dateTimeString).toISOString(); // Fallback para o comportamento anterior
+    }
+  }
+
+  /**
+   * Formata uma data no formato YYYY-MM-DD considerando o fuso horário local
+   * @param date Data a ser formatada
+   * @returns String no formato YYYY-MM-DD
+   */
+  private static formatDateYYYYMMDD(date: Date): string {
+    // Usar o formato YYYY-MM-DD para a chave, mas garantir que seja baseado no fuso horário local
+    return new Intl.DateTimeFormat('fr-CA', { // fr-CA usa formato YYYY-MM-DD
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      timeZone: 'America/Sao_Paulo' // Forçar fuso horário de Brasília
+    }).format(date);
   }
 } 

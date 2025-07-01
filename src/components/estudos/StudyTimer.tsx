@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Play, Pause, RotateCcw, Check, Settings, Clock, X, Volume2, Volume1, VolumeX } from 'lucide-react';
 import { completeStudySession } from '../../lib/api';
 import { toast } from '@/components/ui/toast';
+import { Button } from '@/components/ui/button';
+import { playNotificationSound, initAudioContext } from '@/utils/sound';
 
 interface StudyTimerProps {
   isOpen: boolean;
@@ -37,35 +39,101 @@ const StudyTimer: React.FC<StudyTimerProps> = ({
 
   // Ref para guardar o ID do intervalo
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  // Referência para o worker de segundo plano
+  const timerWorkerRef = useRef<Worker | null>(null);
 
-  // Som de notificação
-  const playNotificationSound = () => {
-    if (!soundEnabled) return;
+  // Referências para controle preciso do tempo
+  const startTimestampRef = useRef<number>(Date.now());
+  const initialTimeRef = useRef<number>(sessionData.duration * 60);
+
+  // Inicializar o contexto de áudio quando o componente é montado
+  useEffect(() => {
+    if (!isOpen) return;
     
-    try {
-      // Usar Web Audio API que é mais compatível
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.type = 'sine';
-      oscillator.frequency.value = 750;
-      gainNode.gain.value = 0.3;
-      
-      oscillator.start();
-      
-      // Reduzir o volume gradualmente
-      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1);
-      
-      // Parar após 1 segundo
-      setTimeout(() => {
-        oscillator.stop();
-      }, 1000);
+    // Inicializar o contexto de áudio
+    initAudioContext();
+    
+    // Criar um worker para continuar contando mesmo quando a guia está em segundo plano
+    if (typeof Worker !== 'undefined' && !timerWorkerRef.current) {
+      try {
+        // Criar um worker inline
+        const workerBlob = new Blob([`
+          let timerId = null;
+          let isPaused = false;
+          
+          self.onmessage = function(e) {
+            if (e.data.action === 'start') {
+              // Iniciar o timer
+              isPaused = false;
+              if (timerId === null) {
+                timerId = setInterval(() => {
+                  if (!isPaused) {
+                    self.postMessage({ type: 'tick' });
+                  }
+                }, 1000);
+              }
+            } else if (e.data.action === 'pause') {
+              // Pausar o timer sem destruí-lo
+              isPaused = true;
+            } else if (e.data.action === 'stop') {
+              // Parar o timer
+              if (timerId !== null) {
+                clearInterval(timerId);
+                timerId = null;
+              }
+            }
+          };
+        `], { type: 'application/javascript' });
+        
+        const workerUrl = URL.createObjectURL(workerBlob);
+        timerWorkerRef.current = new Worker(workerUrl);
+        
+        // Configurar o handler de mensagens do worker
+        timerWorkerRef.current.onmessage = (e) => {
+          if (e.data.type === 'tick' && isRunning) {
+            // Atualizar o timer mesmo quando a guia está em segundo plano
+            const now = Date.now();
+            const elapsedSeconds = Math.floor((now - startTimestampRef.current) / 1000);
+            
+            // Atualizar o tempo decorrido
+            setElapsedTime(elapsedSeconds);
+            
+            // Atualizar o tempo restante
+            const newTimeRemaining = Math.max(0, initialTimeRef.current - elapsedSeconds);
+            setTimeRemaining(newTimeRemaining);
+            
+            // Verificar se o tempo acabou
+            if (newTimeRemaining <= 0) {
+              playSound();
+              setIsRunning(false);
+              setCompletionConfirm(true);
+              
+              // Pausar o worker
+              if (timerWorkerRef.current) {
+                timerWorkerRef.current.postMessage({ action: 'pause' });
+              }
+            }
+          }
+        };
     } catch (error) {
-      console.error('Erro ao reproduzir som:', error);
+        console.error('Erro ao criar worker:', error);
+      }
+    }
+    
+    // Limpar o worker quando o componente for desmontado ou fechado
+    return () => {
+      if (timerWorkerRef.current) {
+        timerWorkerRef.current.postMessage({ action: 'stop' });
+        timerWorkerRef.current.terminate();
+        timerWorkerRef.current = null;
+      }
+    };
+  }, [isOpen, isRunning]);
+
+  // Reproduzir som de notificação
+  const playSound = () => {
+    if (soundEnabled) {
+      playNotificationSound();
     }
   };
 
@@ -78,11 +146,31 @@ const StudyTimer: React.FC<StudyTimerProps> = ({
 
   // Iniciar/Pausar o timer
   const toggleTimer = () => {
-    setIsRunning(!isRunning);
+    // Inicializar o contexto de áudio na interação do usuário
+    initAudioContext();
+    
+    const newRunningState = !isRunning;
+    setIsRunning(newRunningState);
+    
+    // Atualizar o worker com o novo estado
+    if (timerWorkerRef.current) {
+      timerWorkerRef.current.postMessage({ 
+        action: newRunningState ? 'start' : 'pause'
+      });
+    }
     
     // Se está iniciando o timer pela primeira vez, tocar som
-    if (!isRunning && elapsedTime === 0) {
-      playNotificationSound();
+    if (newRunningState && elapsedTime === 0) {
+      playSound();
+      
+      // Armazenar o timestamp inicial
+      startTimestampRef.current = Date.now();
+      initialTimeRef.current = pomodoro ? pomodoroInterval * 60 : sessionData.duration * 60;
+      
+      // Iniciar o worker se necessário
+      if (timerWorkerRef.current) {
+        timerWorkerRef.current.postMessage({ action: 'start' });
+      }
     }
   };
 
@@ -177,85 +265,6 @@ const StudyTimer: React.FC<StudyTimerProps> = ({
   const toggleSound = () => {
     setSoundEnabled(!soundEnabled);
   };
-
-  // Efeito para controlar o timer
-  useEffect(() => {
-    if (!isRunning) return;
-    
-    // Armazenar o timestamp inicial
-    const startTimestamp = Date.now();
-    const initialElapsedTime = elapsedTime;
-    const initialTimeRemaining = timeRemaining;
-    
-    // Referência para o ID da animação
-    let animationFrameId: number | null = null;
-    
-    // Flag para verificar se a página está visível
-    let isVisible = true;
-    
-    // Função para atualizar o timer
-    const updateTimer = () => {
-      if (!isRunning) return;
-      
-      if (isVisible) {
-        const now = Date.now();
-        const deltaSeconds = Math.floor((now - startTimestamp) / 1000);
-        
-        // Atualizar o tempo decorrido
-        const newElapsedTime = initialElapsedTime + deltaSeconds;
-        setElapsedTime(newElapsedTime);
-        
-        // Atualizar o tempo restante
-        const newTimeRemaining = Math.max(0, initialTimeRemaining - deltaSeconds);
-        setTimeRemaining(newTimeRemaining);
-        
-        // Verificar se o tempo acabou
-        if (newTimeRemaining <= 0) {
-          playNotificationSound();
-          setIsRunning(false);
-          setCompletionConfirm(true);
-          return;
-        }
-      }
-      
-      // Continuar a animação
-      animationFrameId = requestAnimationFrame(updateTimer);
-    };
-    
-    // Iniciar a animação
-    animationFrameId = requestAnimationFrame(updateTimer);
-    
-    // Gerenciar visibilidade da página
-    const handleVisibilityChange = () => {
-      isVisible = document.visibilityState === 'visible';
-    };
-    
-    // Quando a janela ganha foco
-    const handleFocus = () => {
-      isVisible = true;
-    };
-    
-    // Quando a janela perde foco
-    const handleBlur = () => {
-      isVisible = false;
-    };
-    
-    // Adicionar listeners
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('blur', handleBlur);
-    
-    // Limpar recursos ao desmontar
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('blur', handleBlur);
-      
-      if (animationFrameId !== null) {
-        cancelAnimationFrame(animationFrameId);
-      }
-    };
-  }, [isRunning, elapsedTime, timeRemaining]);
 
   // Efeito para definir o título da página
   useEffect(() => {

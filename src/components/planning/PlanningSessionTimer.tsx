@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Play, Pause, RotateCcw, Check, Clock, X, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { StudySession } from '@/lib/types/planning';
 import { atualizarSessaoEstudo } from '@/services';
 import toast from 'react-hot-toast';
+import { playNotificationSound, initAudioContext } from '@/utils/sound';
 
 interface PlanningSessionTimerProps {
   isOpen: boolean;
@@ -29,34 +30,95 @@ const PlanningSessionTimer: React.FC<PlanningSessionTimerProps> = ({
   const [elapsedTime, setElapsedTime] = useState(0); // tempo decorrido em segundos
   const [completionConfirm, setCompletionConfirm] = useState(false);
 
-  // Som de notificação
-  const playNotificationSound = () => {
-    if (!soundEnabled) return;
+  // Referência para o worker de segundo plano
+  const timerWorkerRef = useRef<Worker | null>(null);
+
+  // Inicializar o contexto de áudio e configurar o worker
+  useEffect(() => {
+    if (!isOpen) return;
     
-    try {
-      // Usar Web Audio API que é mais compatível
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.type = 'sine';
-      oscillator.frequency.value = 750;
-      gainNode.gain.value = 0.3;
-      
-      oscillator.start();
-      
-      // Reduzir o volume gradualmente
-      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1);
-      
-      // Parar após 1 segundo
-      setTimeout(() => {
-        oscillator.stop();
-      }, 1000);
+    // Inicializar o contexto de áudio
+    initAudioContext();
+    
+    // Criar um worker para continuar contando mesmo quando a guia está em segundo plano
+    if (typeof Worker !== 'undefined' && !timerWorkerRef.current) {
+      try {
+        // Criar um worker inline
+        const workerBlob = new Blob([`
+          let timerId = null;
+          let isPaused = false;
+          
+          self.onmessage = function(e) {
+            if (e.data.action === 'start') {
+              // Iniciar o timer
+              isPaused = false;
+              if (timerId === null) {
+                timerId = setInterval(() => {
+                  if (!isPaused) {
+                    self.postMessage({ type: 'tick' });
+                  }
+                }, 1000);
+              }
+            } else if (e.data.action === 'pause') {
+              // Pausar o timer sem destruí-lo
+              isPaused = true;
+            } else if (e.data.action === 'stop') {
+              // Parar o timer
+              if (timerId !== null) {
+                clearInterval(timerId);
+                timerId = null;
+              }
+            }
+          };
+        `], { type: 'application/javascript' });
+        
+        const workerUrl = URL.createObjectURL(workerBlob);
+        timerWorkerRef.current = new Worker(workerUrl);
+        
+        // Configurar o handler de mensagens do worker
+        timerWorkerRef.current.onmessage = (e) => {
+          if (e.data.type === 'tick' && isRunning) {
+            // Decrementar tempo restante e incrementar tempo decorrido
+            setTimeRemaining(prev => prev > 0 ? prev - 1 : 0);
+            setElapsedTime(prev => prev + 1);
+            
+            // Se o tempo acabou
+            if (timeRemaining <= 1) {
+              playSound();
+              setIsRunning(false);
+              setCompletionConfirm(true);
+              
+              // Pausar o worker
+              if (timerWorkerRef.current) {
+                timerWorkerRef.current.postMessage({ action: 'pause' });
+              }
+            }
+          }
+        };
+        
+        // Iniciar o worker se o timer já estiver rodando
+        if (isRunning) {
+          timerWorkerRef.current.postMessage({ action: 'start' });
+        }
     } catch (error) {
-      console.error('Erro ao reproduzir som:', error);
+        console.error('Erro ao criar worker:', error);
+      }
+    }
+    
+    // Limpar o worker quando o componente for desmontado ou fechado
+    return () => {
+      if (timerWorkerRef.current) {
+        timerWorkerRef.current.postMessage({ action: 'stop' });
+        timerWorkerRef.current.terminate();
+        timerWorkerRef.current = null;
+      }
+    };
+  }, [isOpen]);
+
+  // Reproduzir som de notificação
+  const playSound = () => {
+    if (soundEnabled) {
+      playNotificationSound();
     }
   };
 
@@ -69,11 +131,22 @@ const PlanningSessionTimer: React.FC<PlanningSessionTimerProps> = ({
 
   // Iniciar/Pausar o timer
   const toggleTimer = () => {
-    setIsRunning(!isRunning);
+    // Inicializar o contexto de áudio na interação do usuário
+    initAudioContext();
+    
+    const newRunningState = !isRunning;
+    setIsRunning(newRunningState);
+    
+    // Atualizar o worker com o novo estado
+    if (timerWorkerRef.current) {
+      timerWorkerRef.current.postMessage({ 
+        action: newRunningState ? 'start' : 'pause'
+      });
+    }
     
     // Se está iniciando o timer pela primeira vez, tocar som
-    if (!isRunning && elapsedTime === 0) {
-      playNotificationSound();
+    if (newRunningState && elapsedTime === 0) {
+      playSound();
     }
   };
 
@@ -134,28 +207,6 @@ const PlanningSessionTimer: React.FC<PlanningSessionTimerProps> = ({
   const toggleSound = () => {
     setSoundEnabled(!soundEnabled);
   };
-
-  // Efeito para controlar o timer
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    
-    if (isRunning) {
-      interval = setInterval(() => {
-        // Decrementar tempo restante e incrementar tempo decorrido
-        setTimeRemaining(prev => prev > 0 ? prev - 1 : 0);
-        setElapsedTime(prev => prev + 1);
-          
-        // Se o tempo acabou
-        if (timeRemaining <= 1) {
-          playNotificationSound();
-          setIsRunning(false);
-          setCompletionConfirm(true);
-        }
-      }, 1000); // Exatamente 1 segundo por ciclo
-    }
-    
-    return () => clearInterval(interval);
-  }, [isRunning, timeRemaining]);
 
   // Efeito para definir o título da página
   useEffect(() => {

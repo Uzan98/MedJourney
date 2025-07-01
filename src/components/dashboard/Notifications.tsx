@@ -1,8 +1,9 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { BellRing, Clock, BookOpen, FileText, XCircle, Bell } from 'lucide-react';
+import { playNotificationSound } from '@/utils/sound';
 
 interface Notification {
   id: string;
@@ -17,6 +18,20 @@ interface NotificationsProps {
 }
 
 const Notifications = ({ notifications }: NotificationsProps) => {
+  // Ref para controlar se o som já foi tocado
+  const prevNotificationsCountRef = useRef<number>(0);
+  
+  // Tocar som quando novas notificações aparecerem
+  useEffect(() => {
+    // Se o número de notificações aumentou, tocar o som
+    if (notifications.length > prevNotificationsCountRef.current) {
+      playNotificationSound();
+    }
+    
+    // Atualizar a referência
+    prevNotificationsCountRef.current = notifications.length;
+  }, [notifications.length]);
+
   const getIcon = (type: string) => {
     switch (type) {
       case 'task':

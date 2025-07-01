@@ -8,10 +8,11 @@ import NextTask from './NextTask';
 import NextStudySession from './NextStudySession';
 import RecentNote from './RecentNote';
 import PerformanceCharts from './PerformanceCharts';
+import ImageCarousel from './ImageCarousel';
 import Notifications from './Notifications';
 import AppLayout from '../layout/AppLayout';
 import { BarChart, Clock, FileText, TrendingUp, BarChart2 } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { Card } from '../ui/card';
 import { getStudyMetrics, getStudySessions, getTasks, getNotes, getSimulatedTests } from '../../lib/api';
 import { StudyMetrics, Task, StudySession, Note, StudyData, SimulatedTest } from '../../lib/types/dashboard';
 import { setupOfflineDetection } from '../../lib/utils/offline';
@@ -411,6 +412,28 @@ const Dashboard = () => {
     return notifications;
   };
 
+  // Sample carousel images - you can replace these with actual images from your app
+  const carouselImages = [
+    {
+      src: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80&w=1000&auto=format&fit=crop",
+      alt: "Estudante lendo livros",
+      title: "Dicas de Estudo",
+      description: "Conheça técnicas eficientes para memorização de conteúdo"
+    },
+    {
+      src: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=1000&auto=format&fit=crop",
+      alt: "Estudante fazendo anotações",
+      title: "Organização é Fundamental",
+      description: "Aprenda a criar um cronograma de estudos eficiente"
+    },
+    {
+      src: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=1000&auto=format&fit=crop",
+      alt: "Grupo de estudos",
+      title: "Estude em Grupo",
+      description: "Participe das salas de estudo e aumente seu desempenho"
+    }
+  ];
+
   // Get username from auth - this would come from a real auth state
   const username = 'Usuário';
   const greeting = getGreeting();
@@ -478,56 +501,54 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 py-8">
         <OfflineAlert />
         
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-10">
+        <div className="flex flex-col md:flex-row justify-between items-start mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-1">{greeting}, {username}</h1>
+            <h1 className="text-3xl font-bold text-gray-800">{getGreeting()}</h1>
             <p className="text-gray-600">Aqui está um resumo da sua jornada de estudos</p>
           </div>
-          <div className="mt-4 md:mt-0">
-            <button className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg shadow transition">
-              <span className="flex items-center">
-                <FileText className="h-4 w-4 mr-2" />
-                Nova Anotação
-              </span>
-            </button>
-          </div>
+          
+          {isOffline && <OfflineAlert />}
         </div>
         
-        {/* Metrics Summary */}
-        <div className="mb-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main content - 2/3 width on large screens */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Study Summary */}
           <StudySummary metrics={metrics || createEmptyMetrics()} />
-        </div>
+            
+            {/* Performance Charts */}
+            <PerformanceCharts studyData={studyData} testData={testData} />
+            
+            {/* Image Carousel */}
+            <Card className="p-6 border-0 shadow-md bg-white">
+              <h2 className="text-xl font-semibold mb-4">Dicas e Recursos</h2>
+              <ImageCarousel images={carouselImages} />
+            </Card>
         
         {/* Quick Actions */}
-        <div className="mb-10">
           <QuickActions />
         </div>
         
-        {/* Tasks and Sessions */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
-          <div className="md:col-span-1">
+          {/* Sidebar - 1/3 width on large screens */}
+          <div className="space-y-8">
+            {/* Next Task */}
             <NextTask task={nextTask || createEmptyTask()} />
-          </div>
-          <div className="md:col-span-1">
-            <NextStudySession session={nextSession || createEmptySession()} />
-          </div>
-          <div className="md:col-span-2">
+            
+            {/* Next Study Session */}
+            <NextStudySession 
+              studySessions={[nextSession || createEmptySession()]} 
+              onStartSession={(session) => {
+                console.log('Starting session:', session);
+                // Implement session start logic here
+              }}
+            />
+            
+            {/* Recent Note */}
             <RecentNote note={lastNote || createEmptyNote()} />
+            
+            {/* Notifications */}
+            <Notifications notifications={notifications} />
           </div>
-        </div>
-
-        {/* Charts */}
-        <div className="mb-10">
-          <PerformanceCharts 
-            studyData={studyData.length > 0 ? studyData : generateEmptyStudyData()} 
-            testData={testData} 
-          />
-        </div>
-
-        {/* Notifications */}
-        <div className="mb-6">
-          <Notifications notifications={notifications} />
         </div>
       </div>
     </AppLayout>

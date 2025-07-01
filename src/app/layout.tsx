@@ -44,6 +44,7 @@ export default function RootLayout({
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#3b82f6" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
         {/* PWA Icons */}
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
@@ -117,6 +118,26 @@ export default function RootLayout({
         
         {/* Vercel Speed Insights */}
         <SpeedInsights />
+
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Inicializar o contexto de áudio após interação do usuário
+              document.addEventListener('click', function initAudio() {
+                try {
+                  const AudioContext = window.AudioContext || window.webkitAudioContext;
+                  if (AudioContext) {
+                    window.audioContext = new AudioContext();
+                  }
+                } catch (e) {
+                  console.error('Erro ao inicializar contexto de áudio:', e);
+                }
+                // Remover o listener após a primeira interação
+                document.removeEventListener('click', initAudio);
+              }, { once: false });
+            `
+          }}
+        />
       </body>
     </html>
   );
