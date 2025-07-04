@@ -715,115 +715,255 @@ export default function ViewPlanPage() {
                     const isFriday = dayOfWeek === 5;
                     
                     return (
-                      <div key={date} className="rounded-xl overflow-hidden shadow-sm border border-gray-200">
-                        <div className={`px-4 py-3 text-white ${
-                          isFriday 
-                            ? 'bg-gradient-to-r from-yellow-500 to-yellow-600' // Destacar sexta-feira 
-                            : isWeekend 
-                              ? 'bg-gradient-to-r from-purple-500 to-purple-600' // Destacar fim de semana
-                              : 'bg-gradient-to-r from-indigo-500 to-indigo-600' // Dias de semana normais
-                        }`}>
-                          <h3 className="text-lg font-semibold capitalize">
-                            {formatDate(date)}
-                            <span className="text-xs ml-2 bg-white/20 px-2 py-0.5 rounded-full">
-                              Dia {dayOfWeek} {isFriday ? '(Sexta-feira)' : ''}
+                      <div key={date} className="rounded-xl overflow-hidden shadow-lg border border-emerald-100 mb-6">
+                        <div className="bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-sm">
+                          <div className="flex items-center justify-between px-5 py-4">
+                            <h3 className="text-lg font-medium capitalize flex items-center">
+                              <Calendar className="h-5 w-5 mr-2 text-white/80" />
+                              {formatDate(date)}
+                            </h3>
+                            <span className="text-sm px-3 py-1 rounded-full font-medium bg-white/20 text-white">
+                              {isFriday ? 'Sexta-feira' : isWeekend ? (dayOfWeek === 0 ? 'Domingo' : 'Sábado') : 
+                                ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira'][dayOfWeek - 1]}
                             </span>
-                          </h3>
+                          </div>
                         </div>
-                        <div className="divide-y divide-gray-100">
-                            {daySessions.sort((a, b) => a.start_time.localeCompare(b.start_time)).map((session, index) => (
+                        <div className="p-4 bg-white">
+                            {/* Separar as sessões do dia em estudo e revisão */}
+                            {(() => {
+                              // Separar sessões por tipo
+                              const studySessions = daySessions.filter(s => !s.is_revision).sort((a, b) => a.start_time.localeCompare(b.start_time));
+                              const revisionSessions = daySessions.filter(s => s.is_revision).sort((a, b) => a.start_time.localeCompare(b.start_time));
+                              
+                              return (
+                                <div className="space-y-4">
+                                  {/* Sessões de estudo */}
+                                  {studySessions.length > 0 && (
+                                    <div>
+                                      <div className="flex items-center mb-2">
+                                        <BookOpen className="h-4 w-4 text-emerald-600 mr-1.5" />
+                                        <h4 className="text-sm font-medium text-gray-700">Sessões de Estudo</h4>
+                                        <span className="ml-2 bg-emerald-100 text-emerald-700 text-xs px-1.5 py-0.5 rounded-full">
+                                          {studySessions.length}
+                                        </span>
+                                      </div>
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {studySessions.map((session) => (
                               <div 
                                 key={session.id} 
-                                className={`p-4 hover:bg-gray-50 transition-colors ${session.completed ? 'bg-green-50' : ''}`}
-                              >
-                                <div className="flex items-start gap-4">
-                                  {/* Horário e duração */}
-                                  <div className="flex flex-col items-center min-w-[80px]">
-                                    <div className={`${session.completed ? 'bg-green-100 text-green-800' : 'bg-indigo-100 text-indigo-800'} rounded-lg px-3 py-2 text-center w-full`}>
-                                      <div className="text-sm font-bold">{formatTime(session.start_time)}</div>
-                                      <div className="text-xs text-indigo-600">{session.duration_minutes} min</div>
+                                            className="w-full bg-white rounded-[25px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] transition-all duration-200 hover:shadow-lg overflow-hidden"
+                                          >
+                                            {/* Parte superior com gradiente - altura reduzida */}
+                                            <div className={`w-full h-16 ${
+                                              session.completed 
+                                                ? 'bg-gradient-to-r from-green-400 to-teal-500'
+                                                : 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                                            } rounded-t-[25px] flex items-start justify-end`}>
+                                              <div className="m-3 w-7 h-7 bg-white rounded-[8px] flex items-center justify-center transition-all duration-200 hover:scale-110 hover:rotate-[10deg]">
+                                                {session.completed ? (
+                                                  <CheckCircle className="w-3.5 h-3.5 text-gray-400" />
+                                                ) : (
+                                                  <BookOpen className="w-3.5 h-3.5 text-gray-400" />
+                                                )}
                                     </div>
-                                    <div className="h-full w-0.5 bg-gray-200 my-1 mx-auto"></div>
-                                    <div className="text-xs text-gray-500">{formatTime(session.end_time)}</div>
                                   </div>
                                   
-                                  {/* Conteúdo da sessão */}
-                                <div className="flex-1">
-                                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                                      {/* Título com badge de revisão */}
-                                      <h4 className="font-semibold text-gray-800">{session.title}</h4>
-                                      
-                                    {session.is_revision && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
-                                          <RefreshCw className="h-3 w-3" />
-                                        Revisão {session.revision_interval ? `(${session.revision_interval} dias)` : ''}
-                                      </span>
-                                    )}
-                                    
-                                    {/* Adicionar badge de conclusão */}
-                                    {session.completed && (
-                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                        <CheckCircle className="h-3 w-3" />
-                                        Concluída
+                                            {/* Conteúdo do card - espaço aumentado */}
+                                            <div className="p-4 pt-3">
+                                              {/* Título da sessão */}
+                                              <h3 className="font-sans text-[14px] font-semibold text-black mb-1">
+                                                {session.title}
+                                              </h3>
+                                              
+                                              {/* Subtítulo com horário */}
+                                              <p className="font-sans text-[12px] text-gray-500 mb-3">
+                                                {formatTime(session.start_time)} - {formatTime(session.end_time)} • {session.duration_minutes} min
+                                              </p>
+                                              
+                                              {/* Ícone com disciplina */}
+                                              <div 
+                                                className={`mb-3 w-auto inline-flex px-2.5 py-1.5 rounded-[8px] items-center ${
+                                                  session.is_revision 
+                                                    ? 'bg-purple-100' 
+                                                    : session.completed 
+                                                      ? 'bg-green-100' 
+                                                      : 'bg-emerald-100'
+                                                }`}
+                                              >
+                                                {session.is_revision ? (
+                                                  <RefreshCw className="w-[15px] h-[15px] text-gray-600" />
+                                                ) : (
+                                                  <BookOpen className="w-[15px] h-[15px] text-gray-600" />
+                                                )}
+                                                <span className={`ml-1.5 font-sans text-[12px] font-medium ${
+                                                  session.is_revision 
+                                                    ? 'text-purple-600' 
+                                                    : session.completed 
+                                                      ? 'text-green-600' 
+                                                      : 'text-emerald-600'
+                                                }`}>
+                                                  {session.is_revision ? 'Revisão' : 'Estudo'}: {session.discipline_name}
+                                                </span>
+                                              </div>
+                                              
+                                              {/* Tags de dificuldade e importância */}
+                                              <div className="flex flex-wrap gap-1.5 mb-3">
+                                                {session.subject_difficulty && (
+                                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-gray-100 text-gray-700">
+                                                    <Award className="h-2.5 w-2.5" />
+                                                    <span>Dificuldade: {session.subject_difficulty}</span>
+                                                  </span>
+                                                )}
+                                                {session.subject_importance && (
+                                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-gray-100 text-gray-700">
+                                                    <Star className="h-2.5 w-2.5" />
+                                                    <span>Importância: {session.subject_importance}</span>
                                       </span>
                                     )}
                                   </div>
                                     
-                                    {/* Disciplina */}
-                                    <div className="flex items-center gap-1.5 text-sm text-gray-600 mb-2">
-                                      <GraduationCap className="h-4 w-4 text-indigo-500" />
-                                      <span className="font-medium">{session.discipline_name}</span>
+                                              {/* Botão de iniciar sessão */}
+                                              {!session.completed ? (
+                                                <button
+                                                  onClick={() => handleStartSession(session)}
+                                                  className={`mt-1 w-full py-1.5 rounded-[8px] font-sans text-[12px] font-medium transition-colors ${
+                                                    session.is_revision 
+                                                      ? 'bg-purple-100 text-purple-600 hover:bg-purple-200' 
+                                                      : 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200'
+                                                  }`}
+                                                >
+                                                  Iniciar sessão
+                                                </button>
+                                              ) : (
+                                                <div className="mt-1 w-full py-1.5 rounded-[8px] font-sans text-[12px] font-medium bg-green-100 text-green-600 text-center">
+                                                  Sessão concluída
                                     </div>
-                                    
-                                    {/* Mostrar duração real se a sessão foi concluída */}
-                                    {session.completed && session.actual_duration_minutes && (
-                                      <div className="mt-2 text-sm text-gray-600">
-                                        <span className="font-medium">Duração real:</span> {session.actual_duration_minutes} minutos
+                                              )}
+                                            </div>
+                                          </div>
+                                        ))}
                                       </div>
-                                    )}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Sessões de revisão */}
+                                  {revisionSessions.length > 0 && (
+                                    <div>
+                                      <div className="flex items-center mb-2">
+                                        <RefreshCw className="h-4 w-4 text-purple-600 mr-1.5" />
+                                        <h4 className="text-sm font-medium text-gray-700">Sessões de Revisão</h4>
+                                        <span className="ml-2 bg-purple-100 text-purple-700 text-xs px-1.5 py-0.5 rounded-full">
+                                          {revisionSessions.length}
+                                        </span>
+                                      </div>
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {revisionSessions.map((session) => (
+                                          <div 
+                                            key={session.id} 
+                                            className="w-full bg-white rounded-[25px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] transition-all duration-200 hover:shadow-lg overflow-hidden"
+                                          >
+                                            {/* Parte superior com gradiente - altura reduzida */}
+                                            <div className={`w-full h-16 ${
+                                              session.completed 
+                                                ? 'bg-gradient-to-r from-green-400 to-teal-500'
+                                                : 'bg-gradient-to-r from-purple-400 to-indigo-500'
+                                            } rounded-t-[25px] flex items-start justify-end`}>
+                                              <div className="m-3 w-7 h-7 bg-white rounded-[8px] flex items-center justify-center transition-all duration-200 hover:scale-110 hover:rotate-[10deg]">
+                                                {session.completed ? (
+                                                  <CheckCircle className="w-3.5 h-3.5 text-gray-400" />
+                                                ) : (
+                                                  <RefreshCw className="w-3.5 h-3.5 text-gray-400" />
+                                                )}
+                                              </div>
+                                            </div>
+                                            
+                                            {/* Conteúdo do card - espaço aumentado */}
+                                            <div className="p-4 pt-3">
+                                              {/* Título da sessão */}
+                                              <h3 className="font-sans text-[14px] font-semibold text-black mb-1">
+                                                {session.title}
+                                              </h3>
+                                              
+                                              {/* Subtítulo com horário */}
+                                              <p className="font-sans text-[12px] text-gray-500 mb-3">
+                                                {formatTime(session.start_time)} - {formatTime(session.end_time)} • {session.duration_minutes} min
+                                              </p>
+                                              
+                                              {/* Ícone com disciplina */}
+                                              <div 
+                                                className={`mb-3 w-auto inline-flex px-2.5 py-1.5 rounded-[8px] items-center ${
+                                                  session.is_revision 
+                                                    ? 'bg-purple-100' 
+                                                    : session.completed 
+                                                      ? 'bg-green-100' 
+                                                      : 'bg-emerald-100'
+                                                }`}
+                                              >
+                                                {session.is_revision ? (
+                                                  <RefreshCw className="w-[15px] h-[15px] text-gray-600" />
+                                                ) : (
+                                                  <BookOpen className="w-[15px] h-[15px] text-gray-600" />
+                                                )}
+                                                <span className={`ml-1.5 font-sans text-[12px] font-medium ${
+                                                  session.is_revision 
+                                                    ? 'text-purple-600' 
+                                                    : session.completed 
+                                                      ? 'text-green-600' 
+                                                      : 'text-emerald-600'
+                                                }`}>
+                                                  {session.is_revision ? 'Revisão' : 'Estudo'}: {session.discipline_name}
+                                                </span>
+                                              </div>
                                     
                                     {/* Tags de dificuldade e importância */}
-                                    <div className="flex flex-wrap gap-2 mt-2">
+                                              <div className="flex flex-wrap gap-1.5 mb-3">
                                     {session.subject_difficulty && (
-                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                                        difficultyColorMap[session.subject_difficulty as keyof typeof difficultyColorMap] || difficultyColorMap.default
-                                      }`}>
-                                          <Award className="h-3 w-3" />
-                                        Dificuldade: {session.subject_difficulty}
+                                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-gray-100 text-gray-700">
+                                                    <Award className="h-2.5 w-2.5" />
+                                                    <span>Dificuldade: {session.subject_difficulty}</span>
                                       </span>
                                     )}
-                                    
                                     {session.subject_importance && (
-                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                                        importanceColorMap[session.subject_importance as keyof typeof importanceColorMap] || importanceColorMap.default
-                                      }`}>
-                                          <Star className="h-3 w-3" />
-                                        Importância: {session.subject_importance}
+                                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-gray-100 text-gray-700">
+                                                    <Star className="h-2.5 w-2.5" />
+                                                    <span>Importância: {session.subject_importance}</span>
                                       </span>
                                     )}
                                   </div>
 
-                                  {/* Adicionar botão para iniciar sessão ou mostrar concluída */}
-                                  <div className="mt-3">
+                                              {/* Botão de iniciar sessão */}
                                     {!session.completed ? (
                                     <button
                                       onClick={() => handleStartSession(session)}
-                                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg text-xs font-medium transition-colors"
-                                    >
-                                      <PlayCircle className="h-3.5 w-3.5" />
+                                                  className={`mt-1 w-full py-1.5 rounded-[8px] font-sans text-[12px] font-medium transition-colors ${
+                                                    session.is_revision 
+                                                      ? 'bg-purple-100 text-purple-600 hover:bg-purple-200' 
+                                                      : 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200'
+                                                  }`}
+                                                >
                                       Iniciar sessão
                                     </button>
                                     ) : (
-                                      <div className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium">
-                                        <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                                                <div className="mt-1 w-full py-1.5 rounded-[8px] font-sans text-[12px] font-medium bg-green-100 text-green-600 text-center">
                                         Sessão concluída
                                       </div>
                                     )}
                                   </div>
                                 </div>
+                                        ))}
                               </div>
                             </div>
-                          ))}
+                                  )}
+                                  
+                                  {/* Mensagem quando não há sessões */}
+                                  {studySessions.length === 0 && revisionSessions.length === 0 && (
+                                    <div className="text-center py-8">
+                                      <p className="text-gray-500 text-sm">Nenhuma sessão agendada para este dia</p>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
                         </div>
                       </div>
                     );
@@ -1084,9 +1224,9 @@ export default function ViewPlanPage() {
           <div>
             <h3 className="text-sm font-medium text-green-100 mb-1">Sessões Concluídas</h3>
             <p className="text-3xl font-bold">{completedSessions}</p>
-          </div>
-        </div>
-      </div>
+                    </div>
+                  </div>
+                </div>
                 
                 <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-5 text-white shadow-md">
                   <div className="flex items-center gap-4">
@@ -1687,4 +1827,4 @@ export default function ViewPlanPage() {
       )}
     </div>
   );
-} 
+}

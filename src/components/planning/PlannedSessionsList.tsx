@@ -112,84 +112,102 @@ export default function PlannedSessionsList({
     }
   };
 
-  // Função para renderizar uma sessão individual
-  const renderSession = (session: StudyPlanSession, isRevision: boolean) => (
+  // Função para renderizar uma sessão individual com novo estilo vibrante
+  const renderSession = (session: StudyPlanSession, isRevision: boolean) => {
+    // Definir gradientes vibrantes para os cards
+    const cardBgGradient = isRevision 
+      ? 'bg-gradient-to-r from-purple-600 to-pink-500' 
+      : 'bg-gradient-to-r from-blue-600 to-indigo-500';
+    
+    const iconColor = 'text-white';
+    const textColor = 'text-white';
+
+  return (
         <div
           key={session.id || `temp-${Math.random()}`}
-      className={`flex items-start p-3 rounded-lg bg-white border hover:shadow-md transition-shadow 
-        ${compact ? 'py-2' : ''} 
-        ${isRevision ? 'border-purple-200' : 'border-blue-200'}`}
+        className={`rounded-xl overflow-hidden shadow-md ${cardBgGradient} hover:shadow-lg transition-all duration-200`}
           onClick={() => !showActions && session.id && handleViewSession(session.id)}
         >
-      <div className={`p-2 rounded-lg mr-3 ${isRevision ? 'bg-purple-100' : 'bg-blue-100'}`}>
-        {isRevision ? (
-          <RefreshCw className={`${compact ? 'h-4 w-4' : 'h-5 w-5'} ${isRevision ? 'text-purple-700' : 'text-blue-700'}`} />
-        ) : (
-          <BookOpen className={`${compact ? 'h-4 w-4' : 'h-5 w-5'} ${isRevision ? 'text-purple-700' : 'text-blue-700'}`} />
-        )}
+        {/* Cabeçalho com título da disciplina */}
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center">
+              <div className="mr-2">
+                {isRevision ? (
+                  <RefreshCw className={`${compact ? 'h-4 w-4' : 'h-5 w-5'} ${iconColor}`} />
+                ) : (
+                  <BookOpen className={`${compact ? 'h-4 w-4' : 'h-5 w-5'} ${iconColor}`} />
+                )}
           </div>
-          <div className="flex-1">
-        <div className="flex items-center justify-between">
-            <h3 className={`font-medium ${compact ? 'text-sm' : ''}`}>
+              <h3 className={`font-bold ${compact ? 'text-sm' : 'text-base'} ${textColor}`}>
               {disciplineNames[session.discipline_id || 0] || 'Disciplina'}
             </h3>
+            </div>
+            
+            <div className={`text-xs bg-white/20 px-2 py-1 rounded-full ${textColor} font-medium`}>
+              {isRevision ? 'Revisão' : 'Estudo'}
+            </div>
+          </div>
+          
+          {/* Título da sessão */}
+          <p className={`${compact ? 'text-xs' : 'text-sm'} ${textColor} font-medium mb-3`}>
+            {session.title || (isRevision ? 'Sessão de revisão' : 'Sessão de estudo')}
+            </p>
           
           {/* Duração em minutos */}
-          <div className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">
-            {session.duration_minutes || 0} min
-          </div>
+          <div className="flex items-center mb-3">
+            <Clock className={`${compact ? 'h-3 w-3' : 'h-4 w-4'} mr-1 ${textColor}`} />
+            <span className={`${compact ? 'text-xs' : 'text-sm'} ${textColor}`}>
+              {session.duration_minutes || 0} minutos
+            </span>
               </div>
-        
-        <p className={`${compact ? 'text-xs' : 'text-sm'} text-gray-600 mb-2`}>
-          {session.title || (isRevision ? 'Sessão de revisão' : 'Sessão de estudo')}
-        </p>
               
+          {/* Data */}
               {showDate && (
-          <div className={`flex items-center ${compact ? 'text-xs' : 'text-sm'} text-gray-500 mb-2`}>
+            <div className={`flex items-center ${compact ? 'text-xs' : 'text-sm'} ${textColor} mb-3`}>
                   <Calendar className={`${compact ? 'h-3 w-3' : 'h-4 w-4'} mr-1`} />
-                  <span>{formatSessionDate(session.scheduled_date)}</span>
-                </div>
-              )}
-        
-        {/* Dificuldade e Importância */}
-        <div className="flex flex-wrap gap-2 mb-3">
-          {session.subject_difficulty && (
-            <div className={`flex items-center text-xs px-2 py-0.5 rounded-full ${getDifficultyColor(session.subject_difficulty)}`}>
-              <Award className="h-3 w-3 mr-1" />
-              <span>Dificuldade: {session.subject_difficulty}</span>
+              <span>{formatSessionTime(session.scheduled_date)} - {formatSessionDate(session.scheduled_date)}</span>
             </div>
           )}
           
-          {session.subject_importance && (
-            <div className={`flex items-center text-xs px-2 py-0.5 rounded-full ${getImportanceColor(session.subject_importance)}`}>
-              <Star className="h-3 w-3 mr-1" />
-              <span>Importância: {session.subject_importance}</span>
+          {/* Tags de dificuldade e importância */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {session.subject_difficulty && (
+              <div className="flex items-center text-xs px-2 py-0.5 rounded-full bg-white/20 text-white">
+                <Award className="h-3 w-3 mr-1" />
+                <span>Dificuldade: {session.subject_difficulty}</span>
+                </div>
+              )}
+            
+            {session.subject_importance && (
+              <div className="flex items-center text-xs px-2 py-0.5 rounded-full bg-white/20 text-white">
+                <Star className="h-3 w-3 mr-1" />
+                <span>Importância: {session.subject_importance}</span>
             </div>
-          )}
+            )}
           </div>
-        
-        {/* Botão de iniciar sessão */}
-        <div className="flex items-center justify-between mt-2">
-          {onStartSession && (
-            <Button 
-              size="sm" 
-              variant="outline"
-              className={`text-xs ${isRevision ? 'bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200' : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200'}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onStartSession(session);
-              }}
-            >
-              <Play className="h-3 w-3 mr-1" />
-              Iniciar Sessão
-            </Button>
-          )}
+          
+          {/* Botão de iniciar sessão */}
+          <div className="flex items-center justify-center mt-2">
+            {onStartSession && (
+              <Button 
+                size="sm"
+                className="bg-white text-blue-600 hover:bg-white/90 w-full font-medium"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onStartSession(session);
+                }}
+              >
+                <Play className="h-3 w-3 mr-1" />
+                Iniciar Sessão
+              </Button>
+            )}
           
           {showActions && (
             <div className="ml-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-white hover:bg-white/20">
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -214,9 +232,10 @@ export default function PlannedSessionsList({
             </div>
           )}
         </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className={className}>
@@ -230,7 +249,7 @@ export default function PlannedSessionsList({
               {studySessions.length}
             </div>
           </div>
-          <div className="space-y-3">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {studySessions.map(session => renderSession(session, false))}
           </div>
         </div>
@@ -246,7 +265,7 @@ export default function PlannedSessionsList({
               {revisionSessions.length}
             </div>
           </div>
-          <div className="space-y-3">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {revisionSessions.map(session => renderSession(session, true))}
           </div>
         </div>
