@@ -32,13 +32,17 @@ export interface SmartPlanFormData {
     max: number; // Duração máxima das sessões principais em minutos
   };
   revisionSessionDuration?: {
-    percentage: number; // Porcentagem da duração da sessão principal (0-100)
+    percentage?: number; // Porcentagem da duração da sessão principal (0-100) - Legado
+    fixedMinutes?: number; // Duração fixa em minutos para sessões de revisão
   };
   revisionConflictStrategy?: 'next-available' | 'adjust-interval' | 'skip' | 'strict-days';
   // next-available: Move para o próximo dia disponível
   // adjust-interval: Ajusta os intervalos para cair em dias disponíveis
   // skip: Pula revisões que cairiam em dias sem disponibilidade
   // strict-days: Só programa revisões nos dias da semana configurados
+  
+  // Novo campo para armazenar minutos disponíveis por dia da semana
+  availableMinutesByDay?: {day: number, minutes: number}[];
 }
 
 export interface SmartPlanSession {
@@ -371,6 +375,35 @@ class SmartPlanningService {
           if (metadata && metadata.revision_interval) {
             revisionInterval = metadata.revision_interval;
           }
+          
+          // Verificar se o original_session_id está definido
+          // Se não estiver, tentar recuperar dos metadados
+          if (!session.original_session_id && metadata && metadata.original_session_discipline_id) {
+            console.log(`Sessão de revisão ${session.id} sem original_session_id. Tentando recuperar dos metadados.`);
+            
+            // Procurar uma sessão principal da mesma disciplina
+            const matchingSessions = sessionsData.filter(s => 
+              !s.is_revision && 
+              s.discipline_id === metadata.original_session_discipline_id &&
+              s.title === metadata.original_session_title
+            );
+            
+            if (matchingSessions.length > 0) {
+              console.log(`Encontrada sessão correspondente por título e disciplina: ${matchingSessions[0].id}`);
+              session.original_session_id = matchingSessions[0].id;
+            } else {
+              // Se não encontrar por título exato, procurar pela mesma disciplina
+              const sameDisciplineSessions = sessionsData.filter(s => 
+                !s.is_revision && 
+                s.discipline_id === metadata.original_session_discipline_id
+              );
+              
+              if (sameDisciplineSessions.length > 0) {
+                console.log(`Encontrada sessão da mesma disciplina: ${sameDisciplineSessions[0].id}`);
+                session.original_session_id = sameDisciplineSessions[0].id;
+              }
+            }
+          }
         }
         
         return {
@@ -432,23 +465,14 @@ class SmartPlanningService {
   }
   
   /**
-   * Exclui um plano e todas as suas sessões
+   * Exclui um plano inteligente e suas sessões
+   * @param planId ID do plano a ser excluído
    */
   async deletePlan(planId: number): Promise<boolean> {
     try {
-      // Primeiramente, excluir as sessões do plano
-      const { error: sessionsError } = await supabase
-        .from('smart_plan_sessions')
-        .delete()
-        .eq('plan_id', planId);
+      console.log(`Excluindo plano ID: ${planId} e todas as suas sessões associadas`);
       
-      if (sessionsError) {
-        console.error('Erro ao excluir sessões do plano:', sessionsError);
-        toast.error('Não foi possível excluir as sessões do plano');
-        return false;
-      }
-      
-      // Em seguida, excluir o plano
+      // Excluir o plano diretamente - as sessões serão excluídas automaticamente por causa da restrição de chave estrangeira com CASCADE
       const { error: planError } = await supabase
         .from('smart_plans')
         .delete()
@@ -460,6 +484,7 @@ class SmartPlanningService {
         return false;
       }
       
+      console.log(`Plano ID: ${planId} excluído com sucesso junto com suas sessões associadas`);
       toast.success('Plano excluído com sucesso');
       return true;
     } catch (error) {
@@ -596,15 +621,38 @@ class SmartPlanningService {
       const endDate = new Date(formData.endDate);
       const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
       
-      // Organizar os horários disponíveis por dia da semana
-      let availableTimesByDayOfWeek: { [key: number]: Array<{startTime: string, endTime: string}> } = {};
+      // Organizar os minutos disponíveis por dia da semana
+      let availableMinutesByDayOfWeek: { [key: number]: number } = {};
+      const daysWithAvailability: number[] = [];
       
-      // Verificar se o usuário forneceu horários disponíveis
-      if (formData.availableTimes && formData.availableTimes.length > 0) {
+      // Verificar se o usuário forneceu minutos disponíveis por dia
+      if (formData.availableMinutesByDay && formData.availableMinutesByDay.length > 0) {
+        // Mapear os minutos disponíveis por dia da semana
+        formData.availableMinutesByDay.forEach(dayData => {
+          availableMinutesByDayOfWeek[dayData.day] = dayData.minutes;
+          
+          // Adicionar à lista de dias disponíveis
+          if (!daysWithAvailability.includes(dayData.day)) {
+            daysWithAvailability.push(dayData.day);
+          }
+        });
+        
+        console.log('Minutos disponíveis por dia da semana:', availableMinutesByDayOfWeek);
+      } else if (formData.availableTimes && formData.availableTimes.length > 0) {
+        // Compatibilidade com o formato antigo de horários disponíveis
+        console.log('Usando formato antigo de horários disponíveis');
+        
         // Agrupar os horários disponíveis por dia da semana
+        const availableTimesByDayOfWeek: { [key: number]: Array<{startTime: string, endTime: string}> } = {};
+        
         formData.availableTimes.forEach(timeSlot => {
           if (!availableTimesByDayOfWeek[timeSlot.day]) {
             availableTimesByDayOfWeek[timeSlot.day] = [];
+            
+            // Adicionar à lista de dias disponíveis
+            if (!daysWithAvailability.includes(timeSlot.day)) {
+              daysWithAvailability.push(timeSlot.day);
+            }
           }
           
           availableTimesByDayOfWeek[timeSlot.day].push({
@@ -613,48 +661,10 @@ class SmartPlanningService {
           });
         });
         
-        // Ordenar os horários de cada dia por horário de início
-        Object.keys(availableTimesByDayOfWeek).forEach(dayKey => {
-          const day = parseInt(dayKey);
-          availableTimesByDayOfWeek[day].sort((a, b) => {
-            return a.startTime.localeCompare(b.startTime);
-          });
-        });
-        
-        console.log('Horários disponíveis por dia da semana:', availableTimesByDayOfWeek);
-      } else {
-        console.log('Nenhum horário específico fornecido pelo usuário. Usando horários padrão.');
-        
-        // Criar horários padrão (2 horas por dia, das 18h às 20h)
-        for (let day = 0; day < 7; day++) {
-          availableTimesByDayOfWeek[day] = [{
-            startTime: '18:00',
-            endTime: '20:00'
-          }];
-        }
-      }
-      
-      // Calcular o tempo disponível total em minutos
-      let totalAvailableMinutes = 0;
-
-      // Inicializar array como tipo number explícito e vazio
-      const daysWithAvailability: number[] = [];
-
-      // Log para diagnóstico
-      console.log('Horários disponíveis recebidos:', formData.availableTimes);
-
+        // Calcular minutos disponíveis por dia
       Object.entries(availableTimesByDayOfWeek).forEach(([day, slots]) => {
-        // Converter explicitamente para número
         const dayNumber = parseInt(day, 10);
-        
-        // Verificar se o dia é válido (0-6) e não está duplicado
-        if (!isNaN(dayNumber) && dayNumber >= 0 && dayNumber <= 6 && !daysWithAvailability.includes(dayNumber)) {
-          daysWithAvailability.push(dayNumber);
-          
-          // Log para diagnóstico com identificação clara do dia da semana
-          const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-          console.log(`Adicionando dia ${dayNumber} (${dayNames[dayNumber]}) como disponível, tipo: ${typeof dayNumber}`);
-        }
+          let totalMinutesForDay = 0;
         
         slots.forEach(slot => {
           // Converter horários para minutos e calcular a diferença
@@ -664,12 +674,33 @@ class SmartPlanningService {
           const startMinutes = startParts[0] * 60 + startParts[1];
           const endMinutes = endParts[0] * 60 + endParts[1];
           
-          // Pode acontecer de o horário de término ser menor que o de início (por exemplo, se o usuário definir um horário que vai até meia-noite)
-          const slotDuration = endMinutes >= startMinutes ? endMinutes - startMinutes : (24 * 60 - startMinutes) + endMinutes;
+            // Pode acontecer de o horário de término ser menor que o de início
+            const slotDuration = endMinutes >= startMinutes ? 
+              endMinutes - startMinutes : 
+              (24 * 60 - startMinutes) + endMinutes;
+            
+            totalMinutesForDay += slotDuration;
+          });
           
-          totalAvailableMinutes += slotDuration;
+          availableMinutesByDayOfWeek[dayNumber] = totalMinutesForDay;
         });
-      });
+      } else {
+        console.log('Nenhum horário específico fornecido pelo usuário. Usando valores padrão.');
+        
+        // Criar disponibilidade padrão (2 horas por dia, de segunda a sexta)
+        for (let day = 1; day <= 5; day++) {
+          availableMinutesByDayOfWeek[day] = 120; // 2 horas = 120 minutos
+          daysWithAvailability.push(day);
+        }
+      }
+      
+      // Calcular o tempo disponível total em minutos
+      let totalAvailableMinutes = Object.values(availableMinutesByDayOfWeek).reduce((sum, minutes) => sum + minutes, 0);
+      
+      // Log para diagnóstico
+      console.log('Dias disponíveis:', daysWithAvailability);
+      console.log('Minutos disponíveis por dia:', availableMinutesByDayOfWeek);
+      console.log('Total de minutos disponíveis:', totalAvailableMinutes);
 
       // Log para diagnóstico após processar, verificando o tipo de cada elemento
       console.log('Dias disponíveis processados:', daysWithAvailability);
@@ -775,104 +806,92 @@ class SmartPlanningService {
         const dayOfWeek = date.getDay(); // 0 = Domingo, 1 = Segunda, etc.
         const dateStr = formatDateIso(date);
         
-        // Verificar se há slots disponíveis para este dia da semana
-        if (!availableTimesByDayOfWeek[dayOfWeek] || availableTimesByDayOfWeek[dayOfWeek].length === 0) {
+        // Verificar se há minutos disponíveis para este dia da semana
+        const remainingMinutes = getRemainingMinutes(date);
+        if (remainingMinutes < durationMinutes) {
+          console.log(`Não há minutos suficientes disponíveis para ${dateStr} (dia ${dayOfWeek}). Necessário: ${durationMinutes}min, Disponível: ${remainingMinutes}min`);
           return null;
         }
         
-        // Tentar cada slot de tempo disponível para este dia da semana
-        for (const slot of availableTimesByDayOfWeek[dayOfWeek]) {
-          const startMinutes = parseTimeToMinutes(slot.startTime);
-          const endMinutes = parseTimeToMinutes(slot.endTime);
-          
-          // Calcular a duração do slot
-          const slotDuration = endMinutes >= startMinutes ? 
-            endMinutes - startMinutes : 
-            (24 * 60 - startMinutes) + endMinutes;
-          
-          // Verificar se o slot é grande o suficiente
-          if (slotDuration < durationMinutes) continue;
-          
-          // 1. Tentar horários exatos (horas)
-          // Por exemplo: 8:00, 9:00, 10:00...
-          for (let hour = Math.ceil(startMinutes / 60); hour * 60 + durationMinutes <= endMinutes; hour++) {
-            const sessionStartMinutes = hour * 60;
-            const sessionEndMinutes = sessionStartMinutes + durationMinutes;
-            
-            const startTimeStr = minutesToTimeStr(sessionStartMinutes);
-            const endTimeStr = minutesToTimeStr(sessionEndMinutes);
+        // Definir um horário padrão para a sessão com base no tempo disponível
+        // Começar às 8h, 12h ou 18h dependendo do dia da semana
+        let baseStartHour: number;
+        
+        // Fins de semana começam mais cedo, dias de semana mais tarde
+        if (dayOfWeek === 0 || dayOfWeek === 6) { // Domingo ou Sábado
+          baseStartHour = 10; // 10:00
+        } else if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Segunda a Sexta
+          baseStartHour = 18; // 18:00 (após o trabalho/aula)
+        } else {
+          baseStartHour = 12; // Meio-dia como fallback
+        }
+        
+        // Converter para minutos
+        const baseStartMinutes = baseStartHour * 60;
+        
+        // Verificar se o horário base está disponível
+        const startTimeStr = minutesToTimeStr(baseStartMinutes);
+        const endTimeStr = minutesToTimeStr(baseStartMinutes + durationMinutes);
             
             if (isTimeSlotAvailable(dateStr, startTimeStr, endTimeStr)) {
               markTimeSlotAsUsed(dateStr, startTimeStr, endTimeStr);
               return { startTime: startTimeStr, endTime: endTimeStr };
-            }
-          }
+        }
+        
+        // Se o horário base não estiver disponível, tentar outros horários
+        // Tentar horários alternativos em intervalos de 30 minutos
+        const alternativeHours = [8, 12, 14, 16, 18, 20];
+        
+        for (const hour of alternativeHours) {
+          if (hour === baseStartHour) continue; // Pular o que já tentamos
           
-          // 2. Tentar meias-horas (xx:30)
-          // Por exemplo: 8:30, 9:30, 10:30...
-          for (let halfHour = Math.ceil(startMinutes / 30); halfHour * 30 + durationMinutes <= endMinutes; halfHour++) {
-            if ((halfHour * 30) % 60 !== 0) { // Não repetir as horas exatas
-              const sessionStartMinutes = halfHour * 30;
-              const sessionEndMinutes = sessionStartMinutes + durationMinutes;
-              
-              const startTimeStr = minutesToTimeStr(sessionStartMinutes);
-              const endTimeStr = minutesToTimeStr(sessionEndMinutes);
-              
-              if (isTimeSlotAvailable(dateStr, startTimeStr, endTimeStr)) {
-                markTimeSlotAsUsed(dateStr, startTimeStr, endTimeStr);
-                return { startTime: startTimeStr, endTime: endTimeStr };
-              }
-            }
-          }
+          const startMinutes = hour * 60;
+          const endMinutes = startMinutes + durationMinutes;
           
-          // 3. Tentar horário de início do slot
-          if (startMinutes + durationMinutes <= endMinutes) {
-            const startTimeStr = minutesToTimeStr(startMinutes);
-            const endTimeStr = minutesToTimeStr(startMinutes + durationMinutes);
-            
-            if (isTimeSlotAvailable(dateStr, startTimeStr, endTimeStr)) {
-              markTimeSlotAsUsed(dateStr, startTimeStr, endTimeStr);
-              return { startTime: startTimeStr, endTime: endTimeStr };
-            }
-          }
+          const startTime = minutesToTimeStr(startMinutes);
+          const endTime = minutesToTimeStr(endMinutes);
           
-          // 4. Tentar intervalos de 15 minutos se ainda não encontrou
-          for (let quarter = Math.ceil(startMinutes / 15); quarter * 15 + durationMinutes <= endMinutes; quarter++) {
-            const sessionStartMinutes = quarter * 15;
-            // Pular se já tentamos esse horário (hora exata ou meia-hora)
-            if (sessionStartMinutes % 30 === 0) continue;
-            
-            const sessionEndMinutes = sessionStartMinutes + durationMinutes;
-            
-            const startTimeStr = minutesToTimeStr(sessionStartMinutes);
-            const endTimeStr = minutesToTimeStr(sessionEndMinutes);
-            
-            if (isTimeSlotAvailable(dateStr, startTimeStr, endTimeStr)) {
-              markTimeSlotAsUsed(dateStr, startTimeStr, endTimeStr);
-              return { startTime: startTimeStr, endTime: endTimeStr };
-            }
-          }
-          
-          // 5. Por fim, tentar qualquer horário que funcione
-          for (let i = 0; i <= slotDuration - durationMinutes; i += 5) {
-            const sessionStartMinutes = startMinutes + i;
-            const sessionEndMinutes = sessionStartMinutes + durationMinutes;
-            
-            // Pular se é um múltiplo de 15 minutos (já tentamos)
-            if (sessionStartMinutes % 15 === 0) continue;
-            
-            const startTimeStr = minutesToTimeStr(sessionStartMinutes);
-            const endTimeStr = minutesToTimeStr(sessionEndMinutes);
-            
-            if (isTimeSlotAvailable(dateStr, startTimeStr, endTimeStr)) {
-              markTimeSlotAsUsed(dateStr, startTimeStr, endTimeStr);
-              return { startTime: startTimeStr, endTime: endTimeStr };
-            }
+          if (isTimeSlotAvailable(dateStr, startTime, endTime)) {
+            markTimeSlotAsUsed(dateStr, startTime, endTime);
+            return { startTime, endTime };
           }
         }
         
-        // Nenhum slot disponível encontrado
-        return null;
+        // Se ainda não encontrou, tentar horários de meia em meia hora
+        for (let hour = 8; hour < 22; hour++) {
+          // Hora cheia
+          let startMinutes = hour * 60;
+          let endMinutes = startMinutes + durationMinutes;
+          
+          let startTime = minutesToTimeStr(startMinutes);
+          let endTime = minutesToTimeStr(endMinutes);
+          
+          if (isTimeSlotAvailable(dateStr, startTime, endTime)) {
+            markTimeSlotAsUsed(dateStr, startTime, endTime);
+            return { startTime, endTime };
+          }
+          
+          // Meia hora
+          startMinutes = hour * 60 + 30;
+          endMinutes = startMinutes + durationMinutes;
+          
+          startTime = minutesToTimeStr(startMinutes);
+          endTime = minutesToTimeStr(endMinutes);
+          
+          if (isTimeSlotAvailable(dateStr, startTime, endTime)) {
+            markTimeSlotAsUsed(dateStr, startTime, endTime);
+            return { startTime, endTime };
+          }
+        }
+        
+        // Se ainda não encontrou, usar um horário padrão e forçar a marcação
+        // Isso garante que usaremos o tempo disponível mesmo que já tenha outras sessões
+        const fallbackStartTime = "08:00";
+        const fallbackEndTime = minutesToTimeStr(8 * 60 + durationMinutes);
+        
+        console.log(`Usando horário padrão para ${dateStr}: ${fallbackStartTime}-${fallbackEndTime}`);
+        markTimeSlotAsUsed(dateStr, fallbackStartTime, fallbackEndTime);
+        return { startTime: fallbackStartTime, endTime: fallbackEndTime };
       };
       
       // Sessões a serem criadas
@@ -959,26 +978,63 @@ class SmartPlanningService {
         return `${year}-${month}-${day}`;
       };
       
-      // Função para verificar se um dia está disponível com verificação extra para sexta-feira
+      // Função para verificar se um dia está disponível e quanto tempo resta disponível
       const isDayAvailable = (date: Date): boolean => {
-        const dayOfWeek = date.getDay(); // 0 = Domingo, 1 = Segunda-feira, ..., 5 = Sexta-feira
+        const dayOfWeek = date.getDay(); // 0 = Domingo, 1 = Segunda-feira, ..., 6 = Sábado
+        const dateStr = formatDateIso(date);
         
         // Verificar se o dia está na lista de dias disponíveis
         const isAvailable = daysWithAvailability.includes(dayOfWeek);
+        
+        // Se o dia não está disponível, retornar false imediatamente
+        if (!isAvailable) return false;
+        
+        // Verificar também se já usamos todo o tempo disponível para este dia
+        const usedMinutesToday = usedTimeSlots.has(dateStr) ? 
+          usedTimeSlots.get(dateStr)!.reduce((total, slot) => {
+            const startMin = parseTimeToMinutes(slot.start);
+            const endMin = parseTimeToMinutes(slot.end);
+            return total + (endMin - startMin);
+          }, 0) : 0;
+        
+        // Verificar se ainda há tempo disponível para este dia
+        const totalMinutesForDay = availableMinutesByDayOfWeek[dayOfWeek] || 0;
+        const remainingMinutes = totalMinutesForDay - usedMinutesToday;
         
         // Log especial para sexta-feira
         if (dayOfWeek === 5) {
           console.log(`VERIFICAÇÃO CRÍTICA - SEXTA-FEIRA: ${date.toISOString().split('T')[0]} - disponível? ${isAvailable}`);
           console.log(`  - Dias disponíveis: [${daysWithAvailability.join(', ')}]`);
-          console.log(`  - Tipo do dia 5 na lista: ${typeof daysWithAvailability.find(d => d === 5)}`);
-          console.log(`  - Lista inclui '5'? ${daysWithAvailability.includes('5' as any)}`);
+          console.log(`  - Minutos totais: ${totalMinutesForDay}, Usados: ${usedMinutesToday}, Restantes: ${remainingMinutes}`);
           console.log(`  - Lista inclui 5? ${daysWithAvailability.includes(5)}`);
         }
         
         // Log para diagnóstico detalhado
-        console.log(`Verificando disponibilidade para ${date.toISOString().split('T')[0]} (dia da semana: ${dayOfWeek}): ${isAvailable ? 'Disponível' : 'Indisponível'}, dias disponíveis: [${daysWithAvailability.join(', ')}]`);
+        console.log(`Verificando disponibilidade para ${date.toISOString().split('T')[0]} (dia da semana: ${dayOfWeek}): 
+          Dia disponível: ${isAvailable ? 'Sim' : 'Não'}, 
+          Minutos restantes: ${remainingMinutes}`);
         
-        return isAvailable;
+        return isAvailable && remainingMinutes > 0;
+      };
+      
+      // Função para obter os minutos restantes disponíveis para um dia
+      const getRemainingMinutes = (date: Date): number => {
+        const dayOfWeek = date.getDay();
+        const dateStr = formatDateIso(date);
+        
+        // Se o dia não tem disponibilidade, retorna 0
+        if (!availableMinutesByDayOfWeek[dayOfWeek]) return 0;
+        
+        // Calcular minutos já usados neste dia
+        const usedMinutesToday = usedTimeSlots.has(dateStr) ? 
+          usedTimeSlots.get(dateStr)!.reduce((total, slot) => {
+            const startMin = parseTimeToMinutes(slot.start);
+            const endMin = parseTimeToMinutes(slot.end);
+            return total + (endMin - startMin);
+          }, 0) : 0;
+        
+        // Retornar minutos restantes
+        return Math.max(0, availableMinutesByDayOfWeek[dayOfWeek] - usedMinutesToday);
       };
       
       // Encontra o próximo dia disponível a partir de uma data
@@ -1176,9 +1232,9 @@ class SmartPlanningService {
         const minDuration = formData.mainSessionDuration?.min || 30;
         const maxDuration = formData.mainSessionDuration?.max || 120;
         
-        const baseDurationMinutes = Math.min(maxDuration, Math.max(minDuration, 
-          Math.round((subject.priority / totalPriorityPoints) * averageDailyMinutes * 0.7 / prioritizedSubjects.length)
-        ));
+        // Usar diretamente a duração máxima definida pelo usuário para cada sessão
+        // Em vez de calcular com base na prioridade e dividir pelo número de assuntos
+        const baseDurationMinutes = maxDuration;
         
         // Arredondar a duração para intervalos de 5 minutos para horários mais naturais
         const roundedDuration = Math.ceil(baseDurationMinutes / 5) * 5;
@@ -1214,6 +1270,16 @@ class SmartPlanningService {
               sessionsToCreate.push(mainSession);
               sessionsCreated++;
               foundTimeSlot = true;
+              
+              // Verificar se ainda há tempo disponível neste dia para criar mais sessões
+              // Isso permite criar múltiplas sessões no mesmo dia se houver tempo suficiente
+              if (getRemainingMinutes(currentDate) >= roundedDuration) {
+                console.log(`Ainda há ${getRemainingMinutes(currentDate)} minutos disponíveis em ${formatDateIso(currentDate)}, continuando no mesmo dia`);
+                // Não avançamos para o próximo dia, tentamos criar mais sessões no mesmo dia
+              } else {
+                // Avançar para o próximo dia apenas se não houver mais tempo disponível
+                advanceToNextDay();
+              }
               
               // Se a revisão estiver habilitada, criar sessões de revisão
               if (formData.revisionsEnabled) {
@@ -1334,11 +1400,20 @@ class SmartPlanningService {
                   console.log(`Agendando revisão para ${revisionDate.toISOString().split('T')[0]} (dia ${revisionDate.getDay()}) usando estratégia "${conflictStrategy}"`);
                   
                   // Encontrar um horário disponível para a sessão de revisão
+                  // Calcular duração da revisão com base na configuração
+                  let finalRevisionDuration: number;
+                  
+                  // Se temos uma duração fixa definida, usá-la
+                  if (formData.revisionSessionDuration?.fixedMinutes) {
+                    finalRevisionDuration = formData.revisionSessionDuration.fixedMinutes;
+                  } else {
+                    // Caso contrário, usar o método legado de porcentagem
                   const revisionPercentage = formData.revisionSessionDuration?.percentage || 30;
                   const revisionDuration = Math.round((roundedDuration * revisionPercentage) / 100);
                   
-                  // Garantir que a duração da revisão não seja menor que 15 minutos
-                  const finalRevisionDuration = Math.max(revisionDuration, 15);
+                    // Garantir um mínimo de 15 minutos para revisões
+                    finalRevisionDuration = Math.max(revisionDuration, 15);
+                  }
                   
                   // Encontrar um slot disponível na data da revisão
                   const timeSlot = findAvailableTimeSlot(revisionDate, finalRevisionDuration);
@@ -1348,7 +1423,7 @@ class SmartPlanningService {
                     continue;
                   }
                   
-                  // Adicionar a sessão de revisão
+                  // Adicionar a sessão de revisão com metadados aprimorados
                   sessionsToCreate.push({
                     plan_id: planId,
                     title: `Revisão: ${mainSessionTitle}`,
@@ -1363,7 +1438,10 @@ class SmartPlanningService {
                     metadata: JSON.stringify({
                       revision_interval: interval,
                       subject_difficulty: subject.difficulty,
-                      subject_importance: subject.importance
+                      subject_importance: subject.importance,
+                      original_session_title: mainSessionTitle,
+                      original_session_discipline_id: subject.discipline_id,
+                      original_session_subject_id: subject.id
                     })
                   });
                 }
@@ -1371,9 +1449,16 @@ class SmartPlanningService {
             }
           }
           
+          // Verificar se ainda há tempo disponível neste dia para outras sessões
+          if (getRemainingMinutes(currentDate) >= roundedDuration) {
+            console.log(`Ainda há ${getRemainingMinutes(currentDate)} minutos disponíveis em ${formatDateIso(currentDate)}, mas não foi possível encontrar um slot. Tentando outro horário.`);
+            // Incrementar tentativas, mas não avançar para o próximo dia
+            attempts++;
+          } else {
           // Avançar para o próximo dia e incrementar tentativas
           advanceToNextDay();
           attempts++;
+          }
         }
         
         // Se não conseguiu encontrar um horário, força a criação de uma sessão em qualquer dia
@@ -1382,30 +1467,24 @@ class SmartPlanningService {
           currentDate = new Date(startDate);
           const sessionDate = formatDateIso(currentDate);
           
-          // Tentar usar um horário alinhado com os slots disponíveis do usuário
-          let startTimeStr, endTimeStr;
+          // Usar um horário padrão baseado no dia da semana
+          const dayOfWeek = currentDate.getDay();
           
-          // Verificar se há disponibilidade para o dia da semana
-          if (availableTimesByDayOfWeek[currentDate.getDay()] && 
-              availableTimesByDayOfWeek[currentDate.getDay()].length > 0) {
-            
-            // Pegar o primeiro slot disponível deste dia
-            const availableSlot = availableTimesByDayOfWeek[currentDate.getDay()][0];
-            const slotStartMinutes = parseTimeToMinutes(availableSlot.startTime);
-            
-            // Arredondar para hora/meia-hora mais próxima
-            const roundedStartMinutes = Math.floor(slotStartMinutes / 30) * 30;
-            startTimeStr = minutesToTimeStr(roundedStartMinutes);
+          // Definir horários padrão com base no dia da semana
+          let startTimeStr: string;
+          
+          // Fins de semana começam mais cedo, dias de semana mais tarde
+          if (dayOfWeek === 0 || dayOfWeek === 6) { // Domingo ou Sábado
+            startTimeStr = "10:00"; // 10:00
+          } else if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Segunda a Sexta
+            startTimeStr = "18:00"; // 18:00 (após o trabalho/aula)
+          } else {
+            startTimeStr = "12:00"; // Meio-dia como fallback
+          }
             
             // Calcular horário de término baseado na duração arredondada
-            const endTimeMinutes = roundedStartMinutes + roundedDuration;
-            endTimeStr = minutesToTimeStr(endTimeMinutes);
-          } else {
-            // Fallback para um horário fixo se não houver disponibilidade definida
-            startTimeStr = "18:00"; // 6 pm
             const endMinutes = parseTimeToMinutes(startTimeStr) + roundedDuration;
-            endTimeStr = minutesToTimeStr(endMinutes);
-          }
+          const endTimeStr = minutesToTimeStr(endMinutes);
           
           const mainSessionTitle = `${subject.discipline?.name || 'Disciplina'} - ${subject.title}`;
           
@@ -1424,8 +1503,11 @@ class SmartPlanningService {
           sessionsToCreate.push(mainSession);
           sessionsCreated++;
           
-          // Avançar para o próximo dia
+          // Avançar para o próximo dia apenas se não tivermos encontrado um slot de tempo
+          // Isso já foi tratado dentro do bloco de sucesso, então aqui só avançamos se não encontramos
+          if (!foundTimeSlot) {
           advanceToNextDay();
+          }
         }
       }
       

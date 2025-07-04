@@ -35,7 +35,8 @@ import {
   PlayCircle,
   ArrowRightCircle,
   Settings,
-  PlusCircle
+  PlusCircle,
+  RefreshCw
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import PlannedSessionsList from '@/components/planning/PlannedSessionsList';
@@ -296,6 +297,170 @@ export default function PlanejamentoPage() {
     });
   };
 
+  // Dentro da função PlanejamentoPage, vamos modificar a seção onde são renderizadas as sessões
+  // Procurando pela seção que renderiza as sessões e modifique para agrupar por tipo
+  const renderSessionsByType = (sessionsForDay: any[]) => {
+    // Separar sessões em dois grupos: estudo e revisão
+    const studySessions = sessionsForDay.filter(session => !session.is_revision);
+    const revisionSessions = sessionsForDay.filter(session => session.is_revision);
+    
+    return (
+      <>
+        {/* Sessões de estudo */}
+        {studySessions.length > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center mb-2">
+              <BookOpen className="h-4 w-4 text-blue-600 mr-1" />
+              <h3 className="text-sm font-semibold text-gray-700">Sessões de Estudo</h3>
+              <div className="ml-2 bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full">
+                {studySessions.length}
+              </div>
+            </div>
+            <div className="space-y-3">
+              {studySessions.map((session, index) => {
+                const color = getDisciplineColor(session.discipline_id);
+                const isCompleted = session.completed;
+                const periodIcon = getPeriodIcon(session.scheduled_date);
+                
+                return (
+                  <div 
+                    key={session.id || `study-${index}`} 
+                    className={`
+                      relative group bg-white rounded-lg p-4 transition-all duration-200
+                      border border-blue-200 hover:border-blue-300
+                      hover:shadow-md
+                    `}
+                  >
+                    <div className="flex items-start space-x-4">
+                      <div className="relative">
+                        <div className="text-xs font-bold rounded-lg bg-blue-50 text-blue-700 px-2 py-1 flex flex-col items-center min-w-[48px]">
+                          <span>{formatSessionTime(session.scheduled_date)}</span>
+                          <span className="text-[10px] text-blue-500 mt-0.5">
+                            {session.duration_minutes || 0}min
+                          </span>
+                        </div>
+                        
+                        {/* Indicador de status */}
+                        <div className={`
+                          absolute -left-1 top-0 bottom-0 w-1.5 rounded-l-lg
+                          ${isCompleted ? 'bg-green-500' : `bg-blue-500`}
+                        `}></div>
+                      </div>
+                      
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-medium text-sm text-gray-800">
+                            {disciplineNames[session.discipline_id] || 'Disciplina'}
+                          </h3>
+                          <div className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">
+                            Estudo
+                          </div>
+                        </div>
+                        
+                        <p className="text-xs text-gray-600 mt-1 line-clamp-1">
+                          {session.title || 'Sessão de estudo'}
+                        </p>
+                        
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center">
+                            <Calendar className="h-3 w-3 text-gray-400 mr-1" />
+                            <span className="text-xs text-gray-500">
+                              {formatSessionDate(session.scheduled_date)}
+                            </span>
+                          </div>
+                          
+                          <div className="flex space-x-1">
+                            {renderSessionActions(session)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Sessões de revisão */}
+        {revisionSessions.length > 0 && (
+          <div>
+            <div className="flex items-center mb-2">
+              <RefreshCw className="h-4 w-4 text-purple-600 mr-1" />
+              <h3 className="text-sm font-semibold text-gray-700">Sessões de Revisão</h3>
+              <div className="ml-2 bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded-full">
+                {revisionSessions.length}
+              </div>
+            </div>
+            <div className="space-y-3">
+              {revisionSessions.map((session, index) => {
+                const color = getDisciplineColor(session.discipline_id);
+                const isCompleted = session.completed;
+                const periodIcon = getPeriodIcon(session.scheduled_date);
+                
+                return (
+                  <div 
+                    key={session.id || `revision-${index}`} 
+                    className={`
+                      relative group bg-white rounded-lg p-4 transition-all duration-200
+                      border border-purple-200 hover:border-purple-300
+                      hover:shadow-md
+                    `}
+                  >
+                    <div className="flex items-start space-x-4">
+                      <div className="relative">
+                        <div className="text-xs font-bold rounded-lg bg-purple-50 text-purple-700 px-2 py-1 flex flex-col items-center min-w-[48px]">
+                          <span>{formatSessionTime(session.scheduled_date)}</span>
+                          <span className="text-[10px] text-purple-500 mt-0.5">
+                            {session.duration_minutes || 0}min
+                          </span>
+                        </div>
+                        
+                        {/* Indicador de status */}
+                        <div className={`
+                          absolute -left-1 top-0 bottom-0 w-1.5 rounded-l-lg
+                          ${isCompleted ? 'bg-green-500' : `bg-purple-500`}
+                        `}></div>
+                      </div>
+                      
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-medium text-sm text-gray-800">
+                            {disciplineNames[session.discipline_id] || 'Disciplina'}
+                          </h3>
+                          <div className="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded">
+                            Revisão
+                          </div>
+                        </div>
+                        
+                        <p className="text-xs text-gray-600 mt-1 line-clamp-1">
+                          {session.title || 'Sessão de revisão'}
+                        </p>
+                        
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center">
+                            <Calendar className="h-3 w-3 text-gray-400 mr-1" />
+                            <span className="text-xs text-gray-500">
+                              {formatSessionDate(session.scheduled_date)}
+                            </span>
+                          </div>
+                          
+                          <div className="flex space-x-1">
+                            {renderSessionActions(session)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
@@ -552,144 +717,11 @@ export default function PlanejamentoPage() {
                           const sessionDate = parseISO(session.scheduled_date);
                           return isSameDay(sessionDate, selectedDate);
                         }).length > 0 ? (
-                              <div className="space-y-4">
-                            {weekSessions
-                              .filter(session => {
+                              renderSessionsByType(weekSessions.filter(session => {
                                 if (!session.scheduled_date) return false;
                                 const sessionDate = parseISO(session.scheduled_date);
                                 return isSameDay(sessionDate, selectedDate);
-                              })
-                              .sort((a, b) => {
-                                if (!a.scheduled_date || !b.scheduled_date) return 0;
-                                return parseISO(a.scheduled_date).getTime() - parseISO(b.scheduled_date).getTime();
-                              })
-                              .map((session, index) => {
-                                  const color = getDisciplineColor(session.discipline_id);
-                                const isCompleted = session.completed;
-                                const timeOfDay = session.scheduled_date 
-                                  ? parseISO(session.scheduled_date).getHours() 
-                                  : 12;
-                                
-                                // Determinar período do dia para ícone
-                                let periodIcon;
-                                if (timeOfDay < 12) {
-                                  periodIcon = <div className="text-amber-500"><Sparkles className="h-4 w-4" /></div>;
-                                } else if (timeOfDay < 18) {
-                                  periodIcon = <div className="text-orange-500"><Clock className="h-4 w-4" /></div>;
-                                } else {
-                                  periodIcon = <div className="text-indigo-500"><Bell className="h-4 w-4" /></div>;
-                                }
-                                  
-                                  return (
-                                    <div 
-                                      key={session.id} 
-                                    className={`
-                                      relative group rounded-xl p-4 transition-all duration-200
-                                      ${isCompleted 
-                                        ? 'bg-green-50 hover:bg-green-100' 
-                                        : `bg-${color}-50 hover:bg-${color}-100/80`
-                                      }
-                                      border border-transparent hover:border-${color}-200
-                                      hover:shadow-md
-                                    `}
-                                  >
-                                    {/* Linha do tempo conectando sessões */}
-                                    {index !== 0 && (
-                                      <div className="absolute -top-4 left-8 w-0.5 h-4 bg-gray-200 z-0"></div>
-                                    )}
-                                    
-                                    <div className="flex">
-                                      {/* Marcador de horário */}
-                                      <div className="mr-4 flex flex-col items-center">
-                                        <div className={`
-                                          w-16 h-16 rounded-full flex flex-col items-center justify-center shadow-sm
-                                          ${isCompleted 
-                                            ? 'bg-green-100 text-green-800' 
-                                            : `bg-${color}-100 text-${color}-800`
-                                          }
-                                        `}>
-                                          <div className="text-xs font-semibold">
-                                            {formatSessionTime(session.scheduled_date)}
-                                      </div>
-                                          <div className="mt-1">
-                                            {periodIcon}
-                                          </div>
-                                        </div>
-                                        
-                                        <div className="mt-2 text-xs text-gray-500 font-medium">
-                                          {session.duration_minutes || 0} min
-                                        </div>
-                                      </div>
-                                      
-                                      {/* Conteúdo da sessão */}
-                                      <div className="flex-1">
-                                        <div className="flex items-center justify-between">
-                                          <div>
-                                            <h3 className="font-semibold text-gray-900 mb-0.5">
-                                              {session.title || 'Sessão de estudo'}
-                                            </h3>
-                                            <div className="flex items-center">
-                                              <span className={`text-sm font-medium text-${color}-700`}>
-                                            {disciplineNames[session.discipline_id || 0] || 'Disciplina'}
-                                              </span>
-                                              
-                                          {isCompleted && (
-                                            <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center">
-                                              <Check className="h-3 w-3 mr-1" />
-                                              Concluída
-                                            </span>
-                                          )}
-                                          </div>
-                                        </div>
-                                          
-                                          {!isCompleted && isSameDay(selectedDate, new Date()) && (
-                                          <Button 
-                                            size="sm" 
-                                            variant="outline"
-                                            onClick={() => handleStartSession(session)}
-                                              className={`text-${color}-700 border-${color}-200 hover:bg-${color}-100 
-                                                transition-all duration-200 hover:scale-105
-                                                opacity-90 group-hover:opacity-100`}
-                                          >
-                                              <PlayCircle className="h-4 w-4 mr-1.5" />
-                                            Iniciar
-                                          </Button>
-                                        )}
-                                        </div>
-                                        
-                                        {session.notes && (
-                                          <div className="mt-3 text-sm text-gray-600 bg-white/70 p-3 rounded-lg">
-                                            <p className="line-clamp-2">{session.notes}</p>
-                                          </div>
-                                        )}
-                                        
-                                        {/* Ações da sessão que aparecem ao passar o mouse */}
-                                        <div className="mt-3 pt-2 border-t border-gray-200/70 flex justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                          <Button 
-                                            size="sm" 
-                                            variant="ghost" 
-                                            className="h-8 text-gray-500 hover:text-gray-800"
-                                            onClick={() => router.push(`/planejamento/editar-sessao/${session.id}`)}
-                                          >
-                                            <Edit className="h-3.5 w-3.5 mr-1" />
-                                            Editar
-                                          </Button>
-                                          
-                                          <Button 
-                                            size="sm" 
-                                            variant="ghost" 
-                                            className="h-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                          >
-                                            <Trash2 className="h-3.5 w-3.5 mr-1" />
-                                            Excluir
-                                          </Button>
-                                        </div>
-                                      </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
+                              }))
                             ) : (
                           <div className="flex flex-col items-center justify-center p-10 bg-gray-50 rounded-xl text-center">
                             <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mb-4">
@@ -1174,156 +1206,16 @@ export default function PlanejamentoPage() {
                       const sessionDate = parseISO(session.scheduled_date);
                       return isSameDay(sessionDate, selectedDate);
                     }).length > 0 ? (
-                      <div className="space-y-3">
-                        {weekSessions
-                          .filter(session => {
+                      renderSessionsByType(weekSessions.filter(session => {
                             if (!session.scheduled_date) return false;
                             const sessionDate = parseISO(session.scheduled_date);
                             return isSameDay(sessionDate, selectedDate);
-                          })
-                          .sort((a, b) => {
-                            if (!a.scheduled_date || !b.scheduled_date) return 0;
-                            return parseISO(a.scheduled_date).getTime() - parseISO(b.scheduled_date).getTime();
-                          })
-                          .map((session) => {
-                            const color = getDisciplineColor(session.discipline_id);
-                            const isCompleted = session.completed;
-                            
-                            return (
-                              <div 
-                                key={session.id} 
-                                className={`
-                                  relative group bg-white rounded-lg p-4 transition-all duration-200
-                                  border border-gray-200 hover:border-${color}-200
-                                  hover:shadow-md
-                                `}
-                              >
-                                <div className="flex items-start space-x-4">
-                                  <div className="relative">
-                                    <div className="text-xs font-bold rounded-lg bg-gray-100 text-gray-700 px-2 py-1 flex flex-col items-center min-w-[48px]">
-                                      <span>{formatSessionTime(session.scheduled_date)}</span>
-                                      <span className="text-[10px] text-gray-500 mt-0.5">
-                                        {session.duration_minutes || 0}min
-                                    </span>
-                                  </div>
-                                    
-                                    {/* Indicador de status */}
-                                    <div className={`
-                                      absolute -left-1 top-0 bottom-0 w-1.5 rounded-l-lg
-                                      ${isCompleted ? 'bg-green-500' : `bg-${color}-500`}
-                                    `}></div>
-                                </div>
-                                  
-                                  <div className="flex-1">
-                                    <div className="flex items-center justify-between">
-                                      <h4 className="font-medium text-gray-900">
-                                        {session.title || 'Sessão de estudo'}
-                                      </h4>
-                                      
-                                      {/* Badges de status */}
-                                      <div className="flex items-center space-x-2">
-                                        {isCompleted ? (
-                                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center">
-                                            <Check className="h-3 w-3 mr-1" />
-                                            Concluída
-                                          </span>
-                                        ) : isSameDay(selectedDate, new Date()) ? (
-                                    <Button 
-                                      size="sm" 
-                                            variant="outline"
-                                      onClick={() => handleStartSession(session)}
-                                            className="h-7 text-xs text-blue-600 border-blue-200 hover:bg-blue-50"
-                                    >
-                                            <PlayCircle className="h-3.5 w-3.5 mr-1" />
-                                      Iniciar
-                                    </Button>
-                                        ) : (
-                                          <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
-                                            Agendada
-                                    </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                    
-                                    <div className="mt-1.5 flex items-center text-xs text-gray-500">
-                                      <div 
-                                        className={`w-2 h-2 rounded-full bg-${color}-500 mr-1.5`}
-                                      ></div>
-                                      <span>{disciplineNames[session.discipline_id || 0] || 'Disciplina'}</span>
-                                    </div>
-                                    
-                                    {session.notes && (
-                                      <div className="mt-2 text-sm text-gray-600">
-                                        <p className="line-clamp-2">{session.notes}</p>
+                      }))
+                    ) : (
+                      <div className="text-center py-6">
+                        <p className="text-gray-500 text-sm">Nenhuma sessão planejada para hoje</p>
                                       </div>
                                     )}
-                                    
-                                    {/* Ações que só aparecem ao passar o mouse */}
-                                    <div className="mt-2.5 flex justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <Button 
-                                        size="sm" 
-                                        variant="ghost" 
-                                        className="h-7 text-gray-500 hover:text-gray-800"
-                                        onClick={() => router.push(`/planejamento/editar-sessao/${session.id}`)}
-                                      >
-                                        <Edit className="h-3 w-3 mr-1" />
-                                        Editar
-                                      </Button>
-                                      
-                                      <Button 
-                                        size="sm" 
-                                        variant="ghost" 
-                                        className="h-7 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                      >
-                                        <Trash2 className="h-3 w-3 mr-1" />
-                                        Excluir
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                          
-                          {/* Adicionar sessão para este dia específico */}
-                          <div className="mt-4 text-center">
-                            <Button 
-                              variant="outline" 
-                              className="border-dashed border-gray-300 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                              onClick={() => {
-                                // Armazenar a data selecionada para pré-preencher o formulário
-                                const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-                                router.push(`/planejamento/nova-sessao?date=${formattedDate}`);
-                              }}
-                            >
-                              <Plus className="h-4 w-4 mr-1.5" />
-                              Adicionar sessão para este dia
-                            </Button>
-                          </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-10 bg-gray-50/70 rounded-lg text-center">
-                        <div className="w-16 h-16 rounded-full bg-blue-100/70 flex items-center justify-center mb-3">
-                          <CalendarIcon className="h-8 w-8 text-blue-500" />
-                        </div>
-                        <h3 className="text-lg font-medium text-gray-800 mb-1">Dia livre</h3>
-                        <p className="text-gray-500 mb-4 max-w-sm">
-                          Você não tem nenhuma sessão de estudo planejada para {format(selectedDate, "d 'de' MMMM", { locale: ptBR })}.
-                        </p>
-                        <Button 
-                          size="sm" 
-                          onClick={() => {
-                            // Armazenar a data selecionada para pré-preencher o formulário
-                            const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-                            router.push(`/planejamento/nova-sessao?date=${formattedDate}`);
-                          }}
-                          className="bg-blue-600 hover:bg-blue-700"
-                        >
-                          <Plus className="h-3.5 w-3.5 mr-1.5" />
-                          Planejar sessão
-                        </Button>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>

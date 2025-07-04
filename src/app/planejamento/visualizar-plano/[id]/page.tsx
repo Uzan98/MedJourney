@@ -64,6 +64,9 @@ export interface SmartPlanSession {
   completed?: boolean; // Campo para indicar se a sessão foi concluída
   completed_at?: string; // Data de conclusão
   actual_duration_minutes?: number; // Duração real da sessão
+  is_revision?: boolean; // Indica se é uma sessão de revisão
+  original_session_id?: number; // ID da sessão original se for uma revisão
+  revision_interval?: number; // Intervalo de revisão em dias
 }
 
 // Componente personalizado para a barra de ferramentas do calendário
@@ -1060,7 +1063,7 @@ export default function ViewPlanPage() {
         {tab === 'stats' && (
             <div>
               {/* Cards de estatísticas gerais */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                 <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-5 text-white shadow-md">
                   <div className="flex items-center gap-4">
                     <div className="p-3 bg-white/20 rounded-full">
@@ -1072,6 +1075,18 @@ export default function ViewPlanPage() {
                     </div>
                   </div>
                 </div>
+      
+      <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-5 text-white shadow-md">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-white/20 rounded-full">
+            <CheckCircle className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-green-100 mb-1">Sessões Concluídas</h3>
+            <p className="text-3xl font-bold">{completedSessions}</p>
+          </div>
+        </div>
+      </div>
                 
                 <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-5 text-white shadow-md">
                   <div className="flex items-center gap-4">
@@ -1088,74 +1103,557 @@ export default function ViewPlanPage() {
                 <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-5 text-white shadow-md">
                   <div className="flex items-center gap-4">
                     <div className="p-3 bg-white/20 rounded-full">
-                      <Calendar className="h-6 w-6" />
+            <BarChart2 className="h-6 w-6" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-medium text-blue-100 mb-1">Período</h3>
-                      <p className="text-lg font-bold">{new Date(plan.start_date).toLocaleDateString('pt-BR')} a {new Date(plan.end_date).toLocaleDateString('pt-BR')}</p>
+            <h3 className="text-sm font-medium text-blue-100 mb-1">Taxa de Conclusão</h3>
+            <p className="text-3xl font-bold">{completionRate}%</p>
               </div>
                 </div>
                 </div>
               </div>
               
-              {/* Distribuição por disciplina */}
-              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <BarChart2 className="h-5 w-5 text-indigo-600" />
-                Distribuição por Disciplina
+    {/* Progresso geral */}
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
+      <h3 className="text-xl font-semibold text-gray-800 mb-4">Progresso Geral</h3>
+      <div className="w-full bg-gray-200 rounded-full h-6 mb-2">
+        <div 
+          className="bg-gradient-to-r from-green-500 to-green-600 h-6 rounded-full flex items-center justify-center text-xs font-medium text-white"
+          style={{ width: `${completionRate}%` }}
+        >
+          {completionRate}%
+        </div>
+      </div>
+      <div className="flex justify-between text-sm text-gray-600">
+        <span>{completedSessions} de {totalSessions} sessões concluídas</span>
+        <span>{Math.round((new Date().getTime() - new Date(plan.start_date).getTime()) / (new Date(plan.end_date).getTime() - new Date(plan.start_date).getTime()) * 100)}% do período concluído</span>
+      </div>
+    </div>
+    
+    {/* Separar sessões de estudo e revisão */}
+    {(() => {
+      // Ordenar todas as sessões por data (mais próximas primeiro)
+      const sortedSessions = [...sessions].sort((a, b) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+      
+      // Separar sessões de estudo e revisão
+      const mainStudySessions = sortedSessions.filter(s => !s.is_revision);
+      
+      // Criar um mapa para armazenar revisões por sessão original
+      const revisionsByOriginalSession: Record<string, SmartPlanSession[]> = {};
+      
+      // Inicializar o mapa para todas as sessões principais
+      mainStudySessions.forEach(session => {
+        revisionsByOriginalSession[session.id.toString()] = [];
+      });
+      
+      // Função para extrair o título limpo de uma sessão
+      const extractCleanTitle = (title: string): string => {
+        if (!title) return '';
+        
+        // Remover prefixos comuns de revisão
+        let cleanTitle = title
+          .replace(/^Revisão:?\s*/i, '')
+          .replace(/^Revisão\s+de\s+/i, '')
+          .trim();
+          
+        // Remover caracteres especiais e normalizar espaços
+        return cleanTitle.toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remover acentos
+          .replace(/[^\w\s]/g, ' ') // substituir caracteres especiais por espaços
+          .replace(/\s+/g, ' ') // normalizar espaços
+          .trim();
+      };
+      
+      // Função para extrair apenas a disciplina do título
+      const extractDiscipline = (title: string): string => {
+        if (!title) return '';
+        
+        // Remover prefixos comuns de revisão
+        let cleanTitle = title
+          .replace(/^Revisão:?\s*/i, '')
+          .replace(/^Revisão\s+de\s+/i, '')
+          .trim();
+          
+        // Se o título contém um hífen (formato "DISCIPLINA - ASSUNTO"), 
+        // extrair apenas a parte da disciplina
+        if (cleanTitle.includes('-')) {
+          const parts = cleanTitle.split('-');
+          if (parts.length > 0) {
+            return parts[0].trim().toLowerCase();
+          }
+        }
+        
+        return '';
+      };
+      
+      // Função para extrair apenas o assunto do título
+      const extractSubject = (title: string): string => {
+        if (!title) return '';
+        
+        // Remover prefixos comuns de revisão
+        let cleanTitle = title
+          .replace(/^Revisão:?\s*/i, '')
+          .replace(/^Revisão\s+de\s+/i, '')
+          .trim();
+          
+        // Se o título contém um hífen (formato "DISCIPLINA - ASSUNTO"), 
+        // extrair apenas a parte do assunto
+        if (cleanTitle.includes('-')) {
+          const parts = cleanTitle.split('-');
+          if (parts.length > 1) {
+            const assunto = parts.slice(1).join('-').trim();
+            return assunto.toLowerCase()
+              .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remover acentos
+              .replace(/[^\w\s]/g, ' ') // substituir caracteres especiais por espaços
+              .replace(/\s+/g, ' ') // normalizar espaços
+              .trim();
+          }
+        }
+        
+        return cleanTitle.toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^\w\s]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      };
+      
+      // Agrupar sessões principais por assunto para facilitar a correspondência
+      const sessionsBySubject: Record<string, SmartPlanSession[]> = {};
+      const sessionsByDiscipline: Record<string, SmartPlanSession[]> = {};
+      
+      mainStudySessions.forEach(session => {
+        // Agrupar por assunto
+        const subject = extractSubject(session.title);
+        if (subject) {
+          if (!sessionsBySubject[subject]) {
+            sessionsBySubject[subject] = [];
+          }
+          sessionsBySubject[subject].push(session);
+        }
+        
+        // Agrupar por disciplina também como fallback
+        const discipline = extractDiscipline(session.title);
+        if (discipline) {
+          if (!sessionsByDiscipline[discipline]) {
+            sessionsByDiscipline[discipline] = [];
+          }
+          sessionsByDiscipline[discipline].push(session);
+        }
+      });
+      
+      // Obter todas as revisões
+      const revisionSessions = sortedSessions.filter(s => s.is_revision);
+      console.log(`Total de revisões encontradas: ${revisionSessions.length}`);
+      
+      // Primeiro, ordenar as revisões pela data para garantir consistência
+      revisionSessions.sort((a, b) => {
+        // Ordenar primeiro por disciplina_id para agrupar revisões da mesma disciplina
+        if (a.discipline_id !== b.discipline_id) {
+          return a.discipline_id - b.discipline_id;
+        }
+        // Depois por título para agrupar revisões do mesmo assunto
+        const titleA = extractCleanTitle(a.title);
+        const titleB = extractCleanTitle(b.title);
+        if (titleA !== titleB) {
+          return titleA.localeCompare(titleB);
+        }
+        // Por fim, por data
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      });
+      
+      // NOVA IMPLEMENTAÇÃO: Associar revisões por assunto no título
+      console.log("NOVA IMPLEMENTAÇÃO: Associando revisões por assunto no título");
+      
+      revisionSessions.forEach(revision => {
+        const revisionSubject = extractSubject(revision.title);
+        const revisionDiscipline = extractDiscipline(revision.title);
+        console.log(`Processando revisão ID ${revision.id}: ${revision.title}, Assunto extraído: "${revisionSubject}", Disciplina: "${revisionDiscipline}"`);
+        
+        let matched = false;
+        
+        // Estratégia 1: Correspondência por assunto exato
+        if (revisionSubject && sessionsBySubject[revisionSubject]) {
+          const matchingSessions = sessionsBySubject[revisionSubject];
+          if (matchingSessions.length > 0) {
+            const bestMatch = matchingSessions[0];
+            console.log(`✓ Correspondência exata por assunto: ${bestMatch.id} (${bestMatch.title})`);
+            revisionsByOriginalSession[bestMatch.id.toString()].push(revision);
+            matched = true;
+          }
+        }
+        
+        // Estratégia 2: Correspondência por similaridade de assunto
+        if (!matched && revisionSubject) {
+          let bestMatch: SmartPlanSession | null = null;
+          let bestScore = 0;
+          
+          // Procurar entre todas as sessões principais
+          mainStudySessions.forEach(session => {
+            const sessionSubject = extractSubject(session.title);
+            if (sessionSubject && revisionSubject) {
+              // Calcular similaridade
+              let score = 0;
+              
+              // Correspondência exata
+              if (sessionSubject === revisionSubject) {
+                score = 1.0;
+              }
+              // Correspondência parcial - um contém o outro
+              else if (sessionSubject.includes(revisionSubject) || revisionSubject.includes(sessionSubject)) {
+                score = Math.min(sessionSubject.length, revisionSubject.length) / 
+                       Math.max(sessionSubject.length, revisionSubject.length);
+              }
+              
+              if (score > bestScore) {
+                bestScore = score;
+                bestMatch = session;
+              }
+            }
+          });
+          
+          if (bestMatch && bestScore > 0.3) {
+            console.log(`✓ Correspondência parcial por assunto: ${bestMatch.id} (${bestMatch.title}), score: ${bestScore.toFixed(2)}`);
+            revisionsByOriginalSession[bestMatch.id.toString()].push(revision);
+            matched = true;
+          }
+        }
+        
+        // Estratégia 3: Correspondência por disciplina no título
+        if (!matched && revisionDiscipline && sessionsByDiscipline[revisionDiscipline]) {
+          const matchingSessions = sessionsByDiscipline[revisionDiscipline];
+          if (matchingSessions.length > 0) {
+            const bestMatch = matchingSessions[0];
+            console.log(`✓ Correspondência por disciplina: ${bestMatch.id} (${bestMatch.title})`);
+            revisionsByOriginalSession[bestMatch.id.toString()].push(revision);
+            matched = true;
+          }
+        }
+        
+        // Estratégia 4: Correspondência por disciplina_id
+        if (!matched && revision.discipline_id) {
+          const matchingSessions = mainStudySessions.filter(s => s.discipline_id === revision.discipline_id);
+          if (matchingSessions.length > 0) {
+            const bestMatch = matchingSessions[0];
+            console.log(`✓ Correspondência por discipline_id: ${bestMatch.id} (${bestMatch.title})`);
+            revisionsByOriginalSession[bestMatch.id.toString()].push(revision);
+            matched = true;
+          }
+        }
+        
+        // Estratégia 5: Último recurso - usar a primeira sessão disponível
+        if (!matched && mainStudySessions.length > 0) {
+          const firstSession = mainStudySessions[0];
+          console.log(`! Último recurso: Usando primeira sessão disponível: ${firstSession.id} (${firstSession.title})`);
+          revisionsByOriginalSession[firstSession.id.toString()].push(revision);
+        }
+      });
+      
+      // Verificar se há revisões não associadas
+      const allAssociatedRevisions = Object.values(revisionsByOriginalSession).flat();
+      const unassociatedRevisions = revisionSessions.filter(r => 
+        !allAssociatedRevisions.some(ar => ar.id === r.id)
+      );
+      
+      if (unassociatedRevisions.length > 0) {
+        console.error(`ALERTA: ${unassociatedRevisions.length} revisões não foram associadas a nenhuma sessão original!`);
+        unassociatedRevisions.forEach(r => {
+          console.error(`  - Revisão não associada: ID ${r.id}, Título: ${r.title}, Disciplina ID: ${r.discipline_id}`);
+        });
+      }
+      
+      // Log para debug
+      console.log('Mapeamento final de revisões por sessão original:');
+      Object.keys(revisionsByOriginalSession).forEach(originalId => {
+        const originalSession = mainStudySessions.find(s => s.id === Number(originalId));
+        if (originalSession) {
+          console.log(`Sessão original ${originalId} (${originalSession.title}, Disciplina: ${originalSession.discipline_name}): ${revisionsByOriginalSession[originalId].length} revisões`);
+          revisionsByOriginalSession[originalId].forEach(revision => {
+            console.log(`  - Revisão ID ${revision.id}: ${revision.title}, Disciplina ID: ${revision.discipline_id}`);
+          });
+        }
+      });
+      
+      // Separar por status de conclusão
+      const completedMainSessions = mainStudySessions.filter(s => s.completed);
+      const pendingMainSessions = mainStudySessions.filter(s => !s.completed);
+      
+      // Calcular estatísticas gerais
+      const totalCompletedSessions = sortedSessions.filter(s => s.completed).length;
+      const completionRate = sortedSessions.length > 0 
+        ? Math.round((totalCompletedSessions / sortedSessions.length) * 100) 
+        : 0;
+      
+      return (
+        <div className="space-y-8">
+          {/* Todas as sessões */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                <ListChecks className="h-5 w-5 text-blue-600" />
+                Sessões de Estudo e Revisão
               </h3>
+              <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                {totalCompletedSessions} / {sortedSessions.length} concluídas
+              </div>
+            </div>
             
-            {disciplineStats.length > 0 ? (
-                <div className="space-y-5">
-                  {disciplineStats.map(([discipline, stats], index) => {
-                  const percentage = Math.round((stats.minutes / totalTime) * 100);
-                    const bgGradient = getDisciplineColor(index);
+            <div className="w-full bg-gray-200 rounded-full h-4 mb-6">
+              <div 
+                className="bg-gradient-to-r from-blue-500 to-blue-600 h-4 rounded-full flex items-center justify-center text-xs font-medium text-white"
+                style={{ width: `${completionRate}%` }}
+              >
+                {completionRate}%
+              </div>
+            </div>
+            
+            {/* Pendentes */}
+            {pendingMainSessions.length > 0 && (
+            <div className="mb-8">
+              <h4 className="text-lg font-medium text-gray-800 mb-4 flex items-center">
+                <Clock className="h-5 w-5 text-amber-500 mr-2" />
+                Sessões Pendentes ({pendingMainSessions.length})
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {pendingMainSessions.map(mainSession => {
+                  // Obter revisões associadas a esta sessão principal
+                  const relatedRevisions = revisionsByOriginalSession[mainSession.id.toString()] || [];
                     
                       return (
-                      <div key={discipline} className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${bgGradient} flex items-center justify-center text-white shadow-sm`}>
-                              <GraduationCap className="h-5 w-5" />
+                    <div 
+                      key={mainSession.id}
+                      className="border border-gray-200 hover:border-blue-300 rounded-lg p-4 transition-all"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-semibold text-gray-800">
+                          {mainSession.title}
+                        </h4>
+                        <button
+                          onClick={() => handleStartSession(mainSession)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          <PlayCircle className="h-5 w-5" />
+                        </button>
                             </div>
-                            <span className="font-semibold text-gray-800">{discipline}</span>
+                      
+                      <div className="flex items-center text-sm text-gray-500 mb-1">
+                        <Calendar className="h-4 w-4 mr-1" />
+                        <span>{new Date(mainSession.date).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}</span>
                           </div>
-                          <div className="flex items-center gap-4">
-                            <span className="text-sm bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-full">
-                              {stats.count} sessões
-                            </span>
-                            <span className="text-sm bg-purple-100 text-purple-800 px-2.5 py-1 rounded-full">
-                              {Math.floor(stats.minutes / 60)}h {stats.minutes % 60}min
-                            </span>
+                      
+                      <div className="flex items-center text-sm text-gray-500 mb-2">
+                        <Clock className="h-4 w-4 mr-1" />
+                        <span>{mainSession.start_time.substring(0, 5)} - {mainSession.end_time.substring(0, 5)}</span>
                           </div>
+                      
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                          <BookOpen className="h-3 w-3" />
+                          Estudo
                         </div>
                         
-                        <div className="relative pt-1">
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="text-xs font-semibold text-indigo-600 uppercase">Proporção do tempo total</div>
-                            <div className="text-xs font-bold text-indigo-800">{percentage}%</div>
-                          </div>
-                          <div className="overflow-hidden h-3 text-xs flex rounded-full bg-gray-200">
-                            <div 
-                              className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r ${bgGradient}`} 
-                              style={{ width: `${percentage}%` }}
-                            ></div>
+                        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                          <GraduationCap className="h-3 w-3" />
+                          {mainSession.discipline_name}
                           </div>
                       </div>
+                      
+                      {/* Revisões relacionadas */}
+                      {relatedRevisions.length > 0 && (
+                        <div className="mt-4 pt-3 border-t border-dashed border-gray-200">
+                          <h5 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            <RefreshCw className="h-4 w-4 text-amber-600 mr-1" />
+                            Revisões ({relatedRevisions.length})
+                          </h5>
+                          
+                          <div className="space-y-2">
+                            {relatedRevisions.map(revision => (
+                              <div 
+                                key={revision.id} 
+                                className={`p-2 rounded-md text-sm ${
+                                  revision.completed 
+                                    ? 'bg-green-50 border border-green-200' 
+                                    : 'bg-amber-50 border border-amber-200'
+                                }`}
+                              >
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <div className="flex items-center gap-1 mb-1">
+                                      <Calendar className="h-3 w-3 text-gray-500" />
+                                      <span className="text-gray-600">{new Date(revision.date).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}</span>
+                                      <Clock className="h-3 w-3 text-gray-500 ml-2" />
+                                      <span className="text-gray-600">{revision.start_time.substring(0, 5)}</span>
+                          </div>
+                                    <div className="text-xs text-amber-700">
+                                      {revision.revision_interval && `Revisão de ${revision.revision_interval} dias`}
+                      </div>
+                                  </div>
+                                  
+                                  {revision.completed ? (
+                                    <CheckCircle className="h-4 w-4 text-green-600" />
+                                  ) : (
+                                    <button
+                                      onClick={() => handleStartSession(revision)}
+                                      className="text-amber-600 hover:text-amber-800"
+                                    >
+                                      <PlayCircle className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Mensagem quando não há revisões associadas */}
+                      {mainSession.id && revisionsByOriginalSession[mainSession.id.toString()] === undefined && (
+                        <div className="mt-4 pt-3 border-t border-dashed border-gray-200">
+                          <div className="text-center py-2">
+                            <RefreshCw className="h-4 w-4 text-gray-400 mx-auto mb-1" />
+                            <p className="text-xs text-gray-500">Sem revisões programadas</p>
+                          </div>
+                        </div>
+                      )}
                         </div>
                       );
                     })}
                   </div>
-            ) : (
-                <div className="text-center py-16 bg-gray-50 rounded-xl border border-dashed border-gray-300">
-                  <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-800 mb-2">Nenhum dado disponível</h3>
-                  <p className="text-gray-600 max-w-md mx-auto">
-                    Não há dados suficientes para gerar estatísticas.
-                  </p>
+              </div>
+            )}
+            
+            {/* Concluídas */}
+            {completedMainSessions.length > 0 && (
+            <div>
+              <h4 className="text-lg font-medium text-gray-800 mb-4 flex items-center">
+                <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                Sessões Concluídas ({completedMainSessions.length})
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {completedMainSessions.map(mainSession => {
+                  // Obter revisões associadas a esta sessão principal
+                  const relatedRevisions = revisionsByOriginalSession[mainSession.id.toString()] || [];
+                  
+                  return (
+                    <div 
+                      key={mainSession.id}
+                      className="border border-green-300 bg-green-50 rounded-lg p-4 transition-all"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-semibold text-green-700">
+                          {mainSession.title}
+                        </h4>
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      </div>
+                      
+                      <div className="flex items-center text-sm text-gray-500 mb-1">
+                        <Calendar className="h-4 w-4 mr-1" />
+                        <span>{new Date(mainSession.date).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}</span>
+                      </div>
+                      
+                      <div className="flex items-center text-sm text-gray-500 mb-2">
+                        <Clock className="h-4 w-4 mr-1" />
+                        <span>{mainSession.start_time.substring(0, 5)} - {mainSession.end_time.substring(0, 5)}</span>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                          <BookOpen className="h-3 w-3" />
+                          Estudo
+                        </div>
+                        
+                        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                          <GraduationCap className="h-3 w-3" />
+                          {mainSession.discipline_name}
+                        </div>
+                        
+                        {mainSession.actual_duration_minutes && (
+                          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                            <Clock className="h-3 w-3" />
+                            {mainSession.actual_duration_minutes} min
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Revisões relacionadas */}
+                      {relatedRevisions.length > 0 && (
+                        <div className="mt-4 pt-3 border-t border-dashed border-gray-200">
+                          <h5 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            <RefreshCw className="h-4 w-4 text-amber-600 mr-1" />
+                            Revisões ({relatedRevisions.length})
+                          </h5>
+                          
+                          <div className="space-y-2">
+                            {relatedRevisions.map(revision => (
+                              <div 
+                                key={revision.id} 
+                                className={`p-2 rounded-md text-sm ${
+                                  revision.completed 
+                                    ? 'bg-green-100 border border-green-200' 
+                                    : 'bg-amber-50 border border-amber-200'
+                                }`}
+                              >
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <div className="flex items-center gap-1 mb-1">
+                                      <Calendar className="h-3 w-3 text-gray-500" />
+                                      <span className="text-gray-600">{new Date(revision.date).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}</span>
+                                      <Clock className="h-3 w-3 text-gray-500 ml-2" />
+                                      <span className="text-gray-600">{revision.start_time.substring(0, 5)}</span>
+                                    </div>
+                                    <div className="text-xs text-amber-700">
+                                      {revision.revision_interval && `Revisão de ${revision.revision_interval} dias`}
+                                    </div>
+                                  </div>
+                                  
+                                  {revision.completed ? (
+                                    <CheckCircle className="h-4 w-4 text-green-600" />
+                                  ) : (
+                                    <button
+                                      onClick={() => handleStartSession(revision)}
+                                      className="text-amber-600 hover:text-amber-800"
+                                    >
+                                      <PlayCircle className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                 </div>
             )}
+                      
+                      {/* Mensagem quando não há revisões associadas */}
+                      {mainSession.id && revisionsByOriginalSession[mainSession.id.toString()] === undefined && (
+                        <div className="mt-4 pt-3 border-t border-dashed border-gray-200">
+                          <div className="text-center py-2">
+                            <RefreshCw className="h-4 w-4 text-gray-400 mx-auto mb-1" />
+                            <p className="text-xs text-gray-500">Sem revisões programadas</p>
+                          </div>
             </div>
           )}
+        </div>
+                  );
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {/* Mensagem quando não há sessões */}
+            {mainStudySessions.length === 0 && (
+              <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                <ListChecks className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                <h4 className="text-lg font-medium text-gray-700 mb-1">Nenhuma sessão encontrada</h4>
+                <p className="text-gray-500">Este plano não possui sessões de estudo ou revisão.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    })()}
+  </div>
+)}
         </div>
       </div>
       
