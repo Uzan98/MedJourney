@@ -208,8 +208,6 @@ export default function AchievementsFeed({ groupId }: AchievementsFeedProps) {
         return <Timer className="h-5 w-5 text-blue-500" />;
       case 'pomodoro_cycles_milestone':
         return <Award className="h-5 w-5 text-purple-500" />;
-      case 'study_time_milestone':
-        return <Clock className="h-5 w-5 text-green-500" />;
       case 'joined_group':
         return <UserPlus className="h-5 w-5 text-indigo-500" />;
       case 'ranking_position':
@@ -227,8 +225,6 @@ export default function AchievementsFeed({ groupId }: AchievementsFeedProps) {
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'pomodoro_cycles_milestone':
         return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'study_time_milestone':
-        return 'bg-green-100 text-green-800 border-green-200';
       case 'joined_group':
         return 'bg-indigo-100 text-indigo-800 border-indigo-200';
       case 'ranking_position':
@@ -266,10 +262,6 @@ export default function AchievementsFeed({ groupId }: AchievementsFeedProps) {
         
       case 'pomodoro_cycles_milestone':
         return `${username} atingiu ${achievement_data.milestone} ciclos Pomodoro! 🎉`;
-        
-      case 'study_time_milestone':
-        const hours = Math.floor(achievement_data.milestone / 60);
-        return `${username} estudou por ${hours} hora${hours > 1 ? 's' : ''} no grupo! 🎓`;
         
       case 'joined_group':
         return `${username} entrou no grupo de estudos`;

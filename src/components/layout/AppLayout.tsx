@@ -27,7 +27,8 @@ import {
   Users,
   Clock,
   User,
-  LogOut
+  LogOut,
+  MoreHorizontal
 } from 'lucide-react';
 import MobileMenu from './MobileMenu';
 import SidebarMenu from './SidebarMenu';
@@ -93,14 +94,12 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     {
       path: "/comunidade",
       label: "Comunidade",
-      icon: <Users className="h-5 w-5 flex-shrink-0" />,
-      submenu: [
-        {
-          path: "/comunidade/sala-estudos",
-          label: "Sala de Estudos",
-          icon: <Clock className="h-5 w-5 flex-shrink-0" />
-        }
-      ]
+      icon: <Users className="h-5 w-5 flex-shrink-0" />
+    },
+    {
+      path: "/mais",
+      label: "Mais Opções",
+      icon: <MoreHorizontal className="h-5 w-5 flex-shrink-0" />
     }
   ];
 

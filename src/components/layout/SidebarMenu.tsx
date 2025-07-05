@@ -17,7 +17,8 @@ import {
   ChevronRight,
   Brain,
   Trophy,
-  Shield
+  Shield,
+  MessageCircle
 } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -118,9 +119,9 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
       icon: <Users className="h-5 w-5 flex-shrink-0" />,
       submenu: [
         {
-          path: "/comunidade/sala-estudos",
-          label: "Sala de Estudos",
-          icon: <Users className="h-5 w-5 flex-shrink-0" />
+          path: "/comunidade/feed",
+          label: "Feed da Comunidade",
+          icon: <MessageCircle className="h-5 w-5 flex-shrink-0" />
         },
         {
           path: "/comunidade/grupos-estudos",

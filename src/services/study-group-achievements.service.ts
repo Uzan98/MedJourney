@@ -4,7 +4,6 @@ import { User } from '@supabase/supabase-js';
 export type AchievementType = 
   | 'pomodoro_cycle_completed' 
   | 'pomodoro_cycles_milestone' 
-  | 'study_time_milestone' 
   | 'joined_group' 
   | 'ranking_position' 
   | 'daily_streak';
@@ -275,34 +274,6 @@ export class StudyGroupAchievementsService {
   }
   
   /**
-   * Registra conquista de tempo de estudo
-   */
-  static async recordStudyTimeMilestone(
-    groupId: string,
-    userId: string,
-    username: string,
-    totalMinutes: number
-  ): Promise<boolean> {
-    // Marcos de tempo de estudo em minutos (1h, 2h, 5h, 10h, 24h)
-    const milestones = [60, 120, 300, 600, 1440];
-    
-    // Encontrar o maior marco atingido
-    const achievedMilestone = milestones.filter(m => totalMinutes >= m).pop();
-    
-    if (achievedMilestone) {
-      return await this.recordAchievement(
-        groupId,
-        userId,
-        username,
-        'study_time_milestone',
-        { minutes: totalMinutes, milestone: achievedMilestone }
-      );
-    }
-    
-    return false;
-  }
-  
-  /**
    * Registra conquista de posição no ranking
    */
   static async recordRankingPosition(
@@ -345,10 +316,6 @@ export class StudyGroupAchievementsService {
       case 'pomodoro_cycles_milestone':
         return `${username} atingiu ${achievement_data.milestone} ciclos Pomodoro! 🎉`;
         
-      case 'study_time_milestone':
-        const hours = Math.floor(achievement_data.milestone / 60);
-        return `${username} estudou por ${hours} hora${hours > 1 ? 's' : ''} no grupo! 🎓`;
-        
       case 'joined_group':
         return `${username} entrou no grupo de estudos`;
         
@@ -374,8 +341,6 @@ export class StudyGroupAchievementsService {
         return 'Timer';
       case 'pomodoro_cycles_milestone':
         return 'Award';
-      case 'study_time_milestone':
-        return 'Clock';
       case 'joined_group':
         return 'UserPlus';
       case 'ranking_position':

@@ -14,7 +14,8 @@ import {
   Calendar,
   ClipboardList,
   Settings,
-  GraduationCap
+  GraduationCap,
+  MoreHorizontal
 } from 'lucide-react';
 
 interface MobileMenuProps {
@@ -60,7 +61,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
     setShouldRender(!isProtectedRoute || forceShow);
   }, [pathname, forceShow]);
 
-  // Primary menu items (always visible)
+  // Primary menu items (always visible) - Reduzido para 4 itens conforme solicitado
   const primaryMenuItems = [
     {
       path: "/dashboard",
@@ -78,24 +79,9 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
       icon: <Calendar className="h-5 w-5" />
     },
     {
-      path: "/estudos",
-      label: "Estudos",
-      icon: <BookText className="h-5 w-5" />
-    },
-    {
-      path: "/banco-questoes",
-      label: "Questões",
-      icon: <FileQuestion className="h-5 w-5" />
-    },
-    {
-      path: "/simulados",
-      label: "Simulados",
-      icon: <ClipboardList className="h-5 w-5" />
-    },
-    {
-      path: "/comunidade",
-      label: "Social",
-      icon: <Users className="h-5 w-5" />
+      path: "/mais",
+      label: "Mais",
+      icon: <MoreHorizontal className="h-5 w-5" />
     }
   ];
 
