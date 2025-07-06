@@ -16,7 +16,9 @@ import {
   RefreshCw,
   SortAsc,
   SortDesc,
-  Wand2
+  Wand2,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import QuestionCard from '@/components/banco-questoes/QuestionCard';
 import AIQuestionGeneratorModal from '@/components/banco-questoes/AIQuestionGeneratorModal';
@@ -39,6 +41,12 @@ export default function BancoQuestoesPage() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  
+  // Estados para paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const [questionsPerPage, setQuestionsPerPage] = useState(10);
+  const [paginatedQuestions, setPaginatedQuestions] = useState<Question[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
   
   // Estado para modal de geração de questão com IA
   const [showAIModal, setShowAIModal] = useState(false);
@@ -63,6 +71,51 @@ export default function BancoQuestoesPage() {
     selectedType,
     sortOrder
   ]);
+  
+  // Atualizar questões paginadas quando as questões filtradas ou a página atual mudar
+  useEffect(() => {
+    paginateQuestions();
+  }, [filteredQuestions, currentPage, questionsPerPage]);
+
+  // Função para paginar as questões
+  const paginateQuestions = () => {
+    const indexOfLastQuestion = currentPage * questionsPerPage;
+    const indexOfFirstQuestion = indexOfLastQuestion - questionsPerPage;
+    const currentQuestions = filteredQuestions.slice(indexOfFirstQuestion, indexOfLastQuestion);
+    
+    setPaginatedQuestions(currentQuestions);
+    setTotalPages(Math.ceil(filteredQuestions.length / questionsPerPage));
+  };
+  
+  // Função para mudar de página
+  const changePage = (pageNumber: number) => {
+    // Garantir que o número da página esteja dentro dos limites
+    const page = Math.max(1, Math.min(pageNumber, totalPages));
+    setCurrentPage(page);
+    
+    // Rolar para o topo da página quando mudar de página
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  // Função para ir para a próxima página
+  const nextPage = () => {
+    if (currentPage < totalPages) {
+      changePage(currentPage + 1);
+    }
+  };
+  
+  // Função para ir para a página anterior
+  const prevPage = () => {
+    if (currentPage > 1) {
+      changePage(currentPage - 1);
+    }
+  };
+  
+  // Função para mudar o número de questões por página
+  const handleQuestionsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setQuestionsPerPage(Number(e.target.value));
+    setCurrentPage(1); // Voltar para a primeira página ao mudar o número de itens por página
+  };
   
   const loadData = async () => {
     setLoading(true);
@@ -171,6 +224,8 @@ export default function BancoQuestoesPage() {
     });
     
     setFilteredQuestions(filtered);
+    // Resetar para a primeira página quando os filtros mudarem
+    setCurrentPage(1);
   };
   
   // Função para alternar ordenação
@@ -233,6 +288,112 @@ export default function BancoQuestoesPage() {
     if (!id) return 'Sem disciplina';
     const discipline = disciplines.find(d => d.id === id);
     return discipline ? discipline.name : 'Disciplina não encontrada';
+  };
+
+  // Componente de paginação
+  const Pagination = () => {
+    // Se não houver páginas ou apenas uma página, não mostrar paginação
+    if (totalPages <= 1) return null;
+    
+    // Função para gerar array com números de páginas a serem mostradas
+    const getPageNumbers = () => {
+      const pageNumbers: (number | string)[] = [];
+      
+      // Sempre mostrar a primeira página
+      pageNumbers.push(1);
+      
+      // Adicionar elipse se necessário
+      if (currentPage > 3) {
+        pageNumbers.push('...');
+      }
+      
+      // Adicionar páginas ao redor da página atual
+      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+        if (i > 1 && i < totalPages) {
+          pageNumbers.push(i);
+        }
+      }
+      
+      // Adicionar elipse se necessário
+      if (currentPage < totalPages - 2) {
+        pageNumbers.push('...');
+      }
+      
+      // Sempre mostrar a última página se houver mais de uma página
+      if (totalPages > 1) {
+        pageNumbers.push(totalPages);
+      }
+      
+      return pageNumbers;
+    };
+    
+    return (
+      <div className="flex items-center justify-between mt-6 bg-white p-4 rounded-xl shadow-sm">
+        <div className="flex items-center">
+          <span className="text-sm text-gray-700 mr-2">Mostrar</span>
+          <select
+            value={questionsPerPage}
+            onChange={handleQuestionsPerPageChange}
+            className="border border-gray-300 rounded-md text-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+          </select>
+          <span className="text-sm text-gray-700 ml-2">por página</span>
+        </div>
+        
+        <div className="flex items-center space-x-1">
+          <button
+            onClick={prevPage}
+            disabled={currentPage === 1}
+            className={`p-2 rounded-md ${
+              currentPage === 1
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-blue-600 hover:bg-blue-50'
+            }`}
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          
+          {getPageNumbers().map((pageNumber, index) => (
+            <div key={index}>
+              {typeof pageNumber === 'number' ? (
+                <button
+                  onClick={() => changePage(pageNumber)}
+                  className={`px-3 py-1 rounded-md ${
+                    currentPage === pageNumber
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-700 hover:bg-blue-50'
+                  }`}
+                >
+                  {pageNumber}
+                </button>
+              ) : (
+                <span className="px-2 text-gray-500">{pageNumber}</span>
+              )}
+            </div>
+          ))}
+          
+          <button
+            onClick={nextPage}
+            disabled={currentPage === totalPages}
+            className={`p-2 rounded-md ${
+              currentPage === totalPages
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-blue-600 hover:bg-blue-50'
+            }`}
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+        
+        <div className="text-sm text-gray-700">
+          Página {currentPage} de {totalPages} ({filteredQuestions.length} questões)
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -441,6 +602,11 @@ export default function BancoQuestoesPage() {
             <div className="p-4 bg-blue-50 rounded-xl mb-4 flex flex-col sm:flex-row justify-between items-center">
               <p className="text-blue-700 font-medium mb-2 sm:mb-0">
                 <span className="font-bold">{filteredQuestions.length}</span> questões encontradas
+                {filteredQuestions.length > questionsPerPage && (
+                  <span className="ml-2 text-sm">
+                    (mostrando {paginatedQuestions.length} nesta página)
+                  </span>
+                )}
               </p>
               <div className="text-sm text-blue-600">
                 {selectedDiscipline && <span className="px-3 py-1 bg-blue-100 rounded-full mr-2">Disciplina filtrada</span>}
@@ -456,7 +622,7 @@ export default function BancoQuestoesPage() {
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {filteredQuestions.map((question) => (
+              {paginatedQuestions.map((question) => (
                 <QuestionCard
                   key={question.id}
                   question={question}
@@ -465,6 +631,9 @@ export default function BancoQuestoesPage() {
                 />
               ))}
             </div>
+            
+            {/* Componente de paginação */}
+            <Pagination />
           </div>
         )}
       </div>
