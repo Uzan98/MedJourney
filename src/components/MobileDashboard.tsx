@@ -51,7 +51,6 @@ import {
   PenSquare,
   Zap
 } from 'lucide-react';
-import QuickStudySessionModal from '@/components/estudos/QuickStudySessionModal';
 import { usePWA } from './PWAProvider';
 import InstallPWAButton from './InstallPWAButton';
 
@@ -83,7 +82,6 @@ const MobileDashboard = () => {
     totalDaysStudied: 0,
     weekDays: []
   });
-  const [isStudySessionModalOpen, setIsStudySessionModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [activeChart, setActiveChart] = useState('dificuldade');
   const [recentQuestions, setRecentQuestions] = useState<Question[]>([]);
@@ -500,21 +498,6 @@ const MobileDashboard = () => {
     );
   };
 
-  // Função para renderizar o botão rápido de estudo
-  const renderQuickStudyButton = () => (
-    <div 
-      className="fixed bottom-20 right-3 z-20"
-      onClick={() => setIsStudySessionModalOpen(true)}
-    >
-      <button 
-        className="w-12 h-12 rounded-full bg-blue-600 text-white shadow-lg flex items-center justify-center"
-        aria-label="Iniciar estudo rápido"
-      >
-        <Clock className="h-6 w-6" />
-      </button>
-    </div>
-  );
-
   // Renderizar conteúdo com base na tab ativa
   const renderTabContent = () => {
     switch (activeTab) {
@@ -868,12 +851,11 @@ const MobileDashboard = () => {
                   <div className="text-center py-6">
                     <Clock className="w-10 h-10 text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500 text-sm">Nenhuma sessão de estudo registrada</p>
-                    <button 
-                      className="mt-3 px-4 py-1.5 bg-emerald-500 text-white rounded-md text-sm"
-                      onClick={() => setIsStudySessionModalOpen(true)}
-                    >
-                      Iniciar Estudo
-                    </button>
+                    <Link href="/planejamento/nova-sessao">
+                      <button className="mt-3 px-4 py-1.5 bg-emerald-500 text-white rounded-md text-sm">
+                        Iniciar Estudo
+                      </button>
+                    </Link>
                     </div>
                 )}
               </div>
@@ -887,12 +869,11 @@ const MobileDashboard = () => {
                       <span className="ml-1">• {studyByDiscipline.reduce((acc, curr) => acc + curr.sessionsCount, 0)} sessões</span>
                       </p>
                     </div>
-                <button
-                    className="p-1.5 bg-emerald-500 text-white rounded-full"
-                  onClick={() => setIsStudySessionModalOpen(true)}
-                >
+                <Link href="/planejamento/nova-sessao">
+                  <button className="p-1.5 bg-emerald-500 text-white rounded-full">
                     <Plus className="h-4 w-4" />
-                </button>
+                  </button>
+                </Link>
               </div>
             )}
             </div>
@@ -1575,28 +1556,6 @@ const MobileDashboard = () => {
       <div className="w-full py-4 pb-20 px-3">
         {renderTabContent()}
       </div>
-      
-      {/* Botão de estudo rápido com design moderno */}
-      <div 
-        className="fixed bottom-20 right-4 z-20"
-        onClick={() => setIsStudySessionModalOpen(true)}
-      >
-        <button 
-          className="w-14 h-14 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg flex items-center justify-center hover:scale-105 transition-transform"
-          aria-label="Iniciar estudo rápido"
-        >
-          <Clock className="h-6 w-6" />
-        </button>
-      </div>
-      
-      {/* Modal de sessão de estudo */}
-      {isStudySessionModalOpen && (
-        <QuickStudySessionModal 
-          isOpen={isStudySessionModalOpen}
-          onClose={() => setIsStudySessionModalOpen(false)} 
-          disciplineId={disciplines.length > 0 ? disciplines[0].id : undefined}
-        />
-      )}
       
       {/* Navegação inferior moderna - apenas ícones */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 py-2 z-10 shadow-lg">

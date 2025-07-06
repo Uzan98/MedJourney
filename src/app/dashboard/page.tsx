@@ -478,17 +478,7 @@ export default function DashboardPage() {
     );
   };
   
-  // Botão de ação flutuante para registrar sessão de estudo
-  const renderQuickStudyButton = () => (
-    <button
-      onClick={() => setIsStudySessionModalOpen(true)}
-      className="fixed bottom-8 right-8 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg flex items-center justify-center z-10 transition-all hover:scale-105"
-      aria-label="Registrar sessão de estudo"
-      title="Registrar sessão de estudo"
-    >
-      <PlusCircle className="h-6 w-6" />
-    </button>
-  );
+
   
   // Se for dispositivo móvel, renderizar o componente MobileDashboard
   if (isMobile) {
@@ -961,9 +951,6 @@ export default function DashboardPage() {
           </p>
         </div>
       </div>
-      
-      {/* Botão de ação flutuante */}
-      {renderQuickStudyButton()}
       
       {/* Modal de sessão de estudo rápida */}
       <QuickStudySessionModal
