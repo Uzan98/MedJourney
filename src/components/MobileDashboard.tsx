@@ -51,7 +51,6 @@ import {
   PenSquare,
   Zap
 } from 'lucide-react';
-import QuickStudySessionModal from '@/components/estudos/QuickStudySessionModal';
 import { usePWA } from './PWAProvider';
 import InstallPWAButton from './InstallPWAButton';
 
@@ -83,7 +82,6 @@ const MobileDashboard = () => {
     totalDaysStudied: 0,
     weekDays: []
   });
-  const [isStudySessionModalOpen, setIsStudySessionModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [activeChart, setActiveChart] = useState('dificuldade');
   const [recentQuestions, setRecentQuestions] = useState<Question[]>([]);
@@ -500,21 +498,6 @@ const MobileDashboard = () => {
     );
   };
 
-  // Função para renderizar o botão rápido de estudo
-  const renderQuickStudyButton = () => (
-    <div 
-      className="fixed bottom-20 right-3 z-20"
-      onClick={() => setIsStudySessionModalOpen(true)}
-    >
-      <button 
-        className="w-12 h-12 rounded-full bg-blue-600 text-white shadow-lg flex items-center justify-center"
-        aria-label="Iniciar estudo rápido"
-      >
-        <Clock className="h-6 w-6" />
-      </button>
-    </div>
-  );
-
   // Renderizar conteúdo com base na tab ativa
   const renderTabContent = () => {
     switch (activeTab) {
@@ -868,12 +851,11 @@ const MobileDashboard = () => {
                   <div className="text-center py-6">
                     <Clock className="w-10 h-10 text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500 text-sm">Nenhuma sessão de estudo registrada</p>
-                    <button 
-                      className="mt-3 px-4 py-1.5 bg-emerald-500 text-white rounded-md text-sm"
-                      onClick={() => setIsStudySessionModalOpen(true)}
-                    >
-                      Iniciar Estudo
-                    </button>
+                    <Link href="/planejamento/nova-sessao">
+                      <button className="mt-3 px-4 py-1.5 bg-emerald-500 text-white rounded-md text-sm">
+                        Iniciar Estudo
+                      </button>
+                    </Link>
                     </div>
                 )}
               </div>
@@ -887,12 +869,11 @@ const MobileDashboard = () => {
                       <span className="ml-1">• {studyByDiscipline.reduce((acc, curr) => acc + curr.sessionsCount, 0)} sessões</span>
                       </p>
                     </div>
-                <button
-                    className="p-1.5 bg-emerald-500 text-white rounded-full"
-                  onClick={() => setIsStudySessionModalOpen(true)}
-                >
+                <Link href="/planejamento/nova-sessao">
+                  <button className="p-1.5 bg-emerald-500 text-white rounded-full">
                     <Plus className="h-4 w-4" />
-                </button>
+                  </button>
+                </Link>
               </div>
             )}
             </div>
@@ -1381,64 +1362,20 @@ const MobileDashboard = () => {
                   </div>
                   
                   {/* Ações rápidas */}
-                  <Link href="/comunidade/sala-estudos">
+                  <Link href="/comunidade/grupos-estudos">
                     <div className="bg-blue-50 p-2.5 rounded-lg flex items-center hover:bg-blue-100 transition-colors">
                       <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 mr-2">
-                        <Clock className="h-5 w-5" />
+                        <Users className="h-5 w-5" />
                       </div>
                       <div>
-                        <span className="text-sm font-medium text-blue-700">Sala de Estudos</span>
-                        <p className="text-xs text-blue-500">Estude junto com outros usuários</p>
+                        <span className="text-sm font-medium text-blue-700">Grupos de Estudos</span>
+                        <p className="text-xs text-blue-500">Participe de grupos personalizados</p>
                       </div>
                     </div>
                   </Link>
                 </>
               )}
             </div>
-            
-            {/* Lista de Salas */}
-            {!loadingCommunity && (
-              <div className="bg-white rounded-xl p-3.5 shadow-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-700">Salas Disponíveis</h3>
-                  <Link href="/comunidade/sala-estudos" className="text-blue-600 text-xs font-medium">
-                    Ver todas
-                  </Link>
-                </div>
-                
-                {studyRooms.length > 0 ? (
-                  <div className="space-y-2.5">
-                    {studyRooms.slice(0, 3).map((room) => (
-                      <Link href={`/comunidade/sala-estudos/${room.id}`} key={room.id}>
-                        <div className="border border-gray-100 rounded-lg p-2.5 hover:bg-gray-50 transition-colors">
-                          <p className="text-sm font-medium">{room.name}</p>
-                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{room.description || 'Sala de estudos compartilhada para foco e concentração.'}</p>
-                          <div className="flex justify-between items-center mt-2">
-                            <span className="flex items-center text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">
-                              <Users className="h-3 w-3 mr-0.5" /> {room.active_users || 0} online
-                            </span>
-                            <span className="flex items-center text-xs px-2 py-1 bg-blue-500 text-white rounded-lg font-medium">
-                              Entrar <ArrowUpRight className="h-3 w-3 ml-0.5" />
-                            </span>
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <Users className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-500 text-sm">Nenhuma sala de estudo disponível</p>
-                    <Link href="/comunidade">
-                      <button className="mt-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium flex items-center mx-auto">
-                        <Users className="h-4 w-4 mr-1" />
-                        Explorar Comunidade
-                      </button>
-                    </Link>
-                  </div>
-                )}
-              </div>
-            )}
             
             {/* Dica de estudos em grupo */}
             <div className="bg-blue-50 rounded-xl p-3.5 border-l-4 border-blue-500 shadow-sm">
@@ -1447,7 +1384,7 @@ const MobileDashboard = () => {
                 Dica de Estudo
               </h3>
               <p className="text-xs text-blue-700 leading-relaxed">
-                Estudar em grupo pode aumentar sua motivação e produtividade. Participe das salas de estudo e mantenha-se conectado com outros estudantes!
+                Estudar em grupo pode aumentar sua motivação e produtividade. Participe dos grupos de estudo e mantenha-se conectado com outros estudantes!
               </p>
             </div>
             
@@ -1619,28 +1556,6 @@ const MobileDashboard = () => {
       <div className="w-full py-4 pb-20 px-3">
         {renderTabContent()}
       </div>
-      
-      {/* Botão de estudo rápido com design moderno */}
-      <div 
-        className="fixed bottom-20 right-4 z-20"
-        onClick={() => setIsStudySessionModalOpen(true)}
-      >
-        <button 
-          className="w-14 h-14 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg flex items-center justify-center hover:scale-105 transition-transform"
-          aria-label="Iniciar estudo rápido"
-        >
-          <Clock className="h-6 w-6" />
-        </button>
-      </div>
-      
-      {/* Modal de sessão de estudo */}
-      {isStudySessionModalOpen && (
-        <QuickStudySessionModal 
-          isOpen={isStudySessionModalOpen}
-          onClose={() => setIsStudySessionModalOpen(false)} 
-          disciplineId={disciplines.length > 0 ? disciplines[0].id : undefined}
-        />
-      )}
       
       {/* Navegação inferior moderna - apenas ícones */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 py-2 z-10 shadow-lg">

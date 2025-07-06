@@ -17,7 +17,8 @@ import {
   ChevronRight,
   Brain,
   Trophy,
-  Shield
+  Shield,
+  MessageCircle
 } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -118,9 +119,9 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
       icon: <Users className="h-5 w-5 flex-shrink-0" />,
       submenu: [
         {
-          path: "/comunidade/sala-estudos",
-          label: "Sala de Estudos",
-          icon: <Users className="h-5 w-5 flex-shrink-0" />
+          path: "/comunidade/feed",
+          label: "Feed da Comunidade",
+          icon: <MessageCircle className="h-5 w-5 flex-shrink-0" />
         },
         {
           path: "/comunidade/grupos-estudos",
@@ -146,8 +147,28 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
   const isActive = (path: string) => {
     if (pathname === path) return true;
     
+    // Casos especiais para evitar ativação incorreta
+    // Dashboard não deve estar ativo quando estamos em /dashboard/disciplinas
+    if (path === "/dashboard" && pathname === "/dashboard/disciplinas") {
+      return false;
+    }
+    
+    // Dashboard não deve estar ativo quando estamos em qualquer subpágina do dashboard
+    if (path === "/dashboard" && pathname.startsWith("/dashboard/") && pathname !== "/dashboard") {
+      return false;
+    }
+    
+    // Planejamento não deve estar ativo quando estamos em Planejamento IA
+    if (path === "/planejamento" && pathname.startsWith("/planejamento/inteligente")) {
+      return false;
+    }
+    
     // Check if it's a subpath
     if (pathname.startsWith(`${path}/`) && path !== '/') {
+      // Exceção para o dashboard, que não deve mostrar como ativo para subpáginas
+      if (path === "/dashboard") {
+        return false;
+      }
       return true;
     }
     

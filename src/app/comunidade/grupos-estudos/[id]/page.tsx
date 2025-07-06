@@ -9,8 +9,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { StudyGroup, StudyGroupMember, StudyGroupService } from '@/services/study-group.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import StudyTimeDisplay from '@/components/StudyTimeDisplay';
-import GroupStudyTimer from '@/components/estudos/GroupStudyTimer';
 import PomodoroTimer from '@/components/estudos/PomodoroTimer';
 import AchievementsFeed from '@/components/comunidade/AchievementsFeed';
 import GroupExamsSection from '@/components/comunidade/GroupExamsSection';
@@ -42,7 +40,6 @@ export default function GrupoEstudosPage() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [isActive, setIsActive] = useState(false);
   const [isMember, setIsMember] = useState(false);
-  const [joinTime, setJoinTime] = useState<string>('');
   const [isLeaving, setIsLeaving] = useState(false);
   const [activeSection, setActiveSection] = useState<'chat' | 'info' | 'pomodoro' | 'simulados'>('chat');
   const [menuPosition, setMenuPosition] = useState({ left: 0 });
@@ -207,21 +204,18 @@ export default function GrupoEstudosPage() {
       setMessages(messagesData);
       setTopMembers(topMembersData);
       
-      // Verificar se o usuário está ativo no grupo e obter o tempo de entrada
+      // Verificar se o usuário está ativo no grupo
       const { data: userData } = await supabase.auth.getUser();
       if (userData?.user) {
         const { data: memberData } = await supabase
           .from('study_group_members')
-          .select('is_active, joined_at')
+          .select('is_active')
           .eq('user_id', userData.user.id)
           .eq('group_id', groupId)
           .single();
         
         if (memberData) {
           setIsActive(memberData.is_active);
-          if (memberData.is_active && memberData.joined_at) {
-            setJoinTime(memberData.joined_at);
-          }
         }
       }
       
@@ -352,7 +346,6 @@ export default function GrupoEstudosPage() {
     try {
       // Primeiro, desativar localmente para evitar que o useEffect tente reconectar
       setIsActive(false);
-      setJoinTime('');
       
       // Tentar sair do grupo várias vezes para garantir consistência
       let success = false;
@@ -372,7 +365,7 @@ export default function GrupoEstudosPage() {
       }
       
       if (success) {
-        toast.success('Você saiu da sala. Seu tempo de estudo foi registrado.');
+        toast.success('Você saiu da sala.');
         
         // Cancelar qualquer atualização pendente
         if (window.requestAnimationFrame) {
@@ -396,32 +389,16 @@ export default function GrupoEstudosPage() {
     }
   };
   
-  // Função para entrar na sala (começar a contar tempo)
+  // Função para entrar na sala
   const handleEnterRoom = async () => {
     try {
       const success = await StudyGroupService.enterGroup(groupId);
       if (success) {
-        // Buscar o horário de entrada atualizado
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData?.user) {
-          const { data: memberData } = await supabase
-            .from('study_group_members')
-            .select('joined_at')
-            .eq('user_id', userData.user.id)
-            .eq('group_id', groupId)
-            .single();
-          
-          if (memberData?.joined_at) {
-            setJoinTime(memberData.joined_at);
-            setIsActive(true);
-            // Gerar nova chave para forçar remontagem do timer
-            timerKey.current = `timer-${Date.now()}`;
-            toast.success('Você entrou na sala. Seu tempo de estudo está sendo contabilizado.');
-            
-            // Atualizar a lista de membros
-            await refreshMembersList();
-          }
-        }
+        setIsActive(true);
+        toast.success('Você entrou na sala.');
+        
+        // Atualizar a lista de membros
+        await refreshMembersList();
       } else {
         toast.error('Não foi possível entrar na sala');
       }
@@ -503,28 +480,28 @@ export default function GrupoEstudosPage() {
           
           <div className="relative z-10 p-5">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center">
-            <Link 
-              href="/comunidade/grupos-estudos" 
+              <div className="flex items-center">
+                <Link 
+                  href="/comunidade/grupos-estudos" 
                   className="mr-4 p-2.5 rounded-full bg-blue-500/80 text-white hover:bg-blue-600/90 transition-all shadow-sm hover:shadow-md hover:scale-105 duration-300"
-              aria-label="Voltar"
-            >
+                  aria-label="Voltar"
+                >
                   <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <div>
+                </Link>
+                <div>
                   <h1 className="text-2xl font-bold text-gray-800 mb-1">{group.name}</h1>
                   <div className="flex flex-wrap items-center gap-2 text-sm">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center shadow-sm ${
-                  group.is_private 
+                      group.is_private 
                         ? 'bg-gray-200/70 text-gray-700' 
                         : 'bg-green-100/80 text-green-700'
-                }`}>
-                  {group.is_private ? 'Grupo privado' : 'Grupo público'}
-                </span>
+                    }`}>
+                      {group.is_private ? 'Grupo privado' : 'Grupo público'}
+                    </span>
                     <span className="flex items-center bg-blue-100/70 text-blue-700 px-3 py-1 rounded-full text-xs shadow-sm">
                       <Users className="h-3 w-3 mr-1.5" />
-                  {members.filter(m => m.is_active).length} online
-                </span>
+                      {members.filter(m => m.is_active).length} online
+                    </span>
                     <div 
                       className="flex items-center bg-purple-100/60 px-3 py-1 rounded-full cursor-pointer hover:bg-purple-200/70 transition-colors group shadow-sm hover:shadow"
                       onClick={() => {
@@ -535,11 +512,11 @@ export default function GrupoEstudosPage() {
                       <span className="text-xs mr-1 text-purple-700">Código:</span>
                       <span className="font-mono font-medium text-xs text-purple-800">{group.access_code}</span>
                       <Copy className="h-3 w-3 ml-1.5 text-purple-500 opacity-60 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-          
+              
               <div className="flex items-center gap-3 mt-3 md:mt-0">
                 {!isActive && (
                   <Button 
@@ -547,50 +524,20 @@ export default function GrupoEstudosPage() {
                     className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 shadow hover:shadow-md hover:scale-[1.02] transition-all rounded-xl"
                   >
                     <Sparkles className="h-4 w-4 mr-1.5" />
-                    Começar a estudar
+                    Entrar no grupo
                   </Button>
                 )}
                 
-            {isActive && joinTime && (
-                  <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                    <div className="text-center text-white text-xs font-medium py-1.5 bg-blue-600/50 backdrop-blur-sm border-b border-blue-400/30">
-                      Tempo no grupo
-                    </div>
-                    <div className="px-4 py-2 flex justify-center items-center">
-                      <Clock className="h-5 w-5 text-white/80 mr-2" />
-                      <div className="text-white font-bold text-lg">
-              <GroupStudyTimer 
-                startTime={joinTime} 
-                isActive={isActive} 
-                          resetOnMount={false}
-                          showBackground={false}
-                          key={timerKey.current}
-              />
-                      </div>
-                    </div>
-                  </div>
-            )}
-            
-            {isActive && (
-              <Button 
-                variant="outline" 
-                    className="border-gray-200/50 bg-white/70 backdrop-blur-sm text-gray-700 hover:bg-gray-50 rounded-xl shadow hover:shadow-md hover:scale-[1.02] transition-all"
-                onClick={handleExitRoom}
-                disabled={isLeaving}
-              >
-                    <X className="h-4 w-4 mr-1.5" />
-                {isLeaving ? 'Saindo...' : 'Parar de estudar'}
-              </Button>
-            )}
-            
-            <Button 
-              variant="outline" 
-                  className="border-red-100 bg-red-50/70 backdrop-blur-sm text-red-500 hover:bg-red-100/80 hover:text-red-600 rounded-xl shadow hover:shadow-md hover:scale-[1.02] transition-all"
-              onClick={handleLeaveGroup}
-            >
-                  <LogOut className="h-4 w-4 mr-1.5" />
-              Sair do grupo
-            </Button>
+                {isActive && (
+                  <Button 
+                    variant="outline" 
+                    className="border-red-100 bg-red-50/70 backdrop-blur-sm text-red-500 hover:bg-red-100/80 hover:text-red-600 rounded-xl shadow hover:shadow-md hover:scale-[1.02] transition-all"
+                    onClick={handleLeaveGroup}
+                  >
+                    <LogOut className="h-4 w-4 mr-1.5" />
+                    Sair do grupo
+                  </Button>
+                )}
               </div>
             </div>
           </div>

@@ -27,7 +27,8 @@ import {
   Users,
   Clock,
   User,
-  LogOut
+  LogOut,
+  MoreHorizontal
 } from 'lucide-react';
 import MobileMenu from './MobileMenu';
 import SidebarMenu from './SidebarMenu';
@@ -93,14 +94,12 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     {
       path: "/comunidade",
       label: "Comunidade",
-      icon: <Users className="h-5 w-5 flex-shrink-0" />,
-      submenu: [
-        {
-          path: "/comunidade/sala-estudos",
-          label: "Sala de Estudos",
-          icon: <Clock className="h-5 w-5 flex-shrink-0" />
-        }
-      ]
+      icon: <Users className="h-5 w-5 flex-shrink-0" />
+    },
+    {
+      path: "/mais",
+      label: "Mais Opções",
+      icon: <MoreHorizontal className="h-5 w-5 flex-shrink-0" />
     }
   ];
 
@@ -160,6 +159,17 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     // Verificação simples para caminho exato
     if (pathname === path) return true;
     
+    // Casos especiais para evitar ativação incorreta
+    // Dashboard não deve estar ativo quando estamos em /dashboard/disciplinas
+    if (path === "/dashboard" && pathname === "/dashboard/disciplinas") {
+      return false;
+    }
+    
+    // Dashboard não deve estar ativo quando estamos em qualquer subpágina do dashboard
+    if (path === "/dashboard" && pathname.startsWith("/dashboard/") && pathname !== "/dashboard") {
+      return false;
+    }
+    
     // Verificação especial para submenus
     // Planejamento e Planejamento Inteligente são considerados itens independentes
     if (path === "/planejamento" && pathname.startsWith("/planejamento/inteligente")) {
@@ -184,6 +194,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     // Se o caminho atual começa com o path do item e tem mais um nível apenas
     // Por exemplo, /planejamento/123 é filho de /planejamento, mas /planejamento/inteligente/abc não é
     if (pathname.startsWith(path + '/') && pathnameParts.length === pathParts.length + 1) {
+      // Exceção para o dashboard, que não deve mostrar como ativo para subpáginas
+      if (path === "/dashboard") {
+        return false;
+      }
       return true;
     }
     

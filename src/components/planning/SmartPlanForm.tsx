@@ -20,12 +20,14 @@ import {
   Trash2,
   Plus
 } from 'lucide-react';
+import PlanLoadWarning from './PlanLoadWarning';
 import { toast } from 'react-hot-toast';
 import { SmartPlanFormData } from '@/services/smart-planning.service';
 import { Button } from '@/components/ui/button';
 import { Calendar as UiCalendar } from '@/components/ui/calendar';
 import { Discipline, Subject } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
+import ConfirmationModal from '../ConfirmationModal';
 
 interface SmartPlanFormProps {
   onSubmit?: (data: SmartPlanFormData) => void;
@@ -33,20 +35,13 @@ interface SmartPlanFormProps {
   isSubmitting?: boolean;
 }
 
-// Definindo interface para TimeSlot para melhor tipagem
-interface TimeSlot {
-  id: string;
-  startTime: string;
-  endTime: string;
-}
-
-// Definindo interface para DaySchedule para melhor tipagem
-interface DaySchedule {
+// Definindo interface para DayAvailability para melhor tipagem
+interface DayAvailability {
   day: number;
   name: string;
   shortName: string;
   enabled: boolean;
-  timeSlots: TimeSlot[];
+  availableMinutes: number;
 }
 
 export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false }: SmartPlanFormProps) {
@@ -58,15 +53,15 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
   const [expandedDisciplines, setExpandedDisciplines] = useState<number[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Estado para armazenar a agenda semanal do usuário
-  const [weekSchedule, setWeekSchedule] = useState<DaySchedule[]>([
-    { day: 0, name: 'Domingo', shortName: 'Dom', enabled: false, timeSlots: [] },
-    { day: 1, name: 'Segunda-feira', shortName: 'Seg', enabled: true, timeSlots: [{ id: '1-1', startTime: '19:00', endTime: '21:00' }] },
-    { day: 2, name: 'Terça-feira', shortName: 'Ter', enabled: true, timeSlots: [{ id: '2-1', startTime: '19:00', endTime: '21:00' }] },
-    { day: 3, name: 'Quarta-feira', shortName: 'Qua', enabled: true, timeSlots: [{ id: '3-1', startTime: '19:00', endTime: '21:00' }] },
-    { day: 4, name: 'Quinta-feira', shortName: 'Qui', enabled: true, timeSlots: [{ id: '4-1', startTime: '19:00', endTime: '21:00' }] },
-    { day: 5, name: 'Sexta-feira', shortName: 'Sex', enabled: true, timeSlots: [{ id: '5-1', startTime: '19:00', endTime: '21:00' }] },
-    { day: 6, name: 'Sábado', shortName: 'Sáb', enabled: false, timeSlots: [] }
+  // Estado para armazenar a disponibilidade semanal do usuário
+  const [weekAvailability, setWeekAvailability] = useState<DayAvailability[]>([
+    { day: 0, name: 'Domingo', shortName: 'Dom', enabled: false, availableMinutes: 120 },
+    { day: 1, name: 'Segunda-feira', shortName: 'Seg', enabled: true, availableMinutes: 120 },
+    { day: 2, name: 'Terça-feira', shortName: 'Ter', enabled: true, availableMinutes: 120 },
+    { day: 3, name: 'Quarta-feira', shortName: 'Qua', enabled: true, availableMinutes: 120 },
+    { day: 4, name: 'Quinta-feira', shortName: 'Qui', enabled: true, availableMinutes: 120 },
+    { day: 5, name: 'Sexta-feira', shortName: 'Sex', enabled: true, availableMinutes: 120 },
+    { day: 6, name: 'Sábado', shortName: 'Sáb', enabled: false, availableMinutes: 120 }
   ]);
   
   const [formData, setFormData] = useState<SmartPlanFormData>({
@@ -81,12 +76,14 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
     averageDailyMinutes: 120, // 2 horas por dia como padrão
     mainSessionDuration: {
       min: 30,
-      max: 120
+      max: 60
     },
     revisionSessionDuration: {
-      percentage: 20
+      percentage: 20,
+      fixedMinutes: 20
     },
-    revisionConflictStrategy: 'next-available' // Estratégia padrão para lidar com conflitos de revisão
+    revisionConflictStrategy: 'next-available', // Estratégia padrão para lidar com conflitos de revisão
+    availableMinutesByDay: [] // Novo campo para armazenar minutos disponíveis por dia
   });
 
   // Adicionando estado para armazenar o tempo diário médio
@@ -106,24 +103,34 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
       }
     });
   }, [expandedDisciplines]);
-  
-  // Atualizar formData.availableTimes quando weekSchedule mudar
+
   useEffect(() => {
-    const availableTimes = weekSchedule
+    if (disciplines.length > 0) {
+      disciplines.forEach(discipline => {
+        loadSubjectsForDiscipline(discipline.id);
+      });
+    }
+  }, [disciplines]);
+  
+  // Atualizar formData.availableMinutesByDay quando weekAvailability mudar
+  useEffect(() => {
+    const availableMinutesByDay = weekAvailability
       .filter(day => day.enabled)
-      .flatMap(day => 
-        day.timeSlots.map(slot => ({
+      .map(day => ({
           day: day.day,
-          startTime: slot.startTime,
-          endTime: slot.endTime
-        }))
-      );
+        minutes: day.availableMinutes
+      }));
     
     setFormData(prev => ({
       ...prev,
-      availableTimes
+      availableMinutesByDay,
+      // Calcular a média de minutos disponíveis por dia
+      averageDailyMinutes: Math.round(
+        availableMinutesByDay.reduce((sum, day) => sum + day.minutes, 0) / 
+        Math.max(1, availableMinutesByDay.length)
+      )
     }));
-  }, [weekSchedule]);
+  }, [weekAvailability]);
 
     const loadDisciplines = async () => {
       try {
@@ -251,6 +258,9 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
     return mockSubjects[disciplineId] || [];
   };
 
+  const [showOverloadModal, setShowOverloadModal] = useState(false);
+  const [pendingSubmit, setPendingSubmit] = useState(false);
+
   const handleNext = () => {
     if (step < 3) setStep(step + 1);
     else handleSubmit();
@@ -273,13 +283,31 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
       return;
     }
     
-    // Verificar se há pelo menos um dia com horário disponível
-    const hasAvailableTimes = weekSchedule.some(day => day.enabled && day.timeSlots.length > 0);
-    if (!hasAvailableTimes) {
-      toast.error("Selecione pelo menos um dia com horário disponível");
+    // Verificar se há pelo menos um dia disponível
+    const hasAvailableDays = weekAvailability.some(day => day.enabled);
+    if (!hasAvailableDays) {
+      toast.error("Selecione pelo menos um dia da semana disponível para estudo");
       setStep(2);
       return;
     }
+    
+    // Verificar se o plano pode estar sobrecarregado
+    const loadPercentage = calculatePlanLoad();
+    if (loadPercentage > 80 && !pendingSubmit) {
+      setShowOverloadModal(true);
+      setPendingSubmit(true);
+      return;
+    }
+    setPendingSubmit(false);
+    
+    // Adicionar log para debug
+    console.log(`Verificação de sobrecarga:
+      - Total de assuntos: ${formData.selectedSubjects.length}
+      - Dias disponíveis por semana: ${weekAvailability.filter(day => day.enabled).length}
+      - Período total: ${Math.ceil((formData.endDate.getTime() - formData.startDate.getTime()) / (1000 * 60 * 60 * 24))} dias
+      - Tempo médio diário: ${averageDailyTime} minutos
+      - Carga estimada: ${calculatePlanLoad()}%
+    `);
 
     // Se não tiver nome, usar um nome padrão
     let finalData = { ...formData };
@@ -305,6 +333,21 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
     
     // Adicionar o tempo diário médio
     finalData.averageDailyMinutes = parseInt(averageDailyTime, 10);
+    
+    // Garantir que temos os minutos disponíveis por dia
+    finalData.availableMinutesByDay = weekAvailability
+      .filter(day => day.enabled)
+      .map(day => ({
+        day: day.day,
+        minutes: day.availableMinutes
+      }));
+    
+    // Garantir que temos duração fixa para revisões
+    if (finalData.revisionsEnabled && finalData.revisionSessionDuration) {
+      if (!finalData.revisionSessionDuration.fixedMinutes) {
+        finalData.revisionSessionDuration.fixedMinutes = 20; // Valor padrão
+      }
+    }
 
     if (onSubmit) {
       onSubmit(finalData);
@@ -340,11 +383,24 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
   const toggleSubject = (id: number) => {
     setFormData(prev => {
       const isSelected = prev.selectedSubjects.includes(id);
+      // Encontrar a disciplina do assunto
+      let disciplineId: number | undefined;
+      for (const dId in subjects) {
+        if (subjects[dId].some(s => s.id === id)) {
+          disciplineId = parseInt(dId);
+          break;
+        }
+      }
+      let newSelectedDisciplines = prev.selectedDisciplines;
+      if (!isSelected && disciplineId !== undefined && !prev.selectedDisciplines.includes(disciplineId)) {
+        newSelectedDisciplines = [...prev.selectedDisciplines, disciplineId];
+      }
       return {
         ...prev,
         selectedSubjects: isSelected 
           ? prev.selectedSubjects.filter(s => s !== id)
-          : [...prev.selectedSubjects, id]
+          : [...prev.selectedSubjects, id],
+        selectedDisciplines: newSelectedDisciplines
       };
     });
   };
@@ -378,73 +434,80 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
 
   // Função para alternar a ativação de um dia da semana
   const toggleDay = (dayIndex: number) => {
-    setWeekSchedule(prev => 
+    setWeekAvailability(prev => 
       prev.map(day => 
         day.day === dayIndex 
-          ? { 
-              ...day, 
-              enabled: !day.enabled,
-              // Se ativar um dia que não tem slots, adicionar um slot padrão
-              timeSlots: !day.enabled && day.timeSlots.length === 0 
-                ? [{ id: `${dayIndex}-1`, startTime: '19:00', endTime: '21:00' }] 
-                : day.timeSlots 
-            } 
+          ? { ...day, enabled: !day.enabled } 
           : day
       )
     );
   };
 
-  // Função para adicionar um novo slot de tempo a um dia
-  const addTimeSlot = (dayIndex: number) => {
-    setWeekSchedule(prev => 
+  const updateDayMinutes = (dayIndex: number, minutes: number) => {
+    setWeekAvailability(prev => 
       prev.map(day => 
         day.day === dayIndex 
-          ? { 
-              ...day, 
-              timeSlots: [
-                ...day.timeSlots, 
-                { 
-                  id: `${dayIndex}-${day.timeSlots.length + 1}`, 
-                  startTime: '19:00', 
-                  endTime: '21:00' 
-                }
-              ] 
-            } 
+          ? { ...day, availableMinutes: minutes } 
           : day
       )
     );
   };
 
-  // Função para remover um slot de tempo
-  const removeTimeSlot = (dayIndex: number, slotId: string) => {
-    setWeekSchedule(prev => 
-      prev.map(day => 
-        day.day === dayIndex 
-          ? { 
-              ...day, 
-              timeSlots: day.timeSlots.filter(slot => slot.id !== slotId) 
-            } 
-          : day
-      )
-    );
+  // Função para formatar minutos em formato legível (ex: 90 -> "1h 30min")
+  const formatMinutes = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    
+    if (hours === 0) return `${mins}min`;
+    if (mins === 0) return `${hours}h`;
+    return `${hours}h ${mins}min`;
   };
 
-  // Função para atualizar um slot de tempo
-  const updateTimeSlot = (dayIndex: number, slotId: string, field: 'startTime' | 'endTime', value: string) => {
-    setWeekSchedule(prev => 
-      prev.map(day => 
-        day.day === dayIndex 
-          ? { 
-              ...day, 
-              timeSlots: day.timeSlots.map(slot => 
-                slot.id === slotId 
-                  ? { ...slot, [field]: value } 
-                  : slot
-              ) 
-            } 
-          : day
-      )
-    );
+  // Função para calcular a carga do plano
+  const calculatePlanLoad = () => {
+    if (!formData.selectedSubjects.length) return 0;
+
+    const totalSubjects = formData.selectedSubjects.length;
+    const totalDays = Math.ceil((formData.endDate.getTime() - formData.startDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Calcular o número de semanas completas e dias restantes
+    const weeks = Math.floor(totalDays / 7);
+    const remainingDays = totalDays % 7;
+
+    // Soma dos minutos disponíveis por semana
+    const enabledDays = weekAvailability.filter(day => day.enabled);
+    const minutesPerWeek = enabledDays.reduce((sum, day) => sum + day.availableMinutes, 0);
+
+    // Para os dias restantes, pegar os primeiros dias habilitados
+    let minutesForRemainingDays = 0;
+    if (remainingDays > 0 && enabledDays.length > 0) {
+      for (let i = 0, count = 0; count < remainingDays && i < 7; i++) {
+        const day = weekAvailability[i];
+        if (day.enabled) {
+          minutesForRemainingDays += day.availableMinutes;
+          count++;
+        }
+      }
+    }
+
+    const totalAvailableMinutes = (weeks * minutesPerWeek) + minutesForRemainingDays;
+
+    // Estimar o tempo necessário por assunto (considerando sessão principal + revisões)
+    const estimatedMinutesPerSubject = 120; // 2 horas em média por assunto (sessão principal + revisões)
+    const totalEstimatedMinutes = totalSubjects * estimatedMinutesPerSubject;
+
+    // Evitar divisão por zero
+    if (totalAvailableMinutes === 0) return 100;
+
+    // Retornar a porcentagem de carga (limitada a 100%)
+    return Math.min(100, Math.round((totalEstimatedMinutes / totalAvailableMinutes) * 100));
+  };
+  
+  // Função para obter a cor da barra de carga com base na porcentagem
+  const getPlanLoadColor = (loadPercentage: number) => {
+    if (loadPercentage < 70) return 'bg-green-500';
+    if (loadPercentage < 90) return 'bg-yellow-500';
+    return 'bg-red-500';
   };
 
   const renderStepContent = () => {
@@ -482,6 +545,32 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
             </div>
 
             <div className="space-y-4">
+              {/* Botão geral selecionar/desmarcar todos */}
+              {filteredDisciplines.length > 0 && (
+                <div className="flex justify-end mb-2">
+                  <button
+                    type="button"
+                    className="text-xs px-3 py-1 rounded border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition"
+                    onClick={() => {
+                      // Pega todos os ids de assuntos e disciplinas
+                      const allSubjectIds = filteredDisciplines.flatMap(d => subjects[d.id]?.map(s => s.id) || []);
+                      const allDisciplineIds = filteredDisciplines.map(d => d.id);
+                      const allSelected = allSubjectIds.length > 0 && allSubjectIds.every(id => formData.selectedSubjects.includes(id));
+                      setFormData(prev => ({
+                        ...prev,
+                        selectedSubjects: allSelected ? prev.selectedSubjects.filter(id => !allSubjectIds.includes(id)) : Array.from(new Set([...prev.selectedSubjects, ...allSubjectIds])),
+                        selectedDisciplines: allSelected ? prev.selectedDisciplines.filter(id => !allDisciplineIds.includes(id)) : Array.from(new Set([...prev.selectedDisciplines, ...allDisciplineIds]))
+                      }));
+                    }}
+                  >
+                    {(() => {
+                      const allSubjectIds = filteredDisciplines.flatMap(d => subjects[d.id]?.map(s => s.id) || []);
+                      const allSelected = allSubjectIds.length > 0 && allSubjectIds.every(id => formData.selectedSubjects.includes(id));
+                      return allSelected ? 'Desmarcar todos os assuntos' : 'Selecionar todos os assuntos';
+                    })()}
+                  </button>
+                </div>
+              )}
               {filteredDisciplines.map(discipline => (
                 <div key={discipline.id} className="border border-gray-200 rounded-lg overflow-hidden">
                   {/* Cabeçalho da disciplina */}
@@ -518,16 +607,56 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
                         <h4 className="font-medium text-gray-800">{discipline.name}</h4>
                       </div>
                     </div>
-                    <div className="text-xs text-gray-500">
-                      {subjects[discipline.id]?.length || 0} assuntos
-                      {getSelectedSubjectsCountByDiscipline(discipline.id) > 0 && (
-                        <span className="ml-1 text-indigo-600 font-medium">
-                          ({getSelectedSubjectsCountByDiscipline(discipline.id)} selecionados)
-                        </span>
-                      )}
-                    </div>
+                    {/* Botão Selecionar/Desmarcar todos */}
+                    {expandedDisciplines.includes(discipline.id) && subjects[discipline.id]?.length > 0 && (
+                      <button
+                        type="button"
+                        className="text-xs px-2 py-1 rounded border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition"
+                        onClick={e => {
+                          e.stopPropagation();
+                          const allSubjectIds = subjects[discipline.id].map(s => s.id);
+                          const allSelected = allSubjectIds.every(id => formData.selectedSubjects.includes(id));
+                          setFormData(prev => {
+                            let newSelectedSubjects = allSelected
+                              ? prev.selectedSubjects.filter(id => !allSubjectIds.includes(id))
+                              : Array.from(new Set([...prev.selectedSubjects, ...allSubjectIds]));
+                            let newSelectedDisciplines = prev.selectedDisciplines;
+                            // Se for selecionar todos, também marca a disciplina
+                            if (!allSelected && !prev.selectedDisciplines.includes(discipline.id)) {
+                              newSelectedDisciplines = [...prev.selectedDisciplines, discipline.id];
+                            }
+                            // Se for desmarcar todos, e nenhum assunto da disciplina ficar selecionado, desmarca a disciplina
+                            if (allSelected) {
+                              const remainingSubjects = newSelectedSubjects.filter(id => subjects[discipline.id].some(s => s.id === id));
+                              if (remainingSubjects.length === 0) {
+                                newSelectedDisciplines = prev.selectedDisciplines.filter(id => id !== discipline.id);
+                              }
+                            }
+                            return {
+                              ...prev,
+                              selectedSubjects: newSelectedSubjects,
+                              selectedDisciplines: newSelectedDisciplines
+                            };
+                          });
+                        }}
+                      >
+                        {(() => {
+                          const allSubjectIds = subjects[discipline.id].map(s => s.id);
+                          const allSelected = allSubjectIds.every(id => formData.selectedSubjects.includes(id));
+                          return allSelected ? 'Desmarcar todos' : 'Selecionar todos';
+                        })()}
+                      </button>
+                    )}
                   </div>
+                  <div className="text-xs text-gray-500">
+                    {subjects[discipline.id]?.length || 0} assuntos
+                    {getSelectedSubjectsCountByDiscipline(discipline.id) > 0 && (
+                      <span className="ml-1 text-indigo-600 font-medium">
+                        ({getSelectedSubjectsCountByDiscipline(discipline.id)} selecionados)
+                      </span>
+                    )}
                   </div>
+                </div>
 
                   {/* Lista de assuntos (expandível) */}
                   {expandedDisciplines.includes(discipline.id) && (
@@ -598,7 +727,7 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
                 Defina sua disponibilidade
               </h3>
               <p className="text-gray-600">
-                Informe os horários em que você está disponível para estudar durante a semana
+                Informe quanto tempo você tem disponível para estudar em cada dia da semana
               </p>
             </div>
 
@@ -631,82 +760,25 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
                   </div>
                 </div>
               </div>
-              
-              <div className="p-4 border border-gray-200 rounded-lg bg-white">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="bg-green-100 p-1.5 rounded">
-                    <BarChart4 className="h-4 w-4 text-green-600" />
-                  </div>
-                  <h4 className="font-medium text-gray-800">Seu tempo diário</h4>
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-sm text-gray-600 mb-1">Tempo disponível por dia (em média)</label>
-                  <select 
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                    value={averageDailyTime}
-                    onChange={(e) => setAverageDailyTime(e.target.value)}
-                  >
-                    <option value="60">1 hora</option>
-                    <option value="90">1 hora e 30 minutos</option>
-                    <option value="120">2 horas</option>
-                    <option value="180">3 horas</option>
-                    <option value="240">4 horas</option>
-                  </select>
-                </div>
-              </div>
             </div>
             
-            <div className="mt-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <h4 className="font-medium text-gray-800 mb-3">Tempo médio diário de estudo</h4>
-              
-              <div className="mb-3">
-                <div className="flex justify-between mb-1">
-                  <label className="text-sm text-gray-600">Minutos por dia</label>
-                  <span className="text-sm font-medium">
-                    {formData.averageDailyMinutes || 120} min
-                    {formData.averageDailyMinutes && formData.averageDailyMinutes >= 60 ? 
-                      ` (${Math.floor(formData.averageDailyMinutes / 60)}h${formData.averageDailyMinutes % 60 > 0 ? ` ${formData.averageDailyMinutes % 60}min` : ''})` : 
-                      ''}
-                  </span>
-                </div>
-                
-                <input
-                  type="range"
-                  min="60"
-                  max="360"
-                  step="15"
-                  value={formData.averageDailyMinutes || 120}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    averageDailyMinutes: parseInt(e.target.value)
-                  })}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                />
-              </div>
-              
-              <p className="text-xs text-gray-600">
-                Defina quanto tempo, em média, você pretende estudar por dia. O plano distribuirá as sessões 
-                respeitando este limite, considerando sua disponibilidade semanal.
-              </p>
-            </div>
-            
-            {/* Seleção de horários por dia da semana */}
+            {/* Seleção de dias da semana e tempo disponível */}
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mt-4">
               <div className="p-4 border-b border-gray-200">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <Clock className="h-5 w-5 text-indigo-600" />
-                    <h4 className="font-medium text-gray-800">Horários disponíveis por dia</h4>
+                    <h4 className="font-medium text-gray-800">Tempo disponível por dia</h4>
                   </div>
                   <div className="text-xs text-gray-500">
-                    {weekSchedule.filter(day => day.enabled).length} dias selecionados
+                    {weekAvailability.filter(day => day.enabled).length} dias selecionados
                   </div>
                 </div>
               </div>
               
               <div className="p-4">
                 <div className="grid grid-cols-7 gap-1 mb-4">
-                  {weekSchedule.map(day => (
+                  {weekAvailability.map(day => (
                     <div 
                       key={day.day} 
                       className={`
@@ -723,73 +795,55 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
                   ))}
                 </div>
                 
-                <div className="space-y-6">
-                  {weekSchedule
+                <div className="space-y-4 mt-6">
+                  {weekAvailability
                     .filter(day => day.enabled)
                     .map(day => (
-                      <div key={day.day} className="p-3 border border-gray-200 rounded-lg">
+                      <div key={day.day} className="p-4 border border-gray-200 rounded-lg">
                         <div className="flex justify-between items-center mb-3">
                           <h5 className="font-medium text-gray-800">{day.name}</h5>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 gap-1 text-xs"
-                            onClick={() => addTimeSlot(day.day)}
-                          >
-                            <Plus className="h-3 w-3" />
-                            Adicionar horário
-                          </Button>
+                          <span className="text-sm font-medium text-indigo-600">
+                            {formatMinutes(day.availableMinutes)}
+                          </span>
                         </div>
                         
-                        <div className="space-y-3">
-                          {day.timeSlots.length === 0 ? (
-                            <div className="text-center py-2 text-sm text-gray-500">
-                              Nenhum horário definido para este dia
-                            </div>
-                          ) : (
-                            day.timeSlots.map(slot => (
-                              <div key={slot.id} className="flex items-center gap-2">
-                                <div className="flex-1 grid grid-cols-2 gap-2">
-                                  <div>
-                                    <label className="text-xs text-gray-500 mb-1 block">Início</label>
+                        <div className="space-y-2">
+                          <label className="text-sm text-gray-600">Tempo disponível para estudo</label>
+                          <div className="flex items-center gap-2">
                                     <input
-                                      type="time"
-                                      className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                                      value={slot.startTime}
-                                      onChange={(e) => updateTimeSlot(day.day, slot.id, 'startTime', e.target.value)}
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="text-xs text-gray-500 mb-1 block">Fim</label>
-                                    <input
-                                      type="time"
-                                      className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                                      value={slot.endTime}
-                                      onChange={(e) => updateTimeSlot(day.day, slot.id, 'endTime', e.target.value)}
-                                    />
-                                  </div>
-                                </div>
-                                <button
-                                  type="button"
-                                  className="p-2 text-gray-400 hover:text-red-500 transition-colors mt-5"
-                                  onClick={() => removeTimeSlot(day.day, slot.id)}
-                                  aria-label="Remover horário"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
+                              type="range"
+                              min="30"
+                              max="360"
+                              step="15"
+                              value={day.availableMinutes}
+                              onChange={(e) => updateDayMinutes(day.day, parseInt(e.target.value))}
+                              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                            />
+                            <select
+                              value={day.availableMinutes}
+                              onChange={(e) => updateDayMinutes(day.day, parseInt(e.target.value))}
+                              className="p-1 border border-gray-300 rounded text-sm"
+                            >
+                              <option value="30">30min</option>
+                              <option value="60">1h</option>
+                              <option value="90">1h 30min</option>
+                              <option value="120">2h</option>
+                              <option value="180">3h</option>
+                              <option value="240">4h</option>
+                              <option value="300">5h</option>
+                              <option value="360">6h</option>
+                            </select>
                               </div>
-                            ))
-                          )}
                         </div>
                       </div>
                     ))}
                 </div>
                 
-                {weekSchedule.filter(day => day.enabled).length === 0 && (
+                {weekAvailability.filter(day => day.enabled).length === 0 && (
                   <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 text-center">
                     <AlertTriangle className="h-5 w-5 text-yellow-600 mx-auto mb-2" />
                     <p className="text-sm text-yellow-700">
-                      Selecione pelo menos um dia da semana para definir seus horários de estudo.
+                      Selecione pelo menos um dia da semana para definir seu tempo de estudo.
                   </p>
                 </div>
                 )}
@@ -801,10 +855,10 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
                 <InfoIcon className="h-5 w-5 text-blue-600 flex-shrink-0" />
                 <div>
                   <p className="text-sm text-blue-700">
-                    <span className="font-medium">Dica:</span> Você pode adicionar vários intervalos de horário em um mesmo dia.
+                    <span className="font-medium">Dica:</span> Defina um tempo realista que você consegue dedicar aos estudos em cada dia.
                   </p>
                   <p className="text-sm text-blue-700 mt-1">
-                    Quanto mais detalhada for sua disponibilidade, mais preciso será seu plano de estudos.
+                    É melhor ter menos tempo, mas consistente, do que muitas horas que você não conseguirá cumprir.
                   </p>
                 </div>
               </div>
@@ -834,6 +888,42 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
               </div>
               
               <div className="p-4 space-y-4">
+                {/* Indicador de carga do plano */}
+                {formData.selectedSubjects.length > 0 && (
+                  <div className="mb-4">
+                    <div className="flex justify-between mb-1">
+                      <label className="text-sm font-medium text-gray-700">Carga estimada do plano</label>
+                      <span className={`text-sm font-medium ${calculatePlanLoad() > 90 ? 'text-red-600' : calculatePlanLoad() > 70 ? 'text-yellow-600' : 'text-green-600'}`}>
+                        {calculatePlanLoad()}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div 
+                        className={`h-2.5 rounded-full ${getPlanLoadColor(calculatePlanLoad())}`} 
+                        style={{ width: `${calculatePlanLoad()}%` }}
+                      ></div>
+                    </div>
+                    
+                    {calculatePlanLoad() > 90 && (
+                      <div className="mt-2 p-2 bg-red-50 border border-red-100 rounded-md flex items-start gap-2">
+                        <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-red-700">
+                          Seu plano parece estar sobrecarregado. Considere reduzir o número de assuntos, aumentar o período do plano ou aumentar o tempo disponível para estudo.
+                        </p>
+                      </div>
+                    )}
+                    
+                    {calculatePlanLoad() > 70 && calculatePlanLoad() <= 90 && (
+                      <div className="mt-2 p-2 bg-yellow-50 border border-yellow-100 rounded-md flex items-start gap-2">
+                        <InfoIcon className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-yellow-700">
+                          Seu plano está com uma carga moderada. Algumas sessões podem precisar ser ajustadas para caber no tempo disponível.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Nome do plano</label>
                   <input 
@@ -940,50 +1030,57 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
               <div className="p-4 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Duração das sessões de estudo
+                    Duração máxima das sessões de estudo
                   </label>
                   
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-xs text-gray-600 mb-1">Mínimo (minutos)</label>
+                  <div className="mb-4">
+                    <div className="flex justify-between mb-1">
+                      <label className="text-sm text-gray-600">Duração (minutos)</label>
+                      <span className="text-sm font-medium">{formData.mainSessionDuration?.max || 60} min</span>
+                    </div>
+                    
                       <input
-                        type="number"
-                        min="15"
-                        max="120"
-                        step="5"
-                        value={formData.mainSessionDuration?.min}
+                      type="range"
+                      min="30"
+                      max="180"
+                      step="15"
+                      value={formData.mainSessionDuration?.max || 60}
                         onChange={(e) => setFormData({
                           ...formData,
                           mainSessionDuration: {
-                            ...formData.mainSessionDuration!,
-                            min: Math.max(15, parseInt(e.target.value) || 30)
+                          min: 30, // Manter um mínimo fixo
+                          max: parseInt(e.target.value)
                           }
                         })}
-                        className="w-full p-2 border border-gray-300 rounded-md"
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 mb-1">Máximo (minutos)</label>
-                      <input
-                        type="number"
-                        min="30"
-                        max="180"
-                        step="5"
-                        value={formData.mainSessionDuration?.max}
+                  
+                  <div className="flex items-center gap-2 mb-4">
+                    <select
+                      value={formData.mainSessionDuration?.max || 60}
                         onChange={(e) => setFormData({
                           ...formData,
                           mainSessionDuration: {
-                            ...formData.mainSessionDuration!,
-                            max: Math.max(formData.mainSessionDuration?.min || 30, parseInt(e.target.value) || 120)
+                          min: 30, // Manter um mínimo fixo
+                          max: parseInt(e.target.value)
                           }
                         })}
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                      />
-                    </div>
+                      className="p-2 border border-gray-300 rounded-md"
+                    >
+                      <option value="30">30 minutos</option>
+                      <option value="45">45 minutos</option>
+                      <option value="60">60 minutos (1 hora)</option>
+                      <option value="90">90 minutos (1h30)</option>
+                      <option value="120">120 minutos (2 horas)</option>
+                      <option value="150">150 minutos (2h30)</option>
+                      <option value="180">180 minutos (3 horas)</option>
+                    </select>
+                    <span className="text-sm text-gray-600">por sessão</span>
                   </div>
                   
                   <p className="text-xs text-gray-500 mb-2">
-                    O algoritmo ajustará a duração de cada sessão entre esses valores, baseado na prioridade de cada assunto.
+                    Este é o tempo máximo que você deseja dedicar a cada sessão de estudo. O sistema criará sessões com duração adequada, respeitando este limite.
                   </p>
                   
                   <div className="bg-blue-50 p-2 rounded-md text-xs text-blue-700">
@@ -995,35 +1092,57 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
                 {formData.revisionsEnabled && (
                   <div className="pt-2">
                     <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Duração das revisões
+                      Duração das sessões de revisão
                     </label>
                     
-                    <div className="mb-2">
+                    <div className="mb-4">
                       <div className="flex justify-between mb-1">
-                        <label className="text-xs text-gray-600">Porcentagem da sessão principal</label>
-                        <span className="text-xs font-medium">{formData.revisionSessionDuration?.percentage || 20}%</span>
+                        <label className="text-sm text-gray-600">Duração (minutos)</label>
+                        <span className="text-sm font-medium">{formData.revisionSessionDuration?.fixedMinutes || 20} min</span>
                       </div>
                       
                       <input
                         type="range"
                         min="10"
-                        max="50"
+                        max="60"
                         step="5"
-                        value={formData.revisionSessionDuration?.percentage || 20}
+                        value={formData.revisionSessionDuration?.fixedMinutes || 20}
                         onChange={(e) => setFormData({
                           ...formData,
                           revisionSessionDuration: {
-                            percentage: parseInt(e.target.value)
+                            fixedMinutes: parseInt(e.target.value),
+                            percentage: 0 // Não usamos mais porcentagem
                           }
                         })}
                         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                       />
                     </div>
                     
+                    <div className="flex items-center gap-2 mb-4">
+                      <select
+                        value={formData.revisionSessionDuration?.fixedMinutes || 20}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          revisionSessionDuration: {
+                            fixedMinutes: parseInt(e.target.value),
+                            percentage: 0 // Não usamos mais porcentagem
+                          }
+                        })}
+                        className="p-2 border border-gray-300 rounded-md"
+                      >
+                        <option value="10">10 minutos</option>
+                        <option value="15">15 minutos</option>
+                        <option value="20">20 minutos</option>
+                        <option value="30">30 minutos</option>
+                        <option value="45">45 minutos</option>
+                        <option value="60">60 minutos (1 hora)</option>
+                      </select>
+                      <span className="text-sm text-gray-600">por revisão</span>
+                    </div>
+                    
                     <p className="text-xs text-gray-500">
-                      As sessões de revisão terão duração de {formData.revisionSessionDuration?.percentage || 20}% 
-                      do tempo da sessão principal. Por exemplo, um assunto com 60 minutos 
-                      terá revisões de {Math.round(60 * (formData.revisionSessionDuration?.percentage || 20) / 100)} minutos.
+                      As sessões de revisão terão duração fixa de {formData.revisionSessionDuration?.fixedMinutes || 20} minutos, 
+                      independente da duração da sessão principal. As revisões são mais curtas e focadas.
                     </p>
                   </div>
                 )}
@@ -1202,6 +1321,17 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
           )}
         </button>
       </div>
+
+      {/* Modal de confirmação de sobrecarga */}
+      <ConfirmationModal
+        isOpen={showOverloadModal}
+        onClose={() => { setShowOverloadModal(false); setPendingSubmit(false); }}
+        onConfirm={() => { setShowOverloadModal(false); setTimeout(() => handleSubmit(), 0); }}
+        title="Plano sobrecarregado!"
+        message={`A carga estimada do seu plano está muito alta. Algumas sessões podem não ser agendadas ou ultrapassar o tempo diário configurado.\n\nDeseja continuar mesmo assim?`}
+        confirmText="Sim, continuar"
+        cancelText="Cancelar"
+      />
     </div>
   );
 } 

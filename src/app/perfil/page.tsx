@@ -566,13 +566,13 @@ export default function ProfilePage() {
               </Link>
               
               <Link 
-                href="/comunidade/sala-estudos" 
+                href="/comunidade/grupos-estudos" 
                 className="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <div className="p-2 bg-indigo-100 rounded-md mr-3">
                   <Users className="h-5 w-5 text-indigo-600" />
                 </div>
-                <span className="text-gray-700">Salas de Estudo</span>
+                <span className="text-gray-700">Grupos de Estudo</span>
               </Link>
             </div>
           </div>
