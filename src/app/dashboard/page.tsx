@@ -38,6 +38,8 @@ import MobileDashboard from '@/components/MobileDashboard';
 import SimuladosPerformanceChart from '@/components/dashboard/SimuladosPerformanceChart';
 import ImageCarousel from '@/components/dashboard/ImageCarousel';
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import FlashcardStatsCard from '@/components/dashboard/FlashcardStatsCard';
+import FlashcardReviewsCard from '@/components/dashboard/FlashcardReviewsCard';
 
 // Função auxiliar para gerar dias da semana
 const getDaysOfWeek = () => {
@@ -737,54 +739,8 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Área principal */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Gráfico de disciplinas */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-800">
-                  Disciplinas e Assuntos
-                </h2>
-                <BarChart3 className="text-blue-600 h-5 w-5" />
-              </div>
-              
-              <div className="space-y-3 mt-3">
-                {disciplines.slice(0, 5).map((discipline) => {
-                  const subjectCount = subjects.filter(s => s.discipline_id === discipline.id).length;
-                  const percentage = disciplines.length > 0 
-                    ? Math.round((subjectCount / subjects.length) * 100) 
-                    : 0;
-                  
-                  return (
-                    <div key={discipline.id} className="flex flex-col">
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm font-medium text-gray-700 truncate max-w-[200px]">
-                          {discipline.name}
-                        </span>
-                        <span className="text-sm text-gray-600">{subjectCount} assuntos</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2.5">
-                        <div 
-                          className="bg-blue-600 h-2.5 rounded-full" 
-                          style={{ width: `${percentage || 5}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  );
-                })}
-                
-                {disciplines.length === 0 && (
-                  <p className="text-gray-500 text-sm italic">Nenhuma disciplina cadastrada</p>
-                )}
-              </div>
-              
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <Link 
-                  href="/dashboard/disciplinas" 
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
-                >
-                  Ver todas as disciplinas <ArrowUpRight className="h-4 w-4 ml-1" />
-                </Link>
-              </div>
-            </div>
+            {/* Estatísticas de Flashcards */}
+            <FlashcardStatsCard />
             
             {/* Estudo por disciplina - Novo componente */}
             <div className="bg-white rounded-xl shadow-sm p-6">
@@ -808,88 +764,12 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
-
-            {/* Lista de disciplinas */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                Últimas Disciplinas
-              </h2>
-              
-              {disciplines.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead>
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Nome
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Assuntos
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Data de Criação
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {disciplines.slice(0, 5).map((discipline) => (
-                        <tr key={discipline.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <Link href={`/dashboard/disciplinas/${discipline.id}`} className="text-blue-600 hover:text-blue-900">
-                              {discipline.name}
-                            </Link>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                            {subjects.filter(s => s.discipline_id === discipline.id).length}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(discipline.created_at).toLocaleDateString('pt-BR')}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-6">
-                  <BookOpen className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                  <p className="text-gray-600">Nenhuma disciplina cadastrada</p>
-                  <Link
-                    href="/dashboard/disciplinas"
-                    className="mt-2 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                  >
-                    Criar disciplina
-                  </Link>
-                </div>
-              )}
-            </div>
           </div>
           
           {/* Sidebar com estatísticas */}
           <div className="space-y-6">
-            {/* Gráfico de dificuldade */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-800">
-                  Dificuldade dos Assuntos
-                </h2>
-                <TrendingUp className="text-blue-600 h-5 w-5" />
-              </div>
-              
-              {renderDifficultyChart()}
-            </div>
-            
-            {/* Gráfico de importância */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-800">
-                  Importância dos Assuntos
-                </h2>
-                <TrendingUp className="text-blue-600 h-5 w-5" />
-              </div>
-              
-              {renderImportanceChart()}
-            </div>
+            {/* Decks para revisar hoje */}
+            <FlashcardReviewsCard />
             
             {/* Acesso rápido */}
             <div className="bg-white rounded-xl shadow-sm p-6">
@@ -898,12 +778,12 @@ export default function DashboardPage() {
               </h2>
               
               <div className="space-y-3">
-                <Link href="/dashboard/disciplinas" className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                  <div className="bg-blue-100 p-2 rounded-lg mr-3">
-                    <BookOpen className="h-5 w-5 text-blue-600" />
+                <Link href="/flashcards" className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                  <div className="bg-purple-100 p-2 rounded-lg mr-3">
+                    <Brain className="h-5 w-5 text-purple-600" />
                   </div>
                   <div>
-                    <span className="font-medium text-gray-800">Disciplinas</span>
+                    <span className="font-medium text-gray-800">Flashcards</span>
                   </div>
                 </Link>
                 

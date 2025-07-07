@@ -1,10 +1,16 @@
 export enum PostType {
+  REGULAR = 'regular',
   ACHIEVEMENT = 'achievement',
-  EXAM_RESULT = 'exam_result',
-  STUDY_MILESTONE = 'study_milestone',
-  NOTE = 'note',
+  STUDY_SESSION = 'study_session',
   QUESTION = 'question',
-  GENERAL = 'general'
+  MATERIAL = 'material',
+  ACADEMIC_EVENT = 'academic_event',
+  GRADE_ATTENDANCE = 'grade_attendance',
+  EXAM_RESULT = 'exam_result',
+  NOTE = 'note',
+  GENERAL = 'general',
+  ANNOUNCEMENT = 'announcement',
+  QUESTION_FORUM = 'question_forum'
 }
 
 export enum ReactionType {
@@ -72,6 +78,26 @@ export interface StudyMilestoneData {
   discipline_name?: string;
 }
 
+export interface AcademicEventData {
+  event_id: string;
+  event_title: string;
+  event_date: string;
+  event_time?: string;
+  location?: string;
+  description?: string;
+  event_type: 'lecture' | 'exam' | 'assignment' | 'workshop' | 'other';
+}
+
+export interface QuestionForumData {
+  question_title: string;
+  subject_id?: string;
+  subject_name?: string;
+  topic?: string;
+  is_solved: boolean;
+  answer_count: number;
+  best_answer_id?: string;
+}
+
 export interface Post {
   id: string;
   user_id: string;
@@ -79,7 +105,7 @@ export interface Post {
   avatar_url?: string;
   content: string;
   type: PostType;
-  metadata?: ExamResultData | AchievementData | StudyMilestoneData | any;
+  metadata?: ExamResultData | AchievementData | StudyMilestoneData | AcademicEventData | QuestionForumData | any;
   visibility: 'public' | 'followers' | 'private';
   attachments?: PostAttachment[];
   reactions_count: {
@@ -104,4 +130,39 @@ export interface CommunityFeedFilters {
     start: string;
     end: string;
   };
+}
+
+export interface AcademicEvent {
+  id: string;
+  title: string;
+  date: string;
+  time?: string;
+  location?: string;
+  description?: string;
+  type: 'lecture' | 'exam' | 'assignment' | 'workshop' | 'other';
+  course_id?: string;
+  course_name?: string;
+  importance: 'low' | 'medium' | 'high';
+}
+
+export interface GradeAttendanceData {
+  disciplineId: string;
+  disciplineName: string;
+  professorName?: string;
+  grades: {
+    evaluationName: string;
+    grade: number;
+    maxGrade: number;
+    date: string;
+    weight?: number;
+  }[];
+  attendance: {
+    totalClasses: number;
+    attendedClasses: number;
+    absences: number;
+    attendancePercentage: number;
+    absencesAllowed: number;
+  };
+  averageGrade?: number;
+  status?: 'approved' | 'at_risk' | 'failed';
 } 

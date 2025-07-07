@@ -18,7 +18,8 @@ import {
   Brain,
   Trophy,
   Shield,
-  MessageCircle
+  MessageCircle,
+  Layers
 } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -107,6 +108,11 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
       path: "/simulados",
       label: "Simulados",
       icon: <ClipboardList className="h-5 w-5 flex-shrink-0" />
+    },
+    {
+      path: "/flashcards",
+      label: "Flashcards",
+      icon: <Layers className="h-5 w-5 flex-shrink-0" />
     },
     {
       path: "/estudos",

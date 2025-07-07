@@ -234,7 +234,7 @@ export default function CommunityFeedPage() {
               <nav className="space-y-1">
                 <Link href="/comunidade/feed" className="flex items-center space-x-3 p-2.5 rounded-lg bg-blue-50 text-blue-700 font-medium">
                   <Newspaper className="h-5 w-5" />
-                  <span>Feed</span>
+                  <span>Minha Facul</span>
                 </Link>
                 
                 <Link href="#" className="flex items-center space-x-3 p-2.5 rounded-lg text-gray-700 hover:bg-gray-50">
@@ -272,7 +272,10 @@ export default function CommunityFeedPage() {
           <div className="lg:col-span-7">
             <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
               <div className="flex justify-between items-center mb-4">
-                <h1 className="text-xl font-bold text-gray-800">Feed</h1>
+                <h1 className="text-2xl font-bold text-gray-800 mb-2 flex items-center">
+                  <Newspaper className="h-6 w-6 mr-2 text-blue-600" />
+                  Minha Facul
+                </h1>
                 
                 <div className="flex gap-2">
                   <Tabs 
@@ -280,10 +283,10 @@ export default function CommunityFeedPage() {
                     className="w-auto"
                     onValueChange={(value) => setActiveTab(value as 'recents' | 'friends' | 'popular')}
                   >
-                    <TabsList className="grid grid-cols-3 h-9">
-                      <TabsTrigger value="recents" className="px-3 text-xs">Recentes</TabsTrigger>
-                      <TabsTrigger value="friends" className="px-3 text-xs">Amigos</TabsTrigger>
-                      <TabsTrigger value="popular" className="px-3 text-xs">Popular</TabsTrigger>
+                    <TabsList className="w-full flex justify-between mb-4">
+                      <TabsTrigger value="recents" className="flex-1">Tudo</TabsTrigger>
+                      <TabsTrigger value="friends" className="flex-1">Meus colegas</TabsTrigger>
+                      <TabsTrigger value="popular" className="flex-1">Populares</TabsTrigger>
                     </TabsList>
                   </Tabs>
                 </div>
