@@ -18,7 +18,7 @@ export default function DisciplinasPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mt-4 md:mt-8">
           <div className="bg-white/10 backdrop-blur-sm p-3 md:p-4 rounded-lg flex items-start">
             <BookOpen className="h-5 w-5 md:h-6 md:w-6 mr-2 md:mr-3 text-blue-200 flex-shrink-0 mt-1" />
-            <div>
+              <div>
               <h3 className="font-semibold text-white text-sm md:text-base">Organize</h3>
               <p className="text-blue-100 text-xs md:text-sm">Crie disciplinas e categorize seus assuntos</p>
             </div>
@@ -39,9 +39,9 @@ export default function DisciplinasPage() {
               <p className="text-blue-100 text-xs md:text-sm">Estude de forma estruturada e eficiente</p>
             </div>
           </div>
-        </div>
-      </div>
-      
+                      </div>
+                    </div>
+                    
       {/* Lista de disciplinas */}
       <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
         <DisciplinesList />

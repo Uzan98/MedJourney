@@ -23,6 +23,52 @@ body {
   overflow-x: hidden; /* Prevenir scroll horizontal em toda a aplicação */
 }
 
+/* Animações para os cards de estatísticas */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stats-card-1 {
+  animation: fadeInUp 0.5s ease-out 0.1s forwards;
+  opacity: 0;
+}
+
+.stats-card-2 {
+  animation: fadeInUp 0.5s ease-out 0.2s forwards;
+  opacity: 0;
+}
+
+.stats-card-3 {
+  animation: fadeInUp 0.5s ease-out 0.3s forwards;
+  opacity: 0;
+}
+
+.stats-card-4 {
+  animation: fadeInUp 0.5s ease-out 0.4s forwards;
+  opacity: 0;
+}
+
+@keyframes progressFill {
+  from {
+    width: 0%;
+  }
+  to {
+    width: var(--target-width);
+  }
+}
+
+.progress-animate {
+  animation: progressFill 1s ease-out 0.6s forwards;
+  width: 0%;
+}
+
 /* Remove mobile browser-specific side margins */
 @media (max-width: 768px) {
   body {
@@ -399,4 +445,232 @@ body {
   .chat-messages-area::-webkit-scrollbar {
     width: 8px !important;
   }
+}
+
+/* Estilo personalizado para scroll horizontal de cards */
+.scroll-1::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scroll-1::-webkit-scrollbar-thumb {
+  border-radius: 20px;
+  background: #888;
+}
+
+.scroll-1::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+.flashcards-container {
+  display: flex;
+  overflow-x: auto;
+  padding: 24px;
+  width: 100%;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: 24px;
+  border-radius: 8px;
+  gap: 20px;
+  -webkit-overflow-scrolling: touch; /* Para melhor desempenho em iOS */
+}
+
+.flashcards-container .flashcard {
+  flex: 0 0 300px;
+  overflow: hidden;
+  border-radius: 12px;
+  scroll-snap-align: start;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+/* Ajuste para telas menores */
+@media (max-width: 640px) {
+  .flashcards-container {
+    padding: 16px;
+    gap: 16px;
+  }
+  
+  .flashcards-container .flashcard {
+    flex: 0 0 260px;
+  }
+}
+
+.flashcard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.flashcard .flashcard-image {
+  height: 140px;
+  width: 100%;
+}
+
+.flashcard .flashcard-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  background-color: white;
+}
+
+.flashcard .flashcard-content .flashcard-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.flashcard .flashcard-content .flashcard-describe {
+  color: #666;
+  font-size: 14px;
+}
+
+.flashcard .flashcard-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background-color: #f9f9f9;
+  border-top: 1px solid #eee;
+}
+
+/* Estilos para o efeito de flip card */
+.flip-card {
+  background-color: transparent;
+  width: 100%;
+  height: 400px;
+  perspective: 1000px;
+  font-family: sans-serif;
+  cursor: pointer;
+}
+
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.8s;
+  transform-style: preserve-3d;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  border-radius: 24px;
+}
+
+.flip-card.flipped .flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-card-front, .flip-card-back {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 24px;
+  padding: 2rem;
+  overflow: hidden;
+}
+
+.flip-card-front {
+  background: linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%);
+  color: #1e293b;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.flip-card-front::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%);
+  z-index: 0;
+}
+
+.flip-card-back {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  color: #1e293b;
+  transform: rotateY(180deg);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.flip-card-back::before {
+  content: '';
+  position: absolute;
+  bottom: -50px;
+  left: -50px;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%);
+  z-index: 0;
+}
+
+/* Variações de cores para os cards */
+.flip-card.blue .flip-card-front {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  color: #1e40af;
+}
+
+.flip-card.blue .flip-card-back {
+  background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+  color: #1e40af;
+}
+
+.flip-card.green .flip-card-front {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  color: #166534;
+}
+
+.flip-card.green .flip-card-back {
+  background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%);
+  color: #166534;
+}
+
+.flip-card.purple .flip-card-front {
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+  color: #6b21a8;
+}
+
+.flip-card.purple .flip-card-back {
+  background: linear-gradient(135deg, #e9d5ff 0%, #d8b4fe 100%);
+  color: #6b21a8;
+}
+
+.flip-card-content {
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.flip-card-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  position: relative;
+  display: inline-block;
+}
+
+.flip-card-title::after {
+  content: '';
+  position: absolute;
+  bottom: -0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 3px;
+  background: currentColor;
+  opacity: 0.3;
+  border-radius: 3px;
+}
+
+.flip-card-text {
+  font-size: 1.25rem;
+  white-space: pre-wrap;
+  line-height: 1.6;
 }
