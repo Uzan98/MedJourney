@@ -53,7 +53,7 @@ interface MenuItem {
 }
 
 const AppLayout = ({ children }: AppLayoutProps) => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const pathname = usePathname();
   // Flag para controlar se o sidebar pode ser aberto em dispositivos móveis
@@ -126,13 +126,40 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     setExpandedMenus(activeMenus);
   }, [pathname]);
 
+  // Efeito para salvar e restaurar o estado do sidebar no localStorage
+  useEffect(() => {
+    // Tenta recuperar o estado salvo do sidebar apenas na montagem inicial
+    try {
+      if (typeof window !== 'undefined') {
+        const savedState = localStorage.getItem('sidebarState');
+        if (savedState !== null) {
+          setIsSidebarOpen(savedState === 'open');
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao acessar localStorage:', error);
+    }
+  }, []); // Dependência vazia para executar apenas na montagem
+
+  // Efeito separado para salvar o estado quando ele mudar
+  useEffect(() => {
+    // Salva o estado atual do sidebar quando ele mudar
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('sidebarState', isSidebarOpen ? 'open' : 'closed');
+      }
+    } catch (error) {
+      console.error('Erro ao salvar no localStorage:', error);
+    }
+  }, [isSidebarOpen]);
+
   const toggleSidebar = (fromMobileMenu = false) => {
     // Se a chamada veio do menu mobile e o sidebar está bloqueado, não faz nada
     if (fromMobileMenu && isMobileSidebarLocked) {
       return;
     }
     
-    setIsSidebarOpen(!isSidebarOpen);
+    setIsSidebarOpen(prevState => !prevState);
   };
   
   // Versão do toggleSidebar para eventos de clique
@@ -387,7 +414,11 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         {/* Toggle button */}
         <div className="absolute top-20 -right-3 z-10">
           <button 
-            onClick={handleToggleSidebar}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsSidebarOpen(prev => !prev);
+            }}
             className="bg-blue-600 hover:bg-blue-700 p-2 rounded-full text-white shadow-md border border-blue-400"
             aria-label={isSidebarOpen ? "Retrair menu" : "Expandir menu"}
           >
@@ -430,7 +461,11 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             className={`fixed inset-0 bg-gray-800 bg-opacity-50 z-40 md:hidden transition-opacity duration-300 ${
               isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`} 
-            onClick={handleToggleSidebar}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsSidebarOpen(false);
+            }}
           ></div>
           
           {/* Sidebar - Mobile */}
@@ -449,7 +484,14 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 </div>
                 <span className="text-xl font-bold">MedJourney</span>
               </div>
-              <button onClick={handleToggleSidebar} className="text-blue-100 hover:text-white">
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsSidebarOpen(false);
+                }} 
+                className="text-blue-100 hover:text-white"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -483,7 +525,11 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         <header className="bg-white shadow-sm py-4 px-6 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center">
             <button 
-              onClick={handleToggleSidebar} 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsSidebarOpen(prev => !prev);
+              }}
               className="mr-4 text-gray-500 hover:text-gray-700 md:hidden"
               aria-label="Abrir menu"
             >
