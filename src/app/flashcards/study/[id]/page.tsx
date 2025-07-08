@@ -91,16 +91,31 @@ export default function StudyPage({ params }: { params: { id: string } }) {
           if (deckData) {
             setDeck(deckData);
             
-            // Busca os flashcards usando o ID correto
+            // Busca o ID correto do deck
             const deckId = deckData.deck_id || params.id;
             
-            // Verifica se há cards disponíveis para estudo hoje
-            const hasCardsForToday = await FlashcardsService.hasCardsForTodayStudy(deckId);
+            // Busca todos os flashcards do deck
+            const cardsData = await FlashcardsService.getFlashcards(deckId);
             
-            if (!hasCardsForToday) {
-              // Se não há cards para hoje, mostra a tela de conclusão com opção de estudo personalizado
-              const cardsData = await FlashcardsService.getFlashcards(deckId);
-              if (cardsData.length > 0) {
+            if (cardsData.length > 0) {
+              // Verifica se há cards disponíveis para estudo hoje
+              const today = new Date();
+              today.setHours(0, 0, 0, 0); // Início do dia atual
+              
+              const dueCards = cardsData.filter(card => {
+                // Cards sem data de revisão (novos) ou com data menor ou igual a hoje
+                if (!card.next_review) return true;
+                
+                const reviewDate = new Date(card.next_review);
+                reviewDate.setHours(0, 0, 0, 0); // Normaliza para início do dia
+                
+                return reviewDate <= today;
+              });
+              
+              console.log(`Total cards: ${cardsData.length}, Due cards: ${dueCards.length}`);
+              
+              if (dueCards.length === 0) {
+                // Se não há cards para hoje, mostra a tela de conclusão com opção de estudo personalizado
                 setFlashcards(cardsData);
                 setStudyStats(prev => ({ ...prev, total: cardsData.length }));
                 
@@ -113,21 +128,16 @@ export default function StudyPage({ params }: { params: { id: string } }) {
                 setIsLoading(false);
                 return;
               }
-            }
-            
-            // Busca todos os flashcards para estudo normal
-            const cardsData = await FlashcardsService.getFlashcards(deckId);
-            
-            if (cardsData.length > 0) {
+              
               // Ordenar cartões - primeiro os que precisam de revisão, depois os novos
-              const sortedCards = [...cardsData].sort((a, b) => {
+              const sortedCards = [...dueCards].sort((a, b) => {
                 // Priorizar cartões com data de revisão vencida
-                const aNextReview = a.next_review ? new Date(a.next_review) : new Date(9999, 0);
-                const bNextReview = b.next_review ? new Date(b.next_review) : new Date(9999, 0);
+                const aNextReview = a.next_review ? new Date(a.next_review) : new Date(0); // Novos cards primeiro
+                const bNextReview = b.next_review ? new Date(b.next_review) : new Date(0);
                 
                 // Depois priorizar cartões com menor nível de domínio
                 if (aNextReview.getTime() === bNextReview.getTime()) {
-                  return a.mastery_level - b.mastery_level;
+                  return (a.mastery_level || 0) - (b.mastery_level || 0);
                 }
                 
                 return aNextReview.getTime() - bNextReview.getTime();
@@ -403,6 +413,9 @@ export default function StudyPage({ params }: { params: { id: string } }) {
       const deckId = deck.deck_id || params.id;
       const customSession = await FlashcardsService.startCustomStudySession(deckId, user.id);
       
+      // Busca todos os flashcards do deck para estudo personalizado
+      const allCards = await FlashcardsService.getFlashcards(deckId);
+      
       // Atualiza o estado
       setStudySession(customSession);
       setAllCardsCompleted(false);
@@ -410,8 +423,8 @@ export default function StudyPage({ params }: { params: { id: string } }) {
       setIsFlipped(false);
       
       // Reordenar os cards aleatoriamente para estudo personalizado
-      if (flashcards.length > 0) {
-        const shuffledCards = [...flashcards].sort(() => Math.random() - 0.5);
+      if (allCards.length > 0) {
+        const shuffledCards = [...allCards].sort(() => Math.random() - 0.5);
         setFlashcards(shuffledCards);
       }
       
@@ -419,7 +432,7 @@ export default function StudyPage({ params }: { params: { id: string } }) {
         correct: 0,
         incorrect: 0,
         skipped: 0,
-        total: flashcards.length,
+        total: allCards.length,
         completed: 0
       });
       setTimeElapsed(0);
@@ -476,15 +489,13 @@ export default function StudyPage({ params }: { params: { id: string } }) {
             </div>
             <h2 className="text-2xl font-bold mb-2">Parabéns!</h2>
             <p className="text-lg mb-6">
-              {flashcards.length > 0 && flashcards[0].next_review && new Date(flashcards[0].next_review) > new Date() 
-                ? "Você terminou este baralho por enquanto."
-                : "Não há cards para revisar hoje!"}
+              Você terminou todos os cards programados para hoje.
             </p>
             
             <div className="bg-blue-50 p-4 rounded-lg mb-6 max-w-md">
               <p className="text-sm text-blue-700">
-                Se você deseja estudar fora do horário regular, você pode usar o recurso de 
-                <span className="font-semibold"> estudo personalizado</span> que não contabilizará para o domínio.
+                Você pode usar o <span className="font-semibold">estudo personalizado</span> para revisar todos os cards do baralho, 
+                incluindo aqueles que ainda não estão programados para revisão. Este estudo não afetará o sistema de repetição espaçada.
               </p>
             </div>
             
