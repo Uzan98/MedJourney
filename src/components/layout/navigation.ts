@@ -8,6 +8,7 @@ import {
   Briefcase,
   Calendar,
   FileQuestion,
+  School,
 } from "lucide-react";
 
 export const mainNavigation = [
@@ -64,6 +65,12 @@ export const mainNavigation = [
     href: "/desempenho",
     icon: "BarChart",
     color: "text-red-500",
+  },
+  {
+    title: "Minha Faculdade",
+    href: "/minha-faculdade",
+    icon: "School",
+    color: "text-emerald-500",
   },
   {
     title: "Mais",
