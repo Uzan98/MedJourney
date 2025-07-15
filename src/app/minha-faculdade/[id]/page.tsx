@@ -88,6 +88,10 @@ export default function FacultyDetailsPage() {
   const [isLoadingExams, setIsLoadingExams] = useState(false);
   const [selectedExam, setSelectedExam] = useState<FacultyExam | null>(null);
   
+  // Estado para o modal de confirmação de exclusão
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
   // Verificar se há um tópico na URL
   useEffect(() => {
     const topicId = searchParams.get('topic');
@@ -666,6 +670,36 @@ export default function FacultyDetailsPage() {
     setLinkUrl('');
     setLinkTitle('');
     setShowLinkInput(false);
+  };
+
+  // Função para confirmar a exclusão da faculdade
+  const handleConfirmDeleteFaculty = async () => {
+    if (!faculty) return;
+    
+    setIsDeleting(true);
+    try {
+      const success = await FacultyService.deleteFaculty(faculty.id);
+      
+      if (success) {
+        toast({
+          title: "Ambiente excluído",
+          description: "O ambiente foi excluído com sucesso.",
+        });
+        router.push('/minha-faculdade');
+      } else {
+        throw new Error('Falha ao excluir ambiente');
+      }
+    } catch (error) {
+      console.error('Erro ao excluir ambiente:', error);
+      toast({
+        title: "Erro ao excluir ambiente",
+        description: "Não foi possível excluir o ambiente. Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirmationOpen(false);
+    }
   };
 
   // Renderização principal
@@ -1749,7 +1783,7 @@ export default function FacultyDetailsPage() {
                     Gerenciar membros
                   </Button>
                   <Separator className="my-2" />
-                  <Button variant="destructive" className="w-full">
+                  <Button variant="destructive" className="w-full" onClick={() => setDeleteConfirmationOpen(true)}>
                     Excluir ambiente
                   </Button>
                 </div>
@@ -1844,6 +1878,26 @@ export default function FacultyDetailsPage() {
         facultyId={faculty?.id || 0}
         onMaterialUploaded={() => loadMaterials(faculty?.id || 0)}
       />
+
+      {/* Modal de confirmação de exclusão */}
+      {deleteConfirmationOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-lg max-w-[400px] w-full p-6">
+            <h3 className="text-lg font-semibold mb-4">Confirmar Exclusão</h3>
+            <p className="text-sm text-gray-700 mb-6">
+              Tem certeza de que deseja excluir o ambiente "{faculty?.name}"? Esta ação é irreversível.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeleteConfirmationOpen(false)} disabled={isDeleting}>
+                Cancelar
+              </Button>
+              <Button variant="destructive" onClick={handleConfirmDeleteFaculty} disabled={isDeleting}>
+                {isDeleting ? <Spinner size="sm" /> : 'Excluir'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

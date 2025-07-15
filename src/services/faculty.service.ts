@@ -1804,4 +1804,38 @@ export class FacultyService {
       return {};
     }
   }
+
+  /**
+   * Deleta um ambiente de faculdade
+   * @param facultyId ID do ambiente a ser deletado
+   * @returns true se foi deletado com sucesso, false caso contrário
+   */
+  static async deleteFaculty(facultyId: number): Promise<boolean> {
+    try {
+      // Verificar se o usuário é o proprietário
+      const { data: isOwner } = await supabase
+        .rpc('is_faculty_owner', { faculty_id_param: facultyId });
+      
+      if (!isOwner) {
+        console.error('Apenas o proprietário pode excluir o ambiente');
+        return false;
+      }
+      
+      // Deletar o ambiente
+      const { error } = await supabase
+        .from('faculties')
+        .delete()
+        .eq('id', facultyId);
+      
+      if (error) {
+        console.error('Erro ao deletar ambiente:', error);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erro ao deletar ambiente:', error);
+      return false;
+    }
+  }
 } 
