@@ -481,6 +481,8 @@ body {
   scroll-snap-align: start;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
+  position: relative;
+  background-color: white;
 }
 
 /* Ajuste para telas menores */
@@ -497,12 +499,169 @@ body {
 
 .flashcard:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .flashcard .flashcard-image {
   height: 140px;
   width: 100%;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px;
+}
+
+/* Adicionar padrão de pontos no fundo */
+.flashcard .flashcard-image::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.2) 1px, transparent 1px);
+  background-size: 10px 10px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Efeito de brilho no hover */
+.flashcard:hover .flashcard-image::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 60%);
+  transform: rotate(30deg);
+  transition: all 0.8s ease-out;
+  animation: shine 2s infinite;
+  pointer-events: none;
+}
+
+@keyframes shine {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) rotate(30deg) translateY(-100%);
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2) rotate(30deg) translateY(100%);
+  }
+}
+
+/* Estilos para o ícone de flashcard */
+.flashcard-icon {
+  width: 50px;
+  height: 40px;
+  perspective: 1000px;
+  filter: drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.2));
+}
+
+.flashcard-icon-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.6s;
+  animation: float 3s ease-in-out infinite;
+  animation-play-state: paused;
+}
+
+.flashcard:hover .flashcard-icon-inner {
+  animation-play-state: running;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px) rotateY(15deg);
+  }
+  50% {
+    transform: translateY(-5px) rotateY(25deg);
+  }
+  100% {
+    transform: translateY(0px) rotateY(15deg);
+  }
+}
+
+.flashcard-icon-front,
+.flashcard-icon-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flashcard-icon-symbol {
+  font-weight: bold;
+  font-size: 20px;
+  color: #333;
+  text-shadow: 0 1px 1px rgba(255,255,255,0.5);
+}
+
+.flashcard-icon-front {
+  background-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transform: rotateY(0deg);
+}
+
+.flashcard-icon-back {
+  background-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transform: rotateY(180deg) translateZ(3px);
+}
+
+/* Estilos para o contador de cartões */
+.flashcard-count {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 4px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.flashcard:hover .flashcard-count {
+  transform: scale(1.05);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.flashcard-count span:first-child {
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.flashcard-count-label {
+  font-size: 10px;
+  opacity: 0.8;
 }
 
 .flashcard .flashcard-content {
@@ -673,4 +832,29 @@ body {
   font-size: 1.25rem;
   white-space: pre-wrap;
   line-height: 1.6;
+}
+
+/* Estilo para barra de rolagem sempre visível */
+.scrollbar-visible {
+  scrollbar-width: thin;  /* Para Firefox */
+  scrollbar-color: rgba(155, 155, 155, 0.5) transparent;  /* Para Firefox */
+}
+
+.scrollbar-visible::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-visible::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.scrollbar-visible::-webkit-scrollbar-thumb {
+  background-color: rgba(155, 155, 155, 0.5);
+  border-radius: 4px;
+}
+
+.scrollbar-visible::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(155, 155, 155, 0.7);
 }

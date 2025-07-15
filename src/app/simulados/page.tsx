@@ -4,10 +4,13 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { FaPlus, FaPlay, FaEdit, FaTrash, FaClipboard, FaHistory, FaSearch, FaTimes } from 'react-icons/fa';
+import { FaPlus, FaPlay, FaEdit, FaTrash, FaClipboard, FaHistory, FaSearch, FaTimes, FaShare } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { Exam, ExamsService } from '@/services/exams.service';
-import { Modal } from '@/components/ui/modal';
+import { Modal } from '@/components/ui/Modal';
+import { ShareExamModal } from '@/components/comunidade/ShareExamModal';
+import { FacultyService } from '@/services/faculty.service';
+import { Faculty } from '@/types/faculty';
 
 // Simple Loading component
 const Loading = ({ message = "Carregando..." }) => (
@@ -30,9 +33,34 @@ export default function SimuladosPage() {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Estados para compartilhamento
+  const [shareExamModalOpen, setShareExamModalOpen] = useState(false);
+  const [examToShare, setExamToShare] = useState<Exam | null>(null);
+  const [userFaculties, setUserFaculties] = useState<Faculty[]>([]);
+  const [selectedFacultyId, setSelectedFacultyId] = useState<number | null>(null);
+  const [loadingFaculties, setLoadingFaculties] = useState(false);
+  const [showSelectFacultyModal, setShowSelectFacultyModal] = useState(false);
+  
   useEffect(() => {
     loadExams();
   }, []);
+  
+  // Carregar faculdades do usuário
+  useEffect(() => {
+    if (user) {
+      setLoadingFaculties(true);
+      FacultyService.getUserFaculties(user.id)
+        .then(faculties => {
+          setUserFaculties(faculties);
+        })
+        .catch(error => {
+          console.error('Erro ao carregar faculdades:', error);
+        })
+        .finally(() => {
+          setLoadingFaculties(false);
+        });
+    }
+  }, [user]);
   
   // Efeito para depuração quando a aba muda
   useEffect(() => {
@@ -134,6 +162,33 @@ export default function SimuladosPage() {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours}h${mins > 0 ? ` ${mins}min` : ''}`;
+  };
+  
+  // Função para iniciar o compartilhamento de um simulado
+  const handleShareExam = (exam: Exam) => {
+    setExamToShare(exam);
+    
+    // Se o usuário tiver apenas uma faculdade, abrir diretamente o modal de compartilhamento
+    if (userFaculties.length === 1) {
+      setSelectedFacultyId(userFaculties[0].id);
+      setShareExamModalOpen(true);
+    } else if (userFaculties.length > 1) {
+      // Se tiver mais de uma faculdade, abrir o modal de seleção
+      setShowSelectFacultyModal(true);
+    } else {
+      // Se não tiver faculdades, mostrar mensagem
+      toast.error('Você precisa participar de pelo menos uma faculdade para compartilhar simulados.');
+    }
+  };
+  
+  // Função para confirmar a faculdade selecionada
+  const handleConfirmFaculty = () => {
+    if (selectedFacultyId) {
+      setShowSelectFacultyModal(false);
+      setShareExamModalOpen(true);
+    } else {
+      toast.error('Selecione uma faculdade para compartilhar o simulado.');
+    }
   };
   
   if (loading) {
@@ -251,59 +306,69 @@ export default function SimuladosPage() {
                     </span>
                   </div>
                   
-                  <div className="flex justify-between">
+                  <div className="flex flex-wrap gap-2">
+                    <Link 
+                      href={`/simulados/${exam.id}`}
+                      className="flex items-center justify-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    >
+                      <FaClipboard className="mr-1" /> Detalhes
+                    </Link>
+                    
                     <Link 
                       href={`/simulados/${exam.id}/iniciar`}
-                      className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-300"
+                      className="flex items-center justify-center px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
                     >
                       <FaPlay className="mr-1" /> Iniciar
                     </Link>
                     
-                    <div className="flex space-x-2">
                       <Link 
                         href={`/simulados/${exam.id}/editar`}
-                        className="inline-flex items-center p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-300"
-                        aria-label="Editar"
+                      className="flex items-center justify-center px-3 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition"
                       >
-                        <FaEdit />
+                      <FaEdit className="mr-1" /> Editar
                       </Link>
+                    
                       <button 
                         onClick={() => {
-                          if (exam.id) {
-                          setDeleteExamId(exam.id);
+                        setDeleteExamId(exam.id!);
                           setShowDeleteConfirmation(true);
-                          }
                         }}
-                        className="inline-flex items-center p-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg transition-colors duration-300"
-                        aria-label="Excluir"
+                      className="flex items-center justify-center px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                    >
+                      <FaTrash className="mr-1" /> Excluir
+                    </button>
+                    
+                    <button 
+                      onClick={() => handleShareExam(exam)}
+                      className="flex items-center justify-center px-3 py-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
                       >
-                        <FaTrash />
+                      <FaShare className="mr-1" /> Compartilhar
                       </button>
-                    </div>
                   </div>
                 </div>
               </div>
             ))
           ) : (
-            <div className="col-span-full">
-              <div className="bg-white rounded-xl shadow p-8 text-center">
-                <div className="bg-blue-100 inline-block p-4 rounded-full mb-4">
-                  <FaClipboard className="text-blue-500 text-3xl" />
+            <div className="col-span-3 bg-white rounded-xl shadow-md p-8 text-center">
+              <div className="flex flex-col items-center justify-center">
+                <div className="text-6xl text-gray-300 mb-4">
+                  <FaClipboard />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Você ainda não tem simulados</h3>
-                <p className="text-gray-600 mb-6">
-                  Crie seu primeiro simulado para começar a praticar e testar seus conhecimentos
+                <h3 className="text-2xl font-semibold text-gray-700 mb-2">Nenhum simulado encontrado</h3>
+                <p className="text-gray-500 mb-6">
+                  Você ainda não criou nenhum simulado. Crie seu primeiro simulado agora!
                 </p>
                 <Link 
                   href="/simulados/novo" 
-                  className="inline-flex items-center px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-300"
+                  className="flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition"
                 >
-                  <FaPlus className="mr-2" /> Criar Simulado
+                  <FaPlus className="mr-2" /> Criar Novo Simulado
                 </Link>
               </div>
             </div>
           )
-        ) : publicExams.length > 0 ? (
+        ) : (
+          filteredPublicExams.length > 0 ? (
           filteredPublicExams.map(exam => (
             <div key={exam.id} className="bg-white rounded-xl shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg">
               <div className="p-6">
@@ -370,6 +435,7 @@ export default function SimuladosPage() {
               </Link>
             </div>
           </div>
+          )
         )}
       </div>
       
@@ -462,6 +528,76 @@ export default function SimuladosPage() {
             </div>
           </div>
         </Modal>
+      )}
+      
+      {/* Modal para selecionar faculdade */}
+      <Modal
+        isOpen={showSelectFacultyModal}
+        onClose={() => setShowSelectFacultyModal(false)}
+        title="Selecionar Faculdade"
+      >
+        <div className="p-6">
+          <p className="mb-4 text-gray-700">
+            Selecione a faculdade onde deseja compartilhar este simulado:
+          </p>
+          
+          {loadingFaculties ? (
+            <div className="flex justify-center py-4">
+              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            <div className="space-y-2 mb-6">
+              {userFaculties.map(faculty => (
+                <div 
+                  key={faculty.id}
+                  className={`p-3 border rounded-lg cursor-pointer transition ${
+                    selectedFacultyId === faculty.id 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-gray-200 hover:border-blue-300'
+                  }`}
+                  onClick={() => setSelectedFacultyId(faculty.id)}
+                >
+                  <div className="font-medium">{faculty.name}</div>
+                  <div className="text-sm text-gray-500">{faculty.institution}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <div className="flex justify-end gap-4">
+            <button
+              onClick={() => setShowSelectFacultyModal(false)}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleConfirmFaculty}
+              disabled={!selectedFacultyId || loadingFaculties}
+              className={`px-4 py-2 rounded-md transition ${
+                !selectedFacultyId || loadingFaculties
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              Continuar
+            </button>
+          </div>
+        </div>
+      </Modal>
+      
+      {/* Modal para compartilhar simulado */}
+      {examToShare && selectedFacultyId && (
+        <ShareExamModal
+          open={shareExamModalOpen}
+          onOpenChange={setShareExamModalOpen}
+          exam={examToShare}
+          facultyId={selectedFacultyId}
+          onSuccess={() => {
+            setExamToShare(null);
+            setSelectedFacultyId(null);
+          }}
+        />
       )}
     </div>
   );

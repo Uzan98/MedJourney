@@ -15,7 +15,8 @@ import {
   ClipboardList,
   Settings,
   GraduationCap,
-  MoreHorizontal
+  MoreHorizontal,
+  School
 } from 'lucide-react';
 
 interface MobileMenuProps {
@@ -50,7 +51,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
   // Check if we should render the menu
   // Don't render on protected routes unless forceShow is true
   useEffect(() => {
-    const protectedPaths = ['/dashboard', '/estudos', '/banco-questoes', '/simulados', '/comunidade', '/planejamento', '/configuracoes', '/disciplinas'];
+    const protectedPaths = ['/dashboard', '/estudos', '/banco-questoes', '/simulados', '/comunidade', '/planejamento', '/configuracoes', '/disciplinas', '/minha-faculdade'];
     
     // Check if current path is a protected path or a subpath of one
     const isProtectedRoute = protectedPaths.some(path => 
@@ -79,9 +80,9 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
       icon: <Calendar className="h-5 w-5" />
     },
     {
-      path: "/mais",
-      label: "Mais",
-      icon: <MoreHorizontal className="h-5 w-5" />
+      path: "/minha-faculdade",
+      label: "Faculdade",
+      icon: <School className="h-5 w-5" />
     }
   ];
 

@@ -19,7 +19,8 @@ import {
   Trophy,
   Shield,
   MessageCircle,
-  Layers
+  Layers,
+  School
 } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -140,6 +141,11 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
           icon: <Trophy className="h-5 w-5 flex-shrink-0" />
         }
       ]
+    },
+    {
+      path: "/minha-faculdade",
+      label: "Minha Faculdade",
+      icon: <School className="h-5 w-5 flex-shrink-0" />
     },
     {
       path: "/admin",

@@ -8,6 +8,7 @@ import {
   Briefcase,
   Calendar,
   FileQuestion,
+  School,
 } from "lucide-react";
 
 export const mainNavigation = [
@@ -66,9 +67,63 @@ export const mainNavigation = [
     color: "text-red-500",
   },
   {
+    title: "Minha Faculdade",
+    href: "/minha-faculdade",
+    icon: "School",
+    color: "text-emerald-500",
+  },
+  {
     title: "Mais",
     href: "/mais",
     icon: "MoreHorizontal",
     color: "text-gray-500",
+  },
+];
+
+export const communityLinks = [
+  {
+    title: "Comunidade",
+    href: "/comunidade",
+    icon: "users",
+  },
+  {
+    title: "Feed",
+    href: "/comunidade/feed",
+    icon: "activity",
+  },
+  {
+    title: "Fórum de Dúvidas",
+    href: "/comunidade/duvidas",
+    icon: "messageSquare",
+  },
+  {
+    title: "Grupos de Estudos",
+    href: "/comunidade/grupos-estudos",
+    icon: "graduationCap",
+  },
+  {
+    title: "Sala de Estudos",
+    href: "/comunidade/sala-estudos",
+    icon: "bookOpen",
+  },
+  {
+    title: "Materiais",
+    href: "/comunidade/materiais",
+    icon: "fileText",
+  },
+  {
+    title: "Desafios",
+    href: "/comunidade/desafios",
+    icon: "trophy",
+  },
+  {
+    title: "Calendário",
+    href: "/comunidade/calendario",
+    icon: "calendar",
+  },
+  {
+    title: "Notas e Faltas",
+    href: "/comunidade/notas-faltas",
+    icon: "clipboardList",
   },
 ]; 

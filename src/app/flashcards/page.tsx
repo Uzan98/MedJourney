@@ -11,7 +11,8 @@ import {
   Star, 
   ChevronRight,
   BookOpen,
-  Calendar
+  Calendar,
+  CreditCard
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { FlashcardsService } from '@/services/flashcards.service';
@@ -218,7 +219,25 @@ export default function FlashcardsPage() {
                         `linear-gradient(to right top, ${deck.cover_color}, ${adjustColor(deck.cover_color, 30)})` : 
                         undefined 
                     }}
-                  ></div>
+                  >
+                    {/* Ícone de flashcard com efeito 3D */}
+                    <div className="flashcard-icon">
+                      <div className="flashcard-icon-inner">
+                        <div className="flashcard-icon-front">
+                          <CreditCard className="h-5 w-5" style={{ color: deck.cover_color || '#4f46e5' }} />
+                        </div>
+                        <div className="flashcard-icon-back">
+                          <CreditCard className="h-5 w-5" style={{ color: deck.cover_color || '#4f46e5' }} />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Contador de cartões */}
+                    <div className="flashcard-count">
+                      <span>{deck.card_count || 0}</span>
+                      <span className="flashcard-count-label">cartões</span>
+                    </div>
+                  </div>
                   <div className="flashcard-content">
                     <h3 className="flashcard-title">{deck.name}</h3>
                     <p className="flashcard-describe">{deck.description || `${deck.card_count} cartões`}</p>
