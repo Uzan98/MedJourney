@@ -955,3 +955,7 @@ body {
 .scrollbar-visible::-webkit-scrollbar-thumb:hover {
   background-color: rgba(155, 155, 155, 0.7);
 }
+
+.animation-delay-150 {
+  animation-delay: 150ms;
+}

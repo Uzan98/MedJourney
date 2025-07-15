@@ -155,10 +155,16 @@ export class ExamsService {
         .from('exams')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle(); // Usar maybeSingle em vez de single para evitar erro quando não há resultados
       
       if (error) {
         throw error;
+      }
+      
+      // Se não encontrou o simulado, retornar null
+      if (!data) {
+        console.log(`Simulado com ID ${id} não encontrado`);
+        return null;
       }
       
       return data;

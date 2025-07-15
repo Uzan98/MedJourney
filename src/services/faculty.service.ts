@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { Faculty, FacultyMember, FacultyPost, FacultyExam, FacultyMaterial, FacultyComment, ForumTopic, ForumReply, ForumTag } from '@/types/faculty';
+import { ExamsService } from '@/services/exams.service';
 
 export class FacultyService {
   /**
@@ -707,17 +708,19 @@ export class FacultyService {
    * @param facultyId ID da faculdade
    * @param limit Limite de posts (padrão: 10)
    * @param offset Offset para paginação (padrão: 0)
+   * @param postId ID específico de um post para buscar (opcional)
    * @param type Tipo de post (opcional)
    * @returns Array de posts ou array vazio em caso de erro
    */
   static async getFacultyPosts(
     facultyId: number, 
     limit: number = 10, 
-    offset: number = 0, 
+    offset: number = 0,
+    postId?: number,
     type?: string
   ): Promise<FacultyPost[]> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .rpc('get_faculty_posts', {
           p_faculty_id: facultyId,
           p_limit: limit,
@@ -725,33 +728,76 @@ export class FacultyService {
           p_type: type
         });
 
-      if (error) {
-        console.error('Erro ao buscar posts:', error);
-        return [];
-      }
+      // Se um ID específico de post foi fornecido, adicionar filtro adicional
+      if (postId) {
+        // Como estamos usando RPC, não podemos filtrar diretamente na consulta
+        // Vamos buscar os dados e filtrar manualmente
+        const { data, error } = await query;
 
-      // Formatar os dados para o formato FacultyPost
-      return data.map((post: any) => ({
-        id: post.id,
-        faculty_id: post.faculty_id,
-        user_id: post.user_id,
-        title: post.title,
-        content: post.content,
-        created_at: post.created_at,
-        updated_at: post.updated_at,
-        user: {
-          id: post.user_id,
-          name: post.user_name,
-          email: post.user_email,
-          avatar_url: post.user_avatar_url,
-          role: post.user_role
-        },
-        type: post.type,
-        attachment_url: post.attachment_url,
-        attachment_type: post.attachment_type,
-        likes_count: post.likes_count,
-        comment_count: post.comments_count
-      }));
+        if (error || !data) {
+          console.error('Erro ao buscar posts:', error);
+          return [];
+        }
+
+        // Filtrar pelo ID do post
+        const filteredData = data.filter((post: any) => post.id === postId);
+
+        // Formatar os dados para o formato FacultyPost
+        return filteredData.map((post: any) => ({
+          id: post.id,
+          faculty_id: post.faculty_id,
+          user_id: post.user_id,
+          title: post.title,
+          content: post.content,
+          created_at: post.created_at,
+          updated_at: post.updated_at,
+          user: {
+            id: post.user_id,
+            name: post.user_name,
+            email: post.user_email,
+            avatar_url: post.user_avatar_url,
+            role: post.user_role
+          },
+          type: post.type,
+          attachment_url: post.attachment_url,
+          attachment_type: post.attachment_type,
+          likes_count: post.likes_count,
+          comment_count: post.comments_count,
+          user_liked: post.user_liked
+        }));
+      } else {
+        // Busca normal sem filtro por ID
+        const { data, error } = await query;
+
+        if (error || !data) {
+          console.error('Erro ao buscar posts:', error);
+          return [];
+        }
+
+        // Formatar os dados para o formato FacultyPost
+        return data.map((post: any) => ({
+          id: post.id,
+          faculty_id: post.faculty_id,
+          user_id: post.user_id,
+          title: post.title,
+          content: post.content,
+          created_at: post.created_at,
+          updated_at: post.updated_at,
+          user: {
+            id: post.user_id,
+            name: post.user_name,
+            email: post.user_email,
+            avatar_url: post.user_avatar_url,
+            role: post.user_role
+          },
+          type: post.type,
+          attachment_url: post.attachment_url,
+          attachment_type: post.attachment_type,
+          likes_count: post.likes_count,
+          comment_count: post.comments_count,
+          user_liked: post.user_liked
+        }));
+      }
     } catch (error) {
       console.error('Erro ao buscar posts da faculdade:', error);
       return [];
@@ -1603,6 +1649,19 @@ export class FacultyService {
     }
   ): Promise<number | null> {
     try {
+      // Verificar se o simulado existe e é público
+      const examDetails = await ExamsService.getExamById(examId);
+      if (!examDetails) {
+        console.error('Erro ao compartilhar simulado: Simulado não encontrado');
+        return null;
+      }
+      
+      // Verificar se o simulado é público
+      if (!examDetails.is_public) {
+        console.error('Erro ao compartilhar simulado: Simulado não é público');
+        return null;
+      }
+      
       // Obter o ID do usuário atual
       const { data: userData, error: userError } = await supabase.auth.getUser();
       
