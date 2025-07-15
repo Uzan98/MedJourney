@@ -79,6 +79,10 @@ CREATE TABLE IF NOT EXISTS public.faculty_exams (
   duration_minutes INTEGER,
   max_score INTEGER,
   is_published BOOLEAN DEFAULT FALSE,
+  external_exam_id INTEGER,
+  category VARCHAR(100),
+  disciplina VARCHAR(255),
+  periodo INTEGER,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE
 );
@@ -175,22 +179,22 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Triggers para atualizar o timestamp de updated_at
-CREATE TRIGGER update_faculties_updated_at
+CREATE OR REPLACE TRIGGER update_faculties_updated_at
 BEFORE UPDATE ON public.faculties
 FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
-CREATE TRIGGER update_faculty_posts_updated_at
+CREATE OR REPLACE TRIGGER update_faculty_posts_updated_at
 BEFORE UPDATE ON public.faculty_posts
 FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
-CREATE TRIGGER update_faculty_comments_updated_at
+CREATE OR REPLACE TRIGGER update_faculty_comments_updated_at
 BEFORE UPDATE ON public.faculty_comments
 FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
-CREATE TRIGGER update_faculty_materials_updated_at
+CREATE OR REPLACE TRIGGER update_faculty_materials_updated_at
 BEFORE UPDATE ON public.faculty_materials
 FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
-CREATE TRIGGER update_faculty_exams_updated_at
+CREATE OR REPLACE TRIGGER update_faculty_exams_updated_at
 BEFORE UPDATE ON public.faculty_exams
 FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column(); 

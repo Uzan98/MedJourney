@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { Faculty, FacultyMember, FacultyPost, FacultyExam, FacultyMaterial } from '@/types/faculty';
+import { Faculty, FacultyMember, FacultyPost, FacultyExam, FacultyMaterial, FacultyComment, ForumTopic, ForumReply, ForumTag } from '@/types/faculty';
 
 export class FacultyService {
   /**
@@ -699,6 +699,1050 @@ export class FacultyService {
     } catch (error) {
       console.error('Erro ao buscar usuários banidos:', error);
       return [];
+    }
+  }
+
+  /**
+   * Busca os posts de uma faculdade
+   * @param facultyId ID da faculdade
+   * @param limit Limite de posts (padrão: 10)
+   * @param offset Offset para paginação (padrão: 0)
+   * @param type Tipo de post (opcional)
+   * @returns Array de posts ou array vazio em caso de erro
+   */
+  static async getFacultyPosts(
+    facultyId: number, 
+    limit: number = 10, 
+    offset: number = 0, 
+    type?: string
+  ): Promise<FacultyPost[]> {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_faculty_posts', {
+          p_faculty_id: facultyId,
+          p_limit: limit,
+          p_offset: offset,
+          p_type: type
+        });
+
+      if (error) {
+        console.error('Erro ao buscar posts:', error);
+        return [];
+      }
+
+      // Formatar os dados para o formato FacultyPost
+      return data.map((post: any) => ({
+        id: post.id,
+        faculty_id: post.faculty_id,
+        user_id: post.user_id,
+        title: post.title,
+        content: post.content,
+        created_at: post.created_at,
+        updated_at: post.updated_at,
+        user: {
+          id: post.user_id,
+          name: post.user_name,
+          email: post.user_email,
+          avatar_url: post.user_avatar_url,
+          role: post.user_role
+        },
+        type: post.type,
+        attachment_url: post.attachment_url,
+        attachment_type: post.attachment_type,
+        likes_count: post.likes_count,
+        comment_count: post.comments_count
+      }));
+    } catch (error) {
+      console.error('Erro ao buscar posts da faculdade:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Cria um novo post na faculdade
+   * @param facultyId ID da faculdade
+   * @param title Título do post
+   * @param content Conteúdo do post
+   * @param type Tipo do post (padrão: 'announcement')
+   * @param attachmentUrl URL do anexo (opcional)
+   * @param attachmentType Tipo do anexo (opcional)
+   * @returns ID do post criado ou null em caso de erro
+   */
+  static async createPost(
+    facultyId: number, 
+    title: string, 
+    content: string, 
+    type: string = 'announcement',
+    attachmentUrl?: string,
+    attachmentType?: string
+  ): Promise<number | null> {
+    try {
+      const { data, error } = await supabase
+        .rpc('create_faculty_post', {
+          p_faculty_id: facultyId,
+          p_title: title,
+          p_content: content,
+          p_type: type,
+          p_attachment_url: attachmentUrl || null,
+          p_attachment_type: attachmentType || null
+        });
+
+      if (error) {
+        console.error('Erro ao criar post:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erro ao criar post:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Busca os comentários de um post
+   * @param postId ID do post
+   * @param limit Limite de comentários (padrão: 20)
+   * @param offset Offset para paginação (padrão: 0)
+   * @returns Array de comentários ou array vazio em caso de erro
+   */
+  static async getPostComments(
+    postId: number,
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<FacultyComment[]> {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_faculty_comments', {
+          p_post_id: postId,
+          p_limit: limit,
+          p_offset: offset
+        });
+
+      if (error) {
+        console.error('Erro ao buscar comentários:', error);
+        return [];
+      }
+
+      // Formatar os dados para o formato FacultyComment
+      return data.map((comment: any) => ({
+        id: comment.id,
+        post_id: comment.post_id,
+        user_id: comment.user_id,
+        content: comment.content,
+        created_at: comment.created_at,
+        updated_at: comment.updated_at,
+        user: {
+          id: comment.user_id,
+          name: comment.user_name,
+          email: comment.user_email,
+          avatar_url: comment.user_avatar_url,
+          role: comment.user_role
+        }
+      }));
+    } catch (error) {
+      console.error('Erro ao buscar comentários do post:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Adiciona um comentário a um post
+   * @param postId ID do post
+   * @param content Conteúdo do comentário
+   * @returns ID do comentário criado ou null em caso de erro
+   */
+  static async createComment(postId: number, content: string): Promise<number | null> {
+    try {
+      const { data, error } = await supabase
+        .rpc('create_faculty_comment', {
+          p_post_id: postId,
+          p_content: content
+        });
+
+      if (error) {
+        console.error('Erro ao criar comentário:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erro ao criar comentário:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Alterna o status de curtida em um post
+   * @param postId ID do post
+   * @returns true se curtiu, false se descurtiu, null em caso de erro
+   */
+  static async togglePostLike(postId: number): Promise<boolean | null> {
+    try {
+      const { data, error } = await supabase
+        .rpc('toggle_faculty_post_like', {
+          p_post_id: postId
+        });
+
+      if (error) {
+        console.error('Erro ao curtir/descurtir post:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erro ao curtir/descurtir post:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Verifica se o usuário curtiu um post
+   * @param postId ID do post
+   * @returns true se curtiu, false caso contrário
+   */
+  static async hasLikedPost(postId: number): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .rpc('has_liked_faculty_post', {
+          p_post_id: postId
+        });
+
+      if (error) {
+        console.error('Erro ao verificar curtida:', error);
+        return false;
+      }
+
+      return !!data;
+    } catch (error) {
+      console.error('Erro ao verificar curtida:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Obtém a contagem de curtidas de um post específico
+   * @param postId ID do post
+   * @returns Objeto com contagem de curtidas e se o usuário curtiu
+   */
+  static async getPostLikesCount(postId: number): Promise<{count: number, user_liked: boolean}> {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_post_likes_count', {
+          p_post_id: postId
+        });
+
+      if (error) {
+        console.error('Erro ao obter contagem de curtidas:', error);
+        return { count: 0, user_liked: false };
+      }
+
+      return data || { count: 0, user_liked: false };
+    } catch (error) {
+      console.error('Erro ao obter contagem de curtidas:', error);
+      return { count: 0, user_liked: false };
+    }
+  }
+
+  // Métodos para o Fórum de Dúvidas
+
+  /**
+   * Busca tópicos do fórum de uma faculdade
+   * @param facultyId ID da faculdade
+   * @param limit Limite de tópicos (padrão: 20)
+   * @param offset Offset para paginação (padrão: 0)
+   * @param tagId ID da tag para filtrar (opcional)
+   * @param isResolved Filtrar por tópicos resolvidos (opcional)
+   * @param search Termo de busca (opcional)
+   * @returns Array de tópicos ou array vazio em caso de erro
+   */
+  static async getForumTopics(
+    facultyId: number,
+    limit: number = 20,
+    offset: number = 0,
+    tagId?: number,
+    isResolved?: boolean,
+    search?: string
+  ): Promise<ForumTopic[]> {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_faculty_forum_topics', {
+          p_faculty_id: facultyId,
+          p_limit: limit,
+          p_offset: offset,
+          p_tag_id: tagId || null,
+          p_is_resolved: isResolved === undefined ? null : isResolved,
+          p_search: search || null
+        });
+
+      if (error) {
+        console.error('Erro ao buscar tópicos do fórum:', error);
+        return [];
+      }
+
+      // Formatar os dados para o formato ForumTopic
+      return data.map((topic: any) => ({
+        id: topic.id,
+        faculty_id: topic.faculty_id,
+        user_id: topic.user_id,
+        title: topic.title,
+        content: topic.content,
+        is_resolved: topic.is_resolved,
+        is_pinned: topic.is_pinned,
+        view_count: topic.view_count,
+        created_at: topic.created_at,
+        updated_at: topic.updated_at,
+        user: {
+          id: topic.user_id,
+          name: topic.user_name,
+          email: topic.user_email,
+          avatar_url: topic.user_avatar_url,
+          role: topic.user_role
+        },
+        replies_count: topic.replies_count,
+        votes_count: topic.votes_count,
+        tags: Array.isArray(topic.tags) ? topic.tags : []
+      }));
+    } catch (error) {
+      console.error('Erro ao buscar tópicos do fórum:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Cria um novo tópico no fórum
+   * @param facultyId ID da faculdade
+   * @param title Título do tópico
+   * @param content Conteúdo do tópico
+   * @param tags Array de IDs de tags (opcional)
+   * @returns ID do tópico criado ou null em caso de erro
+   */
+  static async createForumTopic(
+    facultyId: number,
+    title: string,
+    content: string,
+    tags?: number[]
+  ): Promise<number | null> {
+    try {
+      const { data, error } = await supabase
+        .rpc('create_faculty_forum_topic', {
+          p_faculty_id: facultyId,
+          p_title: title,
+          p_content: content,
+          p_tags: tags || null
+        });
+
+      if (error) {
+        console.error('Erro ao criar tópico no fórum:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erro ao criar tópico no fórum:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Incrementa a contagem de visualizações de um tópico
+   * @param topicId ID do tópico
+   */
+  static async incrementTopicViewCount(topicId: number): Promise<void> {
+    try {
+      const { error } = await supabase
+        .rpc('increment_forum_topic_view_count', {
+          p_topic_id: topicId
+        });
+
+      if (error) {
+        console.error('Erro ao incrementar visualizações do tópico:', error);
+      }
+    } catch (error) {
+      console.error('Erro ao incrementar visualizações do tópico:', error);
+    }
+  }
+
+  /**
+   * Busca respostas de um tópico do fórum
+   * @param topicId ID do tópico
+   * @param limit Limite de respostas (padrão: 50)
+   * @param offset Offset para paginação (padrão: 0)
+   * @returns Array de respostas ou array vazio em caso de erro
+   */
+  static async getForumReplies(
+    topicId: number,
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<ForumReply[]> {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_faculty_forum_replies', {
+          p_topic_id: topicId,
+          p_limit: limit,
+          p_offset: offset
+        });
+
+      if (error) {
+        console.error('Erro ao buscar respostas do fórum:', error);
+        return [];
+      }
+
+      // Formatar os dados para o formato ForumReply
+      return data.map((reply: any) => ({
+        id: reply.id,
+        topic_id: reply.topic_id,
+        user_id: reply.user_id,
+        content: reply.content,
+        is_solution: reply.is_solution,
+        created_at: reply.created_at,
+        updated_at: reply.updated_at,
+        user: {
+          id: reply.user_id,
+          name: reply.user_name,
+          email: reply.user_email,
+          avatar_url: reply.user_avatar_url,
+          role: reply.user_role
+        },
+        votes_count: reply.votes_count
+      }));
+    } catch (error) {
+      console.error('Erro ao buscar respostas do fórum:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Cria uma nova resposta em um tópico do fórum
+   * @param topicId ID do tópico
+   * @param content Conteúdo da resposta
+   * @returns ID da resposta criada ou null em caso de erro
+   */
+  static async createForumReply(
+    topicId: number,
+    content: string
+  ): Promise<number | null> {
+    try {
+      const { data, error } = await supabase
+        .rpc('create_faculty_forum_reply', {
+          p_topic_id: topicId,
+          p_content: content
+        });
+
+      if (error) {
+        console.error('Erro ao criar resposta no fórum:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erro ao criar resposta no fórum:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Vota em um tópico ou resposta do fórum
+   * @param topicId ID do tópico (opcional)
+   * @param replyId ID da resposta (opcional)
+   * @param voteType Tipo de voto (1 para upvote, -1 para downvote)
+   * @returns true se o voto foi registrado, false caso contrário
+   */
+  static async voteForumItem(
+    topicId: number | null,
+    replyId: number | null,
+    voteType: number = 1
+  ): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .rpc('vote_faculty_forum_item', {
+          p_topic_id: topicId,
+          p_reply_id: replyId,
+          p_vote_type: voteType
+        });
+
+      if (error) {
+        console.error('Erro ao votar em item do fórum:', error);
+        return false;
+      }
+
+      return !!data;
+    } catch (error) {
+      console.error('Erro ao votar em item do fórum:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Marca uma resposta como solução
+   * @param replyId ID da resposta
+   * @param isSolution Se a resposta é uma solução (padrão: true)
+   * @returns true se a operação foi bem-sucedida, false caso contrário
+   */
+  static async markReplyAsSolution(
+    replyId: number,
+    isSolution: boolean = true
+  ): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .rpc('mark_forum_reply_as_solution', {
+          p_reply_id: replyId,
+          p_is_solution: isSolution
+        });
+
+      if (error) {
+        console.error('Erro ao marcar resposta como solução:', error);
+        return false;
+      }
+
+      return !!data;
+    } catch (error) {
+      console.error('Erro ao marcar resposta como solução:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Busca tags do fórum de uma faculdade
+   * @param facultyId ID da faculdade
+   * @returns Array de tags ou array vazio em caso de erro
+   */
+  static async getForumTags(facultyId: number): Promise<ForumTag[]> {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_faculty_forum_tags', {
+          p_faculty_id: facultyId
+        });
+
+      if (error) {
+        console.error('Erro ao buscar tags do fórum:', error);
+        return [];
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erro ao buscar tags do fórum:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Cria uma nova tag para o fórum
+   * @param facultyId ID da faculdade
+   * @param name Nome da tag
+   * @param color Cor da tag (formato hexadecimal, padrão: '#3b82f6')
+   * @returns ID da tag criada ou null em caso de erro
+   */
+  static async createForumTag(
+    facultyId: number,
+    name: string,
+    color: string = '#3b82f6'
+  ): Promise<number | null> {
+    try {
+      const { data, error } = await supabase
+        .rpc('create_faculty_forum_tag', {
+          p_faculty_id: facultyId,
+          p_name: name,
+          p_color: color
+        });
+
+      if (error) {
+        console.error('Erro ao criar tag do fórum:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erro ao criar tag do fórum:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Busca materiais de estudo de uma faculdade
+   * @param facultyId ID da faculdade
+   * @param limit Limite de materiais (padrão: 50)
+   * @param offset Offset para paginação (padrão: 0)
+   * @returns Array de materiais ou array vazio em caso de erro
+   */
+  static async getFacultyMaterials(
+    facultyId: number,
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<FacultyMaterial[]> {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_faculty_materials', {
+          p_faculty_id: facultyId,
+          p_limit: limit,
+          p_offset: offset
+        });
+
+      if (error) {
+        console.error('Erro ao buscar materiais de estudo:', error);
+        return [];
+      }
+
+      // Buscar informações dos usuários
+      const userIds = data.map(material => material.user_id).filter(Boolean);
+      const userMap = await this.getUsersInfo(userIds);
+      
+      // Formatar os dados para incluir o objeto user corretamente
+      return data.map((material: any) => {
+        const userInfo = userMap[material.user_id];
+        
+        return {
+          id: material.id,
+          faculty_id: material.faculty_id,
+          user_id: material.user_id,
+          title: material.title,
+          description: material.description,
+          file_url: material.file_url,
+          file_type: material.file_type,
+          file_size: material.file_size,
+          periodo: material.periodo,
+          disciplina: material.disciplina,
+          created_at: material.created_at,
+          download_count: material.download_count,
+          user: userInfo ? {
+            id: material.user_id,
+            name: userInfo.name || 'Usuário',
+            email: userInfo.email || '',
+            avatar_url: userInfo.avatar_url || '',
+            role: material.user_role
+          } : {
+            id: material.user_id,
+            name: 'Usuário',
+            email: '',
+            avatar_url: '',
+            role: material.user_role
+          }
+        };
+      });
+    } catch (error) {
+      console.error('Erro ao buscar materiais de estudo:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Faz upload de um arquivo para o bucket de materiais
+   * @param facultyId ID da faculdade
+   * @param userId ID do usuário
+   * @param file Arquivo a ser enviado
+   * @returns URL do arquivo ou null em caso de erro
+   */
+  static async uploadMaterialFile(
+    facultyId: number,
+    userId: string,
+    file: File
+  ): Promise<string | null> {
+    try {
+      // Sanitizar o nome do arquivo (remover acentos e caracteres especiais)
+      const sanitizeFileName = (fileName: string): string => {
+        // Primeiro, normalizar o texto para decompor os caracteres acentuados
+        const normalized = fileName.normalize('NFD')
+          // Remover os acentos (diacríticos)
+          .replace(/[\u0300-\u036f]/g, '')
+          // Substituir espaços por hífens
+          .replace(/\s+/g, '-')
+          // Remover caracteres que não sejam alfanuméricos, hífens ou pontos
+          .replace(/[^a-zA-Z0-9\-_.]/g, '')
+          // Evitar múltiplos hífens consecutivos
+          .replace(/-+/g, '-');
+        
+        return normalized;
+      };
+      
+      // O caminho do arquivo será: faculty_id/user_id/timestamp_nome-arquivo-sanitizado
+      const timestamp = Date.now();
+      const sanitizedFileName = sanitizeFileName(file.name);
+      const filePath = `${facultyId}/${userId}/${timestamp}_${sanitizedFileName}`;
+      
+      const { data, error } = await supabase.storage
+        .from('faculty_materials')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error('Erro ao fazer upload do arquivo:', error);
+        return null;
+      }
+
+      // Criar URL de download que funciona com políticas de acesso
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+        .from('faculty_materials')
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // URL válida por 1 ano
+
+      if (signedUrlError) {
+        console.error('Erro ao gerar URL assinada:', signedUrlError);
+        
+        // Fallback para URL pública
+        const { data: publicUrlData } = supabase.storage
+          .from('faculty_materials')
+          .getPublicUrl(filePath);
+        
+        return publicUrlData.publicUrl;
+      }
+
+      return signedUrlData.signedUrl;
+    } catch (error) {
+      console.error('Erro ao fazer upload do arquivo:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Cria um novo material de estudo
+   * @param facultyId ID da faculdade
+   * @param title Título do material
+   * @param description Descrição do material
+   * @param fileUrl URL do arquivo
+   * @param fileType Tipo do arquivo
+   * @param fileSize Tamanho do arquivo em bytes
+   * @param periodo Período acadêmico (1-12, opcional)
+   * @param disciplina Nome da disciplina (opcional)
+   * @returns ID do material criado ou null em caso de erro
+   */
+  static async createFacultyMaterial(
+    facultyId: number,
+    title: string,
+    description: string,
+    fileUrl: string,
+    fileType: string,
+    fileSize: number,
+    periodo?: number | null,
+    disciplina?: string | null
+  ): Promise<number | null> {
+    try {
+      // Garantir que valores undefined ou vazios sejam convertidos para null
+      const periodoValue = periodo || null;
+      const disciplinaValue = disciplina && disciplina.trim() !== '' ? disciplina.trim() : null;
+      
+      console.log("Valores sendo enviados para o backend:", {
+        p_faculty_id: facultyId,
+        p_title: title,
+        p_description: description,
+        p_file_url: fileUrl,
+        p_file_type: fileType,
+        p_file_size: fileSize,
+        p_periodo: periodoValue,
+        p_disciplina: disciplinaValue
+      });
+      
+      const { data, error } = await supabase
+        .rpc('create_faculty_material', {
+          p_faculty_id: facultyId,
+          p_title: title,
+          p_description: description,
+          p_file_url: fileUrl,
+          p_file_type: fileType,
+          p_file_size: fileSize,
+          p_periodo: periodoValue,
+          p_disciplina: disciplinaValue
+        });
+
+      if (error) {
+        console.error('Erro ao criar material de estudo:', error);
+        return null;
+      }
+
+      console.log("Material criado com sucesso, ID:", data);
+      return data;
+    } catch (error) {
+      console.error('Erro ao criar material de estudo:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Incrementa o contador de downloads de um material
+   * @param materialId ID do material
+   */
+  static async incrementMaterialDownloadCount(materialId: number): Promise<void> {
+    try {
+      // Primeiro, obter o valor atual do contador
+      const { data: material, error: fetchError } = await supabase
+        .from('faculty_materials')
+        .select('download_count')
+        .eq('id', materialId)
+        .single();
+
+      if (fetchError) {
+        console.error('Erro ao buscar contador de downloads:', fetchError);
+        return;
+      }
+
+      // Calcular o novo valor do contador
+      const currentCount = material?.download_count || 0;
+      const newCount = currentCount + 1;
+
+      // Atualizar o contador
+      const { error: updateError } = await supabase
+        .from('faculty_materials')
+        .update({ download_count: newCount })
+        .eq('id', materialId);
+
+      if (updateError) {
+        console.error('Erro ao incrementar contador de downloads:', updateError);
+      }
+    } catch (error) {
+      console.error('Erro ao incrementar contador de downloads:', error);
+    }
+  }
+
+  /**
+   * Exclui um material de estudo
+   * @param materialId ID do material
+   * @param filePath Caminho do arquivo no storage
+   * @returns true se a operação foi bem-sucedida, false caso contrário
+   */
+  static async deleteFacultyMaterial(
+    materialId: number,
+    filePath: string
+  ): Promise<boolean> {
+    try {
+      console.log('Excluindo material:', materialId, 'Caminho:', filePath);
+      
+      // Primeiro excluir o arquivo do storage
+      const { error: storageError } = await supabase.storage
+        .from('faculty_materials')
+        .remove([filePath]);
+
+      if (storageError) {
+        console.error('Erro ao excluir arquivo do storage:', storageError);
+        // Continuar mesmo com erro no storage, pois o mais importante é remover do banco
+      }
+
+      // Excluir diretamente da tabela usando a política RLS existente
+      // Não precisamos de uma função RPC para isso
+      const { error: dbError } = await supabase
+        .from('faculty_materials')
+        .delete()
+        .eq('id', materialId);
+
+      if (dbError) {
+        console.error('Erro ao excluir material do banco de dados:', dbError);
+        return false;
+      }
+
+      return true; // Exclusão bem-sucedida
+    } catch (error) {
+      console.error('Erro ao excluir material de estudo:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Busca as disciplinas de uma faculdade
+   * @param facultyId ID da faculdade
+   * @returns Lista de nomes de disciplinas
+   */
+  static async getFacultyDisciplines(facultyId: number): Promise<string[]> {
+    try {
+      // Buscar disciplinas dos materiais
+      const { data: materialDisciplinas, error: materialError } = await supabase
+        .from('faculty_materials')
+        .select('disciplina')
+        .eq('faculty_id', facultyId)
+        .not('disciplina', 'is', null);
+      
+      if (materialError) {
+        console.error('Erro ao buscar disciplinas de materiais:', materialError);
+        return [];
+      }
+
+      // Buscar disciplinas dos exames
+      const { data: examDisciplinas, error: examError } = await supabase
+        .from('faculty_exams')
+        .select('disciplina')
+        .eq('faculty_id', facultyId)
+        .not('disciplina', 'is', null);
+      
+      if (examError) {
+        console.error('Erro ao buscar disciplinas de exames:', examError);
+        return [];
+      }
+      
+      // Combinar e remover duplicatas
+      const allDisciplinas = [
+        ...materialDisciplinas.map(m => m.disciplina),
+        ...examDisciplinas.map(e => e.disciplina)
+      ]
+      .filter(Boolean) // Remover valores null/undefined
+      .filter(d => d.trim() !== ''); // Remover strings vazias
+      
+      // Remover duplicatas e ordenar
+      const uniqueDisciplinas = [...new Set(allDisciplinas)].sort();
+      
+      return uniqueDisciplinas;
+    } catch (error) {
+      console.error('Erro ao buscar disciplinas da faculdade:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Compartilha um simulado com a faculdade
+   * @param facultyId ID da faculdade
+   * @param examId ID do simulado original
+   * @param examData Dados adicionais do simulado
+   * @returns ID do simulado compartilhado ou null em caso de erro
+   */
+  static async shareFacultyExam(
+    facultyId: number,
+    examId: number,
+    examData: {
+      title: string;
+      description?: string;
+      category?: string;
+      disciplina?: string;
+      periodo?: number;
+    }
+  ): Promise<number | null> {
+    try {
+      // Obter o ID do usuário atual
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !userData.user) {
+        console.error('Erro ao obter usuário atual:', userError);
+        return null;
+      }
+      
+      // Inserir diretamente na tabela faculty_exams
+      const { data, error } = await supabase
+        .from('faculty_exams')
+        .insert({
+          faculty_id: facultyId,
+          creator_id: userData.user.id,
+          title: examData.title,
+          description: examData.description || null,
+          external_exam_id: examId,
+          category: examData.category || null,
+          disciplina: examData.disciplina || null,
+          periodo: examData.periodo || null,
+          is_published: true
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error('Erro ao compartilhar simulado:', error);
+        return null;
+      }
+
+      return data.id;
+    } catch (error) {
+      console.error('Erro ao compartilhar simulado:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Busca os simulados compartilhados em uma faculdade
+   * @param facultyId ID da faculdade
+   * @param limit Limite de simulados (padrão: 50)
+   * @param offset Offset para paginação (padrão: 0)
+   * @returns Lista de simulados ou array vazio em caso de erro
+   */
+  static async getFacultyExams(
+    facultyId: number,
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<FacultyExam[]> {
+    try {
+      // Buscar diretamente da tabela faculty_exams sem tentar fazer join
+      const { data: exams, error } = await supabase
+        .from('faculty_exams')
+        .select('*')
+        .eq('faculty_id', facultyId)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        console.error('Erro ao buscar simulados:', error);
+        return [];
+      }
+
+      // Buscar informações dos usuários separadamente usando nossa função auxiliar
+      const userIds = exams.map(exam => exam.creator_id).filter(Boolean);
+      const userMap = await this.getUsersInfo(userIds);
+
+            // Formatar os dados para o formato FacultyExam
+      return exams.map((exam: any) => {
+        // Obter informações do usuário do mapa, se disponível
+        const userInfo = userMap[exam.creator_id];
+        
+        return {
+          id: exam.id,
+          faculty_id: exam.faculty_id,
+          creator_id: exam.creator_id,
+          title: exam.title,
+          description: exam.description,
+          scheduled_date: exam.scheduled_date,
+          duration_minutes: exam.duration_minutes,
+          max_score: exam.max_score,
+          is_published: exam.is_published,
+          external_exam_id: exam.external_exam_id,
+          category: exam.category,
+          disciplina: exam.disciplina,
+          periodo: exam.periodo,
+          created_at: exam.created_at,
+          updated_at: exam.updated_at,
+          user: userInfo ? {
+            id: exam.creator_id,
+            name: userInfo.name || 'Usuário',
+            email: userInfo.email || '',
+            avatar_url: userInfo.avatar_url || ''
+          } : {
+            id: exam.creator_id,
+            name: 'Usuário', // Fallback para quando não temos informações
+            email: '',
+            avatar_url: ''
+          }
+        };
+            });
+    } catch (error) {
+      console.error('Erro ao buscar simulados da faculdade:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Busca informações de vários usuários de uma vez
+   * @param userIds Array de IDs de usuários
+   * @returns Mapa de informações de usuários ou objeto vazio em caso de erro
+   */
+  static async getUsersInfo(userIds: string[]): Promise<Record<string, any>> {
+    if (!userIds || userIds.length === 0) {
+      return {};
+    }
+
+    try {
+      const userMap: Record<string, any> = {};
+      
+      // Buscar informações de cada usuário individualmente
+      // No futuro, isso pode ser otimizado para buscar vários usuários de uma vez
+      for (const userId of userIds) {
+        try {
+          // Chamar a função RPC para obter informações do usuário
+          const { data: userInfo, error: userError } = await supabase
+            .rpc('get_user_info', { user_id: userId });
+          
+          if (!userError && userInfo) {
+            userMap[userId] = userInfo;
+          }
+        } catch (userError) {
+          console.error(`Erro ao buscar informações do usuário ${userId}:`, userError);
+        }
+      }
+      
+      return userMap;
+    } catch (error) {
+      console.error('Erro ao buscar informações dos usuários:', error);
+      return {};
     }
   }
 } 
