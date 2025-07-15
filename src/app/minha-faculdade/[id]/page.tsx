@@ -58,6 +58,9 @@ export default function FacultyDetailsPage() {
   const [postContent, setPostContent] = useState('');
   const [postTitle, setPostTitle] = useState('');
   const [isSubmittingPost, setIsSubmittingPost] = useState(false);
+  const [postsPage, setPostsPage] = useState(0);
+  const [hasMorePosts, setHasMorePosts] = useState(true);
+  const POSTS_PER_PAGE = 5;
   
   // Estados para inserção de link
   const [showLinkInput, setShowLinkInput] = useState(false);
@@ -299,7 +302,7 @@ export default function FacultyDetailsPage() {
         }
         
         // Carregar posts, tópicos e materiais
-        loadPosts(facultyId);
+        loadPosts(facultyId, true);
         loadForumTopics(facultyId);
         loadMaterials(facultyId);
         loadExams(facultyId);
@@ -416,7 +419,7 @@ export default function FacultyDetailsPage() {
             schema: 'public',
             table: 'faculty_post_likes'
           },
-          (payload) => {
+          (payload: any) => {
             console.log('Mudança em curtidas:', payload);
             
             if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
@@ -461,13 +464,27 @@ export default function FacultyDetailsPage() {
   }, [params.id, user, router]);
 
   // Função para carregar posts
-  const loadPosts = async (facultyId: number) => {
+  const loadPosts = async (facultyId: number, reset: boolean = false) => {
     if (!facultyId) return;
+    
+    const page = reset ? 0 : postsPage;
     
     setIsLoadingPosts(true);
     try {
-      const posts = await FacultyService.getFacultyPosts(facultyId);
-      setPosts(posts);
+      const posts = await FacultyService.getFacultyPosts(facultyId, POSTS_PER_PAGE, page * POSTS_PER_PAGE);
+      
+      if (reset) {
+        setPosts(posts);
+        setPostsPage(0);
+      } else {
+        setPosts(prevPosts => [...prevPosts, ...posts]);
+      }
+      
+      setHasMorePosts(posts.length === POSTS_PER_PAGE);
+      
+      if (!reset) {
+        setPostsPage(page + 1);
+      }
     } catch (error) {
       console.error('Erro ao carregar posts:', error);
       toast({
@@ -630,11 +647,49 @@ export default function FacultyDetailsPage() {
   }
 
   const handleShareCode = () => {
-    navigator.clipboard.writeText(faculty.code);
-    toast({
-      title: "Código copiado",
-      description: "Código do ambiente copiado para a área de transferência!",
-    });
+    if (!faculty?.code) {
+      toast({
+        title: "Erro",
+        description: "Código do ambiente não disponível.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      if (navigator?.clipboard) {
+        navigator.clipboard.writeText(faculty.code)
+          .then(() => {
+            toast({
+              title: "Código copiado",
+              description: "Código do ambiente copiado para a área de transferência!",
+            });
+          })
+          .catch((err) => {
+            console.error('Erro ao copiar para a área de transferência:', err);
+            // Fallback para mostrar o código para o usuário copiar manualmente
+            toast({
+              title: "Não foi possível copiar automaticamente",
+              description: `Copie o código manualmente: ${faculty.code}`,
+              duration: 5000,
+            });
+          });
+      } else {
+        // Fallback para navegadores sem suporte a clipboard API
+        toast({
+          title: "Código do ambiente",
+          description: `Copie o código manualmente: ${faculty.code}`,
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao tentar copiar código:', error);
+      toast({
+        title: "Código do ambiente",
+        description: `Copie o código manualmente: ${faculty.code}`,
+        duration: 5000,
+      });
+    }
   };
 
   const openManageMembersModal = () => {
@@ -727,7 +782,8 @@ export default function FacultyDetailsPage() {
       const postId = await FacultyService.createPost(
         faculty.id,
         title,
-        postContent
+        postContent,
+        'announcement'  // Use 'announcement' as the default type since 'post' is not a valid type in the database
       );
       
       if (postId) {
@@ -735,8 +791,11 @@ export default function FacultyDetailsPage() {
         setPostContent('');
         setPostTitle('');
         
-        // Recarregar posts
-        loadPosts(faculty.id);
+        // Buscar apenas o novo post
+        const newPost = await FacultyService.getFacultyPosts(faculty.id, 1, 0);
+        if (newPost && newPost.length > 0) {
+          setPosts(prevPosts => [newPost[0], ...prevPosts]);
+        }
         
         toast({
           title: "Publicação criada",
@@ -815,169 +874,106 @@ export default function FacultyDetailsPage() {
     }
   };
 
-  // Dados de exemplo para o feed
-  const fakePosts = [
-    {
-      id: 1,
-      author: {
-        name: 'Prof. Ana Silva',
-        avatar: '',
-        role: 'admin'
-      },
-      content: 'Atenção alunos! Disponibilizei novos materiais para a prova da próxima semana. Bons estudos! 📚',
-      createdAt: '2023-11-15T14:30:00Z',
-      likes: 12,
-      comments: 5
-    },
-    {
-      id: 2,
-      author: {
-        name: 'João Pereira',
-        avatar: '',
-        role: 'member'
-      },
-      content: 'Alguém tem as resoluções dos exercícios do capítulo 5? Estou com dificuldades nos problemas 3 e 7.',
-      createdAt: '2023-11-14T10:15:00Z',
-      likes: 3,
-      comments: 8
-    },
-    {
-      id: 3,
-      author: {
-        name: 'Coordenação',
-        avatar: '',
-        role: 'admin'
-      },
-      content: 'Lembrete: A data de entrega do trabalho final foi adiada para 25/11. Aproveitem o tempo extra para caprichar! 🗓️',
-      createdAt: '2023-11-13T16:45:00Z',
-      likes: 24,
-      comments: 2
-    }
-  ];
-
-  // Eventos de exemplo
-  const fakeEvents = [
-    {
-      id: 1,
-      title: 'Prova Parcial',
-      date: '2023-11-22',
-      time: '14:00'
-    },
-    {
-      id: 2,
-      title: 'Entrega de Trabalho',
-      date: '2023-11-25',
-      time: '23:59'
-    },
-    {
-      id: 3,
-      title: 'Aula de Revisão',
-      date: '2023-11-20',
-      time: '19:00'
-    }
-  ];
-  
-  // Simulados de exemplo
-  const fakeExams = [
-    {
-      id: 1,
-      title: 'Simulado 1 - Prova Parcial',
-      questions: 20,
-      duration: '120 min',
-      createdBy: 'Prof. Ana Silva',
-      createdAt: '2023-11-10'
-    },
-    {
-      id: 2,
-      title: 'Simulado 2 - Prova Final',
-      questions: 30,
-      duration: '180 min',
-      createdBy: 'Prof. Ana Silva',
-      createdAt: '2023-11-18'
-    }
-  ];
-  
-  // Listas de exercícios de exemplo
-  const fakeExerciseLists = [
-    {
-      id: 1,
-      title: 'Lista 1 - Fundamentos',
-      exercises: 15,
-      difficulty: 'Fácil',
-      createdBy: 'Prof. Ana Silva',
-      dueDate: '2023-11-15'
-    },
-    {
-      id: 2,
-      title: 'Lista 2 - Tópicos Avançados',
-      exercises: 12,
-      difficulty: 'Médio',
-      createdBy: 'Prof. Ana Silva',
-      dueDate: '2023-11-22'
-    },
-    {
-      id: 3,
-      title: 'Lista 3 - Revisão Geral',
-      exercises: 20,
-      difficulty: 'Difícil',
-      createdBy: 'Prof. Ana Silva',
-      dueDate: '2023-11-28'
-    }
-  ];
-
   return (
     <div className="container mx-auto px-4 py-6">
       {/* Cabeçalho */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">{faculty.name}</h1>
-            <p className="text-gray-600">{faculty.institution} • {faculty.course}</p>
+      <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-700 rounded-xl shadow-lg p-0 mb-8">
+        {/* Padrão de fundo */}
+        <div className="absolute inset-0 opacity-10">
+          <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs>
+              <pattern id="grid" width="8" height="8" patternUnits="userSpaceOnUse">
+                <path d="M 8 0 L 0 0 0 8" fill="none" stroke="white" strokeWidth="0.5" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+          </svg>
         </div>
-          <div className="flex mt-4 md:mt-0 space-x-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleShareCode}
-            >
-              <Share2 className="h-4 w-4 mr-2" />
-              Compartilhar
-          </Button>
-          
-          {isAdmin && (
+        
+        {/* Círculos decorativos */}
+        <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-purple-500 opacity-20"></div>
+        <div className="absolute -bottom-12 -left-12 w-60 h-60 rounded-full bg-indigo-500 opacity-20"></div>
+        
+        <div className="relative z-10">
+          {/* Conteúdo superior */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 pb-0">
+            <div className="flex items-center gap-4">
+              <div className="bg-white p-3 rounded-xl shadow-md transform transition-transform hover:scale-105">
+                <School className="h-8 w-8 text-purple-600" />
+              </div>
+              <div>
+                <div className="flex items-center">
+                  <h1 className="text-2xl md:text-3xl font-bold text-white">{faculty?.name}</h1>
+                  {faculty?.is_public ? (
+                    <Badge className="ml-2 bg-emerald-400/20 text-emerald-100 border-none">
+                      Público
+                    </Badge>
+                  ) : (
+                    <Badge className="ml-2 bg-amber-400/20 text-amber-100 border-none">
+                      Privado
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-purple-100 flex items-center gap-1">
+                  <span>{faculty?.institution}</span>
+                  {faculty?.institution && faculty?.course && (
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-purple-300/70"></span>
+                  )}
+                  <span>{faculty?.course}</span>
+                </p>
+              </div>
+            </div>
+            <div className="flex mt-4 md:mt-0 space-x-2">
               <Button 
-                variant="outline" 
+                variant="secondary" 
                 size="sm"
-                onClick={openManageMembersModal}
+                onClick={handleShareCode}
+                className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm"
               >
-                <Users className="h-4 w-4 mr-2" />
-                Gerenciar Membros
-            </Button>
-          )}
-        </div>
-      </div>
-      
-        <div className="mt-4">
-          <p className="text-gray-700">{faculty.description}</p>
+                <Share2 className="h-4 w-4 mr-2" />
+                Compartilhar
+              </Button>
+              
+              {isAdmin && (
+                <Button 
+                  variant="secondary" 
+                  size="sm"
+                  onClick={openManageMembersModal}
+                  className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm"
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Gerenciar Membros
+                </Button>
+              )}
+            </div>
+          </div>
+          
+          {/* Descrição */}
+          <div className="px-6 pt-4 pb-2">
+            <p className="text-white/90 text-sm md:text-base line-clamp-2 hover:line-clamp-none transition-all duration-300 cursor-pointer">
+              {faculty?.description || "Sem descrição disponível"}
+            </p>
           </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Badge variant="outline" className="bg-blue-50">
-            <Users className="h-3 w-3 mr-1" />
-            {faculty.member_count} {faculty.member_count === 1 ? 'membro' : 'membros'}
-                </Badge>
-          
-          {faculty.semester && (
-            <Badge variant="outline" className="bg-purple-50">
-              <School className="h-3 w-3 mr-1" />
-              {faculty.semester}
-                </Badge>
-          )}
-          
-          <Badge variant="outline" className="bg-green-50">
-            <Calendar className="h-3 w-3 mr-1" />
-            Criado em {new Date(faculty.created_at).toLocaleDateString()}
-                </Badge>
+          {/* Badges */}
+          <div className="px-6 pt-2 pb-6 flex flex-wrap gap-2">
+            <Badge className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm transition-all duration-200 hover:scale-105">
+              <Users className="h-3 w-3 mr-1" />
+              {faculty?.member_count || 0} {faculty?.member_count === 1 ? 'membro' : 'membros'}
+            </Badge>
+            
+            {faculty?.semester && (
+              <Badge className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm transition-all duration-200 hover:scale-105">
+                <School className="h-3 w-3 mr-1" />
+                {faculty.semester}
+              </Badge>
+            )}
+            
+            <Badge className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm transition-all duration-200 hover:scale-105">
+              <Calendar className="h-3 w-3 mr-1" />
+              {faculty ? `Criado em ${new Date(faculty.created_at).toLocaleDateString()}` : "Data desconhecida"}
+            </Badge>
+          </div>
         </div>
       </div>
 
@@ -986,31 +982,39 @@ export default function FacultyDetailsPage() {
         {/* Conteúdo principal */}
         <div className="w-full md:w-2/3">
           {/* Tabs de navegação */}
-          <FacultyTabMenu activeTab={activeTab} onChange={setActiveTab} />
+          <FacultyTabMenu activeTab={activeTab} onChange={(tab) => {
+            setActiveTab(tab);
+            // Reset pagination when switching to feed tab
+            if (tab === 'feed' && faculty) {
+              setPostsPage(0);
+              setPosts([]);
+              loadPosts(faculty.id, true);
+            }
+          }} />
           
           {/* Conteúdo do Feed */}
           {activeTab === 'feed' && (
             <div className="space-y-4">
               {/* Criar post */}
-              <Card>
+              <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
                 <CardContent className="pt-6">
                   <form onSubmit={handleCreatePost}>
                     <div className="flex gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                      <Avatar className="h-10 w-10 border-2 border-purple-100">
+                        <AvatarFallback className="bg-purple-50 text-purple-700">{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
                         <Input
                           placeholder="Título (opcional)"
                           value={postTitle}
                           onChange={(e) => setPostTitle(e.target.value)}
-                          className="mb-3"
+                          className="mb-3 border-gray-200 focus:border-purple-500 focus:ring-purple-500"
                         />
                         <Input
                           placeholder="Compartilhe uma novidade, dúvida ou material..."
                           value={postContent}
                           onChange={(e) => setPostContent(e.target.value)}
-                          className="mb-3"
+                          className="mb-3 border-gray-200 focus:border-purple-500 focus:ring-purple-500"
                         />
                         <div className="flex justify-between items-center">
                           <div className="flex gap-2">
@@ -1019,6 +1023,7 @@ export default function FacultyDetailsPage() {
                               size="sm" 
                               variant="outline"
                               onClick={() => setShowLinkInput(true)}
+                              className="border-gray-200 hover:bg-purple-50 hover:text-purple-700"
                             >
                               <FileText className="h-4 w-4 mr-2" />
                               Link
@@ -1028,6 +1033,7 @@ export default function FacultyDetailsPage() {
                             type="submit" 
                             size="sm" 
                             disabled={!postContent.trim() || isSubmittingPost}
+                            className="bg-purple-600 hover:bg-purple-700"
                           >
                             {isSubmittingPost ? <Spinner size="sm" className="mr-2" /> : null}
                             Publicar
@@ -1117,6 +1123,24 @@ export default function FacultyDetailsPage() {
                       onLike={() => handleLikePost(post.id)}
                     />
                   ))}
+                  
+                  {hasMorePosts && (
+                    <div className="flex justify-center pt-4 pb-6">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => loadPosts(faculty?.id || 0)}
+                        disabled={isLoadingPosts}
+                        className="w-full max-w-xs"
+                      >
+                        {isLoadingPosts ? (
+                          <Spinner size="sm" className="mr-2" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                        )}
+                        Carregar mais
+                      </Button>
+                    </div>
+                  )}
                     </div>
               )}
             </div>
@@ -1573,20 +1597,16 @@ export default function FacultyDetailsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {faculty && fakeEvents.map(event => (
-                  <div key={event.id} className="flex items-start gap-3 p-2 rounded-md hover:bg-muted">
-                    <div className="bg-blue-100 text-blue-800 rounded-md p-2 text-center min-w-[3rem]">
-                      <div className="text-xs font-medium">{event.date.split('-')[1]}/{event.date.split('-')[2]}</div>
-                      <div className="text-sm">{event.time}</div>
-                </div>
-                    <div>
-                      <p className="font-medium">{event.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(event.date).toLocaleDateString('pt-BR', { weekday: 'long' })}
-                      </p>
-                </div>
-                </div>
-                ))}
+                {faculty ? (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground">Nenhum evento agendado</p>
+                    <p className="text-xs text-muted-foreground mt-1">Use o botão "Novo" para adicionar eventos</p>
+                  </div>
+                ) : (
+                  <div className="flex justify-center py-4">
+                    <Spinner size="sm" />
+                  </div>
+                )}
               </div>
             </CardContent>
             <CardFooter className="pt-0">
