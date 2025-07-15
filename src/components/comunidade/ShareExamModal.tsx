@@ -66,8 +66,21 @@ export function ShareExamModal({ open, onOpenChange, exam, facultyId, onSuccess 
     }
   }, [exam, setValue]);
 
+  // Verificar se o simulado é público
+  const isExamPublic = exam?.is_public === true;
+
   const onSubmit = async (data: any) => {
     if (!exam || !facultyId) return;
+    
+    // Verificar se o simulado é público
+    if (!isExamPublic) {
+      toast({
+        title: "Simulado privado",
+        description: "Apenas simulados públicos podem ser compartilhados com a faculdade. Por favor, altere a visibilidade do simulado para público antes de compartilhar.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     // Determinar qual disciplina usar baseado no tipo selecionado
     const finalDisciplina = disciplinaType === 'custom' ? disciplina : 
@@ -123,6 +136,25 @@ export function ShareExamModal({ open, onOpenChange, exam, facultyId, onSuccess 
           </DialogDescription>
         </DialogHeader>
         
+        {/* Aviso para simulados privados */}
+        {!isExamPublic && (
+          <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-amber-800">Simulado privado</h3>
+                <div className="mt-1 text-sm text-amber-700">
+                  <p>Este simulado está definido como privado e não pode ser compartilhado. Para compartilhar, você precisa primeiro alterar a visibilidade do simulado para público nas configurações do simulado.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
           <div className="space-y-2">
             <Label htmlFor="title">Título</Label>
@@ -130,6 +162,7 @@ export function ShareExamModal({ open, onOpenChange, exam, facultyId, onSuccess 
               id="title"
               {...register('title', { required: 'O título é obrigatório' })}
               placeholder="Título do simulado"
+              disabled={!isExamPublic}
             />
             {errors.title && (
               <p className="text-sm text-red-500">{errors.title.message}</p>
@@ -143,6 +176,7 @@ export function ShareExamModal({ open, onOpenChange, exam, facultyId, onSuccess 
               {...register('description')}
               placeholder="Descreva brevemente o conteúdo deste simulado"
               rows={3}
+              disabled={!isExamPublic}
             />
           </div>
           
@@ -152,6 +186,7 @@ export function ShareExamModal({ open, onOpenChange, exam, facultyId, onSuccess 
               id="category"
               {...register('category')}
               placeholder="Ex: Prova, Revisão, Residência"
+              disabled={!isExamPublic}
             />
           </div>
           
@@ -172,6 +207,7 @@ export function ShareExamModal({ open, onOpenChange, exam, facultyId, onSuccess 
                     setDisciplina('');
                   }
                 }}
+                disabled={!isExamPublic}
               >
                 <SelectTrigger id="disciplina-type">
                   <SelectValue placeholder="Tipo de disciplina" />
@@ -194,6 +230,7 @@ export function ShareExamModal({ open, onOpenChange, exam, facultyId, onSuccess 
                     <Select 
                       value={disciplina} 
                       onValueChange={setDisciplina}
+                      disabled={!isExamPublic}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione uma disciplina" />
@@ -221,7 +258,7 @@ export function ShareExamModal({ open, onOpenChange, exam, facultyId, onSuccess 
                   value={disciplina}
                   onChange={(e) => setDisciplina(e.target.value)}
                   placeholder="Digite o nome da disciplina"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !isExamPublic}
                 />
               )}
             </div>
@@ -231,6 +268,7 @@ export function ShareExamModal({ open, onOpenChange, exam, facultyId, onSuccess 
               <Select 
                 value={periodo} 
                 onValueChange={setPeriodo}
+                disabled={!isExamPublic}
               >
                 <SelectTrigger id="periodo" className="w-full">
                   <SelectValue placeholder="Selecione" />
@@ -251,12 +289,21 @@ export function ShareExamModal({ open, onOpenChange, exam, facultyId, onSuccess 
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? <Spinner size="sm" /> : 'Compartilhar'}
+            <Button 
+              type="submit" 
+              disabled={isSubmitting || !isExamPublic}
+            >
+              {isSubmitting ? (
+                <>
+                  <Spinner size="sm" className="mr-2" />
+                  Compartilhando...
+                </>
+              ) : (
+                'Compartilhar'
+              )}
             </Button>
           </DialogFooter>
         </form>

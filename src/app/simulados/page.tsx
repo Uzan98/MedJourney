@@ -27,6 +27,7 @@ export default function SimuladosPage() {
   const [loading, setLoading] = useState(true);
   const [myExams, setMyExams] = useState<Exam[]>([]);
   const [publicExams, setPublicExams] = useState<Exam[]>([]);
+  // Sempre manter como true para mostrar apenas Meus Simulados
   const [showMyExams, setShowMyExams] = useState(true);
   const [deleteExamId, setDeleteExamId] = useState<number | null>(null);
   const [showExamInfo, setShowExamInfo] = useState<Exam | null>(null);
@@ -225,33 +226,16 @@ export default function SimuladosPage() {
       {/* Tabs */}
       <div className="flex border-b border-gray-200 mb-6">
         <button
-          className={`py-3 px-6 font-medium ${
-            showMyExams
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => setShowMyExams(true)}
+          className="py-3 px-6 font-medium text-blue-600 border-b-2 border-blue-600"
         >
           Meus Simulados
         </button>
-        <button
-          className={`py-3 px-6 font-medium ${
-            !showMyExams
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => {
-            setShowMyExams(false);
-            console.log('Mudou para aba de Simulados Públicos. Quantidade:', publicExams.length);
-          }}
-        >
-          Simulados Públicos
-        </button>
+        {/* Botão de Simulados Públicos removido temporariamente */}
       </div>
       
-      {/* Barra de pesquisa e filtros (apenas para simulados públicos) */}
+      {/* Barra de pesquisa e filtros (apenas para simulados públicos) - mantido mas oculto */}
       {!showMyExams && (
-        <div className="mb-6">
+        <div className="mb-6 hidden">
           <div className="flex flex-col md:flex-row gap-4 mb-4">
             <div className="flex-1">
               <div className="relative">

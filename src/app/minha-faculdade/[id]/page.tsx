@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { FacultyService } from '@/services/faculty.service';
+import { ExamsService } from '@/services/exams.service';
 import { Faculty, FacultyMember, FacultyPost, ForumTopic, FacultyMaterial, ForumReply, FacultyExam } from '@/types/faculty';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -29,7 +30,6 @@ import { supabase } from '@/lib/supabase';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ExamsService } from '@/services/exams.service';
 import { FacultyTabMenu } from '@/components/comunidade/FacultyTabMenu';
 
 export default function FacultyDetailsPage() {
@@ -225,7 +225,7 @@ export default function FacultyDetailsPage() {
       const examsData = await FacultyService.getFacultyExams(facultyId);
       setExams(examsData);
     } catch (error) {
-      console.error('Erro ao carregar exames:', error);
+      console.error('Erro ao carregar simulados:', error);
       toast({
         title: "Erro ao carregar simulados",
         description: "Não foi possível carregar os simulados compartilhados.",
@@ -247,8 +247,29 @@ export default function FacultyDetailsPage() {
       return;
     }
     
-    // Redirecionar para a página do simulado
-    router.push(`/simulados/${exam.external_exam_id}`);
+    try {
+      // Verificar se o simulado existe
+      const examDetails = await ExamsService.getExamById(exam.external_exam_id);
+      
+      if (!examDetails) {
+        toast({
+          title: "Simulado não encontrado",
+          description: "O simulado compartilhado não foi encontrado ou pode ter sido excluído.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Redirecionar para a página do simulado
+      router.push(`/simulados/${exam.external_exam_id}`);
+    } catch (error) {
+      console.error("Erro ao abrir simulado:", error);
+      toast({
+        title: "Erro ao abrir simulado",
+        description: "Não foi possível abrir o simulado. Tente novamente mais tarde.",
+        variant: "destructive"
+      });
+    }
   };
 
   useEffect(() => {
@@ -347,13 +368,38 @@ export default function FacultyDetailsPage() {
                 })
               );
             } else if (payload.eventType === 'INSERT') {
-              // Se for um novo post, buscar apenas esse post específico
-              FacultyService.getFacultyPosts(facultyId, 1, 0)
-                .then(newPosts => {
-                  if (newPosts.length > 0) {
-                    setPosts(prevPosts => [newPosts[0], ...prevPosts]);
-                  }
-                });
+              // Verificar se o post já existe no estado antes de adicioná-lo
+              const newPostId = payload.new.id;
+              
+              setPosts(prevPosts => {
+                // Verificar se o post já existe no estado
+                if (prevPosts.some(post => post.id === newPostId)) {
+                  console.log('Post já existe no estado, ignorando evento Realtime');
+                  return prevPosts;
+                }
+                
+                console.log('Buscando detalhes do novo post via Realtime');
+                // Se o post não existe, buscar detalhes completos
+                FacultyService.getFacultyPosts(facultyId, 1, 0, newPostId)
+                  .then(newPosts => {
+                    if (newPosts && newPosts.length > 0) {
+                      setPosts(currentPosts => {
+                        // Verificar novamente se o post já foi adicionado
+                        if (currentPosts.some(post => post.id === newPostId)) {
+                          return currentPosts;
+                        }
+                        console.log('Adicionando novo post via Realtime:', newPosts[0]);
+                        return [newPosts[0], ...currentPosts];
+                      });
+                    }
+                  })
+                  .catch(error => {
+                    console.error('Erro ao buscar detalhes do novo post:', error);
+                  });
+                
+                // Retornar o estado atual sem modificações
+                return prevPosts;
+              });
             } else if (payload.eventType === 'DELETE') {
               // Remover o post deletado
               setPosts(prevPosts => 
@@ -647,49 +693,11 @@ export default function FacultyDetailsPage() {
   }
 
   const handleShareCode = () => {
-    if (!faculty?.code) {
-      toast({
-        title: "Erro",
-        description: "Código do ambiente não disponível.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    try {
-      if (navigator?.clipboard) {
-        navigator.clipboard.writeText(faculty.code)
-          .then(() => {
-            toast({
-              title: "Código copiado",
-              description: "Código do ambiente copiado para a área de transferência!",
-            });
-          })
-          .catch((err) => {
-            console.error('Erro ao copiar para a área de transferência:', err);
-            // Fallback para mostrar o código para o usuário copiar manualmente
-            toast({
-              title: "Não foi possível copiar automaticamente",
-              description: `Copie o código manualmente: ${faculty.code}`,
-              duration: 5000,
-            });
-          });
-      } else {
-        // Fallback para navegadores sem suporte a clipboard API
-        toast({
-          title: "Código do ambiente",
-          description: `Copie o código manualmente: ${faculty.code}`,
-          duration: 5000,
-        });
-      }
-    } catch (error) {
-      console.error('Erro ao tentar copiar código:', error);
-      toast({
-        title: "Código do ambiente",
-        description: `Copie o código manualmente: ${faculty.code}`,
-        duration: 5000,
-      });
-    }
+    navigator.clipboard.writeText(faculty.code);
+    toast({
+      title: "Código copiado",
+      description: "Código do ambiente copiado para a área de transferência!",
+    });
   };
 
   const openManageMembersModal = () => {
@@ -791,10 +799,21 @@ export default function FacultyDetailsPage() {
         setPostContent('');
         setPostTitle('');
         
-        // Buscar apenas o novo post
-        const newPost = await FacultyService.getFacultyPosts(faculty.id, 1, 0);
-        if (newPost && newPost.length > 0) {
-          setPosts(prevPosts => [newPost[0], ...prevPosts]);
+        // Buscar o post recém-criado e adicioná-lo ao estado
+        try {
+          const newPost = await FacultyService.getFacultyPosts(faculty.id, 1, 0, postId);
+          if (newPost && newPost.length > 0) {
+            // Adicionar o novo post ao início da lista
+            setPosts(prevPosts => {
+              // Verificar se o post já existe para evitar duplicação
+              if (prevPosts.some(p => p.id === postId)) {
+                return prevPosts;
+              }
+              return [newPost[0], ...prevPosts];
+            });
+          }
+        } catch (fetchError) {
+          console.error('Erro ao buscar o novo post:', fetchError);
         }
         
         toast({
@@ -996,54 +1015,115 @@ export default function FacultyDetailsPage() {
           {activeTab === 'feed' && (
             <div className="space-y-4">
               {/* Criar post */}
-              <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                <CardContent className="pt-6">
-                  <form onSubmit={handleCreatePost}>
-                    <div className="flex gap-3">
-                      <Avatar className="h-10 w-10 border-2 border-purple-100">
-                        <AvatarFallback className="bg-purple-50 text-purple-700">{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <Input
-                          placeholder="Título (opcional)"
-                          value={postTitle}
-                          onChange={(e) => setPostTitle(e.target.value)}
-                          className="mb-3 border-gray-200 focus:border-purple-500 focus:ring-purple-500"
-                        />
-                        <Input
-                          placeholder="Compartilhe uma novidade, dúvida ou material..."
-                          value={postContent}
-                          onChange={(e) => setPostContent(e.target.value)}
-                          className="mb-3 border-gray-200 focus:border-purple-500 focus:ring-purple-500"
-                        />
-                        <div className="flex justify-between items-center">
-                          <div className="flex gap-2">
-                            <Button 
-                              type="button" 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => setShowLinkInput(true)}
-                              className="border-gray-200 hover:bg-purple-50 hover:text-purple-700"
-                            >
-                              <FileText className="h-4 w-4 mr-2" />
-                              Link
-                            </Button>
+              <div className="rounded-lg overflow-hidden shadow-sm border border-gray-100">
+                <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4 text-white">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-xl font-semibold flex items-center">
+                      <MessageSquare className="h-5 w-5 mr-2 text-white" />
+                      Feed da Faculdade
+                    </h2>
+                    
+                    <Badge className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm">
+                      {posts.length} {posts.length === 1 ? 'publicação' : 'publicações'}
+                    </Badge>
+                  </div>
+                  
+                  <p className="text-sm text-white/80 mt-1">
+                    Compartilhe informações, materiais e novidades com os membros da faculdade.
+                  </p>
+                </div>
+                
+                <div className="bg-white p-6">
+                  <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow mb-6">
+                    <CardContent className="pt-6">
+                      <form onSubmit={handleCreatePost}>
+                        <div className="flex gap-3">
+                          <Avatar className="h-10 w-10 border-2 border-purple-100">
+                            <AvatarFallback className="bg-purple-50 text-purple-700">{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <Input
+                              placeholder="Título (opcional)"
+                              value={postTitle}
+                              onChange={(e) => setPostTitle(e.target.value)}
+                              className="mb-3 border-gray-200 focus:border-purple-500 focus:ring-purple-500"
+                            />
+                            <Input
+                              placeholder="Compartilhe uma novidade, dúvida ou material..."
+                              value={postContent}
+                              onChange={(e) => setPostContent(e.target.value)}
+                              className="mb-3 border-gray-200 focus:border-purple-500 focus:ring-purple-500"
+                            />
+                            <div className="flex justify-between items-center">
+                              <div className="flex gap-2">
+                                <Button 
+                                  type="button" 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => setShowLinkInput(true)}
+                                  className="border-gray-200 hover:bg-purple-50 hover:text-purple-700"
+                                >
+                                  <FileText className="h-4 w-4 mr-2" />
+                                  Link
+                                </Button>
+                              </div>
+                              <Button 
+                                type="submit" 
+                                size="sm" 
+                                disabled={!postContent.trim() || isSubmittingPost}
+                                className="bg-purple-600 hover:bg-purple-700"
+                              >
+                                {isSubmittingPost ? <Spinner size="sm" className="mr-2" /> : null}
+                                Publicar
+                              </Button>
+                            </div>
                           </div>
+                        </div>
+                      </form>
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Feed de posts */}
+                  {isLoadingPosts ? (
+                    <div className="flex justify-center py-8">
+                      <Spinner size="lg" />
+                    </div>
+                  ) : posts.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">Nenhum post encontrado</p>
+                      <p className="text-sm text-muted-foreground mt-2">Seja o primeiro a compartilhar algo!</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {posts.map((post) => (
+                        <PostCommentSection 
+                          key={post.id}
+                          post={post}
+                          onLike={() => handleLikePost(post.id)}
+                        />
+                      ))}
+                      
+                      {hasMorePosts && (
+                        <div className="flex justify-center pt-4 pb-6">
                           <Button 
-                            type="submit" 
-                            size="sm" 
-                            disabled={!postContent.trim() || isSubmittingPost}
-                            className="bg-purple-600 hover:bg-purple-700"
+                            variant="outline" 
+                            onClick={() => loadPosts(faculty?.id || 0)}
+                            disabled={isLoadingPosts}
+                            className="w-full max-w-xs"
                           >
-                            {isSubmittingPost ? <Spinner size="sm" className="mr-2" /> : null}
-                            Publicar
+                            {isLoadingPosts ? (
+                              <Spinner size="sm" className="mr-2" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4 mr-2" />
+                            )}
+                            Carregar mais
                           </Button>
                         </div>
-                      </div>
+                      )}
                     </div>
-                  </form>
-                </CardContent>
-              </Card>
+                  )}
+                </div>
+              </div>
               
               {/* Modal para inserção de link */}
               {showLinkInput && (
@@ -1103,63 +1183,36 @@ export default function FacultyDetailsPage() {
                   </div>
                 </div>
               )}
-              
-              {/* Feed de posts */}
-              {isLoadingPosts ? (
-                    <div className="flex justify-center py-8">
-                      <Spinner size="lg" />
-                </div>
-              ) : posts.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">Nenhum post encontrado</p>
-                  <p className="text-sm text-muted-foreground mt-2">Seja o primeiro a compartilhar algo!</p>
-                  </div>
-                  ) : (
-                <div className="space-y-4">
-                  {posts.map((post) => (
-                      <PostCommentSection 
-                      key={post.id}
-                      post={post}
-                      onLike={() => handleLikePost(post.id)}
-                    />
-                  ))}
-                  
-                  {hasMorePosts && (
-                    <div className="flex justify-center pt-4 pb-6">
-                      <Button 
-                        variant="outline" 
-                        onClick={() => loadPosts(faculty?.id || 0)}
-                        disabled={isLoadingPosts}
-                        className="w-full max-w-xs"
-                      >
-                        {isLoadingPosts ? (
-                          <Spinner size="sm" className="mr-2" />
-                        ) : (
-                          <RefreshCw className="h-4 w-4 mr-2" />
-                        )}
-                        Carregar mais
-                      </Button>
-                    </div>
-                  )}
-                    </div>
-              )}
             </div>
           )}
           
           {/* Conteúdo do Fórum */}
           {activeTab === 'forum' && (
             <div className="space-y-4">
-              <Card>
-                <CardHeader>
+              <div className="rounded-lg overflow-hidden shadow-sm border border-gray-100">
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 text-white">
                   <div className="flex justify-between items-center">
-                    <CardTitle>Fórum de Discussão</CardTitle>
-                    <Button size="sm" onClick={openCreateTopicModal}>
+                    <h2 className="text-xl font-semibold flex items-center">
+                      <MessageSquare className="h-5 w-5 mr-2 text-white" />
+                      Fórum de Discussão
+                    </h2>
+                    
+                    <Button 
+                      size="sm" 
+                      onClick={openCreateTopicModal}
+                      className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-none"
+                    >
                       <Plus className="mr-2 h-4 w-4" />
                       Nova Discussão
                     </Button>
                   </div>
-                </CardHeader>
-                <CardContent>
+                  
+                  <p className="text-sm text-white/80 mt-1">
+                    Compartilhe dúvidas e discuta tópicos acadêmicos com outros membros.
+                  </p>
+                </div>
+                
+                <div className="bg-white p-6">
                   {selectedTopic ? (
                     <div>
                       {/* Detalhes do tópico selecionado */}
@@ -1241,26 +1294,24 @@ export default function FacultyDetailsPage() {
                         </div>
                       </div>
                       
-                      <Separator className="my-6" />
-                      
-                      {/* Respostas */}
-                      <div>
-                        <h3 className="text-lg font-medium mb-4">Respostas ({selectedTopicReplies.length})</h3>
+                      {/* Respostas do tópico */}
+                      <div className="space-y-6 mt-8">
+                        <h3 className="text-lg font-semibold">Respostas</h3>
                         
                         {isLoadingTopicReplies ? (
                           <div className="flex justify-center py-8">
                             <Spinner size="lg" />
                           </div>
                         ) : selectedTopicReplies.length === 0 ? (
-                          <div className="text-center py-8">
+                          <div className="text-center py-8 bg-gray-50 rounded-lg">
                             <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground" />
                             <h3 className="mt-4 text-lg font-medium">Nenhuma resposta ainda</h3>
                             <p className="text-muted-foreground mt-2">
-                              Seja o primeiro a responder este tópico
+                              Seja o primeiro a responder esta discussão
                             </p>
                           </div>
                         ) : (
-                          <div className="space-y-6">
+                          <div className="space-y-4">
                             {selectedTopicReplies.map(reply => (
                               <div 
                                 key={reply.id} 
@@ -1275,66 +1326,75 @@ export default function FacultyDetailsPage() {
                                       </AvatarFallback>
                                     </Avatar>
                                     <div>
-                                      <div className="flex items-center">
-                                        <p className="font-medium">{reply.user?.name || 'Usuário'}</p>
-                                        {reply.user?.role === 'admin' && (
-                                          <Badge variant="secondary" className="ml-2 text-xs">Admin</Badge>
-                                        )}
-                                        {reply.is_solution && (
-                                          <Badge variant="outline" className="ml-2 bg-green-100 text-green-800 border-green-200">
-                                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                                            Solução
-                                          </Badge>
-                                        )}
-                                      </div>
+                                      <p className="font-medium">{reply.user?.name || 'Usuário'}</p>
                                       <p className="text-xs text-muted-foreground">
                                         {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true, locale: ptBR })}
                                       </p>
                                     </div>
                                   </div>
                                   
-                                  {(user?.id === selectedTopic.user_id || isAdmin) && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleMarkAsSolution(reply.id, !reply.is_solution)}
-                                    >
-                                      {reply.is_solution ? 'Remover solução' : 'Marcar como solução'}
-                                    </Button>
+                                  {reply.is_solution && (
+                                    <Badge variant="outline" className="bg-green-100 text-green-800">
+                                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      Solução
+                                    </Badge>
                                   )}
                                 </div>
                                 
-                                <div className="prose max-w-none mt-3">
-                                  <p className="whitespace-pre-wrap">{reply.content}</p>
+                                <div className="mt-3 whitespace-pre-wrap">
+                                  {reply.content}
                                 </div>
                                 
-                                <div className="flex justify-end mt-3">
+                                <div className="flex justify-between items-center mt-4 pt-2 border-t border-gray-100">
                                   <div className="flex items-center gap-2">
                                     <Button 
                                       variant="ghost" 
                                       size="sm"
+                                      className={reply.user_vote === 1 ? "text-blue-600" : ""}
                                       onClick={() => FacultyService.voteForumItem(null, reply.id, 1)}
                                     >
                                       <ThumbsUp className="h-4 w-4 mr-1" />
-                                      {reply.votes_count > 0 ? reply.votes_count : ''}
+                                      {reply.votes_count || ''}
                                     </Button>
                                     <Button 
                                       variant="ghost" 
                                       size="sm"
+                                      className={reply.user_vote === -1 ? "text-red-600" : ""}
                                       onClick={() => FacultyService.voteForumItem(null, reply.id, -1)}
                                     >
                                       <ThumbsDown className="h-4 w-4" />
                                     </Button>
                                   </div>
+                                  
+                                  {(isAdmin || selectedTopic.user_id === user?.id) && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleMarkAsSolution(reply.id, !reply.is_solution)}
+                                      className={reply.is_solution ? "bg-green-50 text-green-700" : ""}
+                                    >
+                                      {reply.is_solution ? (
+                                        <>
+                                          <CheckCircle2 className="h-4 w-4 mr-1" />
+                                          Remover solução
+                                        </>
+                                      ) : (
+                                        <>
+                                          <CheckCircle2 className="h-4 w-4 mr-1" />
+                                          Marcar como solução
+                                        </>
+                                      )}
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
                             ))}
                           </div>
                         )}
                         
-                        {/* Formulário para responder */}
-                        <div className="mt-6">
-                          <h3 className="text-lg font-medium mb-3">Sua resposta</h3>
+                        {/* Formulário de resposta */}
+                        <div className="mt-8 bg-gray-50 p-4 rounded-lg">
+                          <h3 className="text-lg font-semibold mb-4">Sua resposta</h3>
                           <form onSubmit={handleSubmitReply}>
                             <Textarea
                               placeholder="Escreva sua resposta aqui..."
@@ -1346,6 +1406,7 @@ export default function FacultyDetailsPage() {
                               <Button 
                                 type="submit" 
                                 disabled={isSubmittingReply || !replyContent.trim()}
+                                className="bg-blue-600 hover:bg-blue-700"
                               >
                                 {isSubmittingReply ? <Spinner size="sm" className="mr-2" /> : null}
                                 Enviar resposta
@@ -1390,13 +1451,20 @@ export default function FacultyDetailsPage() {
                           <Spinner size="lg" />
                         </div>
                       ) : forumTopics.length === 0 ? (
-                  <div className="text-center py-8">
-                    <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <h3 className="mt-4 text-lg font-medium">Nenhuma discussão iniciada</h3>
-                    <p className="text-muted-foreground mt-2">
-                      Inicie uma discussão para tirar dúvidas com seus colegas
-                    </p>
-                  </div>
+                        <div className="text-center py-8 bg-gray-50 rounded-lg">
+                          <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground" />
+                          <h3 className="mt-4 text-lg font-medium">Nenhuma discussão iniciada</h3>
+                          <p className="text-muted-foreground mt-2">
+                            Inicie uma discussão para tirar dúvidas com seus colegas
+                          </p>
+                          <Button 
+                            className="mt-4 bg-blue-600 hover:bg-blue-700" 
+                            onClick={openCreateTopicModal}
+                          >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Nova Discussão
+                          </Button>
+                        </div>
                       ) : (
                         <div className="space-y-3">
                           {forumTopics.map(topic => (
@@ -1448,36 +1516,50 @@ export default function FacultyDetailsPage() {
                       )}
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
           )}
           
           {/* Conteúdo de Materiais */}
           {activeTab === 'materials' && (
             <div className="space-y-4">
-              <Card>
-                <CardHeader>
+              <div className="rounded-lg overflow-hidden shadow-sm border border-gray-100">
+                <div className="bg-gradient-to-r from-green-600 to-teal-600 px-6 py-4 text-white">
                   <div className="flex justify-between items-center">
-                    <CardTitle>Materiais de Estudo</CardTitle>
+                    <h2 className="text-xl font-semibold flex items-center">
+                      <FileText className="h-5 w-5 mr-2 text-white" />
+                      Materiais de Estudo
+                    </h2>
+                    
                     <div className="flex gap-2">
                       <Button 
                         size="sm" 
                         variant="outline"
                         onClick={() => loadMaterials(faculty.id)}
                         disabled={isLoadingMaterials}
+                        className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-none"
                       >
                         {isLoadingMaterials ? <Spinner size="sm" /> : <RefreshCw className="h-4 w-4" />}
                         <span className="ml-2 hidden sm:inline">Atualizar</span>
                       </Button>
-                      <Button size="sm" onClick={openUploadMaterialModal}>
+                      <Button 
+                        size="sm" 
+                        onClick={openUploadMaterialModal}
+                        className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-none"
+                      >
                         <Plus className="mr-2 h-4 w-4" />
                         Adicionar Material
                       </Button>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
+                  
+                  <p className="text-sm text-white/80 mt-1">
+                    Compartilhe e acesse materiais de estudo para as disciplinas da faculdade.
+                  </p>
+                </div>
+                
+                <div className="bg-white p-6">
                   {isLoadingMaterials ? (
                     <div className="flex justify-center py-8">
                       <Spinner size="lg" />
@@ -1488,31 +1570,39 @@ export default function FacultyDetailsPage() {
                       isAdmin={isAdmin || isOwner}
                     />
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
           )}
           
           {/* Conteúdo de Simulados */}
           {activeTab === 'exams' && (
             <div className="space-y-4">
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold flex items-center">
-                    <FileQuestion className="h-5 w-5 mr-2 text-blue-600" />
-                    Simulados Compartilhados
-                  </h2>
-                  
-                  <div className="text-sm text-gray-500">
-                    {exams.length} {exams.length === 1 ? 'simulado' : 'simulados'}
+              <div className="rounded-lg overflow-hidden shadow-sm border border-gray-100">
+                <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4 text-white">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-xl font-semibold flex items-center">
+                      <FileQuestion className="h-5 w-5 mr-2 text-white" />
+                      Simulados Compartilhados
+                    </h2>
+                    
+                    <Badge className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm">
+                      {exams.length} {exams.length === 1 ? 'simulado' : 'simulados'}
+                    </Badge>
                   </div>
+                  
+                  <p className="text-sm text-white/80 mt-1">
+                    Simulados compartilhados pelos membros da faculdade para prática e estudo.
+                  </p>
                 </div>
                 
-                <ExamsList 
-                  exams={exams}
-                  isLoading={isLoadingExams}
-                  onOpenExam={handleOpenExam}
-                />
+                <div className="bg-white p-6">
+                  <ExamsList 
+                    exams={exams}
+                    isLoading={isLoadingExams}
+                    onOpenExam={handleOpenExam}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -1520,21 +1610,32 @@ export default function FacultyDetailsPage() {
           {/* Conteúdo de Membros */}
           {activeTab === 'members' && (
             <div className="space-y-4">
-              <Card>
-                <CardHeader className="pb-3">
+              <div className="rounded-lg overflow-hidden shadow-sm border border-gray-100">
+                <div className="bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-4 text-white">
                   <div className="flex justify-between items-center">
-                    <CardTitle className="text-lg flex items-center">
-                      <Users className="h-5 w-5 mr-2 text-blue-500" />
+                    <h2 className="text-xl font-semibold flex items-center">
+                      <Users className="h-5 w-5 mr-2 text-white" />
                       Membros
-                    </CardTitle>
+                    </h2>
+                    
                     {isAdmin && (
-                      <Button variant="ghost" size="sm" onClick={openManageMembersModal}>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={openManageMembersModal}
+                        className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-none"
+                      >
                         Gerenciar
                       </Button>
                     )}
                   </div>
-                </CardHeader>
-                <CardContent>
+                  
+                  <p className="text-sm text-white/80 mt-1">
+                    {faculty?.member_count || 0} {faculty?.member_count === 1 ? 'membro' : 'membros'} participando neste ambiente.
+                  </p>
+                </div>
+                
+                <div className="bg-white p-6">
                   <div className="space-y-3">
                     {members.length > 0 ? (
                       members.slice(0, 5).map((member) => {
@@ -1545,36 +1646,44 @@ export default function FacultyDetailsPage() {
                         return (
                           <div key={member.user_id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
                             <div className="flex items-center">
-                              <Avatar className={`h-8 w-8 mr-2 ${isAdmin ? 'border-2 border-blue-500' : ''}`}>
+                              <Avatar className={`h-10 w-10 mr-3 ${isAdmin ? 'ring-2 ring-amber-500 border-2 border-white' : ''}`}>
                                 <AvatarImage src={member.user?.avatar_url} />
-                                <AvatarFallback className={isAdmin ? 'bg-blue-100 text-blue-800' : ''}>
+                                <AvatarFallback className={isAdmin ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' : 'bg-gray-100'}>
                                   {userInitial}
                                 </AvatarFallback>
                               </Avatar>
                               <div>
-                                <p className="text-sm font-medium">{userName}</p>
+                                <p className="font-medium">{userName}</p>
                                 <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
                               </div>
                             </div>
                             {isAdmin && (
-                              <Badge variant="secondary" className="text-xs">Admin</Badge>
+                              <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200">Admin</Badge>
                             )}
                           </div>
                         );
                       })
                     ) : (
-                      <div className="text-center py-4">
-                        <p className="text-muted-foreground">Nenhum membro encontrado</p>
+                      <div className="text-center py-8 bg-gray-50 rounded-lg">
+                        <Users className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <h3 className="mt-4 text-lg font-medium">Nenhum membro encontrado</h3>
                       </div>
                     )}
                   </div>
-                </CardContent>
-                <CardFooter className="pt-0">
-                  <Button variant="ghost" className="w-full" size="sm" onClick={openManageMembersModal}>
-                    Ver todos ({faculty?.member_count || 0})
-                  </Button>
-                </CardFooter>
-              </Card>
+                  
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      size="sm" 
+                      onClick={openManageMembersModal}
+                    >
+                      <Users className="mr-2 h-4 w-4" />
+                      Ver todos os membros ({faculty?.member_count || 0})
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
