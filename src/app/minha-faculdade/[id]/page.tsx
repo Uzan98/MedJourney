@@ -7,7 +7,6 @@ import { Faculty, FacultyMember, FacultyPost, ForumTopic, FacultyMaterial, Forum
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -17,7 +16,7 @@ import {
   Bell, ThumbsUp, Heart, BookOpen, Calendar, School, 
   MoreHorizontal, Image, Smile, Send, Clock, TrendingUp,
   ArrowLeft, CheckCircle2, Eye, ThumbsDown, RefreshCw,
-  BookCopy, FileQuestion
+  BookCopy, FileQuestion, Activity
 } from 'lucide-react';
 import { ManageMembersModal } from '@/components/comunidade/ManageMembersModal';
 import { PostCommentSection } from '@/components/comunidade/PostCommentSection';
@@ -31,6 +30,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ExamsService } from '@/services/exams.service';
+import { FacultyTabMenu } from '@/components/comunidade/FacultyTabMenu';
 
 export default function FacultyDetailsPage() {
   const params = useParams();
@@ -371,11 +371,11 @@ export default function FacultyDetailsPage() {
             schema: 'public',
             table: 'faculty_comments'
           },
-          (payload) => {
+          (payload: any) => {
             console.log('Mudança em comentários:', payload);
             
             // Atualizar contagem de comentários no post afetado
-            if (payload.eventType === 'INSERT') {
+            if (payload.eventType === 'INSERT' && payload.new && payload.new.post_id) {
               const postId = payload.new.post_id;
               setPosts(prevPosts => 
                 prevPosts.map(post => {
@@ -388,7 +388,7 @@ export default function FacultyDetailsPage() {
                   return post;
                 })
               );
-            } else if (payload.eventType === 'DELETE') {
+            } else if (payload.eventType === 'DELETE' && payload.old && payload.old.post_id) {
               const postId = payload.old.post_id;
               setPosts(prevPosts => 
                 prevPosts.map(post => {
@@ -986,17 +986,11 @@ export default function FacultyDetailsPage() {
         {/* Conteúdo principal */}
         <div className="w-full md:w-2/3">
           {/* Tabs de navegação */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-              <TabsTrigger value="feed">Feed</TabsTrigger>
-              <TabsTrigger value="forum">Fórum</TabsTrigger>
-              <TabsTrigger value="materials">Materiais</TabsTrigger>
-              <TabsTrigger value="exams">Simulados</TabsTrigger>
-              <TabsTrigger value="members">Membros</TabsTrigger>
-            </TabsList>
-            
-            {/* Conteúdo do Feed */}
-            <TabsContent value="feed" className="space-y-4">
+          <FacultyTabMenu activeTab={activeTab} onChange={setActiveTab} />
+          
+          {/* Conteúdo do Feed */}
+          {activeTab === 'feed' && (
+            <div className="space-y-4">
               {/* Criar post */}
               <Card>
                 <CardContent className="pt-6">
@@ -1029,7 +1023,7 @@ export default function FacultyDetailsPage() {
                               <FileText className="h-4 w-4 mr-2" />
                               Link
                             </Button>
-                    </div>
+                          </div>
                           <Button 
                             type="submit" 
                             size="sm" 
@@ -1038,8 +1032,8 @@ export default function FacultyDetailsPage() {
                             {isSubmittingPost ? <Spinner size="sm" className="mr-2" /> : null}
                             Publicar
                           </Button>
-                    </div>
-                    </div>
+                        </div>
+                      </div>
                     </div>
                   </form>
                 </CardContent>
@@ -1125,10 +1119,12 @@ export default function FacultyDetailsPage() {
                   ))}
                     </div>
               )}
-            </TabsContent>
-            
-            {/* Conteúdo do Fórum */}
-            <TabsContent value="forum" className="space-y-4">
+            </div>
+          )}
+          
+          {/* Conteúdo do Fórum */}
+          {activeTab === 'forum' && (
+            <div className="space-y-4">
               <Card>
                 <CardHeader>
                   <div className="flex justify-between items-center">
@@ -1338,24 +1334,32 @@ export default function FacultyDetailsPage() {
                   ) : (
                     <div>
                       {/* Tabs para filtrar por status */}
-                      <Tabs 
-                        defaultValue="all" 
-                        value={forumTab} 
-                        onValueChange={(value) => handleForumTabChange(value as 'all' | 'resolved' | 'unresolved')}
-                        className="mb-4"
-                      >
-                        <TabsList className="grid w-full grid-cols-3">
-                          <TabsTrigger value="all">Todos</TabsTrigger>
-                          <TabsTrigger value="resolved">
-                            <CheckCircle2 className="h-4 w-4 mr-1" />
-                            Resolvidos
-                          </TabsTrigger>
-                          <TabsTrigger value="unresolved">
-                            <MessageSquare className="h-4 w-4 mr-1" />
-                            Não Resolvidos
-                          </TabsTrigger>
-                        </TabsList>
-                      </Tabs>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        <Button
+                          variant={forumTab === 'all' ? 'default' : 'outline'}
+                          onClick={() => handleForumTabChange('all')}
+                          className="flex items-center"
+                        >
+                          <Activity className="h-4 w-4 mr-2" />
+                          Todos
+                        </Button>
+                        <Button
+                          variant={forumTab === 'resolved' ? 'default' : 'outline'}
+                          onClick={() => handleForumTabChange('resolved')}
+                          className="flex items-center"
+                        >
+                          <CheckCircle2 className="h-4 w-4 mr-1" />
+                          Resolvidos
+                        </Button>
+                        <Button
+                          variant={forumTab === 'unresolved' ? 'default' : 'outline'}
+                          onClick={() => handleForumTabChange('unresolved')}
+                          className="flex items-center"
+                        >
+                          <MessageSquare className="h-4 w-4 mr-1" />
+                          Não Resolvidos
+                        </Button>
+                      </div>
                       
                       {isLoadingTopics ? (
                         <div className="flex justify-center py-8">
@@ -1422,48 +1426,52 @@ export default function FacultyDetailsPage() {
                   )}
                 </CardContent>
               </Card>
-            </TabsContent>
-            
-            {/* Conteúdo de Materiais */}
-            <TabsContent value="materials" className="space-y-4">
+            </div>
+          )}
+          
+          {/* Conteúdo de Materiais */}
+          {activeTab === 'materials' && (
+            <div className="space-y-4">
               <Card>
                 <CardHeader>
                   <div className="flex justify-between items-center">
-                <CardTitle>Materiais de Estudo</CardTitle>
-                <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => loadMaterials(faculty.id)}
-                    disabled={isLoadingMaterials}
-                  >
-                    {isLoadingMaterials ? <Spinner size="sm" /> : <RefreshCw className="h-4 w-4" />}
-                    <span className="ml-2 hidden sm:inline">Atualizar</span>
-                  </Button>
-                  <Button size="sm" onClick={openUploadMaterialModal}>
-                      <Plus className="mr-2 h-4 w-4" />
-                  Adicionar Material
-                    </Button>
+                    <CardTitle>Materiais de Estudo</CardTitle>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => loadMaterials(faculty.id)}
+                        disabled={isLoadingMaterials}
+                      >
+                        {isLoadingMaterials ? <Spinner size="sm" /> : <RefreshCw className="h-4 w-4" />}
+                        <span className="ml-2 hidden sm:inline">Atualizar</span>
+                      </Button>
+                      <Button size="sm" onClick={openUploadMaterialModal}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Adicionar Material
+                      </Button>
+                    </div>
                   </div>
-              </div>
                 </CardHeader>
                 <CardContent>
-              {isLoadingMaterials ? (
-                <div className="flex justify-center py-8">
-                  <Spinner size="lg" />
+                  {isLoadingMaterials ? (
+                    <div className="flex justify-center py-8">
+                      <Spinner size="lg" />
                     </div>
                   ) : (
-                <MaterialsList 
-                  facultyId={faculty.id} 
-                  isAdmin={isAdmin || isOwner}
-                />
+                    <MaterialsList 
+                      facultyId={faculty.id} 
+                      isAdmin={isAdmin || isOwner}
+                    />
                   )}
                 </CardContent>
               </Card>
-            </TabsContent>
-            
-            {/* Conteúdo de Simulados */}
-            <TabsContent value="exams" className="space-y-4">
+            </div>
+          )}
+          
+          {/* Conteúdo de Simulados */}
+          {activeTab === 'exams' && (
+            <div className="space-y-4">
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-semibold flex items-center">
@@ -1474,77 +1482,79 @@ export default function FacultyDetailsPage() {
                   <div className="text-sm text-gray-500">
                     {exams.length} {exams.length === 1 ? 'simulado' : 'simulados'}
                   </div>
-                              </div>
+                </div>
                 
                 <ExamsList 
                   exams={exams}
                   isLoading={isLoadingExams}
                   onOpenExam={handleOpenExam}
                 />
-                    </div>
-            </TabsContent>
-                
-            {/* Conteúdo de Membros */}
-            <TabsContent value="members" className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-lg flex items-center">
-                  <Users className="h-5 w-5 mr-2 text-blue-500" />
-                  Membros
-                </CardTitle>
-                {isAdmin && (
-                  <Button variant="ghost" size="sm" onClick={openManageMembersModal}>
-                    Gerenciar
-                  </Button>
-                )}
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {members.length > 0 ? (
-                  members.slice(0, 5).map((member) => {
-                    const userName = member.user?.name || member.user?.email?.split('@')[0] || 'Usuário';
-                    const userInitial = userName.charAt(0).toUpperCase();
-                    const isAdmin = member.role === 'admin';
-                    
-                    return (
-                      <div key={member.user_id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                        <div className="flex items-center">
-                          <Avatar className={`h-8 w-8 mr-2 ${isAdmin ? 'border-2 border-blue-500' : ''}`}>
-                            <AvatarImage src={member.user?.avatar_url} />
-                            <AvatarFallback className={isAdmin ? 'bg-blue-100 text-blue-800' : ''}>
-                              {userInitial}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-sm font-medium">{userName}</p>
-                            <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
-                          </div>
-                        </div>
-                        {isAdmin && (
-                          <Badge variant="secondary" className="text-xs">Admin</Badge>
-                        )}
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground">Nenhum membro encontrado</p>
+            </div>
+          )}
+              
+          {/* Conteúdo de Membros */}
+          {activeTab === 'members' && (
+            <div className="space-y-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-lg flex items-center">
+                      <Users className="h-5 w-5 mr-2 text-blue-500" />
+                      Membros
+                    </CardTitle>
+                    {isAdmin && (
+                      <Button variant="ghost" size="sm" onClick={openManageMembersModal}>
+                        Gerenciar
+                      </Button>
+                    )}
                   </div>
-                )}
-              </div>
-            </CardContent>
-            <CardFooter className="pt-0">
-              <Button variant="ghost" className="w-full" size="sm" onClick={openManageMembersModal}>
-                Ver todos ({faculty.member_count})
-              </Button>
-            </CardFooter>
-          </Card>
-            </TabsContent>
-          </Tabs>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {members.length > 0 ? (
+                      members.slice(0, 5).map((member) => {
+                        const userName = member.user?.name || member.user?.email?.split('@')[0] || 'Usuário';
+                        const userInitial = userName.charAt(0).toUpperCase();
+                        const isAdmin = member.role === 'admin';
+                        
+                        return (
+                          <div key={member.user_id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                            <div className="flex items-center">
+                              <Avatar className={`h-8 w-8 mr-2 ${isAdmin ? 'border-2 border-blue-500' : ''}`}>
+                                <AvatarImage src={member.user?.avatar_url} />
+                                <AvatarFallback className={isAdmin ? 'bg-blue-100 text-blue-800' : ''}>
+                                  {userInitial}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="text-sm font-medium">{userName}</p>
+                                <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
+                              </div>
+                            </div>
+                            {isAdmin && (
+                              <Badge variant="secondary" className="text-xs">Admin</Badge>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-muted-foreground">Nenhum membro encontrado</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+                <CardFooter className="pt-0">
+                  <Button variant="ghost" className="w-full" size="sm" onClick={openManageMembersModal}>
+                    Ver todos ({faculty?.member_count || 0})
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
+          )}
         </div>
-          
+        
         {/* Barra lateral */}
         <div className="w-full md:w-1/3 space-y-6">
           {/* Card de eventos */}
@@ -1563,7 +1573,7 @@ export default function FacultyDetailsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {fakeEvents.map(event => (
+                {faculty && fakeEvents.map(event => (
                   <div key={event.id} className="flex items-start gap-3 p-2 rounded-md hover:bg-muted">
                     <div className="bg-blue-100 text-blue-800 rounded-md p-2 text-center min-w-[3rem]">
                       <div className="text-xs font-medium">{event.date.split('-')[1]}/{event.date.split('-')[2]}</div>
