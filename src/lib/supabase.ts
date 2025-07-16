@@ -11,6 +11,10 @@ console.log('Supabase Anon Key existe:', !!supabaseAnonKey);
 // Verificação adicional para garantir que a URL é válida antes de criar o cliente
 let supabaseClient: SupabaseClient;
 
+// Flag para controlar o estado de conexão
+let isReconnecting = false;
+let wasConnected = false;
+
 try {
   if (supabaseUrl && supabaseAnonKey) {
     // Criar e exportar o cliente com configuração para autenticação por cookies
@@ -22,6 +26,8 @@ try {
         autoRefreshToken: true, // Renovar token automaticamente
         detectSessionInUrl: false, // Desativar detecção de sessão na URL para evitar conflitos
         flowType: 'pkce',
+        // Desativar redirecionamento automático para evitar problemas com mudanças de foco
+        storageKey: 'medjourney-auth-token',
       },
       global: {
         headers: {
@@ -31,13 +37,13 @@ try {
       // Configuração explícita para realtime com valores mais agressivos
       realtime: {
         params: {
-          eventsPerSecond: 20, // Aumentar o número de eventos por segundo
-          heartbeatIntervalMs: 5000, // Enviar heartbeat a cada 5 segundos
+          eventsPerSecond: 10, // Reduzido para evitar problemas
+          heartbeatIntervalMs: 30000, // Aumentado para 30s
           // Função de backoff exponencial para reconexão
           reconnectAfterMs: function(attempts: number): number {
             // Estratégia de backoff exponencial com limite máximo
-            const baseDelay = 1000; // 1 segundo
-            const maxDelay = 10000; // 10 segundos
+            const baseDelay = 2000; // 2 segundos
+            const maxDelay = 60000; // 60 segundos (1 minuto)
             const delay = Math.min(baseDelay * Math.pow(2, attempts), maxDelay);
             console.log(`Tentando reconectar em ${delay}ms (tentativa ${attempts + 1})`);
             return delay;
@@ -49,36 +55,104 @@ try {
     // Inicializar o cliente realtime explicitamente
     supabaseClient.realtime.setAuth(supabaseAnonKey);
     
-    // Configurar um canal de heartbeat para manter a conexão ativa
-    const heartbeatChannel = supabaseClient.channel('heartbeat');
-    heartbeatChannel.subscribe((status) => {
-      console.log(`Heartbeat channel status: ${status}`);
-    });
-    
     console.log('Cliente Supabase criado com sucesso para autenticação');
     console.log('Suporte a realtime habilitado com configurações otimizadas');
     
     // Adicionar listener para mudanças de conectividade
     if (typeof window !== 'undefined') {
+      // Variáveis para controlar o estado da página e reconexões
+      let reconnectTimeout: NodeJS.Timeout | null = null;
+      let checkConnectionInterval: NodeJS.Timeout | null = null;
+      let isPageVisible = true;
+      
+      // Monitorar visibilidade da página
+      document.addEventListener('visibilitychange', () => {
+        const wasVisible = isPageVisible;
+        isPageVisible = document.visibilityState === 'visible';
+        console.log(`Visibilidade da página alterada: ${isPageVisible ? 'visível' : 'oculta'}`);
+        
+        // Se a página ficou visível novamente e estava previamente conectada
+        if (isPageVisible && !wasVisible && wasConnected && !supabaseClient.realtime.isConnected()) {
+          console.log('Página visível novamente, verificando conexão...');
+          
+          // Evitar múltiplas tentativas de reconexão
+          if (reconnectTimeout) {
+            clearTimeout(reconnectTimeout);
+          }
+          
+          if (!isReconnecting) {
+            isReconnecting = true;
+            
+            reconnectTimeout = setTimeout(() => {
+              if (!supabaseClient.realtime.isConnected()) {
+                console.log('Reconectando após página ficar visível...');
+                supabaseClient.realtime.connect();
+              }
+              isReconnecting = false;
+            }, 3000); // Esperar 3 segundos antes de tentar reconectar
+          }
+        }
+        
+        // Se a página ficou oculta, registrar o estado atual da conexão
+        if (!isPageVisible && wasVisible) {
+          wasConnected = supabaseClient.realtime.isConnected();
+        }
+      });
+      
+      // Gerenciar eventos de conexão de rede
       window.addEventListener('online', () => {
-        console.log('Conexão de rede restaurada, reconectando Supabase Realtime');
-        supabaseClient.realtime.connect();
+        console.log('Conexão de rede restaurada, verificando conexão Supabase...');
+        
+        // Verificar se a conexão está realmente perdida antes de reconectar
+        if (!supabaseClient.realtime.isConnected() && isPageVisible && !isReconnecting) {
+          isReconnecting = true;
+          
+          // Usar timeout para evitar múltiplas reconexões
+          setTimeout(() => {
+            if (!supabaseClient.realtime.isConnected()) {
+              console.log('Reconectando Supabase Realtime após restauração de rede');
+              supabaseClient.realtime.connect();
+            }
+            isReconnecting = false;
+          }, 2000);
+        }
       });
       
       window.addEventListener('offline', () => {
         console.log('Conexão de rede perdida, Supabase Realtime pode ser afetado');
+        // Registrar o estado atual da conexão
+        wasConnected = supabaseClient.realtime.isConnected();
       });
       
-      // Verificar a conexão periodicamente
-      setInterval(() => {
-        const isConnected = supabaseClient.realtime.isConnected();
-        console.log(`Status da conexão Realtime: ${isConnected ? 'conectado' : 'desconectado'}`);
-        
-        if (!isConnected) {
-          console.log('Tentando reconectar...');
-          supabaseClient.realtime.connect();
+      // Verificar a conexão periodicamente, mas com menos frequência
+      checkConnectionInterval = setInterval(() => {
+        // Só verificar se a página estiver visível e não estiver em processo de reconexão
+        if (isPageVisible && !isReconnecting) {
+          const isConnected = supabaseClient.realtime.isConnected();
+          
+          // Registrar o estado da conexão
+          wasConnected = isConnected;
+          
+          // Reconectar apenas se estiver desconectado
+          if (!isConnected) {
+            console.log('Status da conexão Realtime: desconectado, tentando reconectar...');
+            isReconnecting = true;
+            
+            supabaseClient.realtime.connect();
+            
+            // Resetar flag após um tempo
+            setTimeout(() => {
+              isReconnecting = false;
+            }, 5000);
+          }
         }
-      }, 30000); // Verificar a cada 30 segundos
+      }, 60000); // Verificar a cada 60 segundos
+      
+      // Limpar intervalos e timeouts quando a página for descarregada
+      window.addEventListener('beforeunload', () => {
+        if (checkConnectionInterval) clearInterval(checkConnectionInterval);
+        if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      });
     }
   } else {
     console.error('Não foi possível criar o cliente Supabase: URL ou chave anônima ausentes');

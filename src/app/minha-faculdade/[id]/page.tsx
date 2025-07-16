@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { FacultyService } from '@/services/faculty.service';
 import { ExamsService } from '@/services/exams.service';
@@ -91,6 +91,11 @@ export default function FacultyDetailsPage() {
   // Estado para o modal de confirmação de exclusão
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Refs para controle de carregamento e inscrições
+  const dataLoadedRef = useRef(false);
+  const realtimeChannelsRef = useRef<any[]>([]);
+  const isPageVisibleRef = useRef(true);
   
   // Verificar se há um tópico na URL
   useEffect(() => {
@@ -224,6 +229,8 @@ export default function FacultyDetailsPage() {
 
   // Função para carregar exames/simulados
   const loadExams = async (facultyId: number) => {
+    if (!isPageVisibleRef.current) return; // Não carregar se a página não estiver visível
+    
     setIsLoadingExams(true);
     try {
       const examsData = await FacultyService.getFacultyExams(facultyId);
@@ -259,13 +266,13 @@ export default function FacultyDetailsPage() {
         toast({
           title: "Simulado não encontrado",
           description: "O simulado compartilhado não foi encontrado ou pode ter sido excluído.",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      // Redirecionar para a página do simulado
-      router.push(`/simulados/${exam.external_exam_id}`);
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Redirecionar para a página do simulado
+    router.push(`/simulados/${exam.external_exam_id}`);
     } catch (error) {
       console.error("Erro ao abrir simulado:", error);
       toast({
@@ -276,6 +283,24 @@ export default function FacultyDetailsPage() {
     }
   };
 
+  // Gerenciar visibilidade da página
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      isPageVisibleRef.current = document.visibilityState === 'visible';
+      console.log(`Visibilidade da página alterada: ${isPageVisibleRef.current ? 'visível' : 'oculta'}`);
+      
+      // Não recarregar dados quando a página volta a ficar visível
+      // Isso evita recargas desnecessárias
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  // Efeito principal para carregar dados e configurar inscrições
   useEffect(() => {
     const facultyId = Number(params.id);
     if (isNaN(facultyId) || !user) {
@@ -283,7 +308,28 @@ export default function FacultyDetailsPage() {
       return;
     }
 
+    // Limpar canais anteriores ao montar o componente
+    const cleanupChannels = () => {
+      console.log('Limpando canais do Realtime...');
+      realtimeChannelsRef.current.forEach(channel => {
+        if (channel && channel.unsubscribe) {
+          try {
+            channel.unsubscribe();
+          } catch (error) {
+            console.error('Erro ao cancelar inscrição do canal:', error);
+          }
+        }
+      });
+      realtimeChannelsRef.current = [];
+    };
+
+    // Carregar dados apenas se ainda não foram carregados
     const loadFacultyDetails = async () => {
+      if (dataLoadedRef.current && faculty) {
+        console.log('Dados já carregados, pulando carregamento');
+        return;
+      }
+      
       setIsLoading(true);
       try {
         // Carregar detalhes do ambiente
@@ -331,6 +377,9 @@ export default function FacultyDetailsPage() {
         loadForumTopics(facultyId);
         loadMaterials(facultyId);
         loadExams(facultyId);
+        
+        // Marcar que os dados foram carregados
+        dataLoadedRef.current = true;
       } catch (error) {
         console.error('Erro ao carregar detalhes do ambiente:', error);
       } finally {
@@ -338,10 +387,11 @@ export default function FacultyDetailsPage() {
       }
     };
 
-    loadFacultyDetails();
-    
     // Configurar inscrição do Realtime para posts e comentários
     const setupRealtimeSubscriptions = async () => {
+      // Limpar canais existentes antes de criar novos
+      cleanupChannels();
+      
       // Inscrever-se para atualizações de posts
       const postsChannel = supabase
         .channel('faculty-posts')
@@ -385,7 +435,7 @@ export default function FacultyDetailsPage() {
                 console.log('Buscando detalhes do novo post via Realtime');
                 // Se o post não existe, buscar detalhes completos
                 FacultyService.getFacultyPosts(facultyId, 1, 0, newPostId)
-                  .then(newPosts => {
+                .then(newPosts => {
                     if (newPosts && newPosts.length > 0) {
                       setPosts(currentPosts => {
                         // Verificar novamente se o post já foi adicionado
@@ -403,7 +453,7 @@ export default function FacultyDetailsPage() {
                 
                 // Retornar o estado atual sem modificações
                 return prevPosts;
-              });
+                });
             } else if (payload.eventType === 'DELETE') {
               // Remover o post deletado
               setPosts(prevPosts => 
@@ -413,6 +463,9 @@ export default function FacultyDetailsPage() {
           }
         )
         .subscribe();
+      
+      // Adicionar o canal à lista para limpeza posterior
+      realtimeChannelsRef.current.push(postsChannel);
         
       // Inscrever-se para atualizações de comentários
       const commentsChannel = supabase
@@ -458,6 +511,9 @@ export default function FacultyDetailsPage() {
           }
         )
         .subscribe();
+      
+      // Adicionar o canal à lista para limpeza posterior
+      realtimeChannelsRef.current.push(commentsChannel);
         
       // Inscrever-se para atualizações de curtidas
       const likesChannel = supabase
@@ -499,47 +555,47 @@ export default function FacultyDetailsPage() {
           }
         )
         .subscribe();
-        
-      // Limpar inscrições ao desmontar o componente
-      return () => {
-        supabase.removeChannel(postsChannel);
-        supabase.removeChannel(commentsChannel);
-        supabase.removeChannel(likesChannel);
-      };
+      
+      // Adicionar o canal à lista para limpeza posterior
+      realtimeChannelsRef.current.push(likesChannel);
     };
+
+    // Carregar dados e configurar inscrições
+    loadFacultyDetails();
+    setupRealtimeSubscriptions();
     
-    if (facultyId) {
-      setupRealtimeSubscriptions();
-    }
+    // Limpar inscrições ao desmontar o componente
+    return () => {
+      cleanupChannels();
+    };
   }, [params.id, user, router]);
 
   // Função para carregar posts
   const loadPosts = async (facultyId: number, reset: boolean = false) => {
-    if (!facultyId) return;
+    if (!isPageVisibleRef.current) return; // Não carregar se a página não estiver visível
     
     const page = reset ? 0 : postsPage;
     
     setIsLoadingPosts(true);
     try {
-      const posts = await FacultyService.getFacultyPosts(facultyId, POSTS_PER_PAGE, page * POSTS_PER_PAGE);
+      const postsData = await FacultyService.getFacultyPosts(facultyId, POSTS_PER_PAGE, page * POSTS_PER_PAGE);
       
       if (reset) {
-        setPosts(posts);
-        setPostsPage(0);
+        setPosts(postsData);
       } else {
-        setPosts(prevPosts => [...prevPosts, ...posts]);
+        setPosts(prevPosts => [...prevPosts, ...postsData]);
       }
       
-      setHasMorePosts(posts.length === POSTS_PER_PAGE);
+      setHasMorePosts(postsData.length === POSTS_PER_PAGE);
       
       if (!reset) {
-        setPostsPage(page + 1);
+        setPostsPage(prevPage => prevPage + 1);
       }
     } catch (error) {
       console.error('Erro ao carregar posts:', error);
       toast({
-        title: "Erro ao carregar feed",
-        description: "Não foi possível carregar as publicações. Tente novamente mais tarde.",
+        title: "Erro ao carregar posts",
+        description: "Não foi possível carregar os posts do ambiente.",
         variant: "destructive"
       });
     } finally {
@@ -549,17 +605,17 @@ export default function FacultyDetailsPage() {
 
   // Função para carregar tópicos do fórum
   const loadForumTopics = async (facultyId: number, isResolved?: boolean) => {
-    if (!facultyId) return;
+    if (!isPageVisibleRef.current) return; // Não carregar se a página não estiver visível
     
     setIsLoadingTopics(true);
     try {
-      const topics = await FacultyService.getForumTopics(facultyId, 50, 0, undefined, isResolved);
+      const topics = await FacultyService.getForumTopics(facultyId, 20, 0, undefined, isResolved);
       setForumTopics(topics);
     } catch (error) {
-      console.error('Erro ao carregar tópicos do fórum:', error);
+      console.error('Erro ao carregar tópicos:', error);
       toast({
-        title: "Erro ao carregar fórum",
-        description: "Não foi possível carregar as discussões. Tente novamente mais tarde.",
+        title: "Erro ao carregar tópicos",
+        description: "Não foi possível carregar os tópicos do fórum.",
         variant: "destructive"
       });
     } finally {
@@ -569,17 +625,17 @@ export default function FacultyDetailsPage() {
 
   // Função para carregar materiais
   const loadMaterials = async (facultyId: number) => {
-    if (!facultyId) return;
+    if (!isPageVisibleRef.current) return; // Não carregar se a página não estiver visível
     
     setIsLoadingMaterials(true);
     try {
-      const materials = await FacultyService.getFacultyMaterials(facultyId);
-      setMaterials(materials);
+      const materialsData = await FacultyService.getFacultyMaterials(facultyId);
+      setMaterials(materialsData);
     } catch (error) {
       console.error('Erro ao carregar materiais:', error);
       toast({
         title: "Erro ao carregar materiais",
-        description: "Não foi possível carregar os materiais de estudo. Tente novamente mais tarde.",
+        description: "Não foi possível carregar os materiais compartilhados.",
         variant: "destructive"
       });
     } finally {
@@ -954,7 +1010,7 @@ export default function FacultyDetailsPage() {
               <div className="bg-white p-3 rounded-xl shadow-md transform transition-transform hover:scale-105">
                 <School className="h-8 w-8 text-purple-600" />
               </div>
-              <div>
+          <div>
                 <div className="flex items-center">
                   <h1 className="text-2xl md:text-3xl font-bold text-white">{faculty?.name}</h1>
                   {faculty?.is_public ? (
@@ -975,32 +1031,32 @@ export default function FacultyDetailsPage() {
                   <span>{faculty?.course}</span>
                 </p>
               </div>
-            </div>
-            <div className="flex mt-4 md:mt-0 space-x-2">
-              <Button 
+        </div>
+          <div className="flex mt-4 md:mt-0 space-x-2">
+            <Button 
                 variant="secondary" 
-                size="sm"
-                onClick={handleShareCode}
+              size="sm"
+              onClick={handleShareCode}
                 className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm"
-              >
-                <Share2 className="h-4 w-4 mr-2" />
-                Compartilhar
-              </Button>
-              
-              {isAdmin && (
-                <Button 
-                  variant="secondary" 
-                  size="sm"
-                  onClick={openManageMembersModal}
-                  className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm"
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Gerenciar Membros
-                </Button>
-              )}
-            </div>
-          </div>
+            >
+              <Share2 className="h-4 w-4 mr-2" />
+              Compartilhar
+          </Button>
           
+          {isAdmin && (
+              <Button 
+                  variant="secondary" 
+                size="sm"
+                onClick={openManageMembersModal}
+                  className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Gerenciar Membros
+            </Button>
+          )}
+        </div>
+      </div>
+      
           {/* Descrição */}
           <div className="px-6 pt-4 pb-2">
             <p className="text-white/90 text-sm md:text-base line-clamp-2 hover:line-clamp-none transition-all duration-300 cursor-pointer">
@@ -1011,21 +1067,21 @@ export default function FacultyDetailsPage() {
           {/* Badges */}
           <div className="px-6 pt-2 pb-6 flex flex-wrap gap-2">
             <Badge className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm transition-all duration-200 hover:scale-105">
-              <Users className="h-3 w-3 mr-1" />
+            <Users className="h-3 w-3 mr-1" />
               {faculty?.member_count || 0} {faculty?.member_count === 1 ? 'membro' : 'membros'}
-            </Badge>
-            
+                </Badge>
+          
             {faculty?.semester && (
               <Badge className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm transition-all duration-200 hover:scale-105">
-                <School className="h-3 w-3 mr-1" />
-                {faculty.semester}
-              </Badge>
-            )}
-            
+              <School className="h-3 w-3 mr-1" />
+              {faculty.semester}
+                </Badge>
+          )}
+          
             <Badge className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm transition-all duration-200 hover:scale-105">
-              <Calendar className="h-3 w-3 mr-1" />
+            <Calendar className="h-3 w-3 mr-1" />
               {faculty ? `Criado em ${new Date(faculty.created_at).toLocaleDateString()}` : "Data desconhecida"}
-            </Badge>
+                </Badge>
           </div>
         </div>
       </div>
@@ -1044,8 +1100,8 @@ export default function FacultyDetailsPage() {
               loadPosts(faculty.id, true);
             }
           }} />
-          
-          {/* Conteúdo do Feed */}
+            
+            {/* Conteúdo do Feed */}
           {activeTab === 'feed' && (
             <div className="space-y-4">
               {/* Criar post */}
@@ -1069,53 +1125,53 @@ export default function FacultyDetailsPage() {
                 
                 <div className="bg-white p-6">
                   <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow mb-6">
-                    <CardContent className="pt-6">
-                      <form onSubmit={handleCreatePost}>
-                        <div className="flex gap-3">
+                <CardContent className="pt-6">
+                  <form onSubmit={handleCreatePost}>
+                    <div className="flex gap-3">
                           <Avatar className="h-10 w-10 border-2 border-purple-100">
                             <AvatarFallback className="bg-purple-50 text-purple-700">{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <Input
-                              placeholder="Título (opcional)"
-                              value={postTitle}
-                              onChange={(e) => setPostTitle(e.target.value)}
+                      </Avatar>
+                      <div className="flex-1">
+                        <Input
+                          placeholder="Título (opcional)"
+                          value={postTitle}
+                          onChange={(e) => setPostTitle(e.target.value)}
                               className="mb-3 border-gray-200 focus:border-purple-500 focus:ring-purple-500"
-                            />
-                            <Input
-                              placeholder="Compartilhe uma novidade, dúvida ou material..."
-                              value={postContent}
-                              onChange={(e) => setPostContent(e.target.value)}
+                        />
+                        <Input
+                          placeholder="Compartilhe uma novidade, dúvida ou material..."
+                          value={postContent}
+                          onChange={(e) => setPostContent(e.target.value)}
                               className="mb-3 border-gray-200 focus:border-purple-500 focus:ring-purple-500"
-                            />
-                            <div className="flex justify-between items-center">
-                              <div className="flex gap-2">
-                                <Button 
-                                  type="button" 
-                                  size="sm" 
-                                  variant="outline"
-                                  onClick={() => setShowLinkInput(true)}
+                        />
+                        <div className="flex justify-between items-center">
+                          <div className="flex gap-2">
+                            <Button 
+                              type="button" 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => setShowLinkInput(true)}
                                   className="border-gray-200 hover:bg-purple-50 hover:text-purple-700"
-                                >
-                                  <FileText className="h-4 w-4 mr-2" />
-                                  Link
-                                </Button>
-                              </div>
-                              <Button 
-                                type="submit" 
-                                size="sm" 
-                                disabled={!postContent.trim() || isSubmittingPost}
+                            >
+                              <FileText className="h-4 w-4 mr-2" />
+                              Link
+                            </Button>
+                    </div>
+                          <Button 
+                            type="submit" 
+                            size="sm" 
+                            disabled={!postContent.trim() || isSubmittingPost}
                                 className="bg-purple-600 hover:bg-purple-700"
-                              >
-                                {isSubmittingPost ? <Spinner size="sm" className="mr-2" /> : null}
-                                Publicar
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </form>
-                    </CardContent>
-                  </Card>
+                          >
+                            {isSubmittingPost ? <Spinner size="sm" className="mr-2" /> : null}
+                            Publicar
+                          </Button>
+                    </div>
+                    </div>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
                   
                   {/* Feed de posts */}
                   {isLoadingPosts ? (
@@ -1217,10 +1273,10 @@ export default function FacultyDetailsPage() {
                   </div>
                 </div>
               )}
-            </div>
-          )}
-          
-          {/* Conteúdo do Fórum */}
+                    </div>
+              )}
+            
+            {/* Conteúdo do Fórum */}
           {activeTab === 'forum' && (
             <div className="space-y-4">
               <div className="rounded-lg overflow-hidden shadow-sm border border-gray-100">
@@ -1360,7 +1416,7 @@ export default function FacultyDetailsPage() {
                                       </AvatarFallback>
                                     </Avatar>
                                     <div>
-                                      <p className="font-medium">{reply.user?.name || 'Usuário'}</p>
+                                        <p className="font-medium">{reply.user?.name || 'Usuário'}</p>
                                       <p className="text-xs text-muted-foreground">
                                         {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true, locale: ptBR })}
                                       </p>
@@ -1467,16 +1523,16 @@ export default function FacultyDetailsPage() {
                           onClick={() => handleForumTabChange('resolved')}
                           className="flex items-center"
                         >
-                          <CheckCircle2 className="h-4 w-4 mr-1" />
-                          Resolvidos
+                            <CheckCircle2 className="h-4 w-4 mr-1" />
+                            Resolvidos
                         </Button>
                         <Button
                           variant={forumTab === 'unresolved' ? 'default' : 'outline'}
                           onClick={() => handleForumTabChange('unresolved')}
                           className="flex items-center"
                         >
-                          <MessageSquare className="h-4 w-4 mr-1" />
-                          Não Resolvidos
+                            <MessageSquare className="h-4 w-4 mr-1" />
+                            Não Resolvidos
                         </Button>
                       </div>
                       
@@ -1486,11 +1542,11 @@ export default function FacultyDetailsPage() {
                         </div>
                       ) : forumTopics.length === 0 ? (
                         <div className="text-center py-8 bg-gray-50 rounded-lg">
-                          <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground" />
-                          <h3 className="mt-4 text-lg font-medium">Nenhuma discussão iniciada</h3>
-                          <p className="text-muted-foreground mt-2">
-                            Inicie uma discussão para tirar dúvidas com seus colegas
-                          </p>
+                    <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <h3 className="mt-4 text-lg font-medium">Nenhuma discussão iniciada</h3>
+                    <p className="text-muted-foreground mt-2">
+                      Inicie uma discussão para tirar dúvidas com seus colegas
+                    </p>
                           <Button 
                             className="mt-4 bg-blue-600 hover:bg-blue-700" 
                             onClick={openCreateTopicModal}
@@ -1498,7 +1554,7 @@ export default function FacultyDetailsPage() {
                             <Plus className="mr-2 h-4 w-4" />
                             Nova Discussão
                           </Button>
-                        </div>
+                  </div>
                       ) : (
                         <div className="space-y-3">
                           {forumTopics.map(topic => (
@@ -1554,8 +1610,8 @@ export default function FacultyDetailsPage() {
               </div>
             </div>
           )}
-          
-          {/* Conteúdo de Materiais */}
+            
+            {/* Conteúdo de Materiais */}
           {activeTab === 'materials' && (
             <div className="space-y-4">
               <div className="rounded-lg overflow-hidden shadow-sm border border-gray-100">
@@ -1566,27 +1622,27 @@ export default function FacultyDetailsPage() {
                       Materiais de Estudo
                     </h2>
                     
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => loadMaterials(faculty.id)}
-                        disabled={isLoadingMaterials}
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => loadMaterials(faculty.id)}
+                    disabled={isLoadingMaterials}
                         className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-none"
-                      >
-                        {isLoadingMaterials ? <Spinner size="sm" /> : <RefreshCw className="h-4 w-4" />}
-                        <span className="ml-2 hidden sm:inline">Atualizar</span>
-                      </Button>
+                  >
+                    {isLoadingMaterials ? <Spinner size="sm" /> : <RefreshCw className="h-4 w-4" />}
+                    <span className="ml-2 hidden sm:inline">Atualizar</span>
+                  </Button>
                       <Button 
                         size="sm" 
                         onClick={openUploadMaterialModal}
                         className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-none"
                       >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Adicionar Material
-                      </Button>
-                    </div>
+                      <Plus className="mr-2 h-4 w-4" />
+                  Adicionar Material
+                    </Button>
                   </div>
+              </div>
                   
                   <p className="text-sm text-white/80 mt-1">
                     Compartilhe e acesse materiais de estudo para as disciplinas da faculdade.
@@ -1594,75 +1650,75 @@ export default function FacultyDetailsPage() {
                 </div>
                 
                 <div className="bg-white p-6">
-                  {isLoadingMaterials ? (
-                    <div className="flex justify-center py-8">
-                      <Spinner size="lg" />
+              {isLoadingMaterials ? (
+                <div className="flex justify-center py-8">
+                  <Spinner size="lg" />
                     </div>
                   ) : (
-                    <MaterialsList 
-                      facultyId={faculty.id} 
-                      isAdmin={isAdmin || isOwner}
-                    />
+                <MaterialsList 
+                  facultyId={faculty.id} 
+                  isAdmin={isAdmin || isOwner}
+                />
                   )}
                 </div>
               </div>
             </div>
           )}
-          
-          {/* Conteúdo de Simulados */}
+            
+            {/* Conteúdo de Simulados */}
           {activeTab === 'exams' && (
             <div className="space-y-4">
               <div className="rounded-lg overflow-hidden shadow-sm border border-gray-100">
                 <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4 text-white">
                   <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-semibold flex items-center">
+                  <h2 className="text-xl font-semibold flex items-center">
                       <FileQuestion className="h-5 w-5 mr-2 text-white" />
-                      Simulados Compartilhados
-                    </h2>
-                    
+                    Simulados Compartilhados
+                  </h2>
+                  
                     <Badge className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm">
-                      {exams.length} {exams.length === 1 ? 'simulado' : 'simulados'}
+                    {exams.length} {exams.length === 1 ? 'simulado' : 'simulados'}
                     </Badge>
                   </div>
                   
                   <p className="text-sm text-white/80 mt-1">
                     Simulados compartilhados pelos membros da faculdade para prática e estudo.
                   </p>
-                </div>
+                              </div>
                 
                 <div className="bg-white p-6">
-                  <ExamsList 
-                    exams={exams}
-                    isLoading={isLoadingExams}
-                    onOpenExam={handleOpenExam}
-                  />
-                </div>
+                <ExamsList 
+                  exams={exams}
+                  isLoading={isLoadingExams}
+                  onOpenExam={handleOpenExam}
+                />
+                    </div>
               </div>
             </div>
           )}
-              
-          {/* Conteúdo de Membros */}
+                
+            {/* Conteúdo de Membros */}
           {activeTab === 'members' && (
             <div className="space-y-4">
               <div className="rounded-lg overflow-hidden shadow-sm border border-gray-100">
                 <div className="bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-4 text-white">
-                  <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center">
                     <h2 className="text-xl font-semibold flex items-center">
                       <Users className="h-5 w-5 mr-2 text-white" />
-                      Membros
+                  Membros
                     </h2>
                     
-                    {isAdmin && (
+                {isAdmin && (
                       <Button 
                         variant="outline" 
                         size="sm" 
                         onClick={openManageMembersModal}
                         className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-none"
                       >
-                        Gerenciar
-                      </Button>
-                    )}
-                  </div>
+                    Gerenciar
+                  </Button>
+                )}
+              </div>
                   
                   <p className="text-sm text-white/80 mt-1">
                     {faculty?.member_count || 0} {faculty?.member_count === 1 ? 'membro' : 'membros'} participando neste ambiente.
@@ -1670,40 +1726,40 @@ export default function FacultyDetailsPage() {
                 </div>
                 
                 <div className="bg-white p-6">
-                  <div className="space-y-3">
-                    {members.length > 0 ? (
-                      members.slice(0, 5).map((member) => {
-                        const userName = member.user?.name || member.user?.email?.split('@')[0] || 'Usuário';
-                        const userInitial = userName.charAt(0).toUpperCase();
-                        const isAdmin = member.role === 'admin';
-                        
-                        return (
-                          <div key={member.user_id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                            <div className="flex items-center">
+              <div className="space-y-3">
+                {members.length > 0 ? (
+                  members.slice(0, 5).map((member) => {
+                    const userName = member.user?.name || member.user?.email?.split('@')[0] || 'Usuário';
+                    const userInitial = userName.charAt(0).toUpperCase();
+                    const isAdmin = member.role === 'admin';
+                    
+                    return (
+                      <div key={member.user_id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                        <div className="flex items-center">
                               <Avatar className={`h-10 w-10 mr-3 ${isAdmin ? 'ring-2 ring-amber-500 border-2 border-white' : ''}`}>
-                                <AvatarImage src={member.user?.avatar_url} />
+                            <AvatarImage src={member.user?.avatar_url} />
                                 <AvatarFallback className={isAdmin ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' : 'bg-gray-100'}>
-                                  {userInitial}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
+                              {userInitial}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
                                 <p className="font-medium">{userName}</p>
-                                <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
-                              </div>
-                            </div>
-                            {isAdmin && (
-                              <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200">Admin</Badge>
-                            )}
+                            <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
                           </div>
-                        );
-                      })
-                    ) : (
+                        </div>
+                        {isAdmin && (
+                              <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200">Admin</Badge>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
                       <div className="text-center py-8 bg-gray-50 rounded-lg">
                         <Users className="mx-auto h-12 w-12 text-muted-foreground" />
                         <h3 className="mt-4 text-lg font-medium">Nenhum membro encontrado</h3>
-                      </div>
-                    )}
                   </div>
+                )}
+              </div>
                   
                   <div className="mt-6 pt-4 border-t border-gray-200">
                     <Button 
@@ -1714,14 +1770,14 @@ export default function FacultyDetailsPage() {
                     >
                       <Users className="mr-2 h-4 w-4" />
                       Ver todos os membros ({faculty?.member_count || 0})
-                    </Button>
+              </Button>
                   </div>
                 </div>
               </div>
             </div>
           )}
         </div>
-        
+          
         {/* Barra lateral */}
         <div className="w-full md:w-1/3 space-y-6">
           {/* Card de eventos */}
@@ -1744,11 +1800,11 @@ export default function FacultyDetailsPage() {
                   <div className="text-center py-4">
                     <p className="text-muted-foreground">Nenhum evento agendado</p>
                     <p className="text-xs text-muted-foreground mt-1">Use o botão "Novo" para adicionar eventos</p>
-                  </div>
+                </div>
                 ) : (
                   <div className="flex justify-center py-4">
                     <Spinner size="sm" />
-                  </div>
+                </div>
                 )}
               </div>
             </CardContent>

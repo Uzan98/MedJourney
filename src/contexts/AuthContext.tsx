@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
@@ -43,9 +43,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  // Ref para rastrear se o usuário já estava autenticado
+  const wasAuthenticated = useRef(false);
+  // Ref para rastrear se a página está visível
+  const isPageVisibleRef = useRef(true);
+  // Ref para rastrear se o login já foi anunciado
+  const loginAnnouncedRef = useRef(false);
 
   // Calcular se está autenticado
   const isAuthenticated = !!user;
+
+  // Atualizar o ref quando o estado de autenticação mudar
+  useEffect(() => {
+    wasAuthenticated.current = isAuthenticated;
+    
+    // Se o usuário está autenticado e ainda não anunciamos o login
+    if (isAuthenticated && !loginAnnouncedRef.current && isPageVisibleRef.current) {
+      loginAnnouncedRef.current = true;
+    }
+  }, [isAuthenticated]);
+
+  // Monitorar visibilidade da página
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      isPageVisibleRef.current = document.visibilityState === 'visible';
+      console.log(`AuthContext: Visibilidade alterada: ${isPageVisibleRef.current ? 'visível' : 'oculta'}`);
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   // Função para verificar se o usuário é administrador
   const checkAdminStatus = async (): Promise<boolean> => {
@@ -85,6 +115,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(null);
         setUser(null);
         setIsAdmin(false);
+        // Resetar o estado de anúncio de login
+        loginAnnouncedRef.current = false;
       }
     } catch (error) {
       console.error('Erro ao atualizar sessão:', error);
@@ -103,6 +135,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       async (event, session) => {
         console.log('AuthContext: Evento de autenticação:', event, 'User ID:', session?.user?.id);
         
+        // Atualizar estado da sessão
         setSession(session);
         setUser(session?.user || null);
         
@@ -118,10 +151,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Log detalhado do evento
         if (event === 'SIGNED_IN') {
           console.log('AuthContext: Usuário logado com sucesso. Email:', session?.user?.email);
-          toast.success('Login realizado com sucesso!');
+          
+          // Mostrar toast apenas se o usuário não estava autenticado anteriormente
+          // E se a página estiver visível
+          // E se ainda não anunciamos o login para este usuário
+          if (!wasAuthenticated.current && isPageVisibleRef.current && !loginAnnouncedRef.current) {
+            toast.success('Login realizado com sucesso!');
+            loginAnnouncedRef.current = true;
+          }
         } else if (event === 'SIGNED_OUT') {
           console.log('AuthContext: Usuário deslogado com sucesso');
           toast.success('Logout realizado com sucesso!');
+          // Resetar o estado de anúncio de login
+          loginAnnouncedRef.current = false;
         } else if (event === 'TOKEN_REFRESHED') {
           console.log('AuthContext: Token de autenticação atualizado');
         }
@@ -209,6 +251,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       await supabase.auth.signOut();
       // Session será atualizado pelo evento onAuthStateChange
+      // Resetar o estado de anúncio de login
+      loginAnnouncedRef.current = false;
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
     }
