@@ -31,6 +31,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { FacultyTabMenu } from '@/components/comunidade/FacultyTabMenu';
+import { CreateEventModal } from '@/components/comunidade/CreateEventModal';
+import { EventsList } from '@/components/comunidade/EventsList';
 
 export default function FacultyDetailsPage() {
   const params = useParams();
@@ -46,6 +48,7 @@ export default function FacultyDetailsPage() {
   const [manageMembersModalOpen, setManageMembersModalOpen] = useState(false);
   const [createTopicModalOpen, setCreateTopicModalOpen] = useState(false);
   const [uploadMaterialModalOpen, setUploadMaterialModalOpen] = useState(false);
+  const [createEventModalOpen, setCreateEventModalOpen] = useState(false);
   
   // Estados para o formulário de nova discussão
   const [topicTitle, setTopicTitle] = useState('');
@@ -386,7 +389,7 @@ export default function FacultyDetailsPage() {
         setIsLoading(false);
       }
     };
-
+    
     // Configurar inscrição do Realtime para posts e comentários
     const setupRealtimeSubscriptions = async () => {
       // Limpar canais existentes antes de criar novos
@@ -555,14 +558,14 @@ export default function FacultyDetailsPage() {
           }
         )
         .subscribe();
-      
+        
       // Adicionar o canal à lista para limpeza posterior
       realtimeChannelsRef.current.push(likesChannel);
-    };
+      };
 
     // Carregar dados e configurar inscrições
     loadFacultyDetails();
-    setupRealtimeSubscriptions();
+      setupRealtimeSubscriptions();
     
     // Limpar inscrições ao desmontar o componente
     return () => {
@@ -981,6 +984,18 @@ export default function FacultyDetailsPage() {
         variant: "destructive"
       });
     }
+  };
+
+  const openCreateEventModal = () => {
+    setCreateEventModalOpen(true);
+  };
+
+  const handleEventCreated = () => {
+    // Aqui você pode adicionar lógica adicional após a criação do evento
+    toast({
+      title: "Evento criado",
+      description: "O evento foi adicionado ao calendário.",
+    });
   };
 
   return (
@@ -1788,19 +1803,18 @@ export default function FacultyDetailsPage() {
                   <Calendar className="h-5 w-5 mr-2 text-blue-500" />
                   Próximos Eventos
               </CardTitle>
-                <Button variant="ghost" size="sm">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Novo
-                </Button>
+                {isAdmin && (
+                  <Button variant="ghost" size="sm" onClick={openCreateEventModal}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Novo
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {faculty ? (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground">Nenhum evento agendado</p>
-                    <p className="text-xs text-muted-foreground mt-1">Use o botão "Novo" para adicionar eventos</p>
-                </div>
+                  <EventsList facultyId={faculty.id} limit={3} />
                 ) : (
                   <div className="flex justify-center py-4">
                     <Spinner size="sm" />
@@ -1809,7 +1823,12 @@ export default function FacultyDetailsPage() {
               </div>
             </CardContent>
             <CardFooter className="pt-0">
-              <Button variant="ghost" className="w-full" size="sm">
+              <Button 
+                variant="ghost" 
+                className="w-full" 
+                size="sm"
+                onClick={() => router.push(`/minha-faculdade/${faculty?.id}/eventos`)}
+              >
                 Ver todos os eventos
               </Button>
             </CardFooter>
@@ -1953,6 +1972,16 @@ export default function FacultyDetailsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {faculty && (
+        <CreateEventModal
+          isOpen={createEventModalOpen}
+          onClose={() => setCreateEventModalOpen(false)}
+          facultyId={faculty.id}
+          onEventCreated={handleEventCreated}
+          isAdmin={isAdmin}
+        />
       )}
     </div>
   );

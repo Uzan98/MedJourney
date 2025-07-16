@@ -111,7 +111,7 @@ try {
           setTimeout(() => {
             if (!supabaseClient.realtime.isConnected()) {
               console.log('Reconectando Supabase Realtime após restauração de rede');
-              supabaseClient.realtime.connect();
+        supabaseClient.realtime.connect();
             }
             isReconnecting = false;
           }, 2000);
@@ -128,17 +128,17 @@ try {
       checkConnectionInterval = setInterval(() => {
         // Só verificar se a página estiver visível e não estiver em processo de reconexão
         if (isPageVisible && !isReconnecting) {
-          const isConnected = supabaseClient.realtime.isConnected();
+        const isConnected = supabaseClient.realtime.isConnected();
           
           // Registrar o estado da conexão
           wasConnected = isConnected;
-          
+        
           // Reconectar apenas se estiver desconectado
-          if (!isConnected) {
+        if (!isConnected) {
             console.log('Status da conexão Realtime: desconectado, tentando reconectar...');
             isReconnecting = true;
             
-            supabaseClient.realtime.connect();
+          supabaseClient.realtime.connect();
             
             // Resetar flag após um tempo
             setTimeout(() => {

@@ -156,7 +156,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           // E se a página estiver visível
           // E se ainda não anunciamos o login para este usuário
           if (!wasAuthenticated.current && isPageVisibleRef.current && !loginAnnouncedRef.current) {
-            toast.success('Login realizado com sucesso!');
+          toast.success('Login realizado com sucesso!');
             loginAnnouncedRef.current = true;
           }
         } else if (event === 'SIGNED_OUT') {

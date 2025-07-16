@@ -166,3 +166,26 @@ export interface GradeAttendanceData {
   averageGrade?: number;
   status?: 'approved' | 'at_risk' | 'failed';
 } 
+
+export interface FacultyEvent {
+  id: number;
+  faculty_id: number;
+  creator_id: string;
+  title: string;
+  description?: string;
+  location?: string;
+  start_date: string;
+  end_date?: string;
+  all_day: boolean;
+  color?: string;
+  type: 'exam' | 'assignment' | 'lecture' | 'meeting' | 'other';
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+  user?: {
+    id: string;
+    name?: string;
+    email?: string;
+    avatar_url?: string;
+  };
+} 

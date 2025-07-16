@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { Faculty, FacultyMember, FacultyPost, FacultyExam, FacultyMaterial, FacultyComment, ForumTopic, ForumReply, ForumTag } from '@/types/faculty';
+import { FacultyEvent } from '@/types/community';
 import { ExamsService } from '@/services/exams.service';
 
 export class FacultyService {
@@ -1770,6 +1771,234 @@ export class FacultyService {
   }
 
   /**
+   * Busca os eventos de uma faculdade
+   * @param facultyId ID da faculdade
+   * @param startDate Data de início (opcional)
+   * @param endDate Data de fim (opcional)
+   * @param limit Limite de resultados (padrão: 10)
+   * @returns Lista de eventos ou array vazio em caso de erro
+   */
+  static async getFacultyEvents(
+    facultyId: number,
+    startDate?: string,
+    endDate?: string,
+    limit: number = 10
+  ): Promise<FacultyEvent[]> {
+    try {
+      // Verificar permissão de acesso
+      const { data: hasAccess } = await supabase
+        .rpc('is_faculty_member', { faculty_id_param: facultyId });
+      
+      if (!hasAccess) {
+        console.error('Acesso negado aos eventos do ambiente');
+        return [];
+      }
+      
+      // Iniciar a consulta - usar apenas os dados básicos sem tentar fazer join
+      let query = supabase
+        .from('faculty_events')
+        .select('*')
+        .eq('faculty_id', facultyId)
+        .order('start_date', { ascending: true });
+      
+      // Filtrar por data de início, se fornecida
+      if (startDate) {
+        query = query.gte('start_date', startDate);
+      }
+      
+      // Filtrar por data de fim, se fornecida
+      if (endDate) {
+        query = query.lte('start_date', endDate);
+      }
+      
+      // Aplicar limite
+      query = query.limit(limit);
+      
+      // Executar a consulta
+      const { data: events, error } = await query;
+      
+      if (error) {
+        console.error('Erro ao buscar eventos:', error);
+        return [];
+      }
+      
+      if (!events || events.length === 0) {
+        return [];
+      }
+      
+      // Buscar informações dos criadores
+      const creatorIds = [...new Set(events.map(event => event.creator_id))];
+      const usersInfo = await this.getUsersInfo(creatorIds);
+      
+      // Adicionar informações dos usuários aos eventos
+      const eventsWithUsers = events.map(event => ({
+        ...event,
+        user: usersInfo[event.creator_id] || {
+          id: event.creator_id
+        }
+      }));
+      
+      return eventsWithUsers;
+    } catch (error) {
+      console.error('Erro ao buscar eventos da faculdade:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Cria um novo evento na faculdade
+   * @param facultyId ID da faculdade
+   * @param eventData Dados do evento
+   * @returns ID do evento criado ou null em caso de erro
+   */
+  static async createFacultyEvent(
+    facultyId: number,
+    eventData: {
+      title: string;
+      description?: string;
+      location?: string;
+      start_date: string;
+      end_date?: string;
+      all_day: boolean;
+      color?: string;
+      type: 'exam' | 'assignment' | 'lecture' | 'meeting' | 'other';
+      is_public: boolean;
+    }
+  ): Promise<number | null> {
+    try {
+      // Obter o ID do usuário atual
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !userData.user) {
+        console.error('Erro ao obter usuário atual:', userError);
+        return null;
+      }
+      
+      // Verificar se o usuário é administrador
+      const { data: isAdmin } = await supabase
+        .rpc('is_faculty_admin', { faculty_id_param: facultyId });
+      
+      if (!isAdmin) {
+        console.error('Permissão negada: apenas administradores podem criar eventos');
+        return null;
+      }
+      
+      // Criar o evento
+      const { data, error } = await supabase
+        .from('faculty_events')
+        .insert({
+          faculty_id: facultyId,
+          creator_id: userData.user.id,
+          title: eventData.title,
+          description: eventData.description || null,
+          location: eventData.location || null,
+          start_date: eventData.start_date,
+          end_date: eventData.end_date || null,
+          all_day: eventData.all_day,
+          color: eventData.color || null,
+          type: eventData.type,
+          is_public: eventData.is_public
+        })
+        .select('id')
+        .single();
+      
+      if (error) {
+        console.error('Erro ao criar evento:', error);
+        return null;
+      }
+      
+      return data.id;
+    } catch (error) {
+      console.error('Erro ao criar evento:', error);
+      return null;
+    }
+  }
+  
+  /**
+   * Atualiza um evento existente
+   * @param eventId ID do evento
+   * @param eventData Dados atualizados do evento
+   * @returns true se a operação foi bem-sucedida, false caso contrário
+   */
+  static async updateFacultyEvent(
+    eventId: number,
+    eventData: {
+      title?: string;
+      description?: string | null;
+      location?: string | null;
+      start_date?: string;
+      end_date?: string | null;
+      all_day?: boolean;
+      color?: string | null;
+      type?: 'exam' | 'assignment' | 'lecture' | 'meeting' | 'other';
+      is_public?: boolean;
+    }
+  ): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('faculty_events')
+        .update(eventData)
+        .eq('id', eventId);
+      
+      if (error) {
+        console.error('Erro ao atualizar evento:', error);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erro ao atualizar evento:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Exclui um evento
+   * @param eventId ID do evento
+   * @returns true se a operação foi bem-sucedida, false caso contrário
+   */
+  static async deleteFacultyEvent(eventId: number): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('faculty_events')
+        .delete()
+        .eq('id', eventId);
+      
+      if (error) {
+        console.error('Erro ao excluir evento:', error);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erro ao excluir evento:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Busca os próximos eventos de uma faculdade
+   * @param facultyId ID da faculdade
+   * @param limit Limite de resultados (padrão: 5)
+   * @returns Lista de próximos eventos ou array vazio em caso de erro
+   */
+  static async getUpcomingFacultyEvents(
+    facultyId: number,
+    limit: number = 5
+  ): Promise<FacultyEvent[]> {
+    try {
+      // Obter a data atual no formato ISO
+      const currentDate = new Date().toISOString();
+      
+      // Buscar eventos a partir da data atual
+      return this.getFacultyEvents(facultyId, currentDate, undefined, limit);
+    } catch (error) {
+      console.error('Erro ao buscar próximos eventos:', error);
+      return [];
+    }
+  }
+
+  /**
    * Busca informações de vários usuários de uma vez
    * @param userIds Array de IDs de usuários
    * @returns Mapa de informações de usuários ou objeto vazio em caso de erro
@@ -1780,23 +2009,28 @@ export class FacultyService {
     }
 
     try {
+      // Buscar informações dos perfis diretamente
+      const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .in('id', userIds);
+      
+      if (error) {
+        console.error('Erro ao buscar perfis:', error);
+        return {};
+      }
+      
+      // Criar um mapa de ID do usuário para informações do perfil
       const userMap: Record<string, any> = {};
       
-      // Buscar informações de cada usuário individualmente
-      // No futuro, isso pode ser otimizado para buscar vários usuários de uma vez
-      for (const userId of userIds) {
-        try {
-          // Chamar a função RPC para obter informações do usuário
-          const { data: userInfo, error: userError } = await supabase
-            .rpc('get_user_info', { user_id: userId });
-          
-          if (!userError && userInfo) {
-            userMap[userId] = userInfo;
-          }
-        } catch (userError) {
-          console.error(`Erro ao buscar informações do usuário ${userId}:`, userError);
-        }
-      }
+      profiles?.forEach(profile => {
+        userMap[profile.id] = {
+          id: profile.id,
+          name: profile.full_name || profile.username,
+          username: profile.username,
+          avatar_url: profile.avatar_url
+        };
+      });
       
       return userMap;
     } catch (error) {
