@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '../../../lib/db';
 import { withApiAuth } from '@/lib/api-auth';
 import { supabase } from '@/lib/supabase';
+import { SubscriptionService } from '@/services/subscription.service';
 
 // Interface para os resultados de consulta do adaptador de BD
 interface QueryResult {
@@ -107,7 +108,7 @@ export const GET = withApiAuth(async (request: NextRequest, { userId, supabase: 
 });
 
 // POST - Criar nova disciplina
-export const POST = withApiAuth(async (request: Request, { userId, session, supabase: authSupabase }) => {
+export const POST = withApiAuth(async (request: NextRequest, { userId, session, supabase: authSupabase }) => {
   try {
     const { name, description, theme } = await request.json();
 
@@ -124,6 +125,35 @@ export const POST = withApiAuth(async (request: Request, { userId, session, supa
     // Cliente Supabase a ser utilizado - com autenticação ou padrão
     const supabaseClient = authSupabase || supabase;
     
+    // Verificar limite de disciplinas do plano do usuário
+    try {
+      // Contar disciplinas existentes
+      const { count: disciplinesCount, error: countError } = await supabaseClient
+        .from('disciplines')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+        
+      if (countError) {
+        console.error('Erro ao contar disciplinas:', countError);
+      } else {
+        // Obter limites do plano do usuário
+        const userLimits = await SubscriptionService.getUserSubscriptionLimits(userId, supabaseClient);
+        
+        // Verificar se atingiu o limite (ignorar se o limite for -1, que significa ilimitado)
+        if (userLimits.disciplinesLimit !== -1 && 
+            disciplinesCount >= userLimits.disciplinesLimit) {
+          console.log(`API disciplines: Limite de disciplinas atingido. Atual: ${disciplinesCount}, Limite: ${userLimits.disciplinesLimit}`);
+          return NextResponse.json(
+            { error: `Você atingiu o limite de ${userLimits.disciplinesLimit} disciplinas do seu plano. Faça upgrade para adicionar mais.` },
+            { status: 403 }
+          );
+        }
+      }
+    } catch (limitError) {
+      console.error('Erro ao verificar limites de assinatura:', limitError);
+      // Continuar mesmo se houver erro na verificação de limites para não bloquear usuários
+    }
+
     // Verificar se o usuário existe na tabela users e criar se não existir
     console.log('API disciplines: Verificando se o usuário existe na tabela users');
     const { data: existingUser, error: userCheckError } = await supabaseClient

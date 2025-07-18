@@ -2,16 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
-import { StartupProvider } from './providers';
-import { AuthProvider } from '@/contexts/AuthContext';
-import { PWAProvider } from '@/components/PWAProvider';
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import dynamic from 'next/dynamic';
-
-// Dynamically import the MobileMenu component with no SSR
-const MobileMenu = dynamic(() => import('@/components/layout/MobileMenu'), { 
-  ssr: false 
-});
+import ClientLayout from './ClientLayout';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -103,16 +95,10 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased bg-gradient-to-br from-blue-100 to-indigo-100 min-h-screen pb-16 md:pb-0">
-        <AuthProvider>
-          <PWAProvider>
-            <StartupProvider>
-              {children}
-              
-              {/* Mobile Menu - Only visible on mobile devices */}
-              <MobileMenu />
-            </StartupProvider>
-          </PWAProvider>
-        </AuthProvider>
+        <ClientLayout>
+          {children}
+        </ClientLayout>
+        
         {/* Componente de Toast para notificações */}
         <Toaster position="top-right" />
         

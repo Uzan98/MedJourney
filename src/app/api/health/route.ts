@@ -1,23 +1,17 @@
 import { NextResponse } from 'next/server';
 
 /**
- * Endpoint de verificação de integridade (health check) da API
- * Usado para verificar se o servidor está online/disponível
+ * GET /api/health
+ * Health check endpoint to verify API is working
  */
 export async function GET() {
-  return NextResponse.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString() 
-  });
+  return NextResponse.json({ status: 'ok', timestamp: new Date().toISOString() });
 }
 
+/**
+ * HEAD /api/health
+ * Health check endpoint for monitoring services
+ */
 export async function HEAD() {
-  return new Response(null, { 
-    status: 200, 
-    headers: {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    }
-  });
+  return new NextResponse(null, { status: 200 });
 } 

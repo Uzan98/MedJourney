@@ -26,6 +26,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Discipline } from '@/lib/supabase';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 interface DisciplineModalProps {
   isOpen: boolean;
@@ -46,6 +47,9 @@ const DisciplineModal: React.FC<DisciplineModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isEditing = !!disciplineToEdit;
+  
+  // Usar o contexto de assinatura para verificar limites
+  const { hasReachedLimit, subscriptionLimits } = useSubscription();
 
   // Preencher o formulário com os dados da disciplina a ser editada
   useEffect(() => {
@@ -71,6 +75,12 @@ const DisciplineModal: React.FC<DisciplineModalProps> = ({
 
     if (name.length > 50) {
       setError("Nome da disciplina não pode ter mais que 50 caracteres.");
+      return;
+    }
+
+    // Verificar limite de disciplinas apenas para criação (não para edição)
+    if (!isEditing && hasReachedLimit('disciplines')) {
+      setError(`Você atingiu o limite de ${subscriptionLimits?.disciplinesLimit} disciplinas do seu plano. Faça upgrade para adicionar mais.`);
       return;
     }
 
