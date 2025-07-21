@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - MedJourney</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom right, #ebf4ff, #e0e8ff);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #3a4b5c;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background-color: white;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            border-radius: 1rem;
+            max-width: 90%;
+            width: 500px;
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            background-color: #e0e8ff;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem auto;
+        }
+        .logo-inner {
+            width: 60px;
+            height: 60px;
+            background-color: #3b82f6;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #1f2937;
+        }
+        p {
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            color: #4b5563;
+        }
+        .button {
+            display: inline-block;
+            background-color: #3b82f6;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #2563eb;
+        }
+        .icon {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .feature-list {
+            text-align: left;
+            margin: 1.5rem 0;
+            padding-left: 1rem;
+        }
+        .feature-list li {
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <div class="logo-inner">
+                <span class="icon">M</span>
+            </div>
+        </div>
+        <h1>Você está offline</h1>
+        <p>Parece que você está sem conexão com a internet. Algumas funcionalidades podem não estar disponíveis até que a conexão seja restabelecida.</p>
+        
+        <div class="feature-list">
+            <p><strong>Você ainda pode:</strong></p>
+            <ul>
+                <li>Visualizar conteúdos salvos em cache</li>
+                <li>Acessar seus últimos simulados</li>
+                <li>Ver o plano de estudos salvo</li>
+                <li>Ler suas anotações recentes</li>
+            </ul>
+        </div>
+        
+        <p>Os dados serão sincronizados automaticamente quando sua conexão for restaurada.</p>
+        
+        <a href="/" class="button">Tentar novamente</a>
+    </div>
+</body>
+</html> 

@@ -1,0 +1,5 @@
+# Ignora a pasta de debug durante o deploy
+**/debug/** 
+
+# Ignorar a pasta admin no deploy, pois não está sendo usada atualmente
+src/app/admin/ 

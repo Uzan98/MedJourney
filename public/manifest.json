@@ -1,0 +1,59 @@
+{
+  "name": "MedJourney - Assistente de Estudos",
+  "short_name": "MedJourney",
+  "description": "Organize e otimize seus estudos na área médica",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0f4ff",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/"
+    },
+    {
+      "name": "Painel de Estudos",
+      "url": "/estudos"
+    },
+    {
+      "name": "Simulados",
+      "url": "/simulados"
+    },
+    {
+      "name": "Estatísticas",
+      "url": "/estatisticas"
+    }
+  ],
+  "orientation": "portrait",
+  "categories": ["education", "productivity", "medical"],
+  "screenshots": [
+    {
+      "src": "/screenshots/dashboard.png",
+      "sizes": "1280x720",
+      "type": "image/png"
+    },
+    {
+      "src": "/screenshots/estudos.png",
+      "sizes": "1280x720",
+      "type": "image/png"
+    }
+  ],
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "iarc_rating_id": "",
+  "prefer_related_applications": false
+} 
