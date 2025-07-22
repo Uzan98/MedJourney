@@ -15,6 +15,17 @@ let supabaseClient: SupabaseClient;
 let isReconnecting = false;
 let wasConnected = false;
 
+const isBuild = process.env.NEXT_PHASE === 'phase-production-build';
+
+let supabase: SupabaseClient | null = null;
+
+if (!isBuild && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+}
+
 try {
   if (supabaseUrl && supabaseAnonKey) {
     // Criar e exportar o cliente com configuração para autenticação por cookies
@@ -165,7 +176,7 @@ try {
   supabaseClient = createMockClient();
 }
 
-export const supabase = supabaseClient;
+export { supabase };
 
 // Função para criar um cliente mock que implementa a API do Supabase
 function createMockClient(): SupabaseClient {

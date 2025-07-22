@@ -1,16 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
 
-// URLs e chaves do Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const isBuild = process.env.NEXT_PHASE === 'phase-production-build';
 
-// Cliente Supabase com chave de serviço (bypassa RLS)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-});
+let supabaseAdmin: any = null;
+
+if (!isBuild && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
+
+export { supabaseAdmin };
 
 /**
  * Função para criar ou atualizar um usuário anônimo para desenvolvimento
