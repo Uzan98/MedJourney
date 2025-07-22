@@ -71,8 +71,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         // First try to use the Edge Function
         try {
           const { data: functionData, error: functionError } = await supabase.functions.invoke('get-subscription-limits', {
-            body: { userId: session.user.id },
-          });
+          body: { userId: session.user.id },
+        });
 
           console.log('Edge function response:', functionData, functionError);
 
@@ -204,8 +204,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // First try to use the Edge Function
       try {
         const { data: functionData, error: functionError } = await supabase.functions.invoke('get-subscription-limits', {
-          body: { userId: session.user.id },
-        });
+        body: { userId: session.user.id },
+      });
 
         console.log('Edge function response:', functionData, functionError);
 

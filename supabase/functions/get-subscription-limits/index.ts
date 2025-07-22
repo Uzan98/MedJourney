@@ -143,12 +143,12 @@ serve(async (req: Request) => {
     
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
       status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-client-info, apikey',
-      },
-    });
+    },
+  });
   }
 }); 

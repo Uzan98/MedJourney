@@ -3,6 +3,7 @@ import { executeQuery } from '../../../lib/db';
 import { withApiAuth } from '@/lib/api-auth';
 import { supabase } from '@/lib/supabase';
 import { SubscriptionService } from '@/services/subscription.service';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 // Interface para os resultados de consulta do adaptador de BD
 interface QueryResult {
@@ -23,7 +24,7 @@ interface Discipline {
 }
 
 // GET - Listar todas as disciplinas
-export const GET = withApiAuth(async (request: NextRequest, { userId, supabase: authSupabase }) => {
+export const GET = withApiAuth(async (request: Request, { userId, supabase: authSupabase }) => {
   try {
     console.log('API disciplines: Usuário autenticado:', userId);
     
@@ -41,7 +42,7 @@ export const GET = withApiAuth(async (request: NextRequest, { userId, supabase: 
     let userIdToUse = userId;
     
     // Cliente Supabase a ser utilizado - com autenticação ou padrão
-    const supabaseClient = authSupabase || supabase;
+    const supabaseClient = authSupabase || supabaseAdmin;
     
     if (isDev && isDevBypass) {
       console.log('API disciplines: Modo de desenvolvimento - exibindo todas as disciplinas');
@@ -108,7 +109,7 @@ export const GET = withApiAuth(async (request: NextRequest, { userId, supabase: 
 });
 
 // POST - Criar nova disciplina
-export const POST = withApiAuth(async (request: NextRequest, { userId, session, supabase: authSupabase }) => {
+export const POST = withApiAuth(async (request: Request, { userId, session, supabase: authSupabase }) => {
   try {
     const { name, description, theme } = await request.json();
 
@@ -123,7 +124,7 @@ export const POST = withApiAuth(async (request: NextRequest, { userId, session, 
     console.log('API disciplines: Criando disciplina para usuário:', userId);
     
     // Cliente Supabase a ser utilizado - com autenticação ou padrão
-    const supabaseClient = authSupabase || supabase;
+    const supabaseClient = authSupabase || supabaseAdmin;
     
     // Verificar limite de disciplinas do plano do usuário
     try {
@@ -153,7 +154,7 @@ export const POST = withApiAuth(async (request: NextRequest, { userId, session, 
       console.error('Erro ao verificar limites de assinatura:', limitError);
       // Continuar mesmo se houver erro na verificação de limites para não bloquear usuários
     }
-
+    
     // Verificar se o usuário existe na tabela users e criar se não existir
     console.log('API disciplines: Verificando se o usuário existe na tabela users');
     const { data: existingUser, error: userCheckError } = await supabaseClient
