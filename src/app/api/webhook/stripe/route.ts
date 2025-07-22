@@ -10,10 +10,12 @@ export async function POST(request: NextRequest) {
     return new Response(JSON.stringify({ message: 'Build mode: no data' }), { status: 200 });
   }
   const { createClient } = await import('@supabase/supabase-js');
-  const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return NextResponse.json({ error: 'Supabase env vars missing' }, { status: 500 });
+  }
+  const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
   try {
     const body = await request.text();
     const signature = request.headers.get('stripe-signature');
