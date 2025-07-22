@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '../../../lib/db';
 import { withApiAuth } from '@/lib/api-auth';
-import { supabase } from '@/lib/supabase';
-import { SubscriptionService } from '@/services/subscription.service';
-import { supabaseAdmin } from '@/lib/supabase-admin';
 
 // Interface para os resultados de consulta do adaptador de BD
 interface QueryResult {
@@ -28,6 +25,10 @@ export const GET = withApiAuth(async (request: Request, { userId, supabase: auth
   if (process.env.NEXT_PHASE === 'phase-production-build') {
     return new Response(JSON.stringify({ message: 'Build mode: no data' }), { status: 200 });
   }
+  // IMPORTS INTERNOS
+  const { supabaseAdmin } = await import('@/lib/supabase-admin');
+  const { SubscriptionService } = await import('@/services/subscription.service');
+
   try {
     console.log('API disciplines: Usuário autenticado:', userId);
     
@@ -116,6 +117,10 @@ export const POST = withApiAuth(async (request: Request, { userId, session, supa
   if (process.env.NEXT_PHASE === 'phase-production-build') {
     return new Response(JSON.stringify({ message: 'Build mode: no data' }), { status: 200 });
   }
+  // IMPORTS INTERNOS
+  const { supabaseAdmin } = await import('@/lib/supabase-admin');
+  const { SubscriptionService } = await import('@/services/subscription.service');
+
   try {
     const { name, description, theme } = await request.json();
 
