@@ -178,8 +178,8 @@ function createEnvLocalFile() {
   }
   
   const defaultVars = {
-    'NEXT_PUBLIC_SUPABASE_URL': 'https://ipfjehdwmenpaeuefntd.supabase.co',
-    'NEXT_PUBLIC_SUPABASE_ANON_KEY': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlwZmplaGR3bWVucGFldWVmbnRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDA0MDc4MzMsImV4cCI6MjAxNTk4MzgzM30.GEn4Cdh-SQE4hn0RQcPZeFIMuvXbwSNFVvJmTuNiTok',
+    'NEXT_PUBLIC_SUPABASE_URL': 'YOUR_SUPABASE_URL',
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY': 'YOUR_SUPABASE_ANON_KEY',
     'NEXT_PUBLIC_APP_URL': 'https://medjourney.vercel.app',
     'NEXT_PUBLIC_MOCK_DB': 'true',
     'NEXT_IGNORE_ERRORS': '1',
