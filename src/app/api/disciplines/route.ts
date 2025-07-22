@@ -23,17 +23,11 @@ interface Discipline {
   updated_at: string;
 }
 
-if (process.env.NEXT_PHASE === 'phase-production-build') {
-  export async function GET() {
-    return new Response(JSON.stringify({ message: 'Build mode: no data' }), { status: 200 });
-  }
-  export async function POST() {
-    return new Response(JSON.stringify({ message: 'Build mode: no data' }), { status: 200 });
-  }
-}
-
 // GET - Listar todas as disciplinas
 export const GET = withApiAuth(async (request: Request, { userId, supabase: authSupabase }) => {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return new Response(JSON.stringify({ message: 'Build mode: no data' }), { status: 200 });
+  }
   try {
     console.log('API disciplines: Usuário autenticado:', userId);
     
@@ -119,6 +113,9 @@ export const GET = withApiAuth(async (request: Request, { userId, supabase: auth
 
 // POST - Criar nova disciplina
 export const POST = withApiAuth(async (request: Request, { userId, session, supabase: authSupabase }) => {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return new Response(JSON.stringify({ message: 'Build mode: no data' }), { status: 200 });
+  }
   try {
     const { name, description, theme } = await request.json();
 
