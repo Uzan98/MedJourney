@@ -4,6 +4,10 @@ import { supabase } from '@/lib/supabase';
 
 // POST - Criar novo assunto
 export const POST = withApiAuth(async (request: Request, { userId, session, supabase: authSupabase }) => {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return new Response(JSON.stringify({ message: 'Build mode: no data' }), { status: 200 });
+  }
+
   try {
     const { 
       disciplineId, 
@@ -92,6 +96,10 @@ export const POST = withApiAuth(async (request: Request, { userId, session, supa
 
 // GET - Listar assuntos de uma disciplina
 export const GET = withApiAuth(async (request: NextRequest, { userId, supabase: authSupabase }) => {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return new Response(JSON.stringify({ message: 'Build mode: no data' }), { status: 200 });
+  }
+
   try {
     // Obter parâmetros da requisição
     const { searchParams } = new URL(request.url);

@@ -22,6 +22,11 @@ function hashPassword(password: string): string {
 
 // Handler para login de usuário
 export async function POST(request: Request) {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return new Response(JSON.stringify({ message: 'Build mode: no data' }), { status: 200 });
+  }
+  const { supabase } = await import('@/lib/supabase');
+
   try {
     const { email, password } = await request.json();
 

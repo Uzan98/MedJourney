@@ -1,26 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SubscriptionStatus } from '../../../../types/subscription';
 import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET; // Opcional para testes
 
-// Use Service Role Key para garantir permissões totais
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function POST(request: NextRequest) {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return new Response(JSON.stringify({ message: 'Build mode: no data' }), { status: 200 });
+  }
+  const { createClient } = await import('@supabase/supabase-js');
+  const supabase = createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
   try {
     const body = await request.text();
     const signature = request.headers.get('stripe-signature');
-    
     let event;
-    
     if (webhookSecret && signature) {
-      // Verificar assinatura se o segredo estiver disponível
       try {
         event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
       } catch (err: any) {
@@ -28,34 +26,29 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
       }
     } else {
-      // Para testes, podemos aceitar o evento sem verificação
       event = JSON.parse(body);
       console.warn('Webhook signature not verified - use only in development');
     }
-
     console.log('Stripe webhook received:', event.type, event.data?.object);
-    
-    // Processar evento
     switch (event.type) {
       case 'checkout.session.completed':
-        await handleCheckoutSessionCompleted(event.data.object);
+        await handleCheckoutSessionCompleted(event.data.object, supabase);
         break;
       case 'invoice.paid':
-        await handleInvoicePaid(event.data.object);
+        await handleInvoicePaid(event.data.object, supabase);
         break;
       case 'invoice.payment_failed':
-        await handleInvoicePaymentFailed(event.data.object);
+        await handleInvoicePaymentFailed(event.data.object, supabase);
         break;
       case 'customer.subscription.updated':
-        await handleSubscriptionUpdated(event.data.object);
+        await handleSubscriptionUpdated(event.data.object, supabase);
         break;
       case 'customer.subscription.deleted':
-        await handleSubscriptionDeleted(event.data.object);
+        await handleSubscriptionDeleted(event.data.object, supabase);
         break;
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
-    
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error('Error handling webhook:', error);
@@ -66,7 +59,7 @@ export async function POST(request: NextRequest) {
 /**
  * Handle checkout.session.completed event
  */
-async function handleCheckoutSessionCompleted(session: any) {
+async function handleCheckoutSessionCompleted(session: any, supabase: any) {
   console.log('Checkout session completed:', session);
   
   // 1. Get the customer and subscription IDs
@@ -188,7 +181,7 @@ async function handleCheckoutSessionCompleted(session: any) {
 /**
  * Handle invoice.paid event
  */
-async function handleInvoicePaid(invoice: any) {
+async function handleInvoicePaid(invoice: any, supabase: any) {
   console.log('Invoice paid:', invoice);
   
   // 1. Get the subscription ID
@@ -232,7 +225,7 @@ async function handleInvoicePaid(invoice: any) {
 /**
  * Handle invoice.payment_failed event
  */
-async function handleInvoicePaymentFailed(invoice: any) {
+async function handleInvoicePaymentFailed(invoice: any, supabase: any) {
   console.log('Invoice payment failed:', invoice);
   
   // 1. Get the subscription ID
@@ -259,7 +252,7 @@ async function handleInvoicePaymentFailed(invoice: any) {
 /**
  * Handle customer.subscription.updated event
  */
-async function handleSubscriptionUpdated(subscription: any) {
+async function handleSubscriptionUpdated(subscription: any, supabase: any) {
   console.log('Subscription updated:', subscription);
   
   // 1. Get the subscription ID
@@ -316,7 +309,7 @@ async function handleSubscriptionUpdated(subscription: any) {
 /**
  * Handle customer.subscription.deleted event
  */
-async function handleSubscriptionDeleted(subscription: any) {
+async function handleSubscriptionDeleted(subscription: any, supabase: any) {
   console.log('Subscription deleted:', subscription);
   
   // 1. Get the subscription ID

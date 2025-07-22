@@ -29,6 +29,11 @@ interface FocusData {
 
 // GET - Obter métricas de estudo
 export async function GET() {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return new Response(JSON.stringify({ message: 'Build mode: no data' }), { status: 200 });
+  }
+  const { supabase } = await import('@/lib/supabase');
+
   try {
     // Em uma aplicação real, obter o userId do token de autenticação
     const userId = 1;

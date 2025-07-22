@@ -5,6 +5,10 @@ import { NextResponse } from 'next/server';
  * Health check endpoint to verify API is working
  */
 export async function GET() {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return new Response(JSON.stringify({ message: 'Build mode: no data' }), { status: 200 });
+  }
+  const { supabase } = await import('@/lib/supabase');
   return NextResponse.json({ status: 'ok', timestamp: new Date().toISOString() });
 }
 

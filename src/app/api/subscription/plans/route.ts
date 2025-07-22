@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient, createRequestSupabaseClient } from '../../../../lib/supabase-server';
-import { createClient } from '@supabase/supabase-js';
-
-// Estas variáveis de ambiente são necessárias para criar o cliente Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 /**
  * GET /api/subscription/plans
  * Get all available subscription plans
  */
 export async function GET(request: NextRequest) {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return new Response(JSON.stringify({ message: 'Build mode: no data' }), { status: 200 });
+  }
+  const { createRequestSupabaseClient } = await import('../../../../lib/supabase-server');
+  const { createClient } = await import('@supabase/supabase-js');
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
   try {
     let supabase;
     
