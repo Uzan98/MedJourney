@@ -7,7 +7,7 @@
 Adicione a seguinte linha ao seu arquivo `.env.local`:
 
 ```
-STRIPE_WEBHOOK_SECRET=whsec_b858b47e3daba72714949c163ee34f28a853ff3fd639ea37b0dbf8d786bc4183
+STRIPE_WEBHOOK_SECRET=
 ```
 
 ## 2. Verificar a configuração do Webhook no Stripe Dashboard

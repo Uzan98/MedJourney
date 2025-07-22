@@ -82,7 +82,7 @@ serve(async (req: Request) => {
 
     // Default limits for FREE tier
     const defaultLimits = {
-      tier: 'FREE',
+      tier: 'free', // Corrigido: 'free' em minúsculo para corresponder ao enum SubscriptionTier.FREE
       disciplinesUsed: disciplinesCount || 0,
       disciplinesLimit: 5,
       flashcardDecksUsed: flashcardDecksCount || 0,
@@ -115,7 +115,7 @@ serve(async (req: Request) => {
 
     // Build limits object based on subscription
     const limits = {
-      tier: userSubscription.tier || 'FREE',
+      tier: userSubscription.tier || 'free', // Corrigido: 'free' em minúsculo como fallback
       disciplinesUsed: disciplinesCount || 0,
       disciplinesLimit: features.maxDisciplines || 5,
       flashcardDecksUsed: flashcardDecksCount || 0,

@@ -168,6 +168,12 @@ export const DisciplinesRestService = {
     }
   ): Promise<Discipline | null> {
     try {
+      // Verificar se o cliente Supabase está disponível
+      if (!supabase) {
+        console.error('Cliente Supabase não está disponível');
+        throw new Error('Cliente Supabase não inicializado');
+      }
+      
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -179,6 +185,77 @@ export const DisciplinesRestService = {
       // Garantir que o usuário exista na tabela users antes de criar a disciplina
       const userInfo = await ensureUserExists(user.id, user.email);
       console.log('Informações do usuário:', userInfo);
+      
+      // Verificar limites de assinatura antes de criar disciplina
+      try {
+        // Primeiro, contar as disciplinas existentes do usuário
+        const { count: disciplinesCount, error: countError } = await supabase
+          .from('disciplines')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+          
+        if (countError) {
+          console.error('Erro ao contar disciplinas:', countError);
+          throw new Error('Não foi possível verificar o número atual de disciplinas');
+        }
+        
+        // Buscar os limites do usuário usando a API
+        const limitsResponse = await fetch('/api/subscription', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
+        });
+        
+        if (!limitsResponse.ok) {
+          throw new Error('Não foi possível obter os limites de assinatura');
+        }
+        
+        const userLimits = await limitsResponse.json();
+        
+        // Verificar se o usuário atingiu o limite
+        if (userLimits.disciplinesLimit !== -1 && 
+            disciplinesCount && disciplinesCount >= userLimits.disciplinesLimit) {
+          console.error(`Limite de disciplinas atingido. Atual: ${disciplinesCount}, Limite: ${userLimits.disciplinesLimit}`);
+          throw new Error(`LIMIT_REACHED:${userLimits.disciplinesLimit}`);
+        }
+      } catch (limitError: any) {
+        console.error('Erro ao verificar limites de assinatura:', limitError);
+        
+        // Verificar se é um erro de limite atingido
+        if (limitError.message && limitError.message.startsWith('LIMIT_REACHED:')) {
+          // Tentar criar via API para obter uma resposta mais detalhada
+          try {
+            console.log('Tentando criar via API para obter resposta detalhada sobre limites...');
+            const apiResponse = await fetch('/api/disciplines', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(discipline)
+            });
+            
+            if (!apiResponse.ok) {
+              const apiError = await apiResponse.json();
+              console.error('Resposta da API sobre limite:', apiError);
+              
+              // Se for erro de limite, lançar erro formatado
+              if (apiError.limitReached) {
+                throw new Error(`Você atingiu o limite de ${apiError.limit} disciplinas do seu plano atual. Para adicionar mais disciplinas, faça upgrade do seu plano em /perfil/assinatura.`);
+              }
+              
+              throw new Error(apiError.error || 'Erro ao criar disciplina');
+            }
+          } catch (apiError: any) {
+            console.error('Erro ao verificar limites via API:', apiError);
+            throw apiError;
+          }
+        }
+        
+        // Não bloquear completamente, tentar criar via API que tem sua própria verificação
+        console.log('Tentando criar via API que tem verificação de limites própria...');
+      }
       
       const headers = await getAuthHeaders();
       const url = `${getSupabaseRestUrl()}disciplines`;
@@ -225,7 +302,9 @@ export const DisciplinesRestService = {
             });
             
             if (!apiResponse.ok) {
-              throw new Error('Falha no endpoint de API');
+              const apiError = await apiResponse.json();
+              console.error('Erro na API:', apiError);
+              throw new Error(apiError.error || 'Falha no endpoint de API');
             }
             
             const apiData = await apiResponse.json();

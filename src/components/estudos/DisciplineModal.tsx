@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { X, BookOpen, Palette } from 'lucide-react';
+import { X, BookOpen, Palette, CreditCard } from 'lucide-react';
 import { toast } from '@/components/ui/toast-interface';
 import { ThemePicker } from '@/components/ui/theme-components';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -46,10 +47,12 @@ const DisciplineModal: React.FC<DisciplineModalProps> = ({
   const [theme, setTheme] = useState('azul'); // tema padrão
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showLimitError, setShowLimitError] = useState(false);
   const isEditing = !!disciplineToEdit;
+  const router = useRouter();
   
   // Usar o contexto de assinatura para verificar limites
-  const { hasReachedLimit, subscriptionLimits } = useSubscription();
+  const { hasReachedLimit, subscriptionLimits, refreshLimits } = useSubscription();
 
   // Preencher o formulário com os dados da disciplina a ser editada
   useEffect(() => {
@@ -64,6 +67,7 @@ const DisciplineModal: React.FC<DisciplineModalProps> = ({
       setTheme('azul');
     }
     setError(null);
+    setShowLimitError(false);
   }, [isOpen, disciplineToEdit]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,9 +83,20 @@ const DisciplineModal: React.FC<DisciplineModalProps> = ({
     }
 
     // Verificar limite de disciplinas apenas para criação (não para edição)
-    if (!isEditing && hasReachedLimit('disciplines')) {
-      setError(`Você atingiu o limite de ${subscriptionLimits?.disciplinesLimit} disciplinas do seu plano. Faça upgrade para adicionar mais.`);
-      return;
+    if (!isEditing) {
+      try {
+        // Atualizar os limites em tempo real antes de verificar
+        await refreshLimits();
+        
+        // Verificar novamente após atualização
+        if (hasReachedLimit('disciplines')) {
+          setShowLimitError(true);
+          return;
+        }
+      } catch (error) {
+        console.error("Erro ao atualizar limites de assinatura:", error);
+        // Continuar mesmo com erro para não bloquear o usuário
+      }
     }
 
     try {
@@ -115,6 +130,8 @@ const DisciplineModal: React.FC<DisciplineModalProps> = ({
         
         if (success) {
           toast.success("Disciplina criada com sucesso!");
+          // Atualizar limites após criação bem-sucedida
+          refreshLimits();
         } else {
           toast.error("Erro ao criar disciplina. Tente novamente.");
         }
@@ -138,9 +155,67 @@ const DisciplineModal: React.FC<DisciplineModalProps> = ({
     setDescription('');
     setTheme('azul');
     setError(null);
+    setShowLimitError(false);
+  };
+
+  const handleUpgradeClick = () => {
+    onClose();
+    router.push('/perfil/assinatura');
   };
 
   if (!isOpen) return null;
+
+  // Se o usuário atingiu o limite, mostrar uma mensagem especial
+  if (showLimitError) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800">Limite de disciplinas atingido</h2>
+              <button 
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Fechar"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded mb-6">
+              <p className="text-amber-800">
+                Você já atingiu o limite de <strong>{subscriptionLimits?.disciplinesLimit}</strong> disciplinas do seu plano atual.
+              </p>
+            </div>
+            
+            <div className="mb-6">
+              <h3 className="font-medium text-gray-700 mb-2">Para adicionar mais disciplinas, você pode:</h3>
+              <ul className="list-disc pl-5 space-y-1 text-gray-600">
+                <li>Fazer upgrade para um plano com mais disciplinas</li>
+                <li>Excluir disciplinas não utilizadas para liberar espaço</li>
+              </ul>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                className="flex-1 py-2 px-4 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleUpgradeClick}
+                className="flex-1 py-2 px-4 border border-transparent rounded-md text-white bg-blue-600 hover:bg-blue-700 flex items-center justify-center"
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Ver planos
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">

@@ -84,31 +84,77 @@ export class SubscriptionService {
    * Cancela a assinatura do usuário
    */
   static async cancelSubscription(userId: string, supabaseClient?: SupabaseClient) {
-    const supabase = supabaseClient || createServerSupabaseClient();
+    // Logar variáveis de ambiente para depuração
+    console.log('SUPABASE_URL em uso:', process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL);
+    console.log('SUPABASE_SERVICE_ROLE_KEY em uso:', process.env.SUPABASE_SERVICE_ROLE_KEY);
     
+    // Usar supabaseAdmin para garantir acesso com service_role
+    let supabase;
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+      const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+      
+      if (!supabaseUrl || !supabaseServiceRoleKey) {
+        console.error('Variáveis de ambiente do Supabase não encontradas');
+        throw new Error('Configuração do Supabase incompleta');
+      }
+      
+      // Criar cliente com service_role key
+      supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    } catch (error) {
+      console.error('Erro ao criar cliente Supabase Admin:', error);
+      // Fallback para o cliente fornecido
+      supabase = supabaseClient;
+    }
+    
+    if (!supabase) {
+      throw new Error('Cliente Supabase não disponível');
+    }
+    
+    // Logar o userId recebido
+    console.log('CancelSubscription chamado para user_id:', userId);
     // Obter assinatura do usuário
-    const { data: subscription } = await supabase
+    const { data: subscription, error: subscriptionError } = await supabase
       .from('user_subscriptions')
       .select('stripe_subscription_id')
       .eq('user_id', userId)
       .single();
     
+    // Logar o resultado da consulta e possível erro
+    console.log('Resultado da consulta user_subscriptions:', subscription);
+    if (subscriptionError) {
+      console.error('Erro ao buscar assinatura:', subscriptionError);
+    }
+    
     if (!subscription?.stripe_subscription_id) {
       throw new Error('Assinatura não encontrada');
     }
     
+    // Logar o id da assinatura antes de chamar o Stripe
+    console.log('Cancelando assinatura Stripe:', subscription.stripe_subscription_id);
+    
     // Cancelar assinatura no Stripe
-    await stripe.subscriptions.update(subscription.stripe_subscription_id, {
-      cancel_at_period_end: true
-    });
+    try {
+      await stripe.subscriptions.update(subscription.stripe_subscription_id, {
+        cancel_at_period_end: true
+      });
+    } catch (err: any) {
+      console.error('Erro ao cancelar no Stripe:', err);
+      throw new Error('Erro ao cancelar no Stripe: ' + (err?.message || err));
+    }
     
     // Atualizar status no banco de dados
-    await supabase
+    const { error: updateError } = await supabase
       .from('user_subscriptions')
       .update({
         cancel_at_period_end: true
       })
       .eq('user_id', userId);
+      
+    if (updateError) {
+      console.error('Erro ao atualizar status da assinatura no banco:', updateError);
+    }
     
     return { success: true };
   }

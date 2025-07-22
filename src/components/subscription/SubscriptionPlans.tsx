@@ -260,24 +260,48 @@ export const SubscriptionPlans: React.FC = () => {
 
     setIsProcessing(true);
     try {
+      // Adicionar token de autenticação se disponível
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      
+      console.log('Iniciando cancelamento de assinatura');
+      
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+        console.log('Token de autenticação adicionado');
+      } else {
+        console.log('Sem token de autenticação disponível, usando cookies');
+      }
+      
+      console.log('Enviando requisição DELETE para /api/subscription');
       const response = await fetch('/api/subscription', {
         method: 'DELETE',
+        headers,
+        credentials: 'include', // Importante para enviar cookies de sessão
       });
 
+      console.log('Resposta recebida:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to cancel subscription');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Resposta de erro:', response.status, errorData);
+        throw new Error(`Erro ${response.status}: ${errorData.error || 'Falha ao cancelar assinatura'}`);
       }
 
-      const { success } = await response.json();
+      const result = await response.json();
+      console.log('Resultado do cancelamento:', result);
       
-      if (success) {
-        alert('Assinatura cancelada com sucesso!');
+      if (result.success) {
+        alert('Assinatura cancelada com sucesso! As alterações serão aplicadas ao final do período atual.');
         // Refresh the page to update subscription status
         router.refresh();
+      } else {
+        throw new Error('Resposta não contém confirmação de sucesso');
       }
-    } catch (error) {
-      console.error('Error canceling subscription:', error);
-      alert('Erro ao cancelar assinatura. Por favor, tente novamente mais tarde.');
+    } catch (error: any) {
+      console.error('Erro detalhado ao cancelar assinatura:', error);
+      alert(`Erro ao cancelar assinatura: ${error.message || 'Tente novamente mais tarde.'}`);
     } finally {
       setIsProcessing(false);
     }
@@ -341,7 +365,20 @@ export const SubscriptionPlans: React.FC = () => {
     );
   }
 
+  // Determinar o plano realmente ativo (tier + period)
   const currentTier = subscriptionLimits?.tier || SubscriptionTier.FREE;
+  // Se o usuário for FREE, só o plano gratuito pode ser atual
+  // Se for PRO/PRO_PLUS, só o plano do mesmo tier e period pode ser atual
+
+  // Função para saber se o plano é realmente o atual
+  const isPlanCurrent = (plan: DbSubscriptionPlan) => {
+    if (!subscriptionLimits) return false;
+    if (subscriptionLimits.tier === SubscriptionTier.FREE) {
+      return plan.tier === SubscriptionTier.FREE;
+    }
+    // Para PRO/PRO_PLUS, só o plano do mesmo tier e period (se quiser considerar period)
+    return plan.tier === subscriptionLimits.tier;
+  };
 
   return (
     <div>
@@ -378,7 +415,7 @@ export const SubscriptionPlans: React.FC = () => {
         {filteredPlans.map((plan) => {
           const tierEnum = plan.tier as SubscriptionTier;
           const features = getPlanFeatures(tierEnum);
-          const isCurrentPlan = tierEnum === currentTier;
+          const isCurrentPlan = isPlanCurrent(plan);
           
           return (
             <div 

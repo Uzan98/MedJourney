@@ -147,23 +147,39 @@ export const POST = withApiAuth(async (request: Request, { userId, session, supa
         
       if (countError) {
         console.error('Erro ao contar disciplinas:', countError);
-      } else {
-        // Obter limites do plano do usuário
-        const userLimits = await SubscriptionService.getUserSubscriptionLimits(userId, supabaseClient);
-        
-        // Verificar se atingiu o limite (ignorar se o limite for -1, que significa ilimitado)
-        if (userLimits.disciplinesLimit !== -1 && 
-            disciplinesCount >= userLimits.disciplinesLimit) {
-          console.log(`API disciplines: Limite de disciplinas atingido. Atual: ${disciplinesCount}, Limite: ${userLimits.disciplinesLimit}`);
-          return NextResponse.json(
-            { error: `Você atingiu o limite de ${userLimits.disciplinesLimit} disciplinas do seu plano. Faça upgrade para adicionar mais.` },
-            { status: 403 }
-          );
-        }
+        return NextResponse.json(
+          { error: 'Erro ao verificar limites de assinatura' },
+          { status: 500 }
+        );
+      }
+      
+      // Obter limites do plano do usuário
+      const userLimits = await SubscriptionService.getUserSubscriptionLimits(userId, supabaseClient);
+      
+      // Verificar se atingiu o limite (ignorar se o limite for -1, que significa ilimitado)
+      if (userLimits.disciplinesLimit !== -1 && 
+          disciplinesCount >= userLimits.disciplinesLimit) {
+        console.log(`API disciplines: Limite de disciplinas atingido. Atual: ${disciplinesCount}, Limite: ${userLimits.disciplinesLimit}`);
+        return NextResponse.json(
+          { 
+            error: `Você atingiu o limite de ${userLimits.disciplinesLimit} disciplinas do seu plano.`, 
+            limitReached: true,
+            currentPlan: userLimits.tier,
+            limit: userLimits.disciplinesLimit,
+            used: disciplinesCount,
+            upgradeUrl: '/perfil/assinatura',
+            message: 'Para adicionar mais disciplinas, faça upgrade do seu plano.'
+          },
+          { status: 403 }
+        );
       }
     } catch (limitError) {
       console.error('Erro ao verificar limites de assinatura:', limitError);
-      // Continuar mesmo se houver erro na verificação de limites para não bloquear usuários
+      // Em vez de continuar, retornar erro para garantir que não haja criação sem verificação de limites
+      return NextResponse.json(
+        { error: 'Não foi possível verificar os limites de assinatura. Tente novamente.' },
+        { status: 500 }
+      );
     }
     
     // Verificar se o usuário existe na tabela users e criar se não existir
