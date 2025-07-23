@@ -36,12 +36,14 @@ import {
   ArrowRightCircle,
   Settings,
   PlusCircle,
-  RefreshCw
+  RefreshCw,
+  CreditCard
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import PlannedSessionsList from '@/components/planning/PlannedSessionsList';
 import { Calendar as ReactCalendar, dateFnsLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 // Configurando o localizador de datas para o calendário
 const locales = {
@@ -134,6 +136,8 @@ export default function PlanejamentoPage() {
     completedSessions: 0
   });
   const router = useRouter();
+  const { checkFeatureAccess } = useSubscription();
+  const hasAiPlanningAccess = checkFeatureAccess('ai_planning');
 
   // Função para buscar sessões da semana atual
   async function fetchWeekSessions() {
@@ -570,13 +574,23 @@ export default function PlanejamentoPage() {
                   dificuldades e disponibilidade de tempo.
                 </p>
                 
-              <Link 
-                href="/planejamento/inteligente" 
-                  className="mt-4 inline-flex items-center px-4 py-2 rounded-lg bg-white text-purple-700 font-medium hover:bg-indigo-50 transition-colors"
-              >
-                  Experimentar
-                  <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
+                {hasAiPlanningAccess ? (
+                  <Link 
+                    href="/planejamento/inteligente" 
+                    className="mt-4 inline-flex items-center px-4 py-2 rounded-lg bg-white text-purple-700 font-medium hover:bg-indigo-50 transition-colors"
+                  >
+                    Experimentar
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                ) : (
+                  <Link 
+                    href="/perfil/assinatura" 
+                    className="mt-4 inline-flex items-center px-4 py-2 rounded-lg bg-white text-purple-700 font-medium hover:bg-indigo-50 transition-colors"
+                  >
+                    Fazer Upgrade
+                    <CreditCard className="ml-2 h-4 w-4" />
+                  </Link>
+                )}
               </div>
               
               <div className="flex-shrink-0 bg-white bg-opacity-10 p-4 rounded-full">

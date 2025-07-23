@@ -34,6 +34,90 @@ export interface AnswerOption {
 
 export class QuestionsBankService {
   /**
+   * Incrementa o contador de questões usadas hoje
+   */
+  static async incrementQuestionsUsedCounter(userId: string): Promise<void> {
+    try {
+      console.log(`Incrementando contador de questões para usuário ${userId}`);
+      
+      // Verificar se já existe um registro para o usuário
+      const { data: existingUsage, error: existingError } = await supabase
+        .from('subscription_usage')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+      
+      console.log('Resultado da busca por registro existente:', existingUsage, existingError);
+      
+      if (existingError && existingError.code !== 'PGRST116') {
+        console.error('Erro ao buscar registro existente:', existingError);
+        throw existingError;
+      }
+      
+      if (existingUsage) {
+        console.log('Registro encontrado, atualizando contadores:', {
+          questions_used_today_atual: existingUsage.questions_used_today || 0,
+          questions_used_week_atual: existingUsage.questions_used_week || 0
+        });
+        
+        // Atualizar o contador existente
+        const { data: updateData, error: updateError } = await supabase
+          .from('subscription_usage')
+          .update({
+            questions_used_today: (existingUsage.questions_used_today || 0) + 1,
+            questions_used_week: (existingUsage.questions_used_week || 0) + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', userId)
+          .select();
+        
+        console.log('Resultado da atualização:', updateData, updateError);
+        
+        if (updateError) {
+          console.error('Erro ao atualizar contador:', updateError);
+          throw updateError;
+        }
+      } else {
+        console.log('Registro não encontrado, criando novo registro');
+        
+        // Criar um novo registro
+        const { data: insertData, error: insertError } = await supabase
+          .from('subscription_usage')
+          .insert({
+            user_id: userId,
+            questions_used_today: 1,
+            questions_used_week: 1,
+            disciplines_count: 0,
+            subjects_per_discipline_count: 0,
+            study_sessions_today: 0,
+            flashcard_decks_count: 0,
+            flashcards_per_deck_count: 0,
+            simulados_created_week: 0,
+            simulados_questions_count: 0,
+            study_groups_created: 0,
+            faculty_groups_created: 0,
+            last_usage_date: new Date().toISOString().split('T')[0],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select();
+        
+        console.log('Resultado da inserção:', insertData, insertError);
+        
+        if (insertError) {
+          console.error('Erro ao inserir novo registro:', insertError);
+          throw insertError;
+        }
+      }
+      
+      console.log('Contador de questões incrementado com sucesso');
+    } catch (error) {
+      console.error('Erro ao incrementar contador de questões:', error);
+      // Não lançar erro para não interromper o fluxo principal
+    }
+  }
+
+  /**
    * Busca todas as questões do usuário atual
    */
   static async getUserQuestions(): Promise<Question[]> {
@@ -170,6 +254,9 @@ export class QuestionsBankService {
           throw optionsError;
         }
       }
+      
+      // Incrementar o contador de questões usadas
+      await this.incrementQuestionsUsedCounter(user.user.id);
       
       return questionId;
     } catch (error) {

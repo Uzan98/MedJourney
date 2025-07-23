@@ -18,6 +18,9 @@ import {
   MoreHorizontal,
   School
 } from 'lucide-react';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { SubscriptionTier } from '@/types/subscription';
+import { NavigationItem, mainNavigation } from './navigation';
 
 interface MobileMenuProps {
   className?: string;
@@ -33,6 +36,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
   const pathname = usePathname();
   const router = useRouter();
   const [shouldRender, setShouldRender] = useState(false);
+  const { checkFeatureAccess, isProOrHigher, isProPlusOrHigher, showUpgradeModal } = useSubscription();
 
   // Ativa o bloqueio do sidebar quando este componente carregar
   useEffect(() => {
@@ -62,29 +66,15 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
     setShouldRender(!isProtectedRoute || forceShow);
   }, [pathname, forceShow]);
 
-  // Primary menu items (always visible) - Reduzido para 4 itens conforme solicitado
-  const primaryMenuItems = [
-    {
-      path: "/dashboard",
-      label: "Home",
-      icon: <Home className="h-5 w-5" />
-    },
-    {
-      path: "/disciplinas",
-      label: "Disciplinas",
-      icon: <BookOpen className="h-5 w-5" />
-    },
-    {
-      path: "/planejamento",
-      label: "Planejar",
-      icon: <Calendar className="h-5 w-5" />
-    },
-    {
-      path: "/minha-faculdade",
-      label: "Faculdade",
-      icon: <School className="h-5 w-5" />
-    }
-  ];
+  // Use the first 4 items from mainNavigation
+  const primaryMenuItems = mainNavigation.slice(0, 4).map(item => ({
+    path: item.href,
+    label: item.name,
+    icon: React.createElement(item.icon, { className: "h-5 w-5" }),
+    requiredSubscription: item.requiredSubscription,
+    featureKey: item.featureKey,
+    badge: item.badge
+  }));
 
   // Check if the current path matches the menu item
   const isActive = (path: string) => {
@@ -99,10 +89,47 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
   };
 
   // Função para navegar manualmente
-  const handleNavigation = (path: string) => {
-    // Só navega se não estivermos já no caminho
+  const handleNavigation = (path: string, item: any) => {
+    // Check subscription restrictions
+    if (item.requiredSubscription === SubscriptionTier.PRO && !isProOrHigher()) {
+      showUpgradeModal(SubscriptionTier.PRO);
+      return;
+    }
+    
+    if (item.requiredSubscription === SubscriptionTier.PRO_PLUS && !isProPlusOrHigher()) {
+      showUpgradeModal(SubscriptionTier.PRO_PLUS);
+      return;
+    }
+    
+    if (item.featureKey && !checkFeatureAccess(item.featureKey)) {
+      showUpgradeModal();
+      return;
+    }
+    
+    // Only navigate if we're not already on the path
     if (pathname !== path) {
       router.push(path);
+    }
+  };
+
+  // Function to handle restricted navigation items
+  const handleNavItemClick = (item: NavigationItem, e: React.MouseEvent) => {
+    if (item.requiredSubscription === SubscriptionTier.PRO && !isProOrHigher()) {
+      e.preventDefault();
+      showUpgradeModal(SubscriptionTier.PRO);
+      return;
+    }
+    
+    if (item.requiredSubscription === SubscriptionTier.PRO_PLUS && !isProPlusOrHigher()) {
+      e.preventDefault();
+      showUpgradeModal(SubscriptionTier.PRO_PLUS);
+      return;
+    }
+    
+    if (item.featureKey && !checkFeatureAccess(item.featureKey)) {
+      e.preventDefault();
+      showUpgradeModal();
+      return;
     }
   };
 
@@ -119,15 +146,20 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
             return (
               <button
                 key={item.path}
-                onClick={() => handleNavigation(item.path)}
+                onClick={() => handleNavigation(item.path, item)}
                 className={`flex flex-col items-center py-0.5 px-1 relative ${
                   active 
                     ? 'text-blue-600' 
                     : 'text-gray-500 hover:text-gray-700'
                 } transition-colors duration-200`}
               >
-                <div className={`p-1 rounded-full ${active ? 'bg-blue-100' : ''} transition-colors duration-200`}>
+                <div className={`p-1 rounded-full ${active ? 'bg-blue-100' : ''} transition-colors duration-200 relative`}>
                   {item.icon}
+                  {item.badge && (
+                    <span className="absolute -top-1 -right-1 px-1 text-[0.6rem] rounded-full bg-blue-100 text-blue-800">
+                      {item.badge}
+                    </span>
+                  )}
                 </div>
                 <span className="text-[8px] mt-0.5 font-medium truncate max-w-10 text-center">{item.label}</span>
                 

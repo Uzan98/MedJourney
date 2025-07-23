@@ -78,6 +78,15 @@ export interface UserSubscriptionLimits {
   hasFacultyAccess: boolean;
   hasAdvancedAnalytics: boolean;
   hasPrioritySupport: boolean;
+  maxSubjectsPerDiscipline?: number;
+  maxFlashcardsPerDeck?: number;
+  maxStudySessionsPerDay?: number;
+  studySessionsUsedToday?: number;
+  maxSimuladosPerWeek?: number;
+  simuladosUsedThisWeek?: number;
+  maxSimuladosPerMonth?: number;
+  simuladosUsedThisMonth?: number;
+  maxQuestionsPerSimulado?: number;
 }
 
 // Default features for each subscription tier

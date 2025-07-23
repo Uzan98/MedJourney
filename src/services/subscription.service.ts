@@ -193,7 +193,7 @@ export class SubscriptionService {
       const defaultFeatures = freePlan?.features || {
         maxDisciplines: 5,
         maxFlashcardDecks: 2,
-        maxQuestionsPerWeek: 10,
+        maxQuestionsPerDay: 10,
         aiPlanningAccess: false,
         communityFeaturesAccess: true,
         facultyFeaturesAccess: true,
@@ -208,7 +208,7 @@ export class SubscriptionService {
         flashcardDecksUsed: 0,
         flashcardDecksLimit: defaultFeatures.maxFlashcardDecks,
         questionsUsedToday: 0,
-        questionsLimitPerDay: defaultFeatures.maxQuestionsPerWeek / 7, // Aproximação
+        questionsLimitPerDay: defaultFeatures.maxQuestionsPerDay || 10,
         hasAiPlanningAccess: defaultFeatures.aiPlanningAccess,
         hasCommunityAccess: defaultFeatures.communityFeaturesAccess,
         hasFacultyAccess: defaultFeatures.facultyFeaturesAccess,
@@ -226,8 +226,8 @@ export class SubscriptionService {
       disciplinesLimit: features.maxDisciplines,
       flashcardDecksUsed: usage.flashcard_decks_count || 0,
       flashcardDecksLimit: features.maxFlashcardDecks,
-      questionsUsedToday: usage.questions_used_week || 0,
-      questionsLimitPerDay: features.maxQuestionsPerWeek,
+      questionsUsedToday: usage.questions_used_today || 0,
+      questionsLimitPerDay: features.maxQuestionsPerDay || 10,
       hasAiPlanningAccess: features.aiPlanningAccess,
       hasCommunityAccess: features.communityFeaturesAccess,
       hasFacultyAccess: features.facultyFeaturesAccess,

@@ -18,10 +18,14 @@ import {
   Lightbulb,
   Target,
   CheckCircle2,
-  CheckCircle
+  CheckCircle,
+  CreditCard,
+  Lock
 } from 'lucide-react';
 import SmartPlanningService, { SmartPlan } from '@/services/smart-planning.service';
 import { toast } from 'react-hot-toast';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { SubscriptionTier } from '@/types/subscription';
 
 // Interface para armazenar métricas gerais
 interface PlanningMetrics {
@@ -42,10 +46,18 @@ export default function SmartPlanningPage() {
     totalDisciplines: 0
   });
   const router = useRouter();
+  const { subscriptionLimits, checkFeatureAccess, isProOrHigher } = useSubscription();
+  
+  // Verificar se o usuário tem acesso ao recurso de planejamento com IA
+  const hasAiPlanningAccess = checkFeatureAccess('ai_planning');
   
   useEffect(() => {
+    if (hasAiPlanningAccess) {
     loadPlans();
-  }, []);
+    } else {
+      setIsLoading(false);
+    }
+  }, [hasAiPlanningAccess]);
 
   const loadPlans = async () => {
     setIsLoading(true);
@@ -105,98 +117,144 @@ export default function SmartPlanningPage() {
         setCompletedPlans(completed);
         
         // Calcular métricas gerais
-        calculateMetrics(plansWithCompletionRate);
+        await calculateMetrics(plansWithCompletionRate);
       }
     } catch (error) {
       console.error('Erro ao carregar planos:', error);
-      toast.error('Não foi possível carregar os planos.');
+      toast.error('Não foi possível carregar seus planos de estudo');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Função para calcular métricas gerais
   const calculateMetrics = async (plans: SmartPlan[]) => {
     try {
-      // Inicializar contadores
+      // Calcular total de sessões e sessões concluídas
       let totalSessions = 0;
       let completedSessions = 0;
-      const disciplinesSet = new Set<number>();
       
-      // Instanciar o serviço
-      const smartPlanningService = new SmartPlanningService();
+      plans.forEach(plan => {
+        totalSessions += plan.total_sessions || 0;
+        completedSessions += plan.completed_sessions || 0;
+      });
       
-      // Processar cada plano para obter suas sessões
-      for (const plan of plans) {
-        try {
-          // Adicionar as sessões do plano ao contador total
-          if (plan.total_sessions) {
-            totalSessions += plan.total_sessions;
-          }
-          
-          // Buscar as sessões do plano para verificar as concluídas
-          const planSessions = await smartPlanningService.getPlanSessions(plan.id);
-          
-          if (planSessions && planSessions.length > 0) {
-            // Se não temos total_sessions no plano, adicionar o comprimento do array
-            if (!plan.total_sessions) {
-              totalSessions += planSessions.length;
-            }
-            
-            // Contar sessões concluídas e disciplinas únicas
-            for (const session of planSessions) {
-              // Adicionar disciplina ao conjunto de disciplinas únicas
-              if (session.discipline_id) {
-                disciplinesSet.add(session.discipline_id);
-              }
-              
-              // Verificar se a sessão está concluída
-              if (session.completed) {
-                completedSessions++;
-              }
-            }
-          }
-        } catch (error) {
-          console.error(`Erro ao processar sessões do plano ${plan.id}:`, error);
-        }
-      }
+      // Calcular taxa de conclusão geral
+      const completionRate = totalSessions > 0 ? Math.round((completedSessions / totalSessions) * 100) : 0;
       
-      // Calcular taxa de conclusão
-      const completionRate = totalSessions > 0 
-        ? Math.round((completedSessions / totalSessions) * 100) 
-        : 0;
+      // Obter disciplinas únicas dos planos
+      const uniqueDisciplineIds = new Set<number>();
       
-      // Atualizar as métricas
+      plans.forEach(plan => {
+        const disciplineIds = plan.settings?.selectedDisciplines || [];
+        disciplineIds.forEach(id => uniqueDisciplineIds.add(id));
+      });
+      
       setMetrics({
         totalSessions,
         completedSessions,
         completionRate,
-        totalDisciplines: disciplinesSet.size
+        totalDisciplines: uniqueDisciplineIds.size
       });
-      
-      console.log('Métricas calculadas:', {
-        totalSessions,
-        completedSessions,
-        completionRate,
-        totalDisciplines: disciplinesSet.size
-      });
-      
     } catch (error) {
       console.error('Erro ao calcular métricas:', error);
-      // Em caso de erro, definir valores padrão
-      setMetrics({
-        totalSessions: 0,
-        completedSessions: 0,
-        completionRate: 0,
-        totalDisciplines: 0
-      });
     }
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' });
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
+
+  const handleCreatePlan = () => {
+    if (hasAiPlanningAccess) {
+      router.push('/planejamento/inteligente/criar');
+    } else {
+      router.push('/perfil/assinatura');
+    }
+  };
+
+  // Renderizar a tela de acesso restrito para usuários sem acesso ao recurso
+  if (!hasAiPlanningAccess) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+          <div className="bg-gradient-to-br from-indigo-600 via-blue-700 to-purple-800 p-8 text-white">
+            <div className="flex items-center space-x-4 mb-4">
+              <div className="bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg p-3 rounded-xl shadow-lg">
+                <Lock className="h-10 w-10 text-white" />
+              </div>
+              <h1 className="text-3xl font-bold">Planejamento Inteligente com IA</h1>
+            </div>
+            <p className="text-xl text-indigo-100 max-w-3xl">
+              Recurso exclusivo para assinantes dos planos Pro e Pro+
+            </p>
+          </div>
+          
+          <div className="p-8">
+            <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg mb-8">
+              <h2 className="text-lg font-semibold text-amber-800 mb-2">Acesso Restrito</h2>
+              <p className="text-amber-700">
+                O Planejamento Inteligente com IA é um recurso premium que permite criar planos de estudo 
+                personalizados e otimizados usando inteligência artificial.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+              <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                <h3 className="text-lg font-medium text-gray-800 mb-4 flex items-center">
+                  <Brain className="h-5 w-5 text-indigo-600 mr-2" />
+                  Recursos do Planejamento Inteligente
+                </h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start">
+                    <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <span>Crie planos de estudo personalizados com base nas suas prioridades</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <span>Otimize seu tempo de estudo com sessões balanceadas</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <span>Acompanhe seu progresso com estatísticas detalhadas</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <span>Receba revisões programadas para reforçar o aprendizado</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
+                <h3 className="text-lg font-medium text-gray-800 mb-4">Faça upgrade para desbloquear</h3>
+                <p className="text-gray-600 mb-6">
+                  Assine um de nossos planos premium para ter acesso ao Planejamento Inteligente com IA 
+                  e outros recursos exclusivos.
+                </p>
+                <Button 
+                  onClick={() => router.push('/perfil/assinatura')}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg flex items-center justify-center"
+                >
+                  <CreditCard className="h-5 w-5 mr-2" />
+                  Ver planos de assinatura
+                </Button>
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <Link 
+                href="/planejamento"
+                className="text-indigo-600 hover:text-indigo-800 font-medium flex items-center justify-center"
+              >
+                <ChevronRight className="h-4 w-4 mr-1" />
+                Voltar para Planejamento
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -216,7 +274,7 @@ export default function SmartPlanningPage() {
                 O <span className="font-semibold">poder da inteligência artificial</span> ao seu serviço para otimizar seus estudos e maximizar seu aprendizado
               </p>
               <Button 
-                onClick={() => router.push('/planejamento/inteligente/criar')}
+                onClick={handleCreatePlan}
                 className="bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg transition-all duration-300 rounded-full px-8 py-6 text-lg font-semibold"
               >
                 Criar Novo Plano <Plus className="ml-2 h-5 w-5" />
@@ -290,7 +348,7 @@ export default function SmartPlanningPage() {
             <h2 className="text-2xl font-bold text-gray-800">Seus Planos de Estudo</h2>
             <p className="text-gray-500 mt-1">Gerencie todos os seus planos personalizados</p>
           </div>
-          <Button onClick={() => router.push('/planejamento/inteligente/criar')} className="bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all duration-300 rounded-lg">
+          <Button onClick={handleCreatePlan} className="bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all duration-300 rounded-lg">
             <Plus className="h-4 w-4 mr-2" />
             Novo Plano
           </Button>
@@ -417,7 +475,7 @@ export default function SmartPlanningPage() {
                   <p className="text-gray-600 max-w-md mx-auto mb-6">
                     Você ainda não possui planos de estudo ativos. Crie seu primeiro plano inteligente agora!
                   </p>
-                  <Button onClick={() => router.push('/planejamento/inteligente/criar')} className="bg-indigo-600 hover:bg-indigo-700">
+                  <Button onClick={handleCreatePlan} className="bg-indigo-600 hover:bg-indigo-700">
                     <Plus className="h-4 w-4 mr-2" />
                     Criar Plano
                   </Button>

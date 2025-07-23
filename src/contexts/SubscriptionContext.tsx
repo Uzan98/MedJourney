@@ -24,14 +24,21 @@ const defaultSubscriptionLimits: UserSubscriptionLimits = {
   disciplinesUsed: 0,
   disciplinesLimit: 5,
   flashcardDecksUsed: 0,
-  flashcardDecksLimit: 2,
+  flashcardDecksLimit: 1,
   questionsUsedToday: 0,
-  questionsLimitPerDay: 20,
+  questionsLimitPerDay: 10,
   hasAiPlanningAccess: false,
   hasCommunityAccess: true,
-  hasFacultyAccess: false,
+  hasFacultyAccess: true,
   hasAdvancedAnalytics: false,
   hasPrioritySupport: false,
+  maxSubjectsPerDiscipline: 5,
+  maxStudySessionsPerDay: 3,
+  studySessionsUsedToday: 0,
+  maxSimuladosPerWeek: 1,
+  simuladosUsedThisWeek: 0,
+  maxQuestionsPerSimulado: 30,
+  maxFlashcardsPerDeck: 30,
 };
 
 const SubscriptionContext = createContext<SubscriptionContextType>({
@@ -71,8 +78,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         // First try to use the Edge Function
         try {
           const { data: functionData, error: functionError } = await supabase.functions.invoke('get-subscription-limits', {
-          body: { userId: session.user.id },
-        });
+            body: { userId: session.user.id },
+          });
 
           console.log('Edge function response:', functionData, functionError);
 
@@ -114,6 +121,38 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           .from('flashcard_decks')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', session.user.id);
+
+        // Count study sessions used today
+        const today = new Date().toISOString().split('T')[0];
+        const { count: studySessionsToday } = await supabase
+          .from('study_sessions')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', session.user.id)
+          .gte('created_at', today);
+
+        // Count simulados used this week
+        const firstDayOfWeek = new Date();
+        const day = firstDayOfWeek.getDay();
+        const diff = firstDayOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+        firstDayOfWeek.setDate(diff);
+        firstDayOfWeek.setHours(0, 0, 0, 0);
+        
+        const { count: simuladosThisWeek } = await supabase
+          .from('simulados')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', session.user.id)
+          .gte('created_at', firstDayOfWeek.toISOString());
+
+        // Count simulados used this month
+        const firstDayOfMonth = new Date();
+        firstDayOfMonth.setDate(1);
+        firstDayOfMonth.setHours(0, 0, 0, 0);
+        
+        const { count: simuladosThisMonth } = await supabase
+          .from('simulados')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', session.user.id)
+          .gte('created_at', firstDayOfMonth.toISOString());
         
         // If no subscription found, use FREE tier defaults
         if (!userSubscription) {
@@ -121,6 +160,9 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
             ...defaultSubscriptionLimits,
             disciplinesUsed: disciplinesCount || 0,
             flashcardDecksUsed: flashcardDecksCount || 0,
+            studySessionsUsedToday: studySessionsToday || 0,
+            simuladosUsedThisWeek: simuladosThisWeek || 0,
+            simuladosUsedThisMonth: simuladosThisMonth || 0,
           };
           setSubscriptionLimits(limits);
         } else {
@@ -133,16 +175,25 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
             disciplinesUsed: disciplinesCount || 0,
             disciplinesLimit: features.maxDisciplines || 5,
             flashcardDecksUsed: flashcardDecksCount || 0,
-            flashcardDecksLimit: features.maxFlashcardDecks || 2,
+            flashcardDecksLimit: features.maxFlashcardDecks || 1,
             questionsUsedToday: usageData?.questions_used_today || 0,
-            questionsLimitPerDay: features.maxQuestionsPerDay || 20,
+            questionsLimitPerDay: Number(features.maxQuestionsPerDay) || 10,
             hasAiPlanningAccess: features.aiPlanningAccess || false,
             hasCommunityAccess: features.communityFeaturesAccess || true,
-            hasFacultyAccess: features.facultyFeaturesAccess || false,
+            hasFacultyAccess: features.facultyFeaturesAccess || true,
             hasAdvancedAnalytics: features.advancedAnalytics || false,
             hasPrioritySupport: features.prioritySupport || false,
+            maxSubjectsPerDiscipline: features.maxSubjectsPerDiscipline || 5,
+            maxStudySessionsPerDay: features.maxStudySessionsPerDay || 3,
+            studySessionsUsedToday: studySessionsToday || 0,
+            maxSimuladosPerWeek: features.maxSimuladosPerWeek || 1,
+            simuladosUsedThisWeek: simuladosThisWeek || 0,
+            maxSimuladosPerMonth: features.maxSimuladosPerMonth,
+            simuladosUsedThisMonth: simuladosThisMonth || 0,
+            maxQuestionsPerSimulado: features.maxQuestionsPerSimulado || 30,
+            maxFlashcardsPerDeck: features.maxFlashcardsPerDeck || 30,
           };
-          
+          console.log('SubscriptionContext: limits recebidos:', limits);
           setSubscriptionLimits(limits);
         }
       } catch (error) {
@@ -171,6 +222,16 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return subscriptionLimits.hasAdvancedAnalytics;
       case 'priority_support':
         return subscriptionLimits.hasPrioritySupport;
+      case 'bulk_import':
+        return subscriptionLimits.tier !== SubscriptionTier.FREE;
+      case 'grades_attendance':
+        return subscriptionLimits.tier !== SubscriptionTier.FREE;
+      case 'unlimited_study_sessions':
+        return subscriptionLimits.tier !== SubscriptionTier.FREE;
+      case 'unlimited_disciplines':
+        return subscriptionLimits.tier !== SubscriptionTier.FREE;
+      case 'unlimited_subjects':
+        return subscriptionLimits.tier !== SubscriptionTier.FREE;
       default:
         return false;
     }
@@ -190,6 +251,18 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       case 'questions_per_day':
         return subscriptionLimits.questionsLimitPerDay !== -1 && 
                subscriptionLimits.questionsUsedToday >= subscriptionLimits.questionsLimitPerDay;
+      case 'study_sessions_per_day':
+        return subscriptionLimits.maxStudySessionsPerDay !== undefined && 
+               subscriptionLimits.maxStudySessionsPerDay !== -1 && 
+               (subscriptionLimits.studySessionsUsedToday || 0) >= subscriptionLimits.maxStudySessionsPerDay;
+      case 'simulados_per_week':
+        return subscriptionLimits.maxSimuladosPerWeek !== undefined && 
+               subscriptionLimits.maxSimuladosPerWeek !== -1 && 
+               (subscriptionLimits.simuladosUsedThisWeek || 0) >= subscriptionLimits.maxSimuladosPerWeek;
+      case 'simulados_per_month':
+        return subscriptionLimits.maxSimuladosPerMonth !== undefined && 
+               subscriptionLimits.maxSimuladosPerMonth !== -1 && 
+               (subscriptionLimits.simuladosUsedThisMonth || 0) >= subscriptionLimits.maxSimuladosPerMonth;
       default:
         return false;
     }
@@ -204,8 +277,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // First try to use the Edge Function
       try {
         const { data: functionData, error: functionError } = await supabase.functions.invoke('get-subscription-limits', {
-        body: { userId: session.user.id },
-      });
+          body: { userId: session.user.id },
+        });
 
         console.log('Edge function response:', functionData, functionError);
 
@@ -247,6 +320,38 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         .from('flashcard_decks')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', session.user.id);
+
+      // Count study sessions used today
+      const today = new Date().toISOString().split('T')[0];
+      const { count: studySessionsToday } = await supabase
+        .from('study_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .gte('created_at', today);
+
+      // Count simulados used this week
+      const firstDayOfWeek = new Date();
+      const day = firstDayOfWeek.getDay();
+      const diff = firstDayOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+      firstDayOfWeek.setDate(diff);
+      firstDayOfWeek.setHours(0, 0, 0, 0);
+      
+      const { count: simuladosThisWeek } = await supabase
+        .from('simulados')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .gte('created_at', firstDayOfWeek.toISOString());
+
+      // Count simulados used this month
+      const firstDayOfMonth = new Date();
+      firstDayOfMonth.setDate(1);
+      firstDayOfMonth.setHours(0, 0, 0, 0);
+      
+      const { count: simuladosThisMonth } = await supabase
+        .from('simulados')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .gte('created_at', firstDayOfMonth.toISOString());
       
       // If no subscription found, use FREE tier defaults
       if (!userSubscription) {
@@ -254,6 +359,9 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           ...defaultSubscriptionLimits,
           disciplinesUsed: disciplinesCount || 0,
           flashcardDecksUsed: flashcardDecksCount || 0,
+          studySessionsUsedToday: studySessionsToday || 0,
+          simuladosUsedThisWeek: simuladosThisWeek || 0,
+          simuladosUsedThisMonth: simuladosThisMonth || 0,
         };
         setSubscriptionLimits(limits);
       } else {
@@ -266,14 +374,23 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           disciplinesUsed: disciplinesCount || 0,
           disciplinesLimit: features.maxDisciplines || 5,
           flashcardDecksUsed: flashcardDecksCount || 0,
-          flashcardDecksLimit: features.maxFlashcardDecks || 2,
+          flashcardDecksLimit: features.maxFlashcardDecks || 1,
           questionsUsedToday: usageData?.questions_used_today || 0,
-          questionsLimitPerDay: features.maxQuestionsPerDay || 20,
+          questionsLimitPerDay: Number(features.maxQuestionsPerDay) || 10,
           hasAiPlanningAccess: features.aiPlanningAccess || false,
           hasCommunityAccess: features.communityFeaturesAccess || true,
-          hasFacultyAccess: features.facultyFeaturesAccess || false,
+          hasFacultyAccess: features.facultyFeaturesAccess || true,
           hasAdvancedAnalytics: features.advancedAnalytics || false,
           hasPrioritySupport: features.prioritySupport || false,
+          maxSubjectsPerDiscipline: features.maxSubjectsPerDiscipline || 5,
+          maxStudySessionsPerDay: features.maxStudySessionsPerDay || 3,
+          studySessionsUsedToday: studySessionsToday || 0,
+          maxSimuladosPerWeek: features.maxSimuladosPerWeek || 1,
+          simuladosUsedThisWeek: simuladosThisWeek || 0,
+          maxSimuladosPerMonth: features.maxSimuladosPerMonth,
+          simuladosUsedThisMonth: simuladosThisMonth || 0,
+          maxQuestionsPerSimulado: features.maxQuestionsPerSimulado || 30,
+          maxFlashcardsPerDeck: features.maxFlashcardsPerDeck || 30,
         };
         
         setSubscriptionLimits(limits);
@@ -330,43 +447,32 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-2xl font-bold mb-4">Atualize seu plano</h2>
-            
-            {modalInfo.requiredTier && (
-              <p className="mb-4">
-                Esta funcionalidade está disponível apenas para assinantes do plano{' '}
-                <span className="font-bold">
-                  {modalInfo.requiredTier === SubscriptionTier.PRO ? 'Pro' : 'Pro+'}
-                </span>.
-              </p>
-            )}
+            <h3 className="text-xl font-semibold mb-4">Recurso Premium</h3>
             
             {modalInfo.limitReached && (
-              <p className="mb-4">
-                Você atingiu o limite de{' '}
-                {modalInfo.limitReached === 'disciplines'
-                  ? 'disciplinas'
-                  : modalInfo.limitReached === 'flashcard_decks'
-                  ? 'baralhos de flashcards'
-                  : 'questões diárias'}{' '}
-                do seu plano atual.
+              <p className="mb-4 text-amber-600">
+                Você atingiu o limite de {modalInfo.limitReached} do seu plano atual.
               </p>
             )}
             
             <p className="mb-6">
-              Atualize agora para desbloquear mais recursos e aumentar seus limites!
+              {modalInfo.requiredTier === SubscriptionTier.PRO_PLUS
+                ? 'Este recurso está disponível apenas para assinantes do plano Pro+.'
+                : modalInfo.requiredTier === SubscriptionTier.PRO
+                ? 'Este recurso está disponível apenas para assinantes dos planos Pro e Pro+.'
+                : 'Faça upgrade do seu plano para acessar mais recursos e remover limites.'}
             </p>
             
-            <div className="flex justify-end space-x-4">
+            <div className="flex justify-end space-x-3">
               <button
-                className="px-4 py-2 border border-gray-300 rounded-md"
                 onClick={() => setShowModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
               >
                 Cancelar
               </button>
               <button
-                className="px-4 py-2 bg-blue-600 text-white rounded-md"
                 onClick={handleUpgrade}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
                 Ver planos
               </button>

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import QuestionCard from '@/components/banco-questoes/QuestionCard';
 import AIQuestionGeneratorModal from '@/components/banco-questoes/AIQuestionGeneratorModal';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 export default function BancoQuestoesPage() {
   const { user } = useAuth();
@@ -53,6 +54,20 @@ export default function BancoQuestoesPage() {
   
   // Estados para exclusão
   const [deleting, setDeleting] = useState<number | null>(null);
+  
+  const { subscriptionLimits, hasReachedLimit, showUpgradeModal } = useSubscription();
+  
+  // Check if user has reached their daily questions limit
+  const hasReachedQuestionsLimit = hasReachedLimit('questions_per_day');
+  
+  // Function to handle accessing a question when limit is reached
+  const handleQuestionAccess = () => {
+    if (hasReachedQuestionsLimit) {
+      showUpgradeModal(undefined, 'questões diárias');
+      return false;
+    }
+    return true;
+  };
   
   // Carregar dados iniciais
   useEffect(() => {
@@ -628,6 +643,7 @@ export default function BancoQuestoesPage() {
                   question={question}
                   onDelete={handleDeleteQuestion}
                   disciplineName={getDisciplineName(question.discipline_id)}
+                  onAccess={handleQuestionAccess}
                 />
               ))}
             </div>

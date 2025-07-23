@@ -1,94 +1,130 @@
-import {
-  LayoutGrid,
-  BookOpen,
-  ClipboardList,
-  Users,
-  BookA,
-  Brain,
-  Briefcase,
-  Calendar,
-  FileQuestion,
-  School,
-} from "lucide-react";
+import { 
+  Home, 
+  BookOpen, 
+  Calendar, 
+  Sparkles, 
+  Users, 
+  FileText, 
+  BarChart2, 
+  Brain, 
+  Building2, 
+  Layers, 
+  Lightbulb,
+  Clock,
+  User,
+  Settings,
+  CreditCard,
+  BookMarked
+} from 'lucide-react';
+import { SubscriptionTier } from '@/types/subscription';
 
-export const mainNavigation = [
+export interface NavigationItem {
+  name: string;
+  href: string;
+  icon: any;
+  requiresAuth?: boolean;
+  requiredSubscription?: SubscriptionTier;
+  featureKey?: string;
+  badge?: string;
+  badgeColor?: string;
+}
+
+export const mainNavigation: NavigationItem[] = [
   {
-    title: "Dashboard",
-    href: "/dashboard",
-    icon: "LayoutDashboard",
-    color: "text-blue-500",
+    name: 'Dashboard',
+    href: '/dashboard',
+    icon: Home,
+    requiresAuth: true,
   },
   {
-    title: "Disciplinas",
-    href: "/disciplinas",
-    icon: "BookOpen",
-    color: "text-purple-500",
+    name: 'Disciplinas',
+    href: '/disciplinas',
+    icon: BookOpen,
+    requiresAuth: true,
   },
   {
-    title: "Estudos",
-    href: "/estudos",
-    icon: "GraduationCap",
-    color: "text-green-500",
+    name: 'Planejamento',
+    href: '/planejamento',
+    icon: Calendar,
+    requiresAuth: true,
   },
   {
-    title: "Planejamento",
-    href: "/planejamento",
-    icon: "CalendarDays",
-    color: "text-orange-500",
+    name: 'Planejamento IA',
+    href: '/planejamento/inteligente',
+    icon: Brain,
+    requiresAuth: true,
+    requiredSubscription: SubscriptionTier.PRO,
+    featureKey: 'ai_planning',
+    badge: 'PRO',
+    badgeColor: 'bg-blue-100 text-blue-800',
   },
   {
-    title: "Flashcards",
-    href: "/flashcards",
-    icon: "Layers",
-    color: "text-pink-500",
+    name: 'Estudos',
+    href: '/estudos',
+    icon: Clock,
+    requiresAuth: true,
   },
   {
-    title: "Simulados",
-    href: "/simulados",
-    icon: "FileText",
-    color: "text-yellow-500",
+    name: 'Flashcards',
+    href: '/flashcards',
+    icon: Layers,
+    requiresAuth: true,
   },
   {
-    title: "Banco de Questões",
-    href: "/banco-questoes",
-    icon: "Database",
-    color: "text-cyan-500",
+    name: 'Banco de Questões',
+    href: '/banco-questoes',
+    icon: FileText,
+    requiresAuth: true,
   },
   {
-    title: "Comunidade",
-    href: "/comunidade",
-    icon: "Users",
-    color: "text-indigo-500",
+    name: 'Simulados',
+    href: '/simulados',
+    icon: BookMarked,
+    requiresAuth: true,
   },
   {
-    title: "Desempenho",
-    href: "/desempenho",
-    icon: "BarChart",
-    color: "text-red-500",
+    name: 'Desempenho',
+    href: '/desempenho',
+    icon: BarChart2,
+    requiresAuth: true,
+    requiredSubscription: SubscriptionTier.PRO,
+    featureKey: 'advanced_analytics',
+    badge: 'PRO',
+    badgeColor: 'bg-blue-100 text-blue-800',
   },
   {
-    title: "Minha Faculdade",
-    href: "/minha-faculdade",
-    icon: "School",
-    color: "text-emerald-500",
+    name: 'Comunidade',
+    href: '/comunidade',
+    icon: Users,
+    requiresAuth: true,
+    featureKey: 'community_features',
   },
   {
-    title: "Mais",
-    href: "/mais",
-    icon: "MoreHorizontal",
-    color: "text-gray-500",
+    name: 'Minha Faculdade',
+    href: '/minha-faculdade',
+    icon: Building2,
+    requiresAuth: true,
+    featureKey: 'faculty_features',
   },
 ];
 
-export const communityLinks = [
+export const profileNavigation: NavigationItem[] = [
   {
-    title: "Comunidade",
-    href: "/comunidade",
-    icon: "users",
+    name: 'Perfil',
+    href: '/perfil',
+    icon: User,
+    requiresAuth: true,
   },
   {
-    title: "Grupos de Estudos",
-    href: "/comunidade/grupos-estudos",
-    icon: "graduationCap",
-  }
+    name: 'Assinatura',
+    href: '/perfil/assinatura',
+    icon: CreditCard,
+    requiresAuth: true,
+  },
+  {
+    name: 'Configurações',
+    href: '/perfil/configuracoes',
+    icon: Settings,
+    requiresAuth: true,
+  },
 ]; 

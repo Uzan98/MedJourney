@@ -6,6 +6,7 @@ import { Question, AnswerOption, QuestionsBankService } from '@/services/questio
 import { Discipline, Subject } from '@/lib/supabase';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 import QuestionModal from './QuestionModal';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 interface AIQuestionGeneratorModalProps {
   isOpen: boolean;
@@ -37,6 +38,15 @@ export default function AIQuestionGeneratorModal({
   const [generatedOptions, setGeneratedOptions] = useState<AnswerOption[]>([]);
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   
+  const { hasReachedLimit, refreshLimits } = useSubscription();
+  const limiteAtingido = hasReachedLimit('questions_per_day');
+
+  useEffect(() => {
+    if (limiteAtingido && isOpen) {
+      toast.error('Você atingiu o limite diário de questões!');
+    }
+  }, [limiteAtingido, isOpen]);
+
   // Carregar disciplinas ao abrir o modal
   useEffect(() => {
     if (isOpen) {
@@ -104,6 +114,11 @@ export default function AIQuestionGeneratorModal({
   
   // Função para gerar questão com IA
   const handleGenerateQuestion = async () => {
+    if (limiteAtingido) {
+      toast.error('Você atingiu o limite diário de questões!');
+      onClose();
+      return;
+    }
     setIsGenerating(true);
     
     try {
@@ -187,7 +202,7 @@ export default function AIQuestionGeneratorModal({
             Gerar Questão com IA
           </h3>
           <button 
-            onClick={handleClose}
+            onClick={onClose}
             className="p-1 rounded-full hover:bg-gray-100"
           >
             <X className="h-5 w-5 text-gray-500" />
@@ -196,6 +211,11 @@ export default function AIQuestionGeneratorModal({
         
         {/* Corpo do modal */}
         <div className="p-6 overflow-y-auto max-h-[70vh]">
+          {limiteAtingido && (
+            <div className="mb-4 p-3 bg-amber-100 border-l-4 border-amber-500 text-amber-800 rounded">
+              Você atingiu o limite diário de questões. Faça upgrade para continuar criando questões!
+            </div>
+          )}
           <p className="text-gray-600 mb-6">
             Selecione os parâmetros para gerar uma questão usando inteligência artificial. A questão será criada com base nas informações fornecidas.
           </p>
@@ -332,9 +352,9 @@ export default function AIQuestionGeneratorModal({
           </button>
           <button 
             onClick={handleGenerateQuestion}
-            disabled={isGenerating}
+            disabled={isGenerating || limiteAtingido}
             className={`px-4 py-2 rounded-md text-white flex items-center ${
-              isGenerating ? 'bg-purple-400' : 'bg-purple-600 hover:bg-purple-700'
+              isGenerating || limiteAtingido ? 'bg-purple-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'
             }`}
           >
             {isGenerating ? (

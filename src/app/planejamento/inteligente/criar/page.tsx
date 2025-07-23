@@ -1,16 +1,30 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { ChevronLeft, Brain } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, Brain, CreditCard, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import SmartPlanForm from '@/components/planning/SmartPlanForm';
 import SmartPlanningService, { SmartPlanFormData } from '@/services/smart-planning.service';
 import { toast } from 'react-hot-toast';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { SubscriptionTier } from '@/types/subscription';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 export default function CreateSmartPlanPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+  const { checkFeatureAccess } = useSubscription();
+  const hasAiPlanningAccess = checkFeatureAccess('ai_planning');
+  
+  // Redirecionar para a página de assinaturas se o usuário não tiver acesso
+  useEffect(() => {
+    if (!hasAiPlanningAccess) {
+      toast.error('Acesso restrito. Este recurso requer um plano Pro ou superior.');
+      router.push('/perfil/assinatura');
+    }
+  }, [hasAiPlanningAccess, router]);
 
   // Efeito para garantir que o estado isSubmitting seja resetado após um tempo
   useEffect(() => {
@@ -54,6 +68,54 @@ export default function CreateSmartPlanPage() {
       setIsSubmitting(false); // Importante: reseta o estado em caso de erro
     }
   };
+
+  // If user doesn't have access to AI planning, show upgrade message
+  if (!hasAiPlanningAccess) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+          <div className="bg-gradient-to-br from-indigo-600 via-blue-700 to-purple-800 p-8 text-white">
+            <div className="flex items-center space-x-4 mb-4">
+              <div className="bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg p-3 rounded-xl shadow-lg">
+                <Lock className="h-10 w-10 text-white" />
+              </div>
+              <h1 className="text-3xl font-bold">Planejamento Inteligente com IA</h1>
+            </div>
+            <p className="text-xl text-indigo-100 max-w-3xl">
+              Recurso exclusivo para assinantes dos planos Pro e Pro+
+            </p>
+          </div>
+          
+          <div className="p-8">
+            <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg mb-8">
+              <h2 className="text-lg font-semibold text-amber-800 mb-2">Acesso Restrito</h2>
+              <p className="text-amber-700">
+                O Planejamento Inteligente com IA é um recurso premium que permite criar planos de estudo 
+                personalizados e otimizados usando inteligência artificial.
+          </p>
+            </div>
+            
+            <div className="text-center mt-8">
+              <Button 
+                onClick={() => router.push('/perfil/assinatura')}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg flex items-center justify-center mx-auto"
+              >
+                <CreditCard className="h-5 w-5 mr-2" />
+                Ver planos de assinatura
+              </Button>
+              
+              <Link 
+                href="/planejamento"
+                className="mt-4 inline-block text-indigo-600 hover:text-indigo-800 font-medium"
+              >
+                Voltar para Planejamento
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container px-4 py-8 mx-auto">

@@ -1,15 +1,16 @@
 import React from 'react';
 import Link from 'next/link';
 import { Question } from '@/services/questions-bank.service';
-import { Edit, Trash2, Eye, Book } from 'lucide-react';
+import { Edit, Trash2, Eye, Book, Lock } from 'lucide-react';
 
 interface QuestionCardProps {
   question: Question;
   onDelete: (id: number) => void;
   disciplineName?: string;
+  onAccess?: () => boolean;
 }
 
-export default function QuestionCard({ question, onDelete, disciplineName }: QuestionCardProps) {
+export default function QuestionCard({ question, onDelete, disciplineName, onAccess }: QuestionCardProps) {
   // Função para obter a cor da dificuldade
   const getDifficultyColor = (difficulty?: string) => {
     switch (difficulty) {
@@ -61,6 +62,13 @@ export default function QuestionCard({ question, onDelete, disciplineName }: Que
     return difficulty.toLowerCase() === 'média' ? 'media' : difficulty.toLowerCase();
   };
 
+  // Handler para verificar acesso antes de navegar para a questão
+  const handleQuestionAccess = (e: React.MouseEvent) => {
+    if (onAccess && !onAccess()) {
+      e.preventDefault();
+    }
+  };
+
   const normalizedDifficulty = normalizeDifficulty(question.difficulty);
 
   return (
@@ -78,21 +86,36 @@ export default function QuestionCard({ question, onDelete, disciplineName }: Que
           <div className="flex space-x-1">
             <Link
               href={`/banco-questoes/questao/${question.id}`}
-              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              onClick={handleQuestionAccess}
+              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors relative group"
             >
               <Eye className="h-4 w-4" />
+              {onAccess && (
+                <span className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 -bottom-8 left-1/2 transform -translate-x-1/2 w-max">
+                  Visualizar
+                </span>
+              )}
             </Link>
             <Link
               href={`/banco-questoes/questao/${question.id}/editar`}
-              className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+              onClick={handleQuestionAccess}
+              className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors relative group"
             >
               <Edit className="h-4 w-4" />
+              {onAccess && (
+                <span className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 -bottom-8 left-1/2 transform -translate-x-1/2 w-max">
+                  Editar
+                </span>
+              )}
             </Link>
             <button
               onClick={() => question.id && onDelete(question.id)}
-              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors relative group"
             >
               <Trash2 className="h-4 w-4" />
+              <span className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 -bottom-8 left-1/2 transform -translate-x-1/2 w-max">
+                Excluir
+              </span>
             </button>
           </div>
         </div>
