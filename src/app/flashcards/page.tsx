@@ -23,10 +23,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import CreateDeckModal from '@/components/flashcards/CreateDeckModal';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { toast } from 'react-hot-toast';
 
 export default function FlashcardsPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { hasReachedLimit, subscriptionLimits } = useSubscription();
   const [decks, setDecks] = useState<Deck[]>([]);
   const [stats, setStats] = useState<FlashcardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,7 +84,13 @@ export default function FlashcardsPage() {
       deck.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
   });
 
+  const reachedDeckLimit = hasReachedLimit('flashcard_decks');
+
   const handleCreateDeck = () => {
+    if (reachedDeckLimit) {
+      toast.error(`Você atingiu o limite de ${subscriptionLimits?.flashcardDecksLimit || 0} decks do seu plano. Faça upgrade para criar mais decks.`);
+      return;
+    }
     setShowCreateDeckModal(true);
   };
 

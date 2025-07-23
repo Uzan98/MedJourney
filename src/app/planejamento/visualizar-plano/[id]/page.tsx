@@ -983,7 +983,7 @@ export default function ViewPlanPage() {
         {tab === 'calendar' && (
           <div className="bg-white p-6 rounded-lg border border-gray-200">
             <div className="h-[650px] w-full">
-              <style jsx global>{`
+              <style jsx>{`
                 .rbc-calendar {
                   font-family: var(--font-inter);
                   border-radius: 0;

@@ -98,7 +98,7 @@ serve(async (req: Request) => {
     firstDayOfMonth.setHours(0, 0, 0, 0);
     
     const { count: simuladosThisMonth, error: simuladosMonthError } = await supabase
-      .from('simulados')
+      .from('exams')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .gte('created_at', firstDayOfMonth.toISOString());
@@ -115,7 +115,7 @@ serve(async (req: Request) => {
     firstDayOfWeek.setHours(0, 0, 0, 0);
     
     const { count: simuladosThisWeek, error: simuladosWeekError } = await supabase
-      .from('simulados')
+      .from('exams')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .gte('created_at', firstDayOfWeek.toISOString());

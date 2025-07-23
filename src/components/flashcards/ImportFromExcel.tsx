@@ -9,6 +9,9 @@ import { useAuth } from '@/contexts/AuthContext';
 interface ImportFromExcelProps {
   deckId: string;
   onSuccess?: () => void;
+  disableImport?: boolean;
+  maxCardsPerDeck?: number;
+  currentCardCount?: number;
 }
 
 interface FlashcardImport {
@@ -17,7 +20,7 @@ interface FlashcardImport {
   tags?: string;
 }
 
-export default function ImportFromExcel({ deckId, onSuccess }: ImportFromExcelProps) {
+export default function ImportFromExcel({ deckId, onSuccess, disableImport = false, maxCardsPerDeck, currentCardCount = 0 }: ImportFromExcelProps) {
   const { user } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -111,6 +114,14 @@ export default function ImportFromExcel({ deckId, onSuccess }: ImportFromExcelPr
   };
 
   const handleImport = async () => {
+    if (disableImport) {
+      setError(`Você atingiu o limite de ${maxCardsPerDeck} cartões por deck do seu plano. Remova cartões para importar novos ou faça upgrade para um plano superior.`);
+      return;
+    }
+    if (maxCardsPerDeck !== undefined && maxCardsPerDeck !== -1 && (currentCardCount + importedCards.length) > maxCardsPerDeck) {
+      setError(`A importação ultrapassaria o limite de ${maxCardsPerDeck} cartões por deck do seu plano. Diminua a quantidade de cartões importados ou remova cartões existentes.`);
+      return;
+    }
     if (!user) {
       setError('Você precisa estar logado para importar cards');
       return;
@@ -202,7 +213,7 @@ export default function ImportFromExcel({ deckId, onSuccess }: ImportFromExcelPr
             onChange={handleFileChange}
             accept=".xlsx,.xls"
             className="hidden"
-            disabled={isUploading}
+            disabled={isUploading || disableImport}
           />
           
           <FileSpreadsheet className="mx-auto h-12 w-12 text-gray-400 mb-3" />
@@ -214,7 +225,7 @@ export default function ImportFromExcel({ deckId, onSuccess }: ImportFromExcelPr
           <div className="flex flex-col space-y-2">
             <Button 
               onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
+              disabled={isUploading || disableImport}
               className="mx-auto"
             >
               <Upload className="mr-2 h-4 w-4" />
@@ -246,6 +257,12 @@ export default function ImportFromExcel({ deckId, onSuccess }: ImportFromExcelPr
             <div className="mt-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm flex items-start">
               <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
               <span>{error}</span>
+            </div>
+          )}
+          {disableImport && (
+            <div className="mt-4 p-3 bg-amber-50 border-l-4 border-amber-500 text-amber-700 text-sm flex items-start">
+              <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+              <span>Você atingiu o limite de {maxCardsPerDeck} cartões por deck do seu plano. Remova cartões para importar novos ou faça upgrade para um plano superior.</span>
             </div>
           )}
         </div>
@@ -313,7 +330,7 @@ export default function ImportFromExcel({ deckId, onSuccess }: ImportFromExcelPr
             </Button>
             <Button 
               onClick={handleImport}
-              disabled={isUploading}
+              disabled={isUploading || disableImport}
             >
               <Check className="mr-2 h-4 w-4" />
               Importar {importedCards.length} Cards

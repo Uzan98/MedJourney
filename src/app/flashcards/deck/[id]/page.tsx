@@ -32,6 +32,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import CreateFlashcardModal from '@/components/flashcards/CreateFlashcardModal';
 import ImportFromExcel from '@/components/flashcards/ImportFromExcel';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { toast } from 'react-hot-toast';
 
 // Confirmation Modal component
 function ConfirmationModal({ 
@@ -77,12 +79,18 @@ function ImportModal({
   isOpen, 
   onClose, 
   deckId,
-  onSuccess
+  onSuccess,
+  disableImport,
+  maxCardsPerDeck,
+  currentCardCount
 }: { 
   isOpen: boolean; 
   onClose: () => void; 
   deckId: string;
   onSuccess: () => void;
+  disableImport: boolean;
+  maxCardsPerDeck: number;
+  currentCardCount: number;
 }) {
   if (!isOpen) return null;
 
@@ -102,6 +110,9 @@ function ImportModal({
             onSuccess();
             onClose();
           }} 
+          disableImport={disableImport}
+          maxCardsPerDeck={maxCardsPerDeck}
+          currentCardCount={currentCardCount}
         />
       </div>
     </div>
@@ -111,6 +122,7 @@ function ImportModal({
 export default function DeckPage({ params }: { params: { id: string } }) {
   const { user } = useAuth();
   const router = useRouter();
+  const { subscriptionLimits } = useSubscription();
   const [deck, setDeck] = useState<Deck | null>(null);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -174,11 +186,19 @@ export default function DeckPage({ params }: { params: { id: string } }) {
     router.push(`/flashcards/study/${deckId}`);
   };
 
+  // Limite de cards por deck
+  const maxCardsPerDeck = subscriptionLimits?.maxFlashcardsPerDeck ?? 30;
+  const reachedCardLimit = flashcards.length >= maxCardsPerDeck && maxCardsPerDeck !== -1;
+
   const handleAddCard = () => {
     setShowAddCardModal(true);
   };
 
   const handleImportFromExcel = () => {
+    if (reachedCardLimit) {
+      toast.error(`Você atingiu o limite de ${maxCardsPerDeck} cartões por deck do seu plano. Faça upgrade para criar decks com mais cartões.`);
+      return;
+    }
     setShowImportModal(true);
   };
 
@@ -272,6 +292,38 @@ export default function DeckPage({ params }: { params: { id: string } }) {
           <Button onClick={() => router.push('/flashcards')}>
             Voltar para Flashcards
           </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Bloqueio visual e funcional para limite de cards por deck
+  if (reachedCardLimit) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-8 text-center">
+          <div className="flex flex-col items-center justify-center">
+            <div className="bg-amber-100 p-3 rounded-full mb-4">
+              <PlusCircle className="h-8 w-8 text-amber-600" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">Limite de cartões por deck atingido</h2>
+            <p className="text-gray-600 mb-6">
+              Este deck já possui {flashcards.length} de {maxCardsPerDeck} cartões permitidos pelo seu plano.
+            </p>
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg mb-6 text-left w-full">
+              <p className="text-blue-700">
+                Faça upgrade para o plano <strong>Pro</strong> ou <strong>Pro+</strong> para criar decks com mais cartões.
+              </p>
+            </div>
+            <div className="flex gap-4 justify-center">
+              <Link href="/perfil/assinatura" className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
+                <PlusCircle className="h-5 w-5 mr-2" /> Ver planos
+              </Link>
+              <Link href="/flashcards" className="border border-gray-300 px-4 py-2 rounded-lg text-gray-700">
+                Voltar
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -378,7 +430,7 @@ export default function DeckPage({ params }: { params: { id: string } }) {
                   <FileSpreadsheet className="h-4 w-4" />
                   <span>Importar de Excel</span>
                 </Button>
-                <Button onClick={handleAddCard} className="flex items-center gap-2">
+                <Button onClick={handleAddCard} className="flex items-center gap-2" disabled={reachedCardLimit}>
                   <PlusCircle className="h-4 w-4" />
                   <span>Adicionar Cartão</span>
                 </Button>
@@ -496,6 +548,8 @@ export default function DeckPage({ params }: { params: { id: string } }) {
         onClose={() => setShowAddCardModal(false)}
         deckId={params.id}
         onSuccess={handleCardCreated}
+        disableCreate={reachedCardLimit}
+        maxCardsPerDeck={maxCardsPerDeck}
       />
       
       {/* Modal para importar de Excel */}
@@ -504,6 +558,9 @@ export default function DeckPage({ params }: { params: { id: string } }) {
         onClose={() => setShowImportModal(false)}
         deckId={deck?.deck_id || params.id}
         onSuccess={refreshCards}
+        disableImport={reachedCardLimit}
+        maxCardsPerDeck={maxCardsPerDeck}
+        currentCardCount={flashcards.length}
       />
       
       {/* Modal de confirmação para excluir deck */}

@@ -55,8 +55,13 @@ export default function BancoQuestoesPage() {
   // Estados para exclusão
   const [deleting, setDeleting] = useState<number | null>(null);
   
-  const { subscriptionLimits, hasReachedLimit, showUpgradeModal } = useSubscription();
+  const { subscriptionLimits, hasReachedLimit, showUpgradeModal, refreshLimits } = useSubscription();
   
+  // Atualizar limites ao montar a página
+  useEffect(() => {
+    refreshLimits();
+  }, []);
+
   // Check if user has reached their daily questions limit
   const hasReachedQuestionsLimit = hasReachedLimit('questions_per_day');
   
@@ -626,7 +631,7 @@ export default function BancoQuestoesPage() {
               <div className="text-sm text-blue-600">
                 {selectedDiscipline && <span className="px-3 py-1 bg-blue-100 rounded-full mr-2">Disciplina filtrada</span>}
                 {selectedSubject && <span className="px-3 py-1 bg-blue-100 rounded-full mr-2">Assunto filtrado</span>}
-                {selectedDifficulty && <span className="px-3 py-1 bg-blue-100 rounded-full mr-2">Dificuldade: {selectedDifficulty}</span>}
+                {selectedDifficulty && <span className="px-3 py-1 bg-blue-100 rounded-full">Dificuldade: {selectedDifficulty}</span>}
                 {selectedType && (
                   <span className="px-3 py-1 bg-blue-100 rounded-full">
                     Tipo: {selectedType === 'multiple_choice' ? 'Múltipla Escolha' : 

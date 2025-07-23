@@ -108,6 +108,20 @@ DROP POLICY IF EXISTS "Permitir acesso total a perfis" ON profiles;
 CREATE POLICY "Permitir acesso total a perfis" ON profiles
   USING (auth.uid() IS NOT NULL);
 
+-- Policy para bloquear criação de grupos de estudo para usuários free
+DROP POLICY IF EXISTS "Permitir criação de grupos só para pro" ON study_groups;
+CREATE POLICY "Permitir criação de grupos só para pro" ON study_groups
+  FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM user_subscriptions us
+      JOIN subscription_feature_access sfa ON us.tier = sfa.subscription_tier
+      WHERE us.user_id = auth.uid()
+        AND sfa.feature_key = 'study_groups'
+        AND sfa.has_access = true
+    )
+  );
+
 -- Criar função para geração automática de códigos de acesso
 CREATE OR REPLACE FUNCTION generate_access_code()
 RETURNS TEXT AS $$

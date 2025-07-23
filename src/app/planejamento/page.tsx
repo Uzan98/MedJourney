@@ -42,13 +42,17 @@ import {
 import { toast } from 'react-hot-toast';
 import PlannedSessionsList from '@/components/planning/PlannedSessionsList';
 import { Calendar as ReactCalendar, dateFnsLocalizer } from 'react-big-calendar';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
+import '@/styles/calendar.css'; // Importar os estilos do calendário
+import '@/styles/planejamento.css'; // Importar os estilos específicos da página de planejamento
 import { useSubscription } from '@/contexts/SubscriptionContext';
 
 // Configurando o localizador de datas para o calendário
 const locales = {
   'pt-BR': ptBR,
 }
+
+// Tipo para as abas
+type TabType = 'semana' | 'calendario';
 
 // Configurando o localizador para react-big-calendar
 const localizer = dateFnsLocalizer({
@@ -73,7 +77,7 @@ const messages = {
   time: 'Hora',
   event: 'Evento',
   noEventsInRange: 'Não há sessões planejadas neste período',
-  showMore: total => `+ ${total} mais`,
+  showMore: (total: number) => `+ ${total} mais`,
 };
 
 // Componente para a barra de ferramentas personalizada do calendário
@@ -126,7 +130,7 @@ export default function PlanejamentoPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [weekSessions, setWeekSessions] = useState<StudyPlanSession[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState('semana');
+  const [activeTab, setActiveTab] = useState<TabType>('semana');
   const [calendarView, setCalendarView] = useState('month');
   const [disciplineNames, setDisciplineNames] = useState<Record<number, string>>({});
   const [metrics, setMetrics] = useState({
@@ -138,6 +142,13 @@ export default function PlanejamentoPage() {
   const router = useRouter();
   const { checkFeatureAccess } = useSubscription();
   const hasAiPlanningAccess = checkFeatureAccess('ai_planning');
+
+  // Importar o CSS do calendário apenas quando a aba 'calendario' estiver ativa
+  useEffect(() => {
+    if (activeTab === 'calendario') {
+      import('react-big-calendar/lib/css/react-big-calendar.css');
+    }
+  }, [activeTab]);
 
   // Função para buscar sessões da semana atual
   async function fetchWeekSessions() {
@@ -263,6 +274,22 @@ export default function PlanejamentoPage() {
     return colorMap[id || 0] || 'blue';
   };
 
+  // Função para determinar o ícone com base no período do dia
+  const getPeriodIcon = (dateString: string | undefined) => {
+    if (!dateString) return <Clock className="h-4 w-4 text-gray-400" />;
+    
+    const date = parseISO(dateString);
+    const hour = date.getHours();
+    
+    if (hour < 12) {
+      return <Clock className="h-4 w-4 text-amber-500" />; // Manhã
+    } else if (hour < 18) {
+      return <Clock className="h-4 w-4 text-blue-500" />; // Tarde
+    } else {
+      return <Clock className="h-4 w-4 text-indigo-500" />; // Noite
+    }
+  };
+
   // Função para iniciar uma sessão
   const handleStartSession = (session: StudyPlanSession) => {
     // Redirecionar para a página de estudos com o id da sessão
@@ -301,6 +328,32 @@ export default function PlanejamentoPage() {
     });
   };
 
+  // Função para renderizar as ações de uma sessão
+  const renderSessionActions = (session: StudyPlanSession) => {
+    return (
+      <>
+        {!session.completed && (
+          <Button 
+            size="icon" 
+            variant="ghost"
+            className="text-green-600 hover:text-green-700 hover:bg-green-50 mr-2"
+            onClick={() => handleStartSession(session)}
+          >
+            <PlayCircle className="h-5 w-5" />
+          </Button>
+        )}
+        <Button 
+          size="icon" 
+          variant="ghost"
+          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+          onClick={() => router.push(`/planejamento/editar-plano/${session.id}`)}
+        >
+          <Edit className="h-5 w-5" />
+        </Button>
+      </>
+    );
+  };
+
   // Dentro da função PlanejamentoPage, vamos modificar a seção onde são renderizadas as sessões
   // Procurando pela seção que renderiza as sessões e modifique para agrupar por tipo
   const renderSessionsByType = (sessionsForDay: any[]) => {
@@ -332,8 +385,9 @@ export default function PlanejamentoPage() {
                     className={`
                       relative group bg-white rounded-lg p-4 transition-all duration-200
                       border border-blue-200 hover:border-blue-300
-                      hover:shadow-md
+                      hover:shadow-md weekly-view-card session-card
                     `}
+                    style={{ backgroundColor: 'white' }}
                   >
                     <div className="flex items-start space-x-4">
                       <div className="relative">
@@ -367,7 +421,7 @@ export default function PlanejamentoPage() {
                         
                         <div className="flex items-center justify-between mt-2">
                           <div className="flex items-center">
-                            <Calendar className="h-3 w-3 text-gray-400 mr-1" />
+                            <CalendarIcon className="h-3 w-3 text-gray-400 mr-1" />
                             <span className="text-xs text-gray-500">
                               {formatSessionDate(session.scheduled_date)}
                             </span>
@@ -408,8 +462,9 @@ export default function PlanejamentoPage() {
                     className={`
                       relative group bg-white rounded-lg p-4 transition-all duration-200
                       border border-purple-200 hover:border-purple-300
-                      hover:shadow-md
+                      hover:shadow-md weekly-view-card session-card
                     `}
+                    style={{ backgroundColor: 'white' }}
                   >
                     <div className="flex items-start space-x-4">
                       <div className="relative">
@@ -443,7 +498,7 @@ export default function PlanejamentoPage() {
                         
                         <div className="flex items-center justify-between mt-2">
                           <div className="flex items-center">
-                            <Calendar className="h-3 w-3 text-gray-400 mr-1" />
+                            <CalendarIcon className="h-3 w-3 text-gray-400 mr-1" />
                             <span className="text-xs text-gray-500">
                               {formatSessionDate(session.scheduled_date)}
                             </span>
@@ -620,8 +675,9 @@ export default function PlanejamentoPage() {
                 </Button>
               </div>
               
+              {/* Conteúdo da aba semanal */}
                           {activeTab === 'semana' && (
-                <div className="mt-2">
+                <div className="mt-2 weekly-view">
                 {isLoading ? (
                   <div className="flex justify-center items-center h-64">
                     <div className="flex flex-col items-center">
@@ -632,7 +688,7 @@ export default function PlanejamentoPage() {
                 ) : (
                   <div>
                     {/* Header com dias da semana - visual moderno e colorido */}
-                    <div className="grid grid-cols-7 gap-1 mb-6">
+                    <div className="grid grid-cols-7 gap-1 mb-6 weekly-view-card">
                     {getSessionsByDay().map((day) => {
                     const isToday = isSameDay(day.date, new Date());
                         const hasSession = day.sessions.length > 0;
@@ -706,7 +762,7 @@ export default function PlanejamentoPage() {
                               </div>
                               
                     {/* Timeline das sessões do dia selecionado */}
-                    <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden weekly-view-card">
                       <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 flex justify-between items-center">
                         <h3 className="text-white font-medium flex items-center">
                           <CalendarIcon className="h-5 w-5 mr-2 text-blue-100" />
@@ -725,7 +781,7 @@ export default function PlanejamentoPage() {
                                 </div>
                       
                       {/* Sessões do dia selecionado */}
-                      <div className="p-5">
+                      <div className="p-5 bg-white">
                         {weekSessions.filter(session => {
                           if (!session.scheduled_date) return false;
                           const sessionDate = parseISO(session.scheduled_date);
@@ -808,7 +864,7 @@ export default function PlanejamentoPage() {
                     </div>
                     
                     {/* Próxima semana - preview */}
-                    <div className="mt-8">
+                    <div className="mt-8 weekly-view-card">
                       <h3 className="font-medium text-gray-700 mb-4 flex items-center">
                         <ArrowRightCircle className="h-5 w-5 mr-2 text-blue-500" />
                         Planejamento das próximas semanas
@@ -824,11 +880,6 @@ export default function PlanejamentoPage() {
                             className="border-blue-200 text-blue-700 hover:bg-blue-50"
                             onClick={() => {
                               setActiveTab('calendario');
-                              // Encontra o elemento TabsTrigger com value="calendario" e clica nele
-                              const tabsElement = document.querySelector('[value="calendario"]') as HTMLElement;
-                              if (tabsElement) {
-                                tabsElement.click();
-                              }
                             }}
                           >
                             <CalendarIcon className="h-4 w-4 mr-2" />
@@ -842,6 +893,7 @@ export default function PlanejamentoPage() {
                 </div>
               )}
               
+              {/* Conteúdo da aba calendário */}
                           {activeTab === 'calendario' && (
                 <div className="mt-2">
               <div className="space-y-6">
@@ -882,7 +934,7 @@ export default function PlanejamentoPage() {
                   </div>
                 </div>
                 
-                {/* Calendário aprimorado */}
+                    {/* Calendário aprimorado - só renderizado quando a aba calendário está ativa */}
                 <div className="bg-white rounded-xl shadow-lg border border-gray-100/80 overflow-hidden">
                   {isLoading ? (
                     <div className="flex justify-center items-center h-96">
@@ -892,228 +944,7 @@ export default function PlanejamentoPage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="h-[650px] w-full">
-                      <style jsx global>{`
-                        .rbc-calendar {
-                          font-family: var(--font-inter);
-                          border-radius: 0;
-                          background-color: #fff;
-                          border: none;
-                        }
-                        
-                        .rbc-toolbar {
-                          padding: 20px;
-                          background-color: #f8fafc;
-                          border-bottom: 1px solid #e2e8f0;
-                          margin-bottom: 0;
-                        }
-                        
-                        .rbc-toolbar-label {
-                          font-size: 1.4rem;
-                          font-weight: 700;
-                          text-transform: capitalize;
-                          color: #1e293b;
-                          letter-spacing: -0.3px;
-                        }
-                        
-                        .rbc-header {
-                          padding: 14px 6px;
-                          font-weight: 600;
-                          text-transform: uppercase;
-                          font-size: 0.75rem;
-                          color: #64748b;
-                          background-color: #f1f5f9;
-                          border-bottom: 1px solid #e2e8f0;
-                        }
-                        
-                        .rbc-month-view {
-                          border: none;
-                          background-color: #fff;
-                          border-radius: 0;
-                          overflow: hidden;
-                        }
-                        
-                        .rbc-month-row {
-                          overflow: visible !important;
-                          border-top: 1px solid #e2e8f0;
-                          min-height: 110px;
-                        }
-                        
-                        .rbc-day-bg {
-                          transition: all 0.2s ease-in-out;
-                        }
-                        
-                        .rbc-day-bg:hover {
-                          background-color: #f1f5f9;
-                          cursor: pointer;
-                        }
-                        
-                        .rbc-date-cell {
-                          padding: 8px;
-                          text-align: center;
-                          font-size: 0.9rem;
-                          color: #475569;
-                        }
-                        
-                        .rbc-date-cell.rbc-now {
-                          font-weight: 700;
-                          color: #2563eb;
-                        }
-                        
-                        .rbc-today {
-                          background-color: rgba(219, 234, 254, 0.5);
-                        }
-                        
-                        .rbc-off-range-bg {
-                          background-color: #f8fafc;
-                        }
-                        
-                        .rbc-off-range {
-                          color: #94a3b8;
-                        }
-                        
-                        .rbc-show-more {
-                          font-size: 0.75rem;
-                          font-weight: 500;
-                          color: #2563eb !important;
-                          background-color: transparent !important;
-                          padding: 2px 5px;
-                        }
-                        
-                        .rbc-show-more:hover {
-                          text-decoration: none;
-                          color: #1d4ed8 !important;
-                          background-color: #eff6ff !important;
-                        }
-                        
-                        .rbc-event {
-                          border-radius: 6px;
-                          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-                          padding: 4px 8px;
-                          margin: 2px;
-                          font-size: 0.75rem;
-                          font-weight: 500;
-                          cursor: pointer;
-                          transition: all 0.2s;
-                          border: none;
-                          position: relative;
-                        }
-                        
-                        .rbc-event:hover {
-                          transform: translateY(-1px);
-                          box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
-                        }
-                        
-                        .rbc-event:before {
-                          content: '';
-                          position: absolute;
-                          left: 0;
-                          top: 0;
-                          bottom: 0;
-                          width: 3px;
-                          background-color: rgba(255, 255, 255, 0.5);
-                          border-radius: 3px 0 0 3px;
-                        }
-                        
-                        .rbc-event-label {
-                          display: none;
-                        }
-                        
-                        .rbc-event-content {
-                          white-space: nowrap;
-                          overflow: hidden;
-                          text-overflow: ellipsis;
-                          line-height: 1.4;
-                        }
-                        
-                        .rbc-toolbar button {
-                          border-radius: 6px;
-                          padding: 6px 12px;
-                          color: #475569;
-                          transition: all 0.15s;
-                          border: 1px solid #e2e8f0;
-                          font-weight: 500;
-                          margin: 0 3px;
-                        }
-                        
-                        .rbc-toolbar button:hover {
-                          background-color: #f1f5f9;
-                          border-color: #cbd5e1;
-                          color: #1e293b;
-                        }
-                        
-                        .rbc-active {
-                          background-color: #eff6ff !important;
-                          color: #2563eb !important;
-                          border-color: #bfdbfe !important;
-                          font-weight: 600 !important;
-                          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
-                        }
-                        
-                        .rbc-row-segment {
-                          padding: 0 1px;
-                        }
-                        
-                        /* Estilos para visualização semanal */
-                        .rbc-time-view {
-                          border: none;
-                        }
-                        
-                        .rbc-time-header {
-                          border-bottom: 1px solid #e2e8f0;
-                        }
-                        
-                        .rbc-time-content {
-                          border-top: 1px solid #e2e8f0;
-                        }
-                        
-                        .rbc-time-slot {
-                          color: #64748b;
-                          font-size: 0.75rem;
-                        }
-                        
-                        .rbc-allday-cell {
-                          height: auto;
-                          max-height: 70px;
-                        }
-                        
-                        .rbc-timeslot-group {
-                          border-bottom: 1px solid #f1f5f9;
-                        }
-                        
-                        .rbc-agenda-view table {
-                          border: none;
-                        }
-                        
-                        .rbc-agenda-view table thead {
-                          background-color: #f8fafc;
-                        }
-                        
-                        .rbc-agenda-view table.rbc-agenda-table tbody > tr > td {
-                          padding: 10px;
-                        }
-                        
-                        .rbc-agenda-view table.rbc-agenda-table tbody > tr:hover {
-                          background-color: #f1f5f9;
-                        }
-                        
-                        .has-sessions {
-                          position: relative;
-                        }
-                        
-                        .has-sessions:after {
-                          content: '';
-                          position: absolute;
-                          right: 6px;
-                          top: 6px;
-                          width: 8px;
-                          height: 8px;
-                          border-radius: 50%;
-                          background-color: #3b82f6;
-                          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-                        }
-                      `}</style>
-
+                        <div className="calendar-container h-[650px] w-full">
                       <ReactCalendar
                         localizer={localizer}
                         events={createCalendarEvents(weekSessions)}
@@ -1123,16 +954,10 @@ export default function PlanejamentoPage() {
                         view={calendarView}
                         date={selectedDate}
                         onNavigate={(date: Date) => setSelectedDate(date)}
-                        onView={(view) => setCalendarView(view)}
+                            onView={(view: string) => setCalendarView(view)}
                         onSelectEvent={(event: any) => {
                           setSelectedDate(event.start);
-                          if (activeTab !== 'semana') {
                             setActiveTab('semana');
-                            const tabsElement = document.querySelector('[value="semana"]') as HTMLElement;
-                            if (tabsElement) {
-                              tabsElement.click();
-                            }
-                          }
                         }}
                         onSelectSlot={({ start }: { start: Date }) => {
                           setSelectedDate(start);

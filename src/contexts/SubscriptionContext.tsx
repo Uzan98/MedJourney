@@ -78,8 +78,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         // First try to use the Edge Function
         try {
           const { data: functionData, error: functionError } = await supabase.functions.invoke('get-subscription-limits', {
-            body: { userId: session.user.id },
-          });
+          body: { userId: session.user.id },
+        });
 
           console.log('Edge function response:', functionData, functionError);
 
@@ -138,7 +138,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         firstDayOfWeek.setHours(0, 0, 0, 0);
         
         const { count: simuladosThisWeek } = await supabase
-          .from('simulados')
+          .from('exams')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', session.user.id)
           .gte('created_at', firstDayOfWeek.toISOString());
@@ -149,7 +149,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         firstDayOfMonth.setHours(0, 0, 0, 0);
         
         const { count: simuladosThisMonth } = await supabase
-          .from('simulados')
+          .from('exams')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', session.user.id)
           .gte('created_at', firstDayOfMonth.toISOString());
@@ -277,8 +277,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // First try to use the Edge Function
       try {
         const { data: functionData, error: functionError } = await supabase.functions.invoke('get-subscription-limits', {
-          body: { userId: session.user.id },
-        });
+        body: { userId: session.user.id },
+      });
 
         console.log('Edge function response:', functionData, functionError);
 
@@ -337,7 +337,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       firstDayOfWeek.setHours(0, 0, 0, 0);
       
       const { count: simuladosThisWeek } = await supabase
-        .from('simulados')
+        .from('exams')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', session.user.id)
         .gte('created_at', firstDayOfWeek.toISOString());
@@ -348,7 +348,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       firstDayOfMonth.setHours(0, 0, 0, 0);
       
       const { count: simuladosThisMonth } = await supabase
-        .from('simulados')
+        .from('exams')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', session.user.id)
         .gte('created_at', firstDayOfMonth.toISOString());

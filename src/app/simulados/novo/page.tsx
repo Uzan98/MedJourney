@@ -7,10 +7,12 @@ import toast from 'react-hot-toast';
 import { FaArrowLeft, FaSave, FaPlus, FaQuestionCircle } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { Exam, ExamsService } from '@/services/exams.service';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 export default function NovoSimuladoPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { hasReachedLimit, subscriptionLimits } = useSubscription();
   
   const [saving, setSaving] = useState(false);
   const [title, setTitle] = useState('');
@@ -21,6 +23,41 @@ export default function NovoSimuladoPage() {
   const [shuffleQuestions, setShuffleQuestions] = useState(true);
   const [showAnswers, setShowAnswers] = useState(true);
   
+  // Verificar limites de simulados
+  const reachedWeekLimit = hasReachedLimit('simulados_per_week');
+  const reachedMonthLimit = hasReachedLimit('simulados_per_month');
+
+  if (reachedWeekLimit || reachedMonthLimit) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-8 text-center">
+          <div className="flex flex-col items-center justify-center">
+            <div className="bg-amber-100 p-3 rounded-full mb-4">
+              <FaQuestionCircle className="h-8 w-8 text-amber-600" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">Limite de simulados atingido</h2>
+            <p className="text-gray-600 mb-6">
+              Você já utilizou {subscriptionLimits?.simuladosUsedThisWeek || 0} de {subscriptionLimits?.maxSimuladosPerWeek || 0} simulados semanais{subscriptionLimits?.maxSimuladosPerMonth ? ` e ${subscriptionLimits?.simuladosUsedThisMonth || 0} de ${subscriptionLimits?.maxSimuladosPerMonth} simulados mensais` : ''} disponíveis no seu plano.
+            </p>
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg mb-6 text-left w-full">
+              <p className="text-blue-700">
+                Faça upgrade para o plano <strong>Pro</strong> ou <strong>Pro+</strong> para criar mais simulados semanalmente e mensalmente.
+              </p>
+            </div>
+            <div className="flex gap-4 justify-center">
+              <Link href="/perfil/assinatura" className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
+                <FaPlus className="h-5 w-5 mr-2" /> Ver planos
+              </Link>
+              <Link href="/simulados" className="border border-gray-300 px-4 py-2 rounded-lg text-gray-700">
+                Voltar
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     

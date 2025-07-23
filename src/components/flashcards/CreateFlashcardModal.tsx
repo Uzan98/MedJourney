@@ -16,9 +16,11 @@ interface CreateFlashcardModalProps {
   onClose: () => void;
   deckId: string;
   onSuccess?: (flashcard: Flashcard) => void;
+  disableCreate?: boolean;
+  maxCardsPerDeck?: number;
 }
 
-export default function CreateFlashcardModal({ isOpen, onClose, deckId, onSuccess }: CreateFlashcardModalProps) {
+export default function CreateFlashcardModal({ isOpen, onClose, deckId, onSuccess, disableCreate = false, maxCardsPerDeck }: CreateFlashcardModalProps) {
   const { user } = useAuth();
   const [front, setFront] = useState('');
   const [back, setBack] = useState('');
@@ -196,6 +198,11 @@ export default function CreateFlashcardModal({ isOpen, onClose, deckId, onSucces
             </RadioGroup>
           </div>
           
+          {disableCreate && (
+            <div className="bg-amber-50 text-amber-700 p-3 rounded-md text-sm">
+              Você atingiu o limite de {maxCardsPerDeck} cartões por deck do seu plano. Remova cartões para adicionar novos ou faça upgrade para um plano superior.
+            </div>
+          )}
           {error && (
             <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">
               {error}
@@ -206,7 +213,7 @@ export default function CreateFlashcardModal({ isOpen, onClose, deckId, onSucces
             <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading || disableCreate}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

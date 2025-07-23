@@ -46,7 +46,7 @@ export default function AIQuestionGeneratorModal({
       toast.error('Você atingiu o limite diário de questões!');
     }
   }, [limiteAtingido, isOpen]);
-
+  
   // Carregar disciplinas ao abrir o modal
   useEffect(() => {
     if (isOpen) {
@@ -166,6 +166,7 @@ export default function AIQuestionGeneratorModal({
       const result = await QuestionsBankService.createQuestion(questionData, answerOptions);
       
       if (result) {
+        await refreshLimits(); // Atualiza os limites imediatamente após adicionar
         toast.success('Questão adicionada com sucesso!');
         onQuestionCreated();
         setShowQuestionModal(false);
