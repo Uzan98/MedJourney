@@ -18,11 +18,13 @@ import {
   SortDesc,
   Wand2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  FileSpreadsheet
 } from 'lucide-react';
 import QuestionCard from '@/components/banco-questoes/QuestionCard';
 import AIQuestionGeneratorModal from '@/components/banco-questoes/AIQuestionGeneratorModal';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { ImportQuestionsFromExcel } from '@/components/banco-questoes/ImportQuestionsFromExcel';
 
 export default function BancoQuestoesPage() {
   const { user } = useAuth();
@@ -33,6 +35,7 @@ export default function BancoQuestoesPage() {
   const [loading, setLoading] = useState(true);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [totalQuestionCount, setTotalQuestionCount] = useState<number>(0);
   
   // Estados para filtros e pesquisa
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,6 +44,7 @@ export default function BancoQuestoesPage() {
   const [selectedSubject, setSelectedSubject] = useState<number | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [showFromGenomaOnly, setShowFromGenomaOnly] = useState<boolean>(false);
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   
   // Estados para paginação
@@ -51,6 +55,9 @@ export default function BancoQuestoesPage() {
   
   // Estado para modal de geração de questão com IA
   const [showAIModal, setShowAIModal] = useState(false);
+  
+  // Estado para modal de importação de Excel
+  const [showImportModal, setShowImportModal] = useState(false);
   
   // Estados para exclusão
   const [deleting, setDeleting] = useState<number | null>(null);
@@ -89,6 +96,7 @@ export default function BancoQuestoesPage() {
     selectedSubject,
     selectedDifficulty,
     selectedType,
+    showFromGenomaOnly,
     sortOrder
   ]);
   
@@ -147,6 +155,10 @@ export default function BancoQuestoesPage() {
       if (tablesExist) {
         const questionsData = await QuestionsBankService.getUserQuestions();
         
+        // Obter o total de questões do usuário (sem paginação)
+        const totalCount = await QuestionsBankService.countUserQuestions();
+        setTotalQuestionCount(totalCount);
+        
         if (questionsData && questionsData.length > 0) {
           setQuestions(questionsData);
           console.log('Carregou questões reais:', questionsData.length);
@@ -155,11 +167,13 @@ export default function BancoQuestoesPage() {
           console.log('Nenhuma questão encontrada, usando dados mock para demo');
           const mockData = QuestionsBankService.getMockQuestions();
           setQuestions(mockData);
+          setTotalQuestionCount(mockData.length);
         }
       } else {
         console.log('Tabelas não encontradas, usando dados mock para demo');
         const mockData = QuestionsBankService.getMockQuestions();
         setQuestions(mockData);
+        setTotalQuestionCount(mockData.length);
       }
       
       // Carregar disciplinas
@@ -235,6 +249,11 @@ export default function BancoQuestoesPage() {
       filtered = filtered.filter(q => q.question_type === selectedType);
     }
     
+    // Filtrar apenas questões do Genoma Bank
+    if (showFromGenomaOnly) {
+      filtered = filtered.filter(q => q.from_genoma_bank === true);
+    }
+    
     // Ordenar por data
     filtered = filtered.sort((a, b) => {
       const dateA = new Date(a.created_at || 0).getTime();
@@ -275,23 +294,32 @@ export default function BancoQuestoesPage() {
     setSelectedSubject(null);
     setSelectedDifficulty(null);
     setSelectedType(null);
+    setShowFromGenomaOnly(false);
     setSubjects([]);
   };
   
-  // Função para excluir questão
+  // Função para atualizar os dados após criar uma nova questão
+  const handleQuestionCreated = async () => {
+    await loadData();
+  };
+
+  // Função para excluir uma questão
   const handleDeleteQuestion = async (id: number) => {
-    if (!window.confirm('Tem certeza que deseja excluir esta questão? Esta ação não pode ser desfeita.')) {
+    if (!window.confirm('Tem certeza que deseja excluir esta questão?')) {
       return;
     }
     
     setDeleting(id);
     try {
       const success = await QuestionsBankService.deleteQuestion(id);
-      
       if (success) {
-        // Remover a questão da lista local
-        setQuestions(questions.filter(q => q.id !== id));
         toast.success('Questão excluída com sucesso');
+        
+        // Atualizar a lista de questões
+        setQuestions(questions.filter(q => q.id !== id));
+        
+        // Atualizar o contador total
+        setTotalQuestionCount(prevCount => Math.max(0, prevCount - 1));
       } else {
         toast.error('Erro ao excluir questão');
       }
@@ -417,7 +445,7 @@ export default function BancoQuestoesPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div>
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 mb-8 shadow-lg">
         <div className="flex flex-col md:flex-row justify-between items-center">
@@ -432,16 +460,30 @@ export default function BancoQuestoesPage() {
             <div className="mt-4 flex flex-wrap gap-3">
               <div className="bg-blue-500/30 px-4 py-2 rounded-lg flex items-center text-sm backdrop-blur-sm">
                 <div className="h-2 w-2 bg-green-400 rounded-full mr-2"></div>
-                <span>{filteredQuestions.length} questões disponíveis</span>
+                <span>{totalQuestionCount} questões no total</span>
               </div>
               <div className="bg-blue-500/30 px-4 py-2 rounded-lg flex items-center text-sm backdrop-blur-sm">
                 <div className="h-2 w-2 bg-yellow-400 rounded-full mr-2"></div>
+                <span>{filteredQuestions.length} questões filtradas</span>
+              </div>
+              <div className="bg-blue-500/30 px-4 py-2 rounded-lg flex items-center text-sm backdrop-blur-sm">
+                <div className="h-2 w-2 bg-purple-400 rounded-full mr-2"></div>
                 <span>{disciplines.length} disciplinas</span>
               </div>
             </div>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="group flex items-center px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all shadow-md hover:shadow-xl"
+            >
+              <div className="bg-green-500 p-2 rounded-lg mr-3 group-hover:bg-green-400 transition-colors">
+                <FileSpreadsheet className="h-5 w-5" />
+              </div>
+              <span className="font-semibold">Importar Excel</span>
+            </button>
+            
             <button
               onClick={() => setShowAIModal(true)}
               className="group flex items-center px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all shadow-md hover:shadow-xl"
@@ -579,6 +621,19 @@ export default function BancoQuestoesPage() {
               </div>
             </div>
             
+            <div className="mt-4 flex items-center">
+              <input
+                type="checkbox"
+                id="fromGenomaOnly"
+                checked={showFromGenomaOnly}
+                onChange={(e) => setShowFromGenomaOnly(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="fromGenomaOnly" className="ml-2 block text-sm text-gray-700">
+                Mostrar apenas questões adicionadas do Genoma Bank
+              </label>
+            </div>
+            
             <div className="flex justify-end mt-5">
               <button
                 onClick={clearFilters}
@@ -631,11 +686,16 @@ export default function BancoQuestoesPage() {
               <div className="text-sm text-blue-600">
                 {selectedDiscipline && <span className="px-3 py-1 bg-blue-100 rounded-full mr-2">Disciplina filtrada</span>}
                 {selectedSubject && <span className="px-3 py-1 bg-blue-100 rounded-full mr-2">Assunto filtrado</span>}
-                {selectedDifficulty && <span className="px-3 py-1 bg-blue-100 rounded-full">Dificuldade: {selectedDifficulty}</span>}
+                {selectedDifficulty && <span className="px-3 py-1 bg-blue-100 rounded-full mr-2">Dificuldade: {selectedDifficulty}</span>}
                 {selectedType && (
-                  <span className="px-3 py-1 bg-blue-100 rounded-full">
+                  <span className="px-3 py-1 bg-blue-100 rounded-full mr-2">
                     Tipo: {selectedType === 'multiple_choice' ? 'Múltipla Escolha' : 
                            selectedType === 'true_false' ? 'Verdadeiro/Falso' : 'Dissertativa'}
+                  </span>
+                )}
+                {showFromGenomaOnly && (
+                  <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full">
+                    Apenas do Genoma Bank
                   </span>
                 )}
               </div>
@@ -663,8 +723,50 @@ export default function BancoQuestoesPage() {
       <AIQuestionGeneratorModal
         isOpen={showAIModal}
         onClose={() => setShowAIModal(false)}
-        onQuestionCreated={loadData}
+        onQuestionCreated={handleQuestionCreated}
       />
+
+      {/* Modal de importação de Excel */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-800 flex items-center">
+                  <FileSpreadsheet className="h-5 w-5 mr-2 text-green-600" />
+                  Importar Questões do Excel
+                </h2>
+                <button
+                  onClick={() => setShowImportModal(false)}
+                  className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <ImportQuestionsFromExcel
+                onImportComplete={() => {
+                  setShowImportModal(false);
+                  loadData();
+                }}
+              />
+            </div>
+            
+            <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => setShowImportModal(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

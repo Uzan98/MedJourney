@@ -5,15 +5,17 @@ import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
-import { ChevronLeft, Edit, Trash2, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, Edit, Trash2, AlertTriangle, Globe, Lock, Plus } from 'lucide-react';
 import { Question, QuestionsBankService, AnswerOption } from '@/services/questions-bank.service';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 import QuestionModal from '@/components/banco-questoes/QuestionModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function QuestaoDetalhePage() {
   const router = useRouter();
   const params = useParams();
   const questionId = params.id ? parseInt(params.id as string) : null;
+  const { user } = useAuth();
   
   const [question, setQuestion] = useState<Question | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,6 +23,11 @@ export default function QuestaoDetalhePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [disciplineName, setDisciplineName] = useState('');
   const [subjectName, setSubjectName] = useState('');
+  const [isUpdatingPublicStatus, setIsUpdatingPublicStatus] = useState(false);
+  const [isAddingToBank, setIsAddingToBank] = useState(false);
+  
+  // Verificar se o usuário atual é o criador da questão
+  const isQuestionOwner = user && question && user.id === question.user_id;
   
   useEffect(() => {
     if (questionId) {
@@ -163,6 +170,56 @@ export default function QuestaoDetalhePage() {
            difficulty.charAt(0).toUpperCase() + difficulty.slice(1).toLowerCase();
   };
 
+  // Função para alternar o status público/privado da questão
+  const togglePublicStatus = async () => {
+    if (!question || !questionId) return;
+    
+    try {
+      setIsUpdatingPublicStatus(true);
+      
+      const newStatus = !question.is_public;
+      const success = await QuestionsBankService.updateQuestionPublicStatus(questionId, newStatus);
+      
+      if (success) {
+        // Atualizar o estado local
+        setQuestion({
+          ...question,
+          is_public: newStatus
+        });
+        
+        toast.success(newStatus 
+          ? 'Questão adicionada ao Genoma Bank' 
+          : 'Questão removida do Genoma Bank');
+      } else {
+        toast.error('Erro ao atualizar status da questão');
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar status público:', error);
+      toast.error('Ocorreu um erro ao atualizar o status da questão');
+    } finally {
+      setIsUpdatingPublicStatus(false);
+    }
+  };
+
+  // Função para adicionar a questão ao banco pessoal
+  const handleAddToMyBank = async () => {
+    if (!questionId) return;
+    
+    try {
+      setIsAddingToBank(true);
+      const newQuestionId = await QuestionsBankService.clonePublicQuestion(questionId);
+      
+      if (newQuestionId) {
+        toast.success('Questão adicionada ao seu banco com sucesso!');
+      }
+    } catch (error) {
+      console.error('Erro ao adicionar questão ao banco pessoal:', error);
+      toast.error('Erro ao adicionar questão ao seu banco');
+    } finally {
+      setIsAddingToBank(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -229,7 +286,7 @@ export default function QuestaoDetalhePage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div>
       <Link 
         href="/banco-questoes" 
         className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors mb-4"
@@ -249,6 +306,14 @@ export default function QuestaoDetalhePage() {
               <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
                 {getQuestionTypeLabel(question?.question_type)}
               </span>
+              
+              {/* Indicador de questão pública */}
+              {question?.is_public && (
+                <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium flex items-center">
+                  <Globe className="h-3.5 w-3.5 mr-1.5" />
+                  Genoma Bank
+                </span>
+              )}
             </div>
             
             <h1 className="text-2xl font-bold text-gray-900">
@@ -264,23 +329,97 @@ export default function QuestaoDetalhePage() {
           </div>
           
           <div className="flex space-x-3">
-            <button 
-              onClick={() => setIsEditing(true)}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Edit className="h-4 w-4 mr-2" />
-              Editar
-            </button>
+            {isQuestionOwner && (
+              <>
+                <button 
+                  onClick={togglePublicStatus}
+                  disabled={isUpdatingPublicStatus}
+                  className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
+                    question?.is_public
+                      ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
+                >
+                  {isUpdatingPublicStatus ? (
+                    <span className="flex items-center">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Atualizando...
+                    </span>
+                  ) : question?.is_public ? (
+                    <>
+                      <Lock className="h-4 w-4 mr-2" />
+                      Tornar Privada
+                    </>
+                  ) : (
+                    <>
+                      <Globe className="h-4 w-4 mr-2" />
+                      Adicionar ao Genoma Bank
+                    </>
+                  )}
+                </button>
+              </>
+            )}
             
-            <button 
-              onClick={handleDeleteQuestion}
-              className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Excluir
-            </button>
+            {/* Botão para adicionar ao banco pessoal quando não é o dono e a questão é pública */}
+            {!isQuestionOwner && question?.is_public && (
+              <button 
+                onClick={handleAddToMyBank}
+                disabled={isAddingToBank}
+                className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                {isAddingToBank ? (
+                  <span className="flex items-center">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Adicionando...
+                  </span>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar ao meu banco
+                  </>
+                )}
+              </button>
+            )}
+            
+            {isQuestionOwner && (
+              <button 
+                onClick={() => setIsEditing(true)}
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Editar
+              </button>
+            )}
+            
+            {isQuestionOwner && (
+              <button 
+                onClick={handleDeleteQuestion}
+                className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Excluir
+              </button>
+            )}
           </div>
         </div>
+        
+        {/* Genoma Bank Info */}
+        {question?.is_public && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 mt-0.5">
+                <Globe className="h-5 w-5 text-blue-600" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-blue-800">Questão compartilhada no Genoma Bank</h3>
+                <p className="mt-1 text-sm text-blue-600">
+                  Esta questão está disponível para todos os usuários da plataforma no Genoma Bank.
+                  Outros estudantes poderão visualizar e praticar com esta questão.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Informações da questão */}
         <div className="mb-6">

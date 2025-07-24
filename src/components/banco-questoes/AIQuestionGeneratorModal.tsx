@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Wand2, Loader2 } from 'lucide-react';
+import { X, Wand2, Loader2, Globe } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { AIQuestionGeneratorParams, AIQuestionGeneratorService } from '@/services/ai-question-generator.service';
 import { Question, AnswerOption, QuestionsBankService } from '@/services/questions-bank.service';
@@ -27,6 +27,7 @@ export default function AIQuestionGeneratorModal({
   const [difficulty, setDifficulty] = useState<'baixa' | 'média' | 'alta'>('média');
   const [questionType, setQuestionType] = useState<'multiple_choice' | 'true_false' | 'essay'>('multiple_choice');
   const [additionalContext, setAdditionalContext] = useState<string>('');
+  const [isPublic, setIsPublic] = useState<boolean>(false);
   
   // Estados para disciplinas e assuntos
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
@@ -137,7 +138,8 @@ export default function AIQuestionGeneratorModal({
         const questionWithIds: Question = {
           ...result.question,
           discipline_id: disciplineId || undefined,
-          subject_id: subjectId || undefined
+          subject_id: subjectId || undefined,
+          is_public: isPublic
         };
         
         // Para questões de múltipla escolha, adicionar as opções de resposta
@@ -326,6 +328,27 @@ export default function AIQuestionGeneratorModal({
                   <span className="text-gray-700">Dissertativa</span>
                 </label>
               </div>
+            </div>
+            
+            {/* Checkbox para tornar a questão pública */}
+            <div>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={isPublic}
+                  onChange={(e) => setIsPublic(e.target.checked)}
+                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 rounded"
+                />
+                <span className="ml-2 flex items-center text-gray-700">
+                  <Globe className="h-4 w-4 mr-1.5 text-blue-500" />
+                  Adicionar ao Genoma Bank (compartilhar esta questão publicamente)
+                </span>
+              </label>
+              {isPublic && (
+                <p className="mt-1 text-sm text-gray-500 pl-6">
+                  Esta questão será visível para todos os usuários no Genoma Bank.
+                </p>
+              )}
             </div>
             
             {/* Contexto adicional */}

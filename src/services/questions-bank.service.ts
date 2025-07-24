@@ -1,6 +1,15 @@
 import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
 
+export interface AnswerOption {
+  id?: number;
+  question_id?: number;
+  text: string;
+  is_correct: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Question {
   id?: number;
   user_id?: string;
@@ -15,36 +24,41 @@ export interface Question {
   created_at?: string;
   updated_at?: string;
   answer_options?: AnswerOption[]; // Referência às opções de resposta
-}
-
-export interface AnswerOption {
-  /**
-   * ID da opção de resposta
-   * - No frontend: pode ser uma string temporária (ex: "temp-123456")
-   * - No backend: será sempre um número (bigint no Supabase)
-   * - Será removido antes de enviar ao backend para criação
-   */
-  id?: number | string;
-  question_id: number;
-  text: string;
-  is_correct: boolean;
-  created_at?: string;
-  updated_at?: string;
+  is_public?: boolean; // Indica se a questão está disponível no Genoma Bank
+  creator_name?: string; // Nome do criador (para questões públicas)
+  discipline_name?: string; // Nome da disciplina (para questões públicas)
+  from_genoma_bank?: boolean; // Indica se a questão foi adicionada do Genoma Bank
 }
 
 export class QuestionsBankService {
   /**
    * Incrementa o contador de questões usadas hoje
    */
-  static async incrementQuestionsUsedCounter(userId: string): Promise<void> {
+  static async incrementQuestionsUsedCounter(userId?: string): Promise<void> {
     try {
-      console.log(`Incrementando contador de questões para usuário ${userId}`);
+      if (!supabase) {
+        console.error('Supabase client is not initialized');
+        return;
+      }
+      
+      // Se userId não for fornecido, obter o usuário atual
+      let userIdToUse = userId;
+      if (!userIdToUse) {
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData?.user?.id) {
+          console.error('Usuário não autenticado');
+          return;
+        }
+        userIdToUse = userData.user.id;
+      }
+      
+      console.log(`Incrementando contador de questões para usuário ${userIdToUse}`);
       
       // Verificar se já existe um registro para o usuário
       const { data: existingUsage, error: existingError } = await supabase
         .from('subscription_usage')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userIdToUse)
         .single();
       
       console.log('Resultado da busca por registro existente:', existingUsage, existingError);
@@ -68,7 +82,7 @@ export class QuestionsBankService {
             questions_used_week: (existingUsage.questions_used_week || 0) + 1,
             updated_at: new Date().toISOString()
           })
-          .eq('user_id', userId)
+          .eq('user_id', userIdToUse)
           .select();
         
         console.log('Resultado da atualização:', updateData, updateError);
@@ -84,7 +98,7 @@ export class QuestionsBankService {
         const { data: insertData, error: insertError } = await supabase
           .from('subscription_usage')
           .insert({
-            user_id: userId,
+            user_id: userIdToUse,
             questions_used_today: 1,
             questions_used_week: 1,
             disciplines_count: 0,
@@ -118,41 +132,96 @@ export class QuestionsBankService {
   }
 
   /**
-   * Busca todas as questões do usuário atual
+   * Busca as questões do usuário
    */
-  static async getUserQuestions(): Promise<Question[]> {
+  static async getUserQuestions(
+    userId?: string,
+    limit: number = 20,
+    offset: number = 0,
+    filters?: {
+      disciplineId?: number;
+      subjectId?: number;
+      difficulty?: string;
+      questionType?: string;
+      searchTerm?: string;
+    }
+  ): Promise<Question[]> {
     try {
-      const { data: user } = await supabase.auth.getUser();
-      
-      if (!user || !user.user) {
-        throw new Error('Usuário não autenticado');
+      if (!supabase) {
+        console.error('Supabase client is not initialized');
+        return [];
       }
-
-      const { data, error } = await supabase
+      
+      // Se userId não for fornecido, obter o usuário atual
+      let userIdToUse = userId;
+      if (!userIdToUse) {
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData?.user?.id) {
+          console.error('Usuário não autenticado');
+          return [];
+        }
+        userIdToUse = userData.user.id;
+      }
+      
+      let query = supabase
         .from('questions')
         .select('*')
-        .eq('user_id', user.user.id)
-        .order('created_at', { ascending: false });
-
+        .eq('user_id', userIdToUse)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+      
+      // Aplicar filtros se fornecidos
+      if (filters) {
+        if (filters.disciplineId) {
+          query = query.eq('discipline_id', filters.disciplineId);
+        }
+        
+        if (filters.subjectId) {
+          query = query.eq('subject_id', filters.subjectId);
+        }
+        
+        if (filters.difficulty) {
+          query = query.eq('difficulty', filters.difficulty);
+        }
+        
+        if (filters.questionType) {
+          query = query.eq('question_type', filters.questionType);
+        }
+        
+        if (filters.searchTerm) {
+          query = query.ilike('content', `%${filters.searchTerm}%`);
+        }
+      }
+      
+      const { data, error } = await query;
+      
       if (error) {
         throw error;
       }
-
+      
       return data || [];
     } catch (error) {
-      console.error('Erro ao buscar questões:', error);
+      console.error('Erro ao buscar questões do usuário:', error);
       return [];
     }
   }
 
   /**
-   * Busca uma questão específica pelo ID
+   * Busca uma questão pelo ID
    */
   static async getQuestionById(id: number): Promise<Question | null> {
     try {
+      if (!supabase) {
+        console.error('Supabase client is not initialized');
+        return null;
+      }
+      
       const { data, error } = await supabase
         .from('questions')
-        .select('*')
+        .select(`
+          *,
+          answer_options(*)
+        `)
         .eq('id', id)
         .single();
       
@@ -160,15 +229,9 @@ export class QuestionsBankService {
         throw error;
       }
       
-      // Carregar as opções de resposta se for uma questão de múltipla escolha ou V/F
-      if (data && (data.question_type === 'multiple_choice' || data.question_type === 'true_false')) {
-        const options = await this.getAnswerOptions(data.id as number);
-        data.answer_options = options;
-      }
-      
       return data;
     } catch (error) {
-      console.error(`Erro ao buscar questão ${id}:`, error);
+      console.error(`Erro ao buscar questão com ID ${id}:`, error);
       return null;
     }
   }
@@ -197,13 +260,30 @@ export class QuestionsBankService {
   
   /**
    * Adiciona uma nova questão
+   * @param question A questão a ser adicionada
+   * @param answerOptions Opções de resposta (para questões de múltipla escolha)
+   * @param skipCounter Se true, não incrementa o contador de questões (usado internamente)
+   * @param skipLimitCheck Se true, não verifica o limite diário (usado internamente)
    */
-  static async addQuestion(question: Question, answerOptions?: AnswerOption[]): Promise<number | null> {
+  static async addQuestion(
+    question: Question, 
+    answerOptions?: AnswerOption[], 
+    skipCounter: boolean = false,
+    skipLimitCheck: boolean = false
+  ): Promise<number | null> {
     try {
       const { data: user } = await supabase.auth.getUser();
       
       if (!user || !user.user) {
         throw new Error('Usuário não autenticado');
+      }
+
+      // Verificar o limite diário de questões, a menos que seja para pular essa verificação
+      if (!skipLimitCheck) {
+        const { limit, limitReached } = await this.checkDailyQuestionsLimit(user.user.id);
+        if (limitReached) {
+          throw new Error(`Você atingiu o limite diário de ${limit} questões. Faça upgrade para um plano superior para adicionar mais questões.`);
+        }
       }
       
       // Adiciona o user_id à questão
@@ -255,8 +335,10 @@ export class QuestionsBankService {
         }
       }
       
-      // Incrementar o contador de questões usadas
-      await this.incrementQuestionsUsedCounter(user.user.id);
+      // Incrementar o contador de questões usadas apenas se não for para pular
+      if (!skipCounter) {
+        await this.incrementQuestionsUsedCounter(user.user.id);
+      }
       
       return questionId;
     } catch (error) {
@@ -285,6 +367,33 @@ export class QuestionsBankService {
    */
   static async updateQuestion(id: number, question: Question, answerOptions?: AnswerOption[]): Promise<boolean> {
     try {
+      if (!supabase) {
+        console.error('Supabase client is not initialized');
+        return false;
+      }
+
+      // Verificar se o usuário atual é o proprietário da questão
+      const { data: user } = await supabase.auth.getUser();
+      if (!user || !user.user) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      // Buscar a questão para verificar o proprietário
+      const { data: existingQuestion, error: fetchError } = await supabase
+        .from('questions')
+        .select('user_id')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      // Verificar se o usuário atual é o proprietário da questão
+      if (!existingQuestion || existingQuestion.user_id !== user.user.id) {
+        throw new Error('Você não tem permissão para editar esta questão');
+      }
+
       // Atualiza a questão
       const { error } = await supabase
         .from('questions')
@@ -349,6 +458,33 @@ export class QuestionsBankService {
    */
   static async deleteQuestion(id: number): Promise<boolean> {
     try {
+      if (!supabase) {
+        console.error('Supabase client is not initialized');
+        return false;
+      }
+
+      // Verificar se o usuário atual é o proprietário da questão
+      const { data: user } = await supabase.auth.getUser();
+      if (!user || !user.user) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      // Buscar a questão para verificar o proprietário
+      const { data: existingQuestion, error: fetchError } = await supabase
+        .from('questions')
+        .select('user_id')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      // Verificar se o usuário atual é o proprietário da questão
+      if (!existingQuestion || existingQuestion.user_id !== user.user.id) {
+        throw new Error('Você não tem permissão para excluir esta questão');
+      }
+
       // Primeiro, exclui as opções de resposta associadas
       const { error: optionsError } = await supabase
         .from('answer_options')
@@ -372,6 +508,7 @@ export class QuestionsBankService {
       return true;
     } catch (error) {
       console.error(`Erro ao excluir questão ${id}:`, error);
+      toast.error('Erro ao excluir questão: ' + (error as any).message);
       return false;
     }
   }
@@ -528,5 +665,474 @@ export class QuestionsBankService {
         created_at: '2025-02-10T16:05:00Z'
       }
     ];
+  }
+
+  /**
+   * Busca questões públicas disponíveis no Genoma Bank
+   */
+  static async getPublicQuestions(
+    limit: number = 20,
+    offset: number = 0,
+    filters?: {
+      disciplineId?: number;
+      subjectId?: number;
+      difficulty?: string;
+      questionType?: string;
+      searchTerm?: string;
+      disciplineName?: string; // Filtro para pesquisar por nome de disciplina
+    }
+  ): Promise<Question[]> {
+    try {
+      if (!supabase) {
+        console.error('Supabase client is not initialized');
+        return [];
+      }
+      
+      // Usar uma consulta simples sem tentar usar relações complexas
+      let query = supabase
+        .from('questions')
+        .select(`
+          *,
+          disciplines:discipline_id (
+            name
+          )
+        `)
+        .eq('is_public', true)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+      
+      // Aplicar filtros se fornecidos
+      if (filters) {
+        if (filters.disciplineId) {
+          query = query.eq('discipline_id', filters.disciplineId);
+        }
+        
+        if (filters.subjectId) {
+          query = query.eq('subject_id', filters.subjectId);
+        }
+        
+        if (filters.difficulty) {
+          query = query.eq('difficulty', filters.difficulty);
+        }
+        
+        if (filters.questionType) {
+          query = query.eq('question_type', filters.questionType);
+        }
+        
+        if (filters.searchTerm) {
+          query = query.ilike('content', `%${filters.searchTerm}%`);
+        }
+        
+        // Pesquisa por nome de disciplina
+        if (filters.disciplineName) {
+          query = query.filter('disciplines.name', 'ilike', `%${filters.disciplineName}%`);
+        }
+      }
+      
+      const { data: questions, error } = await query;
+      
+      if (error) {
+        throw error;
+      }
+
+      // Se não temos questões, retornar array vazio
+      if (!questions || questions.length === 0) {
+        return [];
+      }
+
+      // Buscar informações dos usuários da tabela profiles
+      const userIds = [...new Set(questions.map(q => q.user_id))];
+      
+      // Buscar nomes dos usuários da tabela profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, username')
+        .in('id', userIds);
+      
+      if (profilesError) {
+        console.error('Erro ao buscar informações dos perfis:', profilesError);
+      }
+      
+      // Criar um mapa de ID do usuário para nome
+      const userMap = profiles ? 
+        profiles.reduce((map, profile) => {
+          map[profile.id] = {
+            full_name: profile.full_name,
+            username: profile.username
+          };
+          return map;
+        }, {}) : {};
+      
+      // Adicionar informações do criador a cada questão
+      return questions.map(question => {
+        const userProfile = userMap[question.user_id];
+        const discipline = question.disciplines;
+        
+        return {
+          ...question,
+          disciplines: undefined, // Remover o objeto aninhado
+          creator_name: userProfile ? (userProfile.full_name || userProfile.username || 'Usuário anônimo') : 'Usuário anônimo',
+          discipline_name: discipline ? discipline.name : undefined
+        };
+      });
+    } catch (error) {
+      console.error('Erro ao buscar questões públicas:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Atualiza o status público de uma questão
+   */
+  static async updateQuestionPublicStatus(id: number, isPublic: boolean): Promise<boolean> {
+    try {
+      if (!supabase) {
+        console.error('Supabase client is not initialized');
+        return false;
+      }
+      
+      // Verificar se o usuário atual é o proprietário da questão
+      const { data: user } = await supabase.auth.getUser();
+      if (!user || !user.user) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      // Buscar a questão para verificar o proprietário
+      const { data: existingQuestion, error: fetchError } = await supabase
+        .from('questions')
+        .select('user_id')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      // Verificar se o usuário atual é o proprietário da questão
+      if (!existingQuestion || existingQuestion.user_id !== user.user.id) {
+        throw new Error('Você não tem permissão para alterar o status desta questão');
+      }
+      
+      const { error } = await supabase
+        .from('questions')
+        .update({ is_public: isPublic })
+        .eq('id', id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error(`Erro ao atualizar status público da questão ${id}:`, error);
+      toast.error('Erro ao atualizar status da questão: ' + (error as any).message);
+      return false;
+    }
+  }
+
+  /**
+   * Conta o total de questões do usuário
+   */
+  static async countUserQuestions(
+    userId?: string,
+    filters?: {
+      disciplineId?: number;
+      subjectId?: number;
+      difficulty?: string;
+      questionType?: string;
+      searchTerm?: string;
+    }
+  ): Promise<number> {
+    try {
+      if (!supabase) {
+        console.error('Supabase client is not initialized');
+        return 0;
+      }
+      
+      // Se userId não for fornecido, obter o usuário atual
+      let userIdToUse = userId;
+      if (!userIdToUse) {
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData?.user?.id) {
+          console.error('Usuário não autenticado');
+          return 0;
+        }
+        userIdToUse = userData.user.id;
+      }
+      
+      let query = supabase
+        .from('questions')
+        .select('id', { count: 'exact' })
+        .eq('user_id', userIdToUse);
+      
+      // Aplicar filtros se fornecidos
+      if (filters) {
+        if (filters.disciplineId) {
+          query = query.eq('discipline_id', filters.disciplineId);
+        }
+        
+        if (filters.subjectId) {
+          query = query.eq('subject_id', filters.subjectId);
+        }
+        
+        if (filters.difficulty) {
+          query = query.eq('difficulty', filters.difficulty);
+        }
+        
+        if (filters.questionType) {
+          query = query.eq('question_type', filters.questionType);
+        }
+        
+        if (filters.searchTerm) {
+          query = query.ilike('content', `%${filters.searchTerm}%`);
+        }
+      }
+      
+      const { count, error } = await query;
+      
+      if (error) {
+        throw error;
+      }
+      
+      return count || 0;
+    } catch (error) {
+      console.error('Erro ao contar questões do usuário:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Conta o total de questões públicas disponíveis
+   */
+  static async countPublicQuestions(filters?: {
+    disciplineId?: number;
+    subjectId?: number;
+    difficulty?: string;
+    questionType?: string;
+    searchTerm?: string;
+    disciplineName?: string; // Filtro para pesquisar por nome de disciplina
+  }): Promise<number> {
+    try {
+      if (!supabase) {
+        console.error('Supabase client is not initialized');
+        return 0;
+      }
+      
+      let query = supabase
+        .from('questions')
+        .select('id', { count: 'exact' })
+        .eq('is_public', true);
+      
+      // Aplicar filtros se fornecidos
+      if (filters) {
+        if (filters.disciplineId) {
+          query = query.eq('discipline_id', filters.disciplineId);
+        }
+        
+        if (filters.subjectId) {
+          query = query.eq('subject_id', filters.subjectId);
+        }
+        
+        if (filters.difficulty) {
+          query = query.eq('difficulty', filters.difficulty);
+        }
+        
+        if (filters.questionType) {
+          query = query.eq('question_type', filters.questionType);
+        }
+        
+        if (filters.searchTerm) {
+          query = query.ilike('content', `%${filters.searchTerm}%`);
+        }
+        
+        // Pesquisa por nome de disciplina
+        if (filters.disciplineName) {
+          // Para pesquisar por nome de disciplina, precisamos usar uma abordagem diferente
+          if (!supabase) {
+            console.error('Supabase client is not initialized');
+            return 0;
+          }
+          
+          // Buscar IDs de questões que correspondem ao nome da disciplina
+          const { data: questionsWithDisciplines } = await supabase
+            .from('questions')
+            .select(`
+              id,
+              disciplines:discipline_id (
+                name
+              )
+            `)
+            .eq('is_public', true);
+          
+          if (!questionsWithDisciplines || questionsWithDisciplines.length === 0) {
+            return 0;
+          }
+          
+          // Filtrar manualmente as questões que correspondem ao nome da disciplina
+          const matchingQuestionIds = questionsWithDisciplines
+            .filter(q => 
+              q.disciplines && 
+              q.disciplines.name && 
+              q.disciplines.name.toLowerCase().includes(filters.disciplineName!.toLowerCase())
+            )
+            .map(q => q.id);
+          
+          if (matchingQuestionIds.length === 0) {
+            return 0;
+          }
+          
+          // Usar os IDs filtrados na consulta principal
+          query = query.in('id', matchingQuestionIds);
+        }
+      }
+      
+      const { count, error } = await query;
+      
+      if (error) {
+        throw error;
+      }
+      
+      return count || 0;
+    } catch (error) {
+      console.error('Erro ao contar questões públicas:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Clona uma questão pública para o banco pessoal do usuário
+   */
+  static async clonePublicQuestion(questionId: number): Promise<number | null> {
+    try {
+      if (!supabase) {
+        console.error('Supabase client is not initialized');
+        return null;
+      }
+
+      // Obter detalhes da questão original
+      const question = await this.getQuestionById(questionId);
+      if (!question) {
+        throw new Error('Questão não encontrada');
+      }
+
+      // Verificar se a questão é pública
+      if (!question.is_public) {
+        throw new Error('Esta questão não é pública e não pode ser clonada');
+      }
+
+      // Verificar se o usuário atingiu o limite diário de questões
+      const { data: user } = await supabase.auth.getUser();
+      if (!user || !user.user) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      // Verificar o limite diário de questões
+      const { limit, used, limitReached } = await this.checkDailyQuestionsLimit(user.user.id);
+      if (limitReached) {
+        throw new Error(`Você atingiu o limite diário de ${limit} questões. Faça upgrade para um plano superior para adicionar mais questões.`);
+      }
+
+      // Obter opções de resposta se for questão de múltipla escolha
+      let answerOptions: AnswerOption[] = [];
+      if (question.question_type === 'multiple_choice') {
+        answerOptions = await this.getAnswerOptions(questionId);
+      }
+
+      // Criar uma nova questão baseada na original (sem o ID e removendo flags de questão pública)
+      const {
+        id, 
+        user_id, 
+        is_public, 
+        created_at, 
+        updated_at, 
+        answer_options, 
+        creator_name, 
+        discipline_name, 
+        from_genoma_bank, 
+        ...questionData
+      } = question;
+
+      // Adicionar a nova questão ao banco do usuário usando o método addQuestion
+      // com skipCounter=true para evitar a duplicação do contador
+      const newQuestionData = {
+        ...questionData,
+        is_public: false, // A nova questão não será pública por padrão
+        from_genoma_bank: true // Indica que a questão foi clonada do Genoma Bank
+      };
+      
+      // Usar o método addQuestion com skipCounter=true para evitar duplicação
+      // e skipLimitCheck=true porque já verificamos o limite anteriormente
+      const newQuestionId = await this.addQuestion(newQuestionData, answerOptions, true, true);
+      
+      return newQuestionId;
+    } catch (error) {
+      console.error('Erro ao clonar questão:', error);
+      toast.error('Erro ao adicionar questão ao seu banco: ' + (error as any).message);
+      return null;
+    }
+  }
+
+  /**
+   * Verifica se o usuário atingiu o limite diário de questões
+   * @returns Um objeto com o limite, uso atual e se o limite foi atingido
+   */
+  static async checkDailyQuestionsLimit(userId?: string): Promise<{
+    limit: number;
+    used: number;
+    limitReached: boolean;
+  }> {
+    try {
+      if (!supabase) {
+        console.error('Supabase client is not initialized');
+        return { limit: 10, used: 0, limitReached: false };
+      }
+
+      // Se userId não for fornecido, obter o usuário atual
+      let userIdToUse = userId;
+      if (!userIdToUse) {
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData?.user?.id) {
+          console.error('Usuário não autenticado');
+          return { limit: 10, used: 0, limitReached: false };
+        }
+        userIdToUse = userData.user.id;
+      }
+
+      // Verificar o uso atual
+      const { data: usageData } = await supabase
+        .from('subscription_usage')
+        .select('questions_used_today')
+        .eq('user_id', userIdToUse)
+        .single();
+
+      // Buscar o limite do plano
+      const { data: subscriptionData } = await supabase
+        .from('user_subscriptions')
+        .select(`
+          tier,
+          subscription_plans:plan_id(features)
+        `)
+        .eq('user_id', userIdToUse)
+        .single();
+
+      // Obter o limite diário de questões
+      let questionsLimit = 10; // Valor padrão para plano Free
+      if (subscriptionData?.subscription_plans?.features?.maxQuestionsPerDay) {
+        questionsLimit = subscriptionData.subscription_plans.features.maxQuestionsPerDay;
+      }
+
+      // Verificar se o usuário atingiu o limite
+      const questionsUsed = usageData?.questions_used_today || 0;
+      const limitReached = questionsUsed >= questionsLimit;
+
+      return {
+        limit: questionsLimit,
+        used: questionsUsed,
+        limitReached: limitReached
+      };
+    } catch (error) {
+      console.error('Erro ao verificar limite diário de questões:', error);
+      return { limit: 10, used: 0, limitReached: false };
+    }
   }
 } 

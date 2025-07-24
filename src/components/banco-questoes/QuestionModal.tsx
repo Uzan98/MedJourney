@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Check } from 'lucide-react';
+import { X, Plus, Trash2, Check, Globe } from 'lucide-react';
 import { Question, AnswerOption } from '@/services/questions-bank.service';
 import { toast } from 'react-hot-toast';
 import { Discipline, Subject } from '@/lib/supabase';
@@ -31,6 +31,7 @@ export default function QuestionModal({
   const [correctAnswer, setCorrectAnswer] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
+  const [isPublic, setIsPublic] = useState(false);
   
   // Estados para disciplinas e assuntos
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
@@ -49,6 +50,7 @@ export default function QuestionModal({
       setDifficulty(initialData.difficulty || 'média');
       setQuestionType(initialData.question_type || 'multiple_choice');
       setTags(initialData.tags || []);
+      setIsPublic(initialData.is_public || false);
       
       // Para questões de V/F e dissertativa
       setCorrectAnswer(initialData.correct_answer || '');
@@ -82,6 +84,7 @@ export default function QuestionModal({
     setCorrectAnswer('');
     setTagInput('');
     setTags([]);
+    setIsPublic(false);
   };
   
   // Carregar disciplinas
@@ -224,6 +227,7 @@ export default function QuestionModal({
         difficulty,
         question_type: questionType,
         tags: tags.length > 0 ? tags : undefined,
+        is_public: isPublic,
       };
       
       // Adicionar resposta correta para V/F e dissertativa
@@ -489,6 +493,27 @@ export default function QuestionModal({
                   <option value="alta">Alta</option>
                 </select>
               </div>
+            </div>
+            
+            {/* Checkbox para tornar a questão pública */}
+            <div className="mb-6">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={isPublic}
+                  onChange={(e) => setIsPublic(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 rounded"
+                />
+                <span className="ml-2 flex items-center text-gray-700">
+                  <Globe className="h-4 w-4 mr-1.5 text-blue-500" />
+                  Adicionar ao Genoma Bank (compartilhar esta questão publicamente)
+                </span>
+              </label>
+              {isPublic && (
+                <p className="mt-1 text-sm text-gray-500 pl-6">
+                  Esta questão será visível para todos os usuários no Genoma Bank.
+                </p>
+              )}
             </div>
             
             {/* Tags */}

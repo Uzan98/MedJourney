@@ -19,7 +19,8 @@ import {
   Bell,
   Wrench,
   HelpCircle,
-  LayoutDashboard
+  LayoutDashboard,
+  Shield
 } from 'lucide-react';
 
 // Exportar configurações para todas as páginas admin
@@ -79,7 +80,9 @@ const adminMenuItems: AdminMenuItem[] = [
       { name: 'Estrutura', href: '/admin/database', icon: Database },
       { name: 'Funções', href: '/admin/database/setup-functions', icon: Wrench },
       { name: 'Relações', href: '/admin/database/fix-relations', icon: Database },
-      { name: 'Smart Planning', href: '/admin/database/setup-smart-planning', icon: Gauge }
+      { name: 'Smart Planning', href: '/admin/database/setup-smart-planning', icon: Gauge },
+      { name: 'Políticas de Segurança', href: '/admin/database/security-policies', icon: Shield },
+      { name: 'Corrigir Contador', href: '/admin/database/fix-questions-counter', icon: Database }
     ]
   },
   { 
