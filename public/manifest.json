@@ -4,8 +4,9 @@
   "description": "Organize e otimize seus estudos na área médica",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f0f4ff",
+  "background_color": "#1d4ed8",
   "theme_color": "#3b82f6",
+  "splash_pages": null,
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
@@ -56,4 +57,4 @@
   "dir": "ltr",
   "iarc_rating_id": "",
   "prefer_related_applications": false
-} 
+}

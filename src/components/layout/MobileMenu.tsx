@@ -66,7 +66,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
     setShouldRender(!isProtectedRoute || forceShow);
   }, [pathname, forceShow]);
 
-  // Use the first 4 items from mainNavigation
+  // Use the first 4 items from mainNavigation and add "Mais" button
   const primaryMenuItems = mainNavigation.slice(0, 4).map(item => ({
     path: item.href,
     label: item.name,
@@ -75,6 +75,18 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
     featureKey: item.featureKey,
     badge: item.badge
   }));
+
+  // Add "Mais" button as the 5th item
+  const moreMenuItem = {
+    path: '/mais',
+    label: 'Mais',
+    icon: React.createElement(MoreHorizontal, { className: "h-5 w-5" }),
+    requiredSubscription: undefined,
+    featureKey: undefined,
+    badge: undefined
+  };
+
+  const allMenuItems = [...primaryMenuItems, moreMenuItem];
 
   // Check if the current path matches the menu item
   const isActive = (path: string) => {
@@ -139,35 +151,51 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
     <div className={`fixed bottom-0 left-0 right-0 z-50 md:hidden ${className}`}>
       {/* Menu Bar */}
       <div className="bg-white border-t border-gray-200 shadow-lg rounded-t-xl">
-        <div className="flex justify-around items-center px-0.5 py-2">
-          {primaryMenuItems.map((item, index) => {
+        <div className="flex justify-around items-center px-1 py-2">
+          {allMenuItems.map((item, index) => {
             const active = isActive(item.path);
             
             return (
-              <button
-                key={item.path}
-                onClick={() => handleNavigation(item.path, item)}
-                className={`flex flex-col items-center py-0.5 px-1 relative ${
-                  active 
-                    ? 'text-blue-600' 
-                    : 'text-gray-500 hover:text-gray-700'
-                } transition-colors duration-200`}
+              <Link
+                key={index}
+                href={item.path}
+                onClick={(e) => {
+                  // For "Mais" button, no subscription check needed
+                  if (item.path === '/mais') {
+                    return;
+                  }
+                  
+                  const navItem = mainNavigation.find(nav => nav.href === item.path);
+                  if (navItem) {
+                    handleNavItemClick(navItem, e);
+                  }
+                }}
+                className={`
+                 flex flex-col items-center justify-center py-1.5 px-1.5 rounded-lg transition-all duration-200 relative min-w-0 flex-1
+                 ${active 
+                   ? 'text-blue-600 bg-blue-50' 
+                   : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+                 }
+               `}
               >
-                <div className={`p-1 rounded-full ${active ? 'bg-blue-100' : ''} transition-colors duration-200 relative`}>
-                  {item.icon}
-                  {item.badge && (
-                    <span className="absolute -top-1 -right-1 px-1 text-[0.6rem] rounded-full bg-blue-100 text-blue-800">
-                      {item.badge}
-                    </span>
-                  )}
-                </div>
-                <span className="text-[8px] mt-0.5 font-medium truncate max-w-10 text-center">{item.label}</span>
-                
-                {/* Active indicator */}
-                {active && (
-                  <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-blue-600 rounded-full"></div>
-                )}
-              </button>
+                {item.badge && (
+                   <span className={`
+                     absolute -top-0.5 -right-0.5 text-[7px] px-0.5 py-0.5 rounded-full font-bold z-10 leading-none
+                     ${item.badgeColor || 'bg-blue-500 text-white'}
+                   `}>
+                     {item.badge}
+                   </span>
+                 )}
+                 <div className={`
+                   p-1.5 rounded-lg transition-all duration-200 mb-0.5
+                   ${active ? 'bg-blue-100' : ''}
+                 `}>
+                   {item.icon}
+                 </div>
+                 <span className="text-[9px] font-medium text-center leading-tight truncate w-full">
+                   {item.label}
+                 </span>
+              </Link>
             );
           })}
         </div>
@@ -179,4 +207,4 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
   );
 };
 
-export default MobileMenu; 
+export default MobileMenu;

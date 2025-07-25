@@ -23,18 +23,15 @@ export class SubscriptionService {
       throw new Error('Plano não encontrado');
     }
     
-    // Buscar o email do usuário na view 'user_emails'
+    // Buscar o email do usuário usando função segura
     let userEmail = '';
     if (supabase && userId) {
       const { data: userAuth, error: userAuthError } = await supabase
-        .from('user_emails')
-        .select('email')
-        .eq('id', userId)
-        .single();
-      if (userAuthError || !userAuth) {
+        .rpc('get_user_email', { user_id_param: userId });
+      if (userAuthError || !userAuth || userAuth.length === 0) {
         throw new Error('Não foi possível obter o email do usuário');
       }
-      userEmail = userAuth.email;
+      userEmail = userAuth[0].email;
     } else {
       throw new Error('Usuário não autenticado');
     }
@@ -235,4 +232,4 @@ export class SubscriptionService {
       hasPrioritySupport: features.prioritySupport,
     };
   }
-} 
+}

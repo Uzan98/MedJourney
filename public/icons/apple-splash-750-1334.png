@@ -1,0 +1,33 @@
+<svg width="750" height="1334" viewBox="0 0 750 1334" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="750" height="1334" fill="url(#gradient)"/>
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1d4ed8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background Pattern -->
+  <pattern id="dots" patternUnits="userSpaceOnUse" width="60" height="60">
+    <circle cx="15" cy="15" r="2" fill="white" opacity="0.1"/>
+    <circle cx="45" cy="45" r="2" fill="white" opacity="0.1"/>
+  </pattern>
+  <rect width="750" height="1334" fill="url(#dots)"/>
+  
+  <!-- Logo -->
+  <g transform="translate(375, 667)">
+    <!-- Main Icon Background -->
+    <rect x="-60" y="-60" width="120" height="120" rx="24" fill="white" opacity="0.95"/>
+    
+    <!-- Medical Icon -->
+    <path d="M0 -30C-16.569 -30 -30 -16.569 -30 0V20C-30 36.569 -16.569 50 0 50C16.569 50 30 36.569 30 20V0C30 -16.569 16.569 -30 0 -30Z" fill="#2563eb"/>
+    <path d="M0 -20C-11.046 -20 -20 -11.046 -20 0V20C-20 31.046 -11.046 40 0 40C11.046 40 20 31.046 20 20V0C20 -11.046 11.046 -20 0 -20Z" fill="white"/>
+    <circle cx="0" cy="0" r="4" fill="#2563eb"/>
+    <rect x="-4" y="10" width="8" height="12" rx="1" fill="#2563eb"/>
+    
+    <!-- App Name -->
+    <text x="0" y="110" text-anchor="middle" fill="white" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="bold">MedJourney</text>
+    <text x="0" y="135" text-anchor="middle" fill="white" font-family="system-ui, -apple-system, sans-serif" font-size="14" opacity="0.8">Sua jornada de estudos médicos</text>
+  </g>
+</svg>

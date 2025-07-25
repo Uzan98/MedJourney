@@ -26,49 +26,49 @@ export default function MaisPage() {
       path: "/banco-questoes",
       label: "Banco de Questões",
       icon: <FileQuestion className="h-6 w-6" />,
-      description: "Pratique com questões"
+      description: "Pratique com questões",
+      bgColor: "bg-blue-50",
+      iconColor: "text-blue-600"
     },
     {
       path: "/simulados",
       label: "Simulados",
       icon: <ClipboardList className="h-6 w-6" />,
-      description: "Teste seus conhecimentos"
-    },
-    {
-      path: "/comunidade",
-      label: "Comunidade",
-      icon: <Users className="h-6 w-6" />,
-      description: "Conecte-se com outros estudantes"
-    },
-    {
-      path: "/comunidade/feed",
-      label: "Feed",
-      icon: <MessageSquare className="h-6 w-6" />,
-      description: "Atualizações da comunidade"
+      description: "Teste seus conhecimentos",
+      bgColor: "bg-green-50",
+      iconColor: "text-green-600"
     },
     {
       path: "/estudos",
       label: "Painel de Estudos",
       icon: <Brain className="h-6 w-6" />,
-      description: "Organize seus estudos"
+      description: "Organize seus estudos",
+      bgColor: "bg-purple-50",
+      iconColor: "text-purple-600"
     },
     {
       path: "/planejamento/inteligente",
       label: "Planejamento IA",
       icon: <Sparkles className="h-6 w-6" />,
-      description: "Planejamento com IA"
+      description: "Planejamento com IA",
+      bgColor: "bg-yellow-50",
+      iconColor: "text-yellow-600"
     },
     {
       path: "/comunidade/grupos-estudos",
       label: "Grupos de Estudo",
       icon: <GraduationCap className="h-6 w-6" />,
-      description: "Estude em grupo"
+      description: "Estude em grupo",
+      bgColor: "bg-indigo-50",
+      iconColor: "text-indigo-600"
     },
     {
       path: "/perfil",
       label: "Perfil",
       icon: <User className="h-6 w-6" />,
-      description: "Gerencie seu perfil"
+      description: "Gerencie seu perfil",
+      bgColor: "bg-pink-50",
+      iconColor: "text-pink-600"
     }
   ];
 
@@ -81,10 +81,10 @@ export default function MaisPage() {
           <Link 
             href={item.path} 
             key={item.path}
-            className="flex flex-col items-center p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+            className="flex flex-col items-center p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 hover:scale-105"
           >
-            <div className="bg-blue-50 p-3 rounded-full mb-2">
-              {React.cloneElement(item.icon, { className: "h-6 w-6 text-blue-600" })}
+            <div className={`${item.bgColor} p-3 rounded-full mb-2`}>
+              {React.cloneElement(item.icon, { className: `h-6 w-6 ${item.iconColor}` })}
             </div>
             <span className="font-medium text-sm text-center">{item.label}</span>
             <span className="text-xs text-gray-500 text-center mt-1">{item.description}</span>
@@ -93,4 +93,4 @@ export default function MaisPage() {
       </div>
     </div>
   );
-} 
+}
