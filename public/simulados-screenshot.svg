@@ -1,0 +1,81 @@
+<svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="300" fill="#f8fafc"/>
+  
+  <!-- Header -->
+  <rect width="400" height="60" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+  
+  <!-- Logo and title -->
+  <rect x="18" y="18" width="24" height="24" rx="4" fill="#fce7f3"/>
+  <path d="M22 22 L38 30 L22 38 Z" fill="#ec4899"/>
+  <text x="55" y="35" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#1e293b">Simulados</text>
+  
+  <!-- Create new button -->
+  <rect x="280" y="20" width="100" height="20" fill="#ec4899" rx="10"/>
+  <text x="315" y="32" font-family="Arial, sans-serif" font-size="8" fill="white">Novo Simulado</text>
+  
+  <!-- Stats cards -->
+  <rect x="20" y="70" width="80" height="50" fill="#fce7f3" rx="6" stroke="#ec4899" stroke-width="1"/>
+  <text x="25" y="85" font-family="Arial, sans-serif" font-size="8" fill="#be185d">Realizados</text>
+  <text x="25" y="105" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#be185d">12</text>
+  
+  <rect x="110" y="70" width="80" height="50" fill="#dcfce7" rx="6" stroke="#22c55e" stroke-width="1"/>
+  <text x="115" y="85" font-family="Arial, sans-serif" font-size="8" fill="#166534">Média Geral</text>
+  <text x="115" y="105" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#166534">78%</text>
+  
+  <rect x="200" y="70" width="80" height="50" fill="#dbeafe" rx="6" stroke="#3b82f6" stroke-width="1"/>
+  <text x="205" y="85" font-family="Arial, sans-serif" font-size="8" fill="#1e40af">Melhor Nota</text>
+  <text x="205" y="105" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#1e40af">95%</text>
+  
+  <rect x="290" y="70" width="90" height="50" fill="#fef3c7" rx="6" stroke="#f59e0b" stroke-width="1"/>
+  <text x="295" y="85" font-family="Arial, sans-serif" font-size="8" fill="#92400e">Tempo Médio</text>
+  <text x="295" y="105" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#92400e">45min</text>
+  
+  <!-- Main content -->
+  <rect x="20" y="130" width="360" height="150" fill="#ffffff" rx="8" stroke="#e2e8f0" stroke-width="1"/>
+  
+  <!-- Section title -->
+  <text x="30" y="150" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#374151">Meus Simulados</text>
+  
+  <!-- Simulado 1 -->
+  <rect x="30" y="160" width="340" height="35" fill="#f8fafc" rx="6" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="35" y="165" width="4" height="25" fill="#22c55e" rx="2"/>
+  <text x="50" y="175" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#374151">Simulado ENEM - Anatomia e Fisiologia</text>
+  <text x="50" y="185" font-family="Arial, sans-serif" font-size="8" fill="#6b7280">25 questões • Realizado em 18/01/2024</text>
+  
+  <!-- Score badge -->
+  <rect x="280" y="165" width="40" height="15" fill="#dcfce7" rx="8"/>
+  <text x="292" y="174" font-family="Arial, sans-serif" font-size="6" fill="#166534">85%</text>
+  
+  <!-- Time badge -->
+  <rect x="325" y="165" width="35" height="15" fill="#e0e7ff" rx="8"/>
+  <text x="335" y="174" font-family="Arial, sans-serif" font-size="6" fill="#4338ca">42min</text>
+  
+  <!-- Simulado 2 -->
+  <rect x="30" y="200" width="340" height="35" fill="#f8fafc" rx="6" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="35" y="205" width="4" height="25" fill="#f59e0b" rx="2"/>
+  <text x="50" y="215" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#374151">Prova Residência - Clínica Médica</text>
+  <text x="50" y="225" font-family="Arial, sans-serif" font-size="8" fill="#6b7280">40 questões • Realizado em 16/01/2024</text>
+  
+  <!-- Score badge -->
+  <rect x="280" y="205" width="40" height="15" fill="#fef3c7" rx="8"/>
+  <text x="292" y="214" font-family="Arial, sans-serif" font-size="6" fill="#92400e">72%</text>
+  
+  <!-- Time badge -->
+  <rect x="325" y="205" width="35" height="15" fill="#e0e7ff" rx="8"/>
+  <text x="333" y="214" font-family="Arial, sans-serif" font-size="6" fill="#4338ca">58min</text>
+  
+  <!-- Simulado 3 -->
+  <rect x="30" y="240" width="340" height="35" fill="#f8fafc" rx="6" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="35" y="245" width="4" height="25" fill="#ec4899" rx="2"/>
+  <text x="50" y="255" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#374151">Simulado Personalizado - Farmacologia</text>
+  <text x="50" y="265" font-family="Arial, sans-serif" font-size="8" fill="#6b7280">15 questões • Realizado em 14/01/2024</text>
+  
+  <!-- Score badge -->
+  <rect x="280" y="245" width="40" height="15" fill="#dcfce7" rx="8"/>
+  <text x="292" y="254" font-family="Arial, sans-serif" font-size="6" fill="#166534">93%</text>
+  
+  <!-- Time badge -->
+  <rect x="325" y="245" width="35" height="15" fill="#e0e7ff" rx="8"/>
+  <text x="335" y="254" font-family="Arial, sans-serif" font-size="6" fill="#4338ca">28min</text>
+</svg>

@@ -1,0 +1,83 @@
+<svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="300" fill="#f8fafc"/>
+  
+  <!-- Header -->
+  <rect width="400" height="60" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+  
+  <!-- Logo and title -->
+  <rect x="18" y="18" width="24" height="24" rx="4" fill="#dbeafe"/>
+  <rect x="22" y="22" width="16" height="16" rx="2" fill="#3b82f6"/>
+  <text x="55" y="35" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#1e293b">Planejamento</text>
+  
+  <!-- Tab navigation -->
+  <rect x="20" y="70" width="80" height="30" fill="#3b82f6" rx="6"/>
+  <text x="45" y="88" font-family="Arial, sans-serif" font-size="10" fill="white">Semana</text>
+  
+  <rect x="110" y="70" width="80" height="30" fill="#f1f5f9" rx="6" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="130" y="88" font-family="Arial, sans-serif" font-size="10" fill="#64748b">Calendário</text>
+  
+  <!-- Add button -->
+  <rect x="320" y="70" width="60" height="30" fill="#10b981" rx="6"/>
+  <text x="340" y="88" font-family="Arial, sans-serif" font-size="10" fill="white">+ Nova</text>
+  
+  <!-- Main content -->
+  <rect x="20" y="110" width="360" height="170" fill="#ffffff" rx="8" stroke="#e2e8f0" stroke-width="1"/>
+  
+  <!-- Week header -->
+  <text x="30" y="130" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#374151">Esta Semana</text>
+  <text x="320" y="130" font-family="Arial, sans-serif" font-size="10" fill="#6b7280">15-21 Jan</text>
+  
+  <!-- Day columns -->
+  <rect x="30" y="140" width="45" height="120" fill="#f8fafc" rx="4" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="45" y="155" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#374151">DOM</text>
+  <text x="47" y="165" font-family="Arial, sans-serif" font-size="6" fill="#6b7280">15</text>
+  
+  <rect x="80" y="140" width="45" height="120" fill="#f8fafc" rx="4" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="95" y="155" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#374151">SEG</text>
+  <text x="97" y="165" font-family="Arial, sans-serif" font-size="6" fill="#6b7280">16</text>
+  
+  <!-- Study session in Monday -->
+  <rect x="85" y="175" width="35" height="25" fill="#dbeafe" rx="3" stroke="#3b82f6" stroke-width="1"/>
+  <text x="87" y="185" font-family="Arial, sans-serif" font-size="6" fill="#1e40af">Anatomia</text>
+  <text x="87" y="193" font-family="Arial, sans-serif" font-size="5" fill="#1e40af">09:00</text>
+  
+  <rect x="130" y="140" width="45" height="120" fill="#f8fafc" rx="4" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="145" y="155" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#374151">TER</text>
+  <text x="147" y="165" font-family="Arial, sans-serif" font-size="6" fill="#6b7280">17</text>
+  
+  <!-- Study session in Tuesday -->
+  <rect x="135" y="175" width="35" height="25" fill="#dcfce7" rx="3" stroke="#22c55e" stroke-width="1"/>
+  <text x="137" y="185" font-family="Arial, sans-serif" font-size="6" fill="#166534">Fisiologia</text>
+  <text x="137" y="193" font-family="Arial, sans-serif" font-size="5" fill="#166534">14:00</text>
+  
+  <rect x="135" y="205" width="35" height="25" fill="#fef3c7" rx="3" stroke="#f59e0b" stroke-width="1"/>
+  <text x="137" y="215" font-family="Arial, sans-serif" font-size="6" fill="#92400e">Patologia</text>
+  <text x="137" y="223" font-family="Arial, sans-serif" font-size="5" fill="#92400e">16:00</text>
+  
+  <rect x="180" y="140" width="45" height="120" fill="#f8fafc" rx="4" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="195" y="155" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#374151">QUA</text>
+  <text x="197" y="165" font-family="Arial, sans-serif" font-size="6" fill="#6b7280">18</text>
+  
+  <rect x="230" y="140" width="45" height="120" fill="#f8fafc" rx="4" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="245" y="155" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#374151">QUI</text>
+  <text x="247" y="165" font-family="Arial, sans-serif" font-size="6" fill="#6b7280">19</text>
+  
+  <!-- Study session in Thursday -->
+  <rect x="235" y="175" width="35" height="25" fill="#fce7f3" rx="3" stroke="#ec4899" stroke-width="1"/>
+  <text x="237" y="185" font-family="Arial, sans-serif" font-size="6" fill="#be185d">Farmaco</text>
+  <text x="237" y="193" font-family="Arial, sans-serif" font-size="5" fill="#be185d">10:00</text>
+  
+  <rect x="280" y="140" width="45" height="120" fill="#f8fafc" rx="4" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="295" y="155" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#374151">SEX</text>
+  <text x="297" y="165" font-family="Arial, sans-serif" font-size="6" fill="#6b7280">20</text>
+  
+  <rect x="330" y="140" width="45" height="120" fill="#f8fafc" rx="4" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="345" y="155" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#374151">SAB</text>
+  <text x="347" y="165" font-family="Arial, sans-serif" font-size="6" fill="#6b7280">21</text>
+  
+  <!-- Study session in Saturday -->
+  <rect x="335" y="175" width="35" height="25" fill="#e0e7ff" rx="3" stroke="#6366f1" stroke-width="1"/>
+  <text x="337" y="185" font-family="Arial, sans-serif" font-size="6" fill="#4338ca">Revisão</text>
+  <text x="337" y="193" font-family="Arial, sans-serif" font-size="5" fill="#4338ca">15:00</text>
+</svg>
