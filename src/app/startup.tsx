@@ -148,4 +148,4 @@ export default function Startup({ onCompleteAction }: StartupProps) {
       </div>
     </div>
   );
-}
+} 
