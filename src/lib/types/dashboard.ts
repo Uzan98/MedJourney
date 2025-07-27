@@ -23,6 +23,13 @@ export interface Task {
   status: 'pending' | 'in-progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
   discipline?: string;
+  checklist?: ChecklistItem[];
+}
+
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
 }
 
 export interface StudySession {
@@ -59,4 +66,4 @@ export interface SimulatedTest {
   date: Date;
   correctAnswers: number;
   totalQuestions: number;
-} 
+}

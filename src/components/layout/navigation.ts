@@ -14,7 +14,8 @@ import {
   User,
   Settings,
   CreditCard,
-  BookMarked
+  BookMarked,
+  Trello
 } from 'lucide-react';
 import { SubscriptionTier } from '@/types/subscription';
 
@@ -42,12 +43,7 @@ export const mainNavigation: NavigationItem[] = [
     icon: BookOpen,
     requiresAuth: true,
   },
-  {
-    name: 'Planejamento',
-    href: '/planejamento',
-    icon: Calendar,
-    requiresAuth: true,
-  },
+
   {
     name: 'Planejamento IA',
     href: '/planejamento/inteligente',
@@ -62,6 +58,12 @@ export const mainNavigation: NavigationItem[] = [
     name: 'Estudos',
     href: '/estudos',
     icon: Clock,
+    requiresAuth: true,
+  },
+  {
+    name: 'Painel de Tarefas',
+    href: '/tarefas',
+    icon: Trello,
     requiresAuth: true,
   },
   {
@@ -127,4 +129,4 @@ export const profileNavigation: NavigationItem[] = [
     icon: Settings,
     requiresAuth: true,
   },
-]; 
+];

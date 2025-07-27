@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
   BookOpen, 
-  Calendar, 
   ClipboardList, 
   Settings, 
   BookText,
@@ -91,11 +90,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
       label: "Disciplinas",
       icon: <BookOpen className="h-5 w-5 flex-shrink-0" />
     },
-    {
-      path: "/planejamento",
-      label: "Planejamento",
-      icon: <Calendar className="h-5 w-5 flex-shrink-0" />
-    },
+
     {
       path: "/planejamento/inteligente",
       label: "Planejamento AI",
@@ -109,6 +104,11 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
     {
       path: "/simulados",
       label: "Simulados",
+      icon: <ClipboardList className="h-5 w-5 flex-shrink-0" />
+    },
+    {
+      path: "/tarefas",
+      label: "Painel de Tarefas",
       icon: <ClipboardList className="h-5 w-5 flex-shrink-0" />
     },
     {
@@ -171,10 +171,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
       return false;
     }
     
-    // Planejamento não deve estar ativo quando estamos em Planejamento IA
-    if (path === "/planejamento" && pathname.startsWith("/planejamento/inteligente")) {
-      return false;
-    }
+
     
     // Check if it's a subpath
     if (pathname.startsWith(`${path}/`) && path !== '/') {
@@ -341,4 +338,4 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
   );
 };
 
-export default SidebarMenu; 
+export default SidebarMenu;

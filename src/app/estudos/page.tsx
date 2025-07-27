@@ -34,6 +34,7 @@ import StudySessionModal from '@/components/estudos/StudySessionModal';
 import QuickStudySessionModal from '@/components/estudos/QuickStudySessionModal';
 import StudySessionTimer from '@/components/estudos/StudySessionTimer';
 import GrowingTimer from '@/components/estudos/GrowingTimer';
+import StudyPomodoroTimer from '@/components/estudos/StudyPomodoroTimer';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 
 // Interfaces para tipagem
@@ -1175,6 +1176,16 @@ export default function EstudosPage() {
           
           {/* Sidebar - 1/3 da tela */}
           <div className="space-y-6">
+            {/* Cronômetro Pomodoro */}
+            <StudyPomodoroTimer 
+              onComplete={() => {
+                console.log('Pomodoro concluído!');
+              }}
+              onStateChange={(state) => {
+                console.log('Estado do Pomodoro:', state);
+              }}
+            />
+            
             {/* Sessão rápida */}
             <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl p-6 text-white shadow-md relative overflow-hidden group hover:shadow-lg transition-all">
               {/* Elementos decorativos de fundo */}
@@ -1211,7 +1222,7 @@ export default function EstudosPage() {
               <div className="space-y-3">
                 <div className="p-3 bg-blue-50 rounded-lg hover:shadow-sm transition-all hover:scale-102 hover:bg-blue-100/50">
                   <p className="text-sm text-blue-800">
-                    Sessões de 25-30 minutos com pausas de 5 minutos (Técnica Pomodoro) podem aumentar sua concentração.
+                    Use o cronômetro Pomodoro acima: 25 minutos de foco + 5 minutos de pausa para máxima produtividade.
                   </p>
             </div>
                 
@@ -1397,4 +1408,4 @@ export default function EstudosPage() {
         )}
       </div>
   );
-} 
+}

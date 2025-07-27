@@ -36,6 +36,7 @@ export interface Database {
           priority?: string;
           due_date?: string;
           user_id: string | number;
+          checklist?: Array<{id: string; text: string; completed: boolean}>;
           created_at?: string;
           updated_at?: string;
         };
@@ -46,6 +47,7 @@ export interface Database {
           priority?: string;
           due_date?: string;
           user_id: string | number;
+          checklist?: Array<{id: string; text: string; completed: boolean}>;
         };
         Update: {
           title?: string;
@@ -53,6 +55,7 @@ export interface Database {
           status?: string;
           priority?: string;
           due_date?: string;
+          checklist?: Array<{id: string; text: string; completed: boolean}>;
           updated_at?: string;
         };
       };
@@ -195,4 +198,4 @@ export interface MockData {
   calendarMock: {
     events: Array<{ id: number; title: string; start: string; duration: number }>;
   };
-} 
+}
