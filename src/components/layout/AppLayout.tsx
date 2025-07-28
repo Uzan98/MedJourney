@@ -34,7 +34,6 @@ import {
 } from 'lucide-react';
 import CustomLogo from '@/components/ui/CustomLogo';
 import { getLogoPath, LOGO_CONFIG } from '@/config/logo';
-import MobileMenu from './MobileMenu';
 import SidebarMenu from './SidebarMenu';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationPermission from '../NotificationPermission';
@@ -662,8 +661,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         </main>
       </div>
 
-      {/* Mobile Menu - Passa a função de bloqueio para o MobileMenu */}
-      <MobileMenu forceShow lockMobileSidebar={lockMobileSidebar} />
+
 
       {/* Componente de permissão de notificação */}
       <NotificationPermission />

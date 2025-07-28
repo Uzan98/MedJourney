@@ -53,17 +53,17 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
   }, [lockMobileSidebar]);
 
   // Check if we should render the menu
-  // Don't render on protected routes unless forceShow is true
+  // Only render on protected routes (authenticated pages) unless forceShow is true
   useEffect(() => {
-    const protectedPaths = ['/dashboard', '/estudos', '/banco-questoes', '/simulados', '/comunidade', '/planejamento', '/configuracoes', '/disciplinas', '/minha-faculdade'];
+    const protectedPaths = ['/dashboard', '/estudos', '/banco-questoes', '/simulados', '/comunidade', '/planejamento', '/configuracoes', '/disciplinas', '/minha-faculdade', '/perfil', '/mais', '/hub-estudos', '/flashcards', '/cronometro', '/estatisticas', '/desempenho', '/tarefas'];
     
     // Check if current path is a protected path or a subpath of one
     const isProtectedRoute = protectedPaths.some(path => 
       pathname === path || (pathname.startsWith(path + '/') && path !== '/')
     );
 
-    // Only render if it's not a protected route or if forceShow is true
-    setShouldRender(!isProtectedRoute || forceShow);
+    // Only render if it's a protected route or if forceShow is true
+    setShouldRender(isProtectedRoute || forceShow);
   }, [pathname, forceShow]);
 
   // Use the first 4 items from mainNavigation and add "Mais" button

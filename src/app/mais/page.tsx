@@ -14,7 +14,8 @@ import {
   BookText,
   Award,
   MessageSquare,
-  Sparkles
+  Sparkles,
+  CheckSquare
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -45,6 +46,14 @@ export default function MaisPage() {
       description: "Organize seus estudos",
       bgColor: "bg-purple-50",
       iconColor: "text-purple-600"
+    },
+    {
+      path: "/tarefas",
+      label: "Painel de Tarefas",
+      icon: <CheckSquare className="h-6 w-6" />,
+      description: "Gerencie suas tarefas",
+      bgColor: "bg-orange-50",
+      iconColor: "text-orange-600"
     },
     {
       path: "/planejamento/inteligente",
@@ -93,4 +102,4 @@ export default function MaisPage() {
       </div>
     </div>
   );
-} 
+}
