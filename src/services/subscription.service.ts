@@ -9,7 +9,7 @@ export class SubscriptionService {
   /**
    * Cria uma sessão de checkout para assinatura
    */
-  static async createCheckoutSession(userId: string, planId: string, supabaseClient?: SupabaseClient) {
+  static async createCheckoutSession(userId: string, planId: string, supabaseClient?: SupabaseClient, userEmail?: string) {
     const supabase = supabaseClient || createServerSupabaseClient();
     
     // Obter informações do plano
@@ -23,15 +23,19 @@ export class SubscriptionService {
       throw new Error('Plano não encontrado');
     }
     
-    // Buscar o email do usuário usando função segura
-    let userEmail = '';
-    if (supabase && userId) {
+    // Buscar o email do usuário
+    let finalUserEmail = '';
+    if (userEmail) {
+      // Usar email fornecido como parâmetro
+      finalUserEmail = userEmail;
+    } else if (supabase && userId) {
+      // Fallback: tentar buscar email usando função RPC
       const { data: userAuth, error: userAuthError } = await supabase
         .rpc('get_user_email', { user_id_param: userId });
       if (userAuthError || !userAuth || userAuth.length === 0) {
         throw new Error('Não foi possível obter o email do usuário');
       }
-      userEmail = userAuth[0].email;
+      finalUserEmail = userAuth[0].email;
     } else {
       throw new Error('Usuário não autenticado');
     }
@@ -48,7 +52,7 @@ export class SubscriptionService {
       stripeCustomerId = subscription.stripe_customer_id;
     } else {
       const customer = await stripe.customers.create({
-        email: userEmail,
+        email: finalUserEmail,
         metadata: {
           userId: userId
         }

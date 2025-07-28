@@ -50,18 +50,29 @@ export async function POST(request: NextRequest) {
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       const supabase = createClient(supabaseUrl, supabaseAnonKey); // Use ANON KEY para autenticação de usuário
+      
       // Autentica o usuário pelo token JWT
       const { data: userData, error } = await supabase.auth.getUser(token);
       if (error || !userData?.user) {
         console.error('Erro ao verificar token:', error);
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
+      
       const userId = userData.user.id;
+      const userEmail = userData.user.email;
+      
+      if (!userEmail) {
+        console.error('Email não encontrado no token do usuário');
+        return NextResponse.json({ error: 'User email not found' }, { status: 400 });
+      }
+      
       const { planId } = await request.json();
       if (!planId) {
         return NextResponse.json({ error: 'Plan ID is required' }, { status: 400 });
       }
-      const checkoutSession = await SubscriptionService.createCheckoutSession(userId, planId, supabase);
+      
+      // Passar o email diretamente para evitar problemas com RPC
+      const checkoutSession = await SubscriptionService.createCheckoutSession(userId, planId, supabase, userEmail);
       return NextResponse.json(checkoutSession);
     } else {
       // Fallback para cookies/session
@@ -146,4 +157,4 @@ export async function DELETE(request: NextRequest) {
     console.error('Error canceling subscription:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-} 
+}
