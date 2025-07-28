@@ -20,7 +20,8 @@ import {
   MessageCircle,
   Layers,
   School,
-  CreditCard
+  CreditCard,
+  GraduationCap
 } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -86,15 +87,31 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
       icon: <Home className="h-5 w-5 flex-shrink-0" />
     },
     {
-      path: "/dashboard/disciplinas",
-      label: "Disciplinas",
-      icon: <BookOpen className="h-5 w-5 flex-shrink-0" />
-    },
-
-    {
-      path: "/planejamento/inteligente",
-      label: "Planejamento AI",
-      icon: <Brain className="h-5 w-5 flex-shrink-0" />
+      path: "/hub-estudos",
+      label: "Hub de Estudos",
+      icon: <GraduationCap className="h-5 w-5 flex-shrink-0" />,
+      submenu: [
+        {
+          path: "/dashboard/disciplinas",
+          label: "Disciplinas",
+          icon: <BookOpen className="h-4 w-4 flex-shrink-0" />
+        },
+        {
+          path: "/planejamento/inteligente",
+          label: "Planejamento AI",
+          icon: <Brain className="h-4 w-4 flex-shrink-0" />
+        },
+        {
+          path: "/tarefas",
+          label: "Painel de Tarefas",
+          icon: <ClipboardList className="h-4 w-4 flex-shrink-0" />
+        },
+        {
+          path: "/estudos",
+          label: "Painel de Estudos",
+          icon: <BookText className="h-4 w-4 flex-shrink-0" />
+        }
+      ]
     },
     {
       path: "/banco-questoes",
@@ -107,19 +124,9 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
       icon: <ClipboardList className="h-5 w-5 flex-shrink-0" />
     },
     {
-      path: "/tarefas",
-      label: "Painel de Tarefas",
-      icon: <ClipboardList className="h-5 w-5 flex-shrink-0" />
-    },
-    {
       path: "/flashcards",
       label: "Flashcards",
       icon: <Layers className="h-5 w-5 flex-shrink-0" />
-    },
-    {
-      path: "/estudos",
-      label: "Painel de Estudos",
-      icon: <BookText className="h-5 w-5 flex-shrink-0" />
     },
     {
       path: "/comunidade",

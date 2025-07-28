@@ -32,6 +32,8 @@ import {
   School,
   CreditCard
 } from 'lucide-react';
+import CustomLogo from '@/components/ui/CustomLogo';
+import { getLogoPath, LOGO_CONFIG } from '@/config/logo';
 import MobileMenu from './MobileMenu';
 import SidebarMenu from './SidebarMenu';
 import { useAuth } from '@/contexts/AuthContext';
@@ -415,12 +417,14 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       >
         {/* Logo area */}
         <div className={`flex items-center ${isSidebarOpen ? 'space-x-3' : 'justify-center'} pt-4 px-4 pb-2 flex-shrink-0`}>
-          <div className="bg-blue-400 p-2 rounded-md flex-shrink-0">
-            <div className="h-8 w-8 bg-blue-200 rounded-md flex items-center justify-center">
-              <BookOpen className="h-5 w-5 text-blue-600" />
-            </div>
+          <div className="flex-shrink-0">
+            <CustomLogo 
+              iconPath={getLogoPath()}
+              size={LOGO_CONFIG.SIZES.SIDEBAR_DESKTOP}
+              iconColor={LOGO_CONFIG.DEFAULT_COLORS.SIDEBAR}
+            />
           </div>
-          {isSidebarOpen && <span className="text-xl font-bold">MedJourney</span>}
+          {isSidebarOpen && <span className="text-xl font-bold">Genoma</span>}
         </div>
         
         {/* Toggle button */}
@@ -489,12 +493,12 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             {/* Logo area - Mobile */}
             <div className="flex items-center justify-between px-4 pt-4 pb-2 flex-shrink-0">
               <div className="flex items-center space-x-3">
-                <div className="bg-blue-400 p-2 rounded-md">
-                  <div className="h-8 w-8 bg-blue-200 rounded-md flex items-center justify-center">
-                    <BookOpen className="h-5 w-5 text-blue-600" />
-                  </div>
-                </div>
-                <span className="text-xl font-bold">MedJourney</span>
+                <CustomLogo 
+                  iconPath={getLogoPath()}
+                  size={LOGO_CONFIG.SIZES.SIDEBAR_MOBILE}
+                  iconColor={LOGO_CONFIG.DEFAULT_COLORS.SIDEBAR}
+                />
+                <span className="text-xl font-bold">Genoma</span>
               </div>
               <button 
                 onClick={(e) => {
@@ -548,12 +552,14 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               <Menu className="h-6 w-6" />
             </button>
             <div className="flex items-center">
-              <div className="bg-blue-500 p-1.5 rounded-md mr-2 hidden sm:flex">
-                <div className="h-6 w-6 bg-blue-100 rounded-md flex items-center justify-center">
-                  <BookOpen className="h-4 w-4 text-blue-600" />
-                </div>
+              <div className="mr-2 hidden sm:flex">
+                <CustomLogo 
+                  iconPath={getLogoPath()}
+                  size={LOGO_CONFIG.SIZES.HEADER}
+                  iconColor={LOGO_CONFIG.DEFAULT_COLORS.HEADER}
+                />
               </div>
-              <h1 className="text-xl font-semibold text-blue-800">MedJourney</h1>
+              <h1 className="text-xl font-semibold text-blue-800">Genoma</h1>
             </div>
           </div>
           

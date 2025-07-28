@@ -37,9 +37,9 @@ export default function ProfilePage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [profileData, setProfileData] = useState({
     name: user?.user_metadata?.name || '',
-    bio: user?.user_metadata?.bio || 'Estudante de Medicina apaixonado por aprender e compartilhar conhecimento.',
+    bio: user?.user_metadata?.bio || 'Estudante apaixonado por aprender e compartilhar conhecimento.',
     location: user?.user_metadata?.location || 'São Paulo, Brasil',
-    specialty: user?.user_metadata?.specialty || 'Medicina Geral',
+    specialty: user?.user_metadata?.specialty || 'Estudos Gerais',
     university: user?.user_metadata?.university || 'Universidade de São Paulo',
     graduationYear: user?.user_metadata?.graduationYear || '2025',
     avatar_url: user?.user_metadata?.avatar_url || ''
@@ -54,9 +54,9 @@ export default function ProfilePage() {
     streak: 0
   });
 
-  // Lista de especialidades médicas para o select
+  // Lista de áreas de estudo para o select
   const specialties = [
-    'Medicina Geral',
+    'Estudos Gerais',
     'Cardiologia',
     'Dermatologia',
     'Neurologia',
@@ -257,7 +257,7 @@ export default function ProfilePage() {
               ) : (
                 <div className="flex flex-col items-center justify-center">
                   <BookOpen className="h-10 w-10 text-blue-500" />
-                  <span className="text-xs text-blue-500 mt-1">MedJourney</span>
+                  <span className="text-xs text-blue-500 mt-1">Genoma</span>
                 </div>
               )}
               
@@ -618,4 +618,4 @@ export default function ProfilePage() {
       </div>
     </div>
   );
-} 
+}

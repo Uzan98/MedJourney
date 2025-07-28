@@ -202,7 +202,7 @@ export default function SimuladosPage() {
       <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg p-8 mb-8">
         <div className="max-w-4xl">
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Simulados Médicos
+            Simulados
           </h1>
           <p className="text-blue-100 text-lg mb-6">
             Prepare-se para provas e avaliações com simulados personalizados. Crie seus próprios simulados 
@@ -585,4 +585,4 @@ export default function SimuladosPage() {
       )}
     </div>
   );
-} 
+}

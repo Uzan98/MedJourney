@@ -89,7 +89,7 @@ export default function LoginForm() {
 
   return (
     <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-center">Entrar no MedJourney</h2>
+      <h2 className="text-2xl font-bold mb-6 text-center">Entrar no Genoma</h2>
       
       {error && (
         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
@@ -160,4 +160,4 @@ export default function LoginForm() {
       </div>
     </div>
   );
-} 
+}

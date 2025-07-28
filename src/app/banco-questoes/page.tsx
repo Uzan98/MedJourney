@@ -455,7 +455,7 @@ export default function BancoQuestoesPage() {
               Banco de Questões
             </h1>
             <p className="mt-2 text-blue-100 max-w-xl">
-              Organize e gerencie suas questões para estudos. Crie, edite e pratique para aprimorar seu conhecimento médico.
+              Organize e gerencie suas questões para estudos. Crie, edite e pratique para aprimorar seu conhecimento.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <div className="bg-blue-500/30 px-4 py-2 rounded-lg flex items-center text-sm backdrop-blur-sm">
@@ -769,4 +769,4 @@ export default function BancoQuestoesPage() {
       )}
     </div>
   );
-} 
+}

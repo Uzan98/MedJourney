@@ -32,7 +32,7 @@ export const playNotificationSound = (): void => {
     playWithAudioElement();
     
     // Mostrar notificação do sistema (sem som)
-    showSystemNotification('MedJourney', 'Sua sessão de estudo foi concluída!');
+    showSystemNotification('Genoma', 'Sua sessão de estudo foi concluída!');
   } catch (error) {
     console.error('Erro ao reproduzir som de notificação:', error);
   }
@@ -114,4 +114,4 @@ export const playCustomNotificationSound = (volume: number = 0.7, loop: boolean 
     console.error('Erro ao criar elemento de áudio:', error);
     return null;
   }
-}; 
+};

@@ -100,7 +100,7 @@ export default function AdminPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Painel de Administração</h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Bem-vindo ao painel de administração do MedJourney. Aqui você pode gerenciar todos os aspectos da plataforma.
+          Bem-vindo ao painel de administração do Genoma. Aqui você pode gerenciar todos os aspectos da plataforma.
         </p>
       </div>
       
@@ -157,4 +157,4 @@ export default function AdminPage() {
       </div>
     </div>
   );
-} 
+}

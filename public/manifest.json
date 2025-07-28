@@ -1,7 +1,7 @@
 {
-  "name": "MedJourney - Assistente de Estudos",
-  "short_name": "MedJourney",
-  "description": "Organize e otimize seus estudos na área médica",
+  "name": "Genoma - Assistente de Estudos",
+  "short_name": "Genoma",
+  "description": "Organize e otimize seus estudos",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1d4ed8",
@@ -40,7 +40,7 @@
     }
   ],
   "orientation": "portrait",
-  "categories": ["education", "productivity", "medical"],
+  "categories": ["education", "productivity"],
   "screenshots": [
     {
       "src": "/screenshots/dashboard.png",
@@ -58,5 +58,5 @@
   "iarc_rating_id": "",
   "prefer_related_applications": false,
   "scope": "/",
-  "id": "medjourney-app"
+  "id": "genoma-app"
 }

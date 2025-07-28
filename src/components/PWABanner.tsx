@@ -53,7 +53,7 @@ export default function PWABanner() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium truncate">
-              Instale o MedJourney
+              Instale o Genoma
             </p>
             <p className="text-xs text-blue-100 truncate">
               Acesso rápido e offline.

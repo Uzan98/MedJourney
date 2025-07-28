@@ -75,7 +75,7 @@ export default function HomePage() {
               </svg>
             </div>
           </div>
-          <h1 className="text-xl font-semibold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">MedJourney</h1>
+          <h1 className="text-xl font-semibold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Genoma</h1>
         </div>
         <div className="flex items-center space-x-2">
           <Link
@@ -105,10 +105,10 @@ export default function HomePage() {
               </div>
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
-              Sua jornada de <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400">estudos médicos</span> começa aqui
+              Sua jornada de <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400">estudos</span> começa aqui
             </h1>
             <p className="mt-6 text-lg md:text-xl text-white/80 max-w-xl mx-auto md:mx-0">
-              Organize, planeje e otimize seus estudos com a plataforma completa para estudantes de medicina com inteligência artificial
+              Organize, planeje e otimize seus estudos com a plataforma completa para estudantes com inteligência artificial
             </p>
             
             <div className="mt-8 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 justify-center md:justify-start">
@@ -272,7 +272,7 @@ export default function HomePage() {
                 </div>
               </div>
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">Pronto para transformar seus estudos?</h2>
-              <p className="text-xl text-white/80 mb-10 max-w-2xl mx-auto">Junte-se a milhares de estudantes de medicina que já estão otimizando seu aprendizado com o MedJourney</p>
+              <p className="text-xl text-white/80 mb-10 max-w-2xl mx-auto">Junte-se a milhares de estudantes que já estão otimizando seu aprendizado com o Genoma</p>
               
               <Link
                 href="/auth/signup"
@@ -300,11 +300,11 @@ export default function HomePage() {
                   </svg>
                 </div>
               </div>
-              <h1 className="text-xl font-semibold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">MedJourney</h1>
+              <h1 className="text-xl font-semibold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">Genoma</h1>
             </div>
             
             <div className="text-sm text-white/70">
-              &copy; {new Date().getFullYear()} MedJourney. Todos os direitos reservados.
+              &copy; {new Date().getFullYear()} Genoma. Todos os direitos reservados.
             </div>
           </div>
         </div>

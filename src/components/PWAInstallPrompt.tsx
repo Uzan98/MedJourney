@@ -60,7 +60,7 @@ export default function PWAInstallPrompt() {
               <Smartphone className="w-4 h-4 text-blue-600" />
             </div>
             <h3 className="font-semibold text-gray-900 text-sm">
-              Instalar MedJourney
+              Instalar Genoma
             </h3>
           </div>
           <button
@@ -73,8 +73,8 @@ export default function PWAInstallPrompt() {
         
         <p className="text-gray-600 text-xs mb-4 leading-relaxed">
           {isIOS 
-            ? "Adicione o MedJourney à sua tela inicial para acesso rápido e uma experiência completa de app!"
-            : "Instale o MedJourney como um aplicativo para acesso mais rápido e notificações."
+            ? "Adicione o Genoma à sua tela inicial para acesso rápido e uma experiência completa de app!"
+            : "Instale o Genoma como um aplicativo para acesso mais rápido e notificações."
           }
         </p>
         
@@ -112,7 +112,7 @@ export default function PWAInstallPrompt() {
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">
-                Como instalar o MedJourney
+                Como instalar o Genoma
               </h2>
               <button
                 onClick={() => setShowInstructions(false)}
@@ -162,7 +162,7 @@ export default function PWAInstallPrompt() {
                 <ol className="space-y-3">
                   <li className="flex items-start space-x-3">
                     <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">1</span>
-                    <span className="text-sm text-gray-700 leading-relaxed">Abra o MedJourney no Chrome</span>
+                    <span className="text-sm text-gray-700 leading-relaxed">Abra o Genoma no Chrome</span>
                   </li>
                    <li className="flex items-start space-x-3">
                     <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">2</span>
@@ -181,7 +181,7 @@ export default function PWAInstallPrompt() {
                     <ol className="space-y-3">
                       <li className="flex items-start space-x-3">
                         <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">1</span>
-                        <span className="text-sm text-gray-700 leading-relaxed">Abra o MedJourney no Safari.</span>
+                        <span className="text-sm text-gray-700 leading-relaxed">Abra o Genoma no Safari.</span>
                       </li>
                       <li className="flex items-start space-x-3">
                         <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">2</span>
@@ -198,7 +198,7 @@ export default function PWAInstallPrompt() {
                     <ol className="space-y-3">
                       <li className="flex items-start space-x-3">
                         <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">1</span>
-                        <span className="text-sm text-gray-700 leading-relaxed">Abra o MedJourney no Chrome.</span>
+                        <span className="text-sm text-gray-700 leading-relaxed">Abra o Genoma no Chrome.</span>
                       </li>
                       <li className="flex items-start space-x-3">
                         <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">2</span>
@@ -216,7 +216,7 @@ export default function PWAInstallPrompt() {
                  <ol className="space-y-3">
                   <li className="flex items-start space-x-3">
                     <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">1</span>
-                    <span className="text-sm text-gray-700 leading-relaxed">Abra o MedJourney no Chrome, Edge ou Firefox</span>
+                    <span className="text-sm text-gray-700 leading-relaxed">Abra o Genoma no Chrome, Edge ou Firefox</span>
                   </li>
                    <li className="flex items-start space-x-3">
                     <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">2</span>

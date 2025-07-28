@@ -1519,7 +1519,7 @@ const MobileDashboard = () => {
         <div className="px-4 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold">MedJourney</h1>
+              <h1 className="text-2xl font-bold">Genoma</h1>
               <p className="text-sm text-blue-100 mt-1 flex items-center">
                 <User className="h-4 w-4 mr-1.5 opacity-80" />
                 Olá, {user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário'}
@@ -1626,4 +1626,4 @@ const MobileDashboard = () => {
   );
 };
 
-export default MobileDashboard; 
+export default MobileDashboard;

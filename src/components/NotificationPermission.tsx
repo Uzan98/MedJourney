@@ -41,7 +41,7 @@ const NotificationPermission = () => {
       
       // Se a permissão foi concedida, mostrar uma notificação de teste
       if (result === 'granted') {
-        new Notification('MedJourney', {
+        new Notification('Genoma', {
           body: 'Notificações ativadas com sucesso!',
           icon: '/favicon.ico'
         });
@@ -98,4 +98,4 @@ const NotificationPermission = () => {
   );
 };
 
-export default NotificationPermission; 
+export default NotificationPermission;

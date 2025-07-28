@@ -51,7 +51,7 @@ export default function SignupForm() {
       
       // Preparar os dados adicionais do usuário
       const additionalData = {
-        bio: bio || 'Estudante de Medicina apaixonado por aprender e compartilhar conhecimento.',
+        bio: bio || 'Estudante apaixonado por aprender e compartilhar conhecimento.',
         location: location || '',
         specialty: specialty || '',
         university: university || '',
@@ -92,9 +92,9 @@ export default function SignupForm() {
     );
   }
 
-  // Lista de especialidades médicas para o select
+  // Lista de áreas de estudo para o select
   const specialties = [
-    'Medicina Geral',
+    'Estudos Gerais',
     'Cardiologia',
     'Dermatologia',
     'Neurologia',
@@ -319,4 +319,4 @@ export default function SignupForm() {
       </div>
     </div>
   );
-} 
+}

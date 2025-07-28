@@ -4,7 +4,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 export const metadata: Metadata = {
-  title: 'Minha Faculdade | MedJourney',
+  title: 'Minha Faculdade | Genoma',
   description: 'Crie ou participe de ambientes compartilhados com sua turma',
 };
 
@@ -20,4 +20,4 @@ export default function MinhaFaculdadeLayout({
       </AppLayout>
     </ProtectedRoute>
   );
-} 
+}

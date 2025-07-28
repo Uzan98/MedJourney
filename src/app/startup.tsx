@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { inicializarPlanejamento } from '@/services';
 import { inicializarSincronizacao } from '@/services/data-sync';
+import CustomLogo from '@/components/ui/CustomLogo';
+import { getLogoPath } from '@/config/logo';
 
 type StartupProps = {
   onCompleteAction: () => void;
@@ -85,12 +87,11 @@ export default function Startup({ onCompleteAction }: StartupProps) {
         {/* Logo/Icon */}
         <div className="mb-8 relative">
           <div className="w-24 h-24 bg-white rounded-2xl shadow-2xl flex items-center justify-center mb-4 animate-pulse">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M24 12C19.5817 12 16 15.5817 16 20V28C16 32.4183 19.5817 36 24 36C28.4183 36 32 32.4183 32 28V20C32 15.5817 28.4183 12 24 12Z" fill="#3B82F6"/>
-              <path d="M24 16C21.7909 16 20 17.7909 20 20V28C20 30.2091 21.7909 32 24 32C26.2091 32 28 30.2091 28 28V20C28 17.7909 26.2091 16 24 16Z" fill="white"/>
-              <circle cx="24" cy="20" r="2" fill="#3B82F6"/>
-              <rect x="22" y="24" width="4" height="6" rx="1" fill="#3B82F6"/>
-            </svg>
+            <CustomLogo 
+              iconPath={getLogoPath()}
+              size={48}
+              className="text-blue-600"
+            />
           </div>
           
           {/* Animated rings */}
@@ -104,10 +105,10 @@ export default function Startup({ onCompleteAction }: StartupProps) {
         
         {/* App Name */}
         <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">
-          MedJourney
+          Genoma
         </h1>
         <p className="text-blue-100 text-lg mb-8 font-medium">
-          Sua jornada de estudos médicos
+          Sua jornada de estudos
         </p>
         
         {/* Loading Section */}
@@ -148,4 +149,4 @@ export default function Startup({ onCompleteAction }: StartupProps) {
       </div>
     </div>
   );
-} 
+}

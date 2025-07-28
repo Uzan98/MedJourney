@@ -13,8 +13,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "MedJourney - Sua jornada de estudos médicos",
-  description: "Uma plataforma inteligente para estudantes de medicina",
+  title: "Genoma - Sua jornada de estudos",
+  description: "Uma plataforma inteligente para estudantes",
   manifest: "/manifest.json",
 };
 
@@ -26,13 +26,13 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={inter.variable}>
       <head>
-        <meta name="application-name" content="MedJourney" />
+        <meta name="application-name" content="Genoma" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta
           name="apple-mobile-web-app-status-bar-style"
           content="default"
         />
-        <meta name="apple-mobile-web-app-title" content="MedJourney" />
+        <meta name="apple-mobile-web-app-title" content="Genoma" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#3b82f6" />
