@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
+import { initializeSubscriptionUsage } from '@/utils/subscription-fix';
 
 export interface AnswerOption {
   id?: number;
@@ -269,7 +270,8 @@ export class QuestionsBankService {
     question: Question, 
     answerOptions?: AnswerOption[], 
     skipCounter: boolean = false,
-    skipLimitCheck: boolean = false
+    skipLimitCheck: boolean = false,
+    retryCount: number = 0
   ): Promise<number | null> {
     try {
       const { data: user } = await supabase.auth.getUser();
@@ -281,8 +283,9 @@ export class QuestionsBankService {
       // Verificar o limite diário de questões, a menos que seja para pular essa verificação
       if (!skipLimitCheck) {
         const { limit, limitReached } = await this.checkDailyQuestionsLimit(user.user.id);
-        if (limitReached) {
-          throw new Error(`Você atingiu o limite diário de ${limit} questões. Faça upgrade para um plano superior para adicionar mais questões.`);
+        if (limitReached && limit !== -1) {
+          const limitText = limit === -1 ? 'ilimitadas' : `${limit}`;
+          throw new Error(`Você atingiu o limite diário de ${limitText} questões. Faça upgrade para um plano superior para adicionar mais questões.`);
         }
       }
       
@@ -335,15 +338,35 @@ export class QuestionsBankService {
         }
       }
       
-      // Incrementar o contador de questões usadas apenas se não for para pular
-      if (!skipCounter) {
-        await this.incrementQuestionsUsedCounter(user.user.id);
-      }
+      // O contador é incrementado automaticamente pelo trigger SQL
+      // Removido incremento manual para evitar duplicação
       
       return questionId;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao adicionar questão:', error);
-      toast.error('Erro ao adicionar questão: ' + (error as any).message);
+      
+      // Se for erro 406 (limite atingido) e ainda não tentamos inicializar, tentar uma vez
+      if (error?.message?.includes('406') || 
+          error?.message?.includes('limit') || 
+          error?.message?.includes('subscription_usage') ||
+          error?.code === 'P0001') {
+        
+        if (retryCount === 0) {
+          console.log('Tentando inicializar subscription_usage para resolver erro 406...');
+          
+          const initResult = await initializeSubscriptionUsage();
+          
+          if (initResult.success) {
+            console.log('Subscription usage inicializado, tentando adicionar questão novamente...');
+            // Tentar novamente com retry count = 1 para evitar loop infinito
+            return await this.addQuestion(question, answerOptions, skipCounter, skipLimitCheck, 1);
+          } else {
+            console.error('Falha ao inicializar subscription_usage:', initResult.message);
+          }
+        }
+      }
+      
+      toast.error('Erro ao adicionar questão: ' + error.message);
       return null;
     }
   }
@@ -1002,7 +1025,7 @@ export class QuestionsBankService {
   /**
    * Clona uma questão pública para o banco pessoal do usuário
    */
-  static async clonePublicQuestion(questionId: number): Promise<number | null> {
+  static async clonePublicQuestion(questionId: number, retryCount: number = 0): Promise<number | null> {
     try {
       if (!supabase) {
         console.error('Supabase client is not initialized');
@@ -1026,10 +1049,11 @@ export class QuestionsBankService {
         throw new Error('Usuário não autenticado');
       }
 
-      // Verificar o limite diário de questões
+      // Verificar o limite diário de questões (apenas para usuários com limite definido)
       const { limit, used, limitReached } = await this.checkDailyQuestionsLimit(user.user.id);
-      if (limitReached) {
-        throw new Error(`Você atingiu o limite diário de ${limit} questões. Faça upgrade para um plano superior para adicionar mais questões.`);
+      if (limitReached && limit !== -1) {
+        const limitText = limit === -1 ? 'ilimitadas' : limit.toString();
+        throw new Error(`Você atingiu o limite diário de ${limitText} questões. Faça upgrade para um plano superior para adicionar mais questões.`);
       }
 
       // Obter opções de resposta se for questão de múltipla escolha
@@ -1053,21 +1077,41 @@ export class QuestionsBankService {
       } = question;
 
       // Adicionar a nova questão ao banco do usuário usando o método addQuestion
-      // com skipCounter=true para evitar a duplicação do contador
       const newQuestionData = {
         ...questionData,
         is_public: false, // A nova questão não será pública por padrão
-        from_genoma_bank: true // Indica que a questão foi clonada do Genoma Bank
+        from_genoma_bank: true, // Indica que a questão foi clonada do Genoma Bank
+        // Removido is_cloned: true para que questões do genoma bank sejam contadas no limite
       };
       
-      // Usar o método addQuestion com skipCounter=true para evitar duplicação
-      // e skipLimitCheck=true porque já verificamos o limite anteriormente
-      const newQuestionId = await this.addQuestion(newQuestionData, answerOptions, true, true);
+      // Usar o método addQuestion com skipLimitCheck=true porque já verificamos o limite anteriormente
+      // O contador será incrementado automaticamente pelo trigger SQL
+      const newQuestionId = await this.addQuestion(newQuestionData, answerOptions, false, true);
       
       return newQuestionId;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao clonar questão:', error);
-      toast.error('Erro ao adicionar questão ao seu banco: ' + (error as any).message);
+      
+      // Se for erro 406 (limite atingido) e ainda não tentamos inicializar, tentar uma vez
+      if ((error?.message?.includes('406') || 
+           error?.message?.includes('limit') || 
+           error?.message?.includes('subscription_usage') ||
+           error?.code === 'P0001') && retryCount === 0) {
+        
+        console.log('Tentando inicializar subscription_usage para resolver erro 406 na clonagem...');
+        
+        const initResult = await initializeSubscriptionUsage();
+        
+        if (initResult.success) {
+          console.log('Subscription usage inicializado, tentando clonar questão novamente...');
+          // Tentar novamente com retry count = 1 para evitar loop infinito
+          return await this.clonePublicQuestion(questionId, 1);
+        } else {
+          console.error('Falha ao inicializar subscription_usage:', initResult.message);
+        }
+      }
+      
+      toast.error('Erro ao adicionar questão ao seu banco: ' + error.message);
       return null;
     }
   }
@@ -1118,12 +1162,13 @@ export class QuestionsBankService {
       // Obter o limite diário de questões
       let questionsLimit = 10; // Valor padrão para plano Free
       if (subscriptionData?.subscription_plans?.features?.maxQuestionsPerDay) {
-        questionsLimit = subscriptionData.subscription_plans.features.maxQuestionsPerDay;
+        questionsLimit = parseInt(subscriptionData.subscription_plans.features.maxQuestionsPerDay);
       }
 
       // Verificar se o usuário atingiu o limite
       const questionsUsed = usageData?.questions_used_today || 0;
-      const limitReached = questionsUsed >= questionsLimit;
+      // Se o limite for -1, significa ilimitado
+      const limitReached = questionsLimit !== -1 && questionsUsed >= questionsLimit;
 
       return {
         limit: questionsLimit,
@@ -1135,4 +1180,4 @@ export class QuestionsBankService {
       return { limit: 10, used: 0, limitReached: false };
     }
   }
-} 
+}
