@@ -201,6 +201,17 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
     
     setTimeout(() => setShowNotification(false), 5000);
     
+    // Reiniciar automaticamente após 3 segundos
+    setTimeout(() => {
+      setIsActive(true);
+      const now = Date.now();
+      startTimeRef.current = now;
+      const newTimeInSeconds = nextState === 'focus' ? focusTime * 60 : 
+                              nextState === 'shortBreak' ? shortBreakTime * 60 : 
+                              longBreakTime * 60;
+      endTimeRef.current = now + (newTimeInSeconds * 1000);
+    }, 3000);
+    
     onStateChange?.(nextState);
     onComplete?.();
   };

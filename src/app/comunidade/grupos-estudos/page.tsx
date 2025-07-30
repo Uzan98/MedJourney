@@ -4,14 +4,14 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  Plus, Search, ArrowLeft, Clock, Users, AlertTriangle, 
+  Plus, Search, ArrowLeft, Users, AlertTriangle, 
   ChevronRight, RefreshCw, Lock, Unlock, Share2, 
-  BookOpen, MessageSquare, Trophy, Zap
+  BookOpen, Zap
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { StudyGroup, StudyGroupService } from '@/services/study-group.service';
-import StudyTimeDisplay from '@/components/StudyTimeDisplay';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import JoinGroupModal from '@/components/comunidade/JoinGroupModal';
@@ -26,7 +26,6 @@ export default function GruposEstudosPage() {
   
   const [myGroups, setMyGroups] = useState<StudyGroup[]>([]);
   const [publicGroups, setPublicGroups] = useState<StudyGroup[]>([]);
-  const [stats, setStats] = useState<{ total_time: number; groups: number }>({ total_time: 0, groups: 0 });
   
   const [searchTerm, setSearchTerm] = useState('');
   const [showJoinModal, setShowJoinModal] = useState(false);
@@ -41,8 +40,7 @@ export default function GruposEstudosPage() {
     try {
       await Promise.all([
         loadUserGroups(),
-        loadPublicGroups(),
-        loadUserStats()
+        loadPublicGroups()
       ]);
     } finally {
       setLoading(false);
@@ -67,14 +65,7 @@ export default function GruposEstudosPage() {
     }
   };
   
-  const loadUserStats = async () => {
-    try {
-      const userStats = await StudyGroupService.getUserStats();
-      setStats(userStats);
-    } catch (error) {
-      console.error('Erro ao carregar estatísticas:', error);
-    }
-  };
+
   
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
@@ -99,8 +90,7 @@ export default function GruposEstudosPage() {
     try {
       await Promise.all([
         loadUserGroups(),
-        loadPublicGroups(),
-        loadUserStats()
+        loadPublicGroups()
       ]);
       toast.success('Dados atualizados com sucesso!');
     } catch (error) {
@@ -124,179 +114,133 @@ export default function GruposEstudosPage() {
   };
   
   return (
-    <div className="container mx-auto px-4 py-6 max-w-5xl">
-      {/* Header com design moderno e animação sutil */}
-      <div className="relative mb-8">
-        <div className="absolute -top-10 -left-10 w-40 h-40 bg-blue-500 rounded-full opacity-10 blur-3xl"></div>
-        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-purple-500 rounded-full opacity-10 blur-3xl"></div>
-        
-        <div className="relative flex items-center justify-between">
-          <div className="flex items-center">
-            <Link 
-              href="/comunidade" 
-              className="mr-4 p-2.5 rounded-full bg-white shadow-sm hover:shadow-md hover:bg-gray-50 transition-all"
-              aria-label="Voltar"
-            >
-              <ArrowLeft className="h-5 w-5 text-gray-600" />
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-1">Grupos de Estudos</h1>
-              <p className="text-gray-600">Estude de forma colaborativa com colegas em grupos personalizados</p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-50 pb-20 md:pb-6">
+      <div className="container mx-auto px-4 md:px-6 py-6 md:py-8 max-w-6xl">
+        {/* Header com design desktop */}
+        <div className="relative mb-10">
+          <div className="absolute -top-10 -left-10 w-40 h-40 bg-blue-500 rounded-full opacity-10 blur-3xl"></div>
+          <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-purple-500 rounded-full opacity-10 blur-3xl"></div>
           
-          <button 
-            onClick={handleRefresh} 
-            disabled={refreshing}
-            className="p-2.5 rounded-full bg-white shadow-sm hover:shadow-md hover:bg-gray-50 transition-all"
-            aria-label="Atualizar dados"
-          >
-            <RefreshCw className={`h-5 w-5 text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
-      </div>
-      
-      {/* Estatísticas do usuário com design moderno */}
-      {!loading && (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-8 transform transition-all hover:shadow-md">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4">
-            <h2 className="text-xl font-bold text-white flex items-center">
-              <Trophy className="h-5 w-5 mr-2.5" />
-              Seu Progresso em Grupos
-            </h2>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 shadow-sm">
-                <div className="flex items-center mb-2">
-                  <Clock className="h-5 w-5 text-blue-600 mr-2" />
-                  <h3 className="text-sm font-semibold text-blue-800">Tempo Total de Estudo</h3>
-                </div>
-                <p className="text-2xl font-bold text-blue-900">
-                  <StudyTimeDisplay seconds={stats.total_time} />
-                </p>
-              </div>
-              
-              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-5 shadow-sm">
-                <div className="flex items-center mb-2">
-                  <Users className="h-5 w-5 text-indigo-600 mr-2" />
-                  <h3 className="text-sm font-semibold text-indigo-800">Grupos Participando</h3>
-                </div>
-                <p className="text-2xl font-bold text-indigo-900">{stats.groups}</p>
-              </div>
-              
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-5 shadow-sm">
-                <div className="flex items-center mb-2">
-                  <MessageSquare className="h-5 w-5 text-purple-600 mr-2" />
-                  <h3 className="text-sm font-semibold text-purple-800">Colaboração</h3>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-full bg-purple-200 rounded-full h-2.5">
-                    <div className="bg-purple-600 h-2.5 rounded-full" style={{ width: `${Math.min(100, stats.groups * 20)}%` }}></div>
-                  </div>
-                  <span className="ml-2 text-sm font-medium text-purple-700">{Math.min(100, stats.groups * 20)}%</span>
-                </div>
+          <div className="relative flex items-center justify-between gap-4">
+            <div className="flex items-center flex-1 min-w-0">
+              <Link 
+                href="/comunidade" 
+                className="mr-4 p-3 rounded-full bg-white shadow-sm hover:shadow-md hover:bg-gray-50 transition-all flex-shrink-0"
+                aria-label="Voltar"
+              >
+                <ArrowLeft className="h-5 w-5 text-gray-600" />
+              </Link>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-3xl font-bold text-gray-800 mb-2 leading-tight">Grupos de Estudos</h1>
+                <p className="text-base text-gray-600">Estude de forma colaborativa com colegas em grupos personalizados</p>
               </div>
             </div>
+            
+            <button 
+              onClick={handleRefresh} 
+              disabled={refreshing}
+              className="p-3 rounded-full bg-white shadow-sm hover:shadow-md hover:bg-gray-50 transition-all flex-shrink-0"
+              aria-label="Atualizar dados"
+            >
+              <RefreshCw className={`h-5 w-5 text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
           </div>
         </div>
-      )}
       
-      {/* Ações rápidas com design aprimorado */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <Button 
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center justify-center gap-2 h-14 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-xl shadow-sm hover:shadow-md transition-all"
-        >
-          <div className="bg-blue-400/30 p-2 rounded-full">
-            <Plus className="h-5 w-5" />
-          </div>
-          <span className="font-medium text-base">Criar Novo Grupo</span>
-        </Button>
-        
-        <Button 
-          onClick={() => setShowJoinModal(true)}
-          className="flex items-center justify-center gap-2 h-14 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white rounded-xl shadow-sm hover:shadow-md transition-all"
-        >
-          <div className="bg-green-400/30 p-2 rounded-full">
-            <Share2 className="h-5 w-5" />
-          </div>
-          <span className="font-medium text-base">Entrar com Código</span>
-        </Button>
-      </div>
-      
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-14 w-14 border-t-2 border-b-2 border-blue-600 mb-4"></div>
-          <p className="text-gray-600 font-medium">Carregando grupos de estudos...</p>
-        </div>
+        {/* Ações rápidas com design mobile-first */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <Button 
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center justify-center gap-2 sm:gap-3 h-12 sm:h-14 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-xl shadow-sm hover:shadow-md transition-all"
+          >
+            <div className="bg-blue-400/30 p-1.5 sm:p-2 rounded-full">
+              <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+            </div>
+            <span className="font-medium text-sm sm:text-base">Criar Novo Grupo</span>
+          </Button>
+          
+          <Button 
+              className="flex items-center justify-center gap-2 sm:gap-3 h-12 sm:h-14 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white rounded-xl shadow-sm hover:shadow-md transition-all"
+           >
+             <div className="bg-green-400/30 p-1.5 sm:p-2 rounded-full">
+               <Share2 className="h-4 w-4 sm:h-5 sm:w-5" />
+             </div>
+             <span className="font-medium text-sm sm:text-base">Entrar com Código</span>
+           </Button>
+         </div>
+         
+         {loading ? (
+           <div className="flex flex-col items-center justify-center py-16 sm:py-20">
+             <div className="animate-spin rounded-full h-12 w-12 sm:h-14 sm:w-14 border-t-2 border-b-2 border-blue-600 mb-4"></div>
+             <p className="text-gray-600 font-medium text-sm sm:text-base">Carregando grupos de estudos...</p>
+           </div>
       ) : (
         <>
-          {/* Meus grupos com design aprimorado */}
-          <div className="mb-10">
-            <h2 className="text-xl font-bold text-gray-800 mb-5 flex items-center">
-              <Users className="h-6 w-6 text-blue-600 mr-2.5" />
-              Meus Grupos
-            </h2>
-            
-            {myGroups.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {myGroups.map(group => (
-                  <Link
-                    key={group.id}
-                    href={`/comunidade/grupos-estudos/${group.id}`}
-                    className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all transform hover:-translate-y-1 hover:scale-[1.01] duration-300"
-                  >
-                    <div className={`bg-gradient-to-r ${group.is_private ? 'from-blue-600 to-blue-700' : 'from-green-600 to-green-700'} px-5 py-4 flex justify-between items-center`}>
-                      <h3 className="text-lg font-bold text-white flex items-center">
-                        {group.name}
-                      </h3>
-                      {group.is_private ? (
-                        <Lock className="h-5 w-5 text-white/80" />
-                      ) : (
-                        <Unlock className="h-5 w-5 text-white/80" />
-                      )}
-                    </div>
-                    <div className="p-5">
-                      <p className="text-gray-600 mb-4 line-clamp-2 min-h-[3rem]">
-                        {group.description || 'Grupo de estudos personalizado.'}
-                      </p>
-                      
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center text-sm bg-blue-50 px-3 py-1.5 rounded-full">
-                          <Users className="h-4 w-4 text-blue-600 mr-1.5" />
-                          <span className="text-blue-700 font-medium">{group.online_count || 0}/{group.members_count || 0} online</span>
-                        </div>
-                        <span className="flex items-center text-blue-600 hover:text-blue-700 font-medium">
-                          <span className="mr-1.5">Acessar</span>
-                          <ChevronRight className="h-5 w-5" />
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-dashed border-blue-300 p-8 mb-8">
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-20 h-20 flex items-center justify-center bg-blue-50 rounded-full mb-5 shadow-inner">
-                    <Users className="h-10 w-10 text-blue-500" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-3">Você não participa de nenhum grupo</h3>
-                  <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                    Crie seu próprio grupo de estudos ou entre em grupos existentes usando o código de acesso para começar a estudar em colaboração.
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <Button 
-                      onClick={() => setShowCreateModal(true)}
-                      className="bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-2.5 px-5 rounded-lg flex items-center shadow-sm hover:shadow transition-all"
+            {/* Meus grupos com design mobile-first */}
+            <div className="mb-8 sm:mb-10">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 sm:mb-5 flex items-center">
+                <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 mr-2 sm:mr-2.5" />
+                Meus Grupos
+              </h2>
+              
+              {myGroups.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                  {myGroups.map(group => (
+                    <Link
+                      key={group.id}
+                      href={`/comunidade/grupos-estudos/${group.id}`}
+                      className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all transform hover:-translate-y-1 hover:scale-[1.01] duration-300"
                     >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Criar meu grupo
-                    </Button>
-                    <Button 
-                      onClick={() => setShowJoinModal(true)}
-                      className="bg-green-100 hover:bg-green-200 text-green-700 font-medium py-2.5 px-5 rounded-lg flex items-center shadow-sm hover:shadow transition-all"
+                      <div className={`bg-gradient-to-r ${group.is_private ? 'from-blue-600 to-blue-700' : 'from-green-600 to-green-700'} px-4 sm:px-5 py-3 sm:py-4 flex justify-between items-center`}>
+                        <h3 className="text-base sm:text-lg font-bold text-white flex items-center truncate mr-2">
+                          {group.name}
+                        </h3>
+                        {group.is_private ? (
+                          <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-white/80 flex-shrink-0" />
+                        ) : (
+                          <Unlock className="h-4 w-4 sm:h-5 sm:w-5 text-white/80 flex-shrink-0" />
+                        )}
+                      </div>
+                      <div className="p-4 sm:p-5">
+                        <p className="text-gray-600 mb-3 sm:mb-4 line-clamp-2 text-sm sm:text-base">
+                          {group.description || 'Grupo de estudos personalizado.'}
+                        </p>
+                        
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
+                          <div className="flex items-center text-xs sm:text-sm bg-blue-50 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full">
+                            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 mr-1 sm:mr-1.5" />
+                            <span className="text-blue-700 font-medium">{group.online_count || 0}/{group.members_count || 0} online</span>
+                          </div>
+                          <span className="flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm sm:text-base">
+                            <span className="mr-1 sm:mr-1.5">Acessar</span>
+                            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+              </div>
+              ) : (
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-dashed border-blue-300 p-6 sm:p-8 mb-6 sm:mb-8">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center bg-blue-50 rounded-full mb-4 sm:mb-5 shadow-inner">
+                      <Users className="h-8 w-8 sm:h-10 sm:w-10 text-blue-500" />
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2 sm:mb-3">Você não participa de nenhum grupo</h3>
+                    <p className="text-gray-600 mb-5 sm:mb-6 max-w-md mx-auto text-sm sm:text-base">
+                      Crie seu próprio grupo de estudos ou entre em grupos existentes usando o código de acesso para começar a estudar em colaboração.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
+                      <Button 
+                        onClick={() => setShowCreateModal(true)}
+                        className="bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-2.5 px-4 sm:px-5 rounded-lg flex items-center justify-center shadow-sm hover:shadow transition-all text-sm sm:text-base"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Criar meu grupo
+                      </Button>
+                      <Button 
+                        onClick={() => setShowJoinModal(true)}
+                        className="bg-green-100 hover:bg-green-200 text-green-700 font-medium py-2.5 px-4 sm:px-5 rounded-lg flex items-center justify-center shadow-sm hover:shadow transition-all text-sm sm:text-base"
                     >
                       <Share2 className="h-4 w-4 mr-2" />
                       Entrar com código
@@ -436,11 +380,12 @@ export default function GruposEstudosPage() {
       />
       
       {/* Modal para criar um grupo */}
-      <CreateGroupModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onCreated={handleGroupCreated}
-      />
+        <CreateGroupModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onCreated={handleGroupCreated}
+        />
+      </div>
     </div>
   );
 }

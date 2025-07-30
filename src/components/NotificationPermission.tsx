@@ -63,7 +63,7 @@ const NotificationPermission = () => {
   }
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 bg-white rounded-lg shadow-lg p-4 z-50 border border-blue-200 animate-slide-up">
+    <div className="fixed bottom-20 left-4 right-4 bg-white rounded-lg shadow-lg p-4 z-[60] border border-blue-200 md:bottom-4">
       <div className="flex items-center gap-3">
         <div className="bg-blue-100 p-2 rounded-full">
           <Bell className="h-6 w-6 text-blue-600" />

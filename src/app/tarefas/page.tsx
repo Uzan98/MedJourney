@@ -474,7 +474,7 @@ const TaskPanel = () => {
                 Nova Tarefa
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Criar Nova Tarefa</DialogTitle>
               </DialogHeader>
@@ -560,7 +560,7 @@ const TaskPanel = () => {
       {/* Dialog para edição de tarefa */}
       {editingTask && (
         <Dialog open={!!editingTask} onOpenChange={(open) => !open && setEditingTask(null)}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Editar Tarefa</DialogTitle>
             </DialogHeader>

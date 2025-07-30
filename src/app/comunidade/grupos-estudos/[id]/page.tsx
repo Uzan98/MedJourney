@@ -466,7 +466,7 @@ export default function GrupoEstudosPage() {
   const isAdmin = currentUserMember?.is_admin;
   
   return (
-    <div className="container mx-auto px-4 py-6 max-w-6xl">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-6xl">
       {/* Background gradients */}
       <div className="fixed inset-0 -z-10 bg-gradient-to-br from-blue-50 via-white to-purple-50 opacity-70"></div>
       
@@ -478,32 +478,32 @@ export default function GrupoEstudosPage() {
           <div className="absolute -bottom-8 -left-10 w-40 h-40 bg-indigo-400/20 rounded-full blur-[60px] animate-pulse-slower"></div>
           <div className="absolute top-1/3 right-1/4 w-20 h-20 bg-purple-300/20 rounded-full blur-[40px]"></div>
           
-          <div className="relative z-10 p-5">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="relative z-10 p-3 sm:p-5">
+            <div className="flex flex-col gap-3 sm:gap-4">
               <div className="flex items-center">
                 <Link 
                   href="/comunidade/grupos-estudos" 
-                  className="mr-4 p-2.5 rounded-full bg-blue-500/80 text-white hover:bg-blue-600/90 transition-all shadow-sm hover:shadow-md hover:scale-105 duration-300"
+                  className="mr-3 sm:mr-4 p-2 sm:p-2.5 rounded-full bg-blue-500/80 text-white hover:bg-blue-600/90 transition-all shadow-sm hover:shadow-md hover:scale-105 duration-300"
                   aria-label="Voltar"
                 >
-                  <ArrowLeft className="h-5 w-5" />
+                  <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Link>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-800 mb-1">{group.name}</h1>
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center shadow-sm ${
+                <div className="flex-1">
+                  <h1 className="text-lg sm:text-2xl font-bold text-gray-800 mb-1 leading-tight">{group.name}</h1>
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                    <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium flex items-center shadow-sm ${
                       group.is_private 
                         ? 'bg-gray-200/70 text-gray-700' 
                         : 'bg-green-100/80 text-green-700'
                     }`}>
-                      {group.is_private ? 'Grupo privado' : 'Grupo público'}
+                      {group.is_private ? 'Privado' : 'Público'}
                     </span>
-                    <span className="flex items-center bg-blue-100/70 text-blue-700 px-3 py-1 rounded-full text-xs shadow-sm">
-                      <Users className="h-3 w-3 mr-1.5" />
+                    <span className="flex items-center bg-blue-100/70 text-blue-700 px-2 sm:px-3 py-1 rounded-full text-xs shadow-sm">
+                      <Users className="h-3 w-3 mr-1 sm:mr-1.5" />
                       {members.filter(m => m.is_active).length} online
                     </span>
                     <div 
-                      className="flex items-center bg-purple-100/60 px-3 py-1 rounded-full cursor-pointer hover:bg-purple-200/70 transition-colors group shadow-sm hover:shadow"
+                      className="flex items-center bg-purple-100/60 px-2 sm:px-3 py-1 rounded-full cursor-pointer hover:bg-purple-200/70 transition-colors group shadow-sm hover:shadow"
                       onClick={() => {
                         navigator.clipboard.writeText(group.access_code);
                         toast.success('Código copiado!');
@@ -511,31 +511,33 @@ export default function GrupoEstudosPage() {
                     >
                       <span className="text-xs mr-1 text-purple-700">Código:</span>
                       <span className="font-mono font-medium text-xs text-purple-800">{group.access_code}</span>
-                      <Copy className="h-3 w-3 ml-1.5 text-purple-500 opacity-60 group-hover:opacity-100 transition-opacity" />
+                      <Copy className="h-3 w-3 ml-1 sm:ml-1.5 text-purple-500 opacity-60 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </div>
                 </div>
               </div>
               
-              <div className="flex items-center gap-3 mt-3 md:mt-0">
+              <div className="flex items-center gap-2 sm:gap-3 mt-3">
                 {!isActive && (
                   <Button 
                     onClick={handleEnterRoom}
-                    className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 shadow hover:shadow-md hover:scale-[1.02] transition-all rounded-xl"
+                    className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 shadow hover:shadow-md hover:scale-[1.02] transition-all rounded-xl text-sm px-3 py-2 sm:px-4 sm:py-2"
                   >
-                    <Sparkles className="h-4 w-4 mr-1.5" />
-                    Entrar no grupo
+                    <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" />
+                    <span className="hidden sm:inline">Entrar no grupo</span>
+                    <span className="sm:hidden">Entrar</span>
                   </Button>
                 )}
                 
                 {isActive && (
                   <Button 
                     variant="outline" 
-                    className="border-red-100 bg-red-50/70 backdrop-blur-sm text-red-500 hover:bg-red-100/80 hover:text-red-600 rounded-xl shadow hover:shadow-md hover:scale-[1.02] transition-all"
+                    className="border-red-100 bg-red-50/70 backdrop-blur-sm text-red-500 hover:bg-red-100/80 hover:text-red-600 rounded-xl shadow hover:shadow-md hover:scale-[1.02] transition-all text-sm px-3 py-2 sm:px-4 sm:py-2"
                     onClick={handleLeaveGroup}
                   >
-                    <LogOut className="h-4 w-4 mr-1.5" />
-                    Sair do grupo
+                    <LogOut className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" />
+                    <span className="hidden sm:inline">Sair do grupo</span>
+                    <span className="sm:hidden">Sair</span>
                   </Button>
                 )}
               </div>
@@ -545,85 +547,85 @@ export default function GrupoEstudosPage() {
       </div>
       
       {/* Navegação horizontal */}
-      <div className="mb-6">
-        <div className="bg-white/30 backdrop-blur-lg rounded-xl shadow-[0_8px_32px_rgba(31,38,135,0.1)] border border-white/20 py-2 px-2 overflow-hidden relative">
+      <div className="mb-4 sm:mb-6">
+        <div className="bg-white/30 backdrop-blur-lg rounded-xl shadow-[0_8px_32px_rgba(31,38,135,0.1)] border border-white/20 py-1.5 sm:py-2 px-1.5 sm:px-2 overflow-hidden relative">
           {/* Efeito de luz de fundo */}
           <div className="absolute -top-10 left-1/4 w-32 h-32 bg-blue-400/20 rounded-full blur-xl"></div>
           <div className="absolute -bottom-10 right-1/4 w-32 h-32 bg-purple-400/20 rounded-full blur-xl"></div>
           
-          <div className="relative flex items-center justify-center space-x-6">
+          <div className="relative flex items-center justify-center space-x-1 sm:space-x-3 lg:space-x-6 overflow-x-auto">
             <button
               onClick={() => setActiveSection('chat')}
-              className={`px-4 py-2.5 rounded-xl transition-all duration-300 flex items-center ${
+              className={`px-2 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all duration-300 flex items-center whitespace-nowrap ${
                 activeSection === 'chat' 
                   ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/30' 
                   : 'bg-white/40 text-gray-700 hover:bg-white/60'
               }`}
               title="Chat"
             >
-              <MessageSquare className={`h-4 w-4 mr-2 ${activeSection === 'chat' ? 'drop-shadow-md' : ''}`} />
-              <span className="font-medium">Chat</span>
+              <MessageSquare className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 ${activeSection === 'chat' ? 'drop-shadow-md' : ''}`} />
+              <span className="font-medium text-xs sm:text-sm">Chat</span>
             </button>
             
             <button
               onClick={() => setActiveSection('info')}
-              className={`px-4 py-2.5 rounded-xl transition-all duration-300 flex items-center ${
+              className={`px-2 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all duration-300 flex items-center whitespace-nowrap ${
                 activeSection === 'info' 
                   ? 'bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-md shadow-indigo-500/30' 
                   : 'bg-white/40 text-gray-700 hover:bg-white/60'
               }`}
               title="Informações"
             >
-              <Info className={`h-4 w-4 mr-2 ${activeSection === 'info' ? 'drop-shadow-md' : ''}`} />
-              <span className="font-medium">Informações</span>
+              <Info className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 ${activeSection === 'info' ? 'drop-shadow-md' : ''}`} />
+              <span className="font-medium text-xs sm:text-sm">Info</span>
             </button>
             
             <button
               onClick={() => setActiveSection('simulados')}
-              className={`px-4 py-2.5 rounded-xl transition-all duration-300 flex items-center ${
+              className={`px-2 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all duration-300 flex items-center whitespace-nowrap ${
                 activeSection === 'simulados' 
                   ? 'bg-gradient-to-br from-green-500 to-teal-600 text-white shadow-md shadow-green-500/30' 
                   : 'bg-white/40 text-gray-700 hover:bg-white/60'
               }`}
               title="Simulados"
             >
-              <FileText className={`h-4 w-4 mr-2 ${activeSection === 'simulados' ? 'drop-shadow-md' : ''}`} />
-              <span className="font-medium">Simulados</span>
+              <FileText className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 ${activeSection === 'simulados' ? 'drop-shadow-md' : ''}`} />
+              <span className="font-medium text-xs sm:text-sm">Simulados</span>
             </button>
             
             <button
               onClick={() => setActiveSection('pomodoro')}
-              className={`px-4 py-2.5 rounded-xl transition-all duration-300 flex items-center ${
+              className={`px-2 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all duration-300 flex items-center whitespace-nowrap ${
                 activeSection === 'pomodoro' 
                   ? 'bg-gradient-to-br from-purple-500 to-pink-600 text-white shadow-md shadow-purple-500/30' 
                   : 'bg-white/40 text-gray-700 hover:bg-white/60'
               }`}
               title="Pomodoro"
             >
-              <Timer className={`h-4 w-4 mr-2 ${activeSection === 'pomodoro' ? 'drop-shadow-md' : ''}`} />
-              <span className="font-medium">Pomodoro</span>
+              <Timer className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 ${activeSection === 'pomodoro' ? 'drop-shadow-md' : ''}`} />
+              <span className="font-medium text-xs sm:text-sm">Pomodoro</span>
             </button>
           </div>
         </div>
       </div>
       
       {/* Conteúdo principal */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Painel principal (chat e informações) */}
-        <div className="lg:col-span-2 relative">
+        <div className="lg:col-span-2 relative order-1 lg:order-1">
             {/* Conteúdo das seções - removida a navegação lateral */}
-            <div ref={contentRef} className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-white/40 overflow-hidden">
+            <div ref={contentRef} className="bg-white/80 backdrop-blur-md rounded-xl sm:rounded-2xl shadow-lg border border-white/40 overflow-hidden">
               {/* Chat */}
               {activeSection === 'chat' && (
                 <>
                   {/* Cabeçalho da seção */}
-                  <div className="bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 p-4 text-white shadow-sm relative overflow-hidden">
+                  <div className="bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 p-3 sm:p-4 text-white shadow-sm relative overflow-hidden">
                     {/* Efeito de luz de fundo */}
                     <div className="absolute -bottom-6 right-12 w-24 h-24 bg-blue-300/30 rounded-full blur-xl"></div>
                     <div className="absolute -top-6 left-12 w-20 h-20 bg-indigo-300/20 rounded-full blur-xl"></div>
                     
-                    <h3 className="text-lg font-bold flex items-center relative z-10">
-                      <MessageSquare className="h-5 w-5 mr-2"/> 
+                    <h3 className="text-base sm:text-lg font-bold flex items-center relative z-10">
+                      <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2"/> 
                       Chat do Grupo
                     </h3>
                   </div>
@@ -631,7 +633,7 @@ export default function GrupoEstudosPage() {
                 {/* Área de mensagens */}
                 <div 
                   ref={containerRef}
-                    className="h-[60vh] overflow-y-auto p-5 bg-gradient-to-b from-gray-50/60 to-white/70"
+                    className="h-[50vh] sm:h-[60vh] overflow-y-auto p-3 sm:p-5 bg-gradient-to-b from-gray-50/60 to-white/70"
                 >
                   {messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
@@ -654,7 +656,7 @@ export default function GrupoEstudosPage() {
                         ) : (
                           <div className={`flex ${msg.user_id === user?.id ? 'justify-end' : 'justify-start'}`}>
                             <div className={`
-                              max-w-[80%] rounded-2xl p-3.5 shadow-sm
+                              max-w-[85%] sm:max-w-[80%] rounded-2xl p-2.5 sm:p-3.5 shadow-sm
                               ${msg.user_id === user?.id 
                                 ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white' 
                                 : 'bg-white/90 backdrop-blur-sm border border-gray-200 text-gray-800'}
@@ -669,8 +671,8 @@ export default function GrupoEstudosPage() {
                                   )}
                                 </p>
                               )}
-                              <p className="text-sm leading-relaxed">{msg.message}</p>
-                              <p className="text-xs opacity-70 text-right mt-1.5">
+                              <p className="text-xs sm:text-sm leading-relaxed">{msg.message}</p>
+                              <p className="text-xs opacity-70 text-right mt-1 sm:mt-1.5">
                                 {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                               </p>
                             </div>
@@ -683,22 +685,22 @@ export default function GrupoEstudosPage() {
                 </div>
                 
                 {/* Formulário de envio */}
-                <form onSubmit={handleSendMessage} className="p-4 border-t bg-gray-50/80 backdrop-blur-sm">
-                  <div className="flex">
+                <form onSubmit={handleSendMessage} className="p-3 sm:p-4 border-t bg-gray-50/80 backdrop-blur-sm">
+                  <div className="flex gap-2">
                     <Input
                       type="text"
                       placeholder="Digite sua mensagem..."
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      className="flex-1 bg-white/90 backdrop-blur-sm border-gray-200 focus:ring-blue-500 focus:border-blue-500 rounded-xl shadow-sm"
+                      className="flex-1 bg-white/90 backdrop-blur-sm border-gray-200 focus:ring-blue-500 focus:border-blue-500 rounded-xl shadow-sm text-sm"
                       disabled={sendingMessage}
                     />
                     <Button 
                       type="submit" 
                       disabled={sendingMessage || !newMessage.trim()} 
-                      className="ml-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-sm hover:shadow-md transition-all"
+                      className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-sm hover:shadow-md transition-all px-3 sm:px-4"
                     >
-                      <Send className="h-4 w-4" />
+                      <Send className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   </div>
                 </form>
@@ -829,16 +831,17 @@ export default function GrupoEstudosPage() {
         </div>
         
         {/* Painel lateral (membros e ranking) */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6 order-2 lg:order-2">
           {/* Membros online */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden border border-gray-100">
-            <div className="px-5 py-4 bg-gradient-to-r from-green-500 to-teal-500">
-              <h3 className="text-lg font-bold text-white flex items-center">
-                <Users className="h-5 w-5 mr-2.5" />
-                Membros Online ({members.filter(m => m.is_active === true).length}/{members.length})
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+            <div className="px-3 sm:px-5 py-3 sm:py-4 bg-gradient-to-r from-green-500 to-teal-500">
+              <h3 className="text-base sm:text-lg font-bold text-white flex items-center">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2.5" />
+                <span className="hidden sm:inline">Membros Online ({members.filter(m => m.is_active === true).length}/{members.length})</span>
+                <span className="sm:hidden">Online ({members.filter(m => m.is_active === true).length}/{members.length})</span>
               </h3>
             </div>
-            <div className="p-3 max-h-[35vh] overflow-y-auto">
+            <div className="p-2 sm:p-3 max-h-[30vh] sm:max-h-[35vh] overflow-y-auto">
               {members.filter(m => m.is_active === true).length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3">
@@ -853,26 +856,26 @@ export default function GrupoEstudosPage() {
                     .filter(m => m.is_active === true)
                     .sort((a, b) => (b.is_admin ? 1 : 0) - (a.is_admin ? 1 : 0)) // Admins first
                     .map(member => (
-                      <li key={member.user_id} className="flex items-center p-3 rounded-xl hover:bg-gray-100 transition-colors">
-                        <div className="relative mr-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center shadow-sm">
-                            <User className="h-5 w-5 text-green-700" />
+                      <li key={member.user_id} className="flex items-center p-2 sm:p-3 rounded-xl hover:bg-gray-100 transition-colors">
+                        <div className="relative mr-2 sm:mr-3">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center shadow-sm">
+                            <User className="h-4 w-4 sm:h-5 sm:w-5 text-green-700" />
                           </div>
-                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                          <div className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full border-2 border-white"></div>
                         </div>
-                        <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-800">
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs sm:text-sm font-medium text-gray-800 truncate">
                               {member.username}
                             </p>
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
                               {member.is_admin && (
-                            <span title="Administrador" className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-medium">
+                            <span title="Administrador" className="bg-blue-100 text-blue-700 text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-medium">
                                   Admin
                                 </span>
                               )}
                               {member.user_id === user?.id && (
-                            <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium">
+                            <span className="bg-green-100 text-green-700 text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-medium">
                                   Você
                                 </span>
                               )}
@@ -885,14 +888,15 @@ export default function GrupoEstudosPage() {
           </div>
           
           {/* Feed de Conquistas (substituindo o ranking) */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden border border-gray-100">
-            <div className="px-5 py-4 bg-gradient-to-r from-pink-500 to-red-500">
-              <h3 className="text-lg font-bold text-white flex items-center">
-                <Activity className="h-5 w-5 mr-2.5" />
-                Feed de Atividades
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+            <div className="px-3 sm:px-5 py-3 sm:py-4 bg-gradient-to-r from-pink-500 to-red-500">
+              <h3 className="text-base sm:text-lg font-bold text-white flex items-center">
+                <Activity className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2.5" />
+                <span className="hidden sm:inline">Feed de Atividades</span>
+                <span className="sm:hidden">Atividades</span>
               </h3>
             </div>
-            <div className="p-3">
+            <div className="p-2 sm:p-3">
               <AchievementsFeed groupId={groupId} />
             </div>
           </div>
