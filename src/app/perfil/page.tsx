@@ -6,11 +6,7 @@ import {
   Camera, 
   Edit2, 
   Mail, 
-  Calendar, 
-  MapPin, 
   BookOpen, 
-  Award, 
-  Clock, 
   Save, 
   X, 
   Upload, 
@@ -38,68 +34,10 @@ export default function ProfilePage() {
   const [profileData, setProfileData] = useState({
     name: user?.user_metadata?.name || '',
     bio: user?.user_metadata?.bio || 'Estudante apaixonado por aprender e compartilhar conhecimento.',
-    location: user?.user_metadata?.location || 'São Paulo, Brasil',
-    specialty: user?.user_metadata?.specialty || 'Estudos Gerais',
-    university: user?.user_metadata?.university || 'Universidade de São Paulo',
-    graduationYear: user?.user_metadata?.graduationYear || '2025',
     avatar_url: user?.user_metadata?.avatar_url || ''
   });
 
-  // Estatísticas do usuário
-  const [stats, setStats] = useState({
-    studyHours: 0,
-    completedSessions: 0,
-    completedExams: 0,
-    questionsAnswered: 0,
-    streak: 0
-  });
 
-  // Lista de áreas de estudo para o select
-  const specialties = [
-    'Estudos Gerais',
-    'Cardiologia',
-    'Dermatologia',
-    'Neurologia',
-    'Pediatria',
-    'Ginecologia e Obstetrícia',
-    'Ortopedia',
-    'Psiquiatria',
-    'Oftalmologia',
-    'Radiologia',
-    'Anestesiologia',
-    'Cirurgia Geral',
-    'Endocrinologia',
-    'Gastroenterologia',
-    'Urologia',
-    'Outra'
-  ];
-
-  // Gerar anos para o select de ano de formatura
-  const currentYear = new Date().getFullYear();
-  const graduationYears = Array.from({ length: 10 }, (_, i) => (currentYear + i).toString());
-
-  // Buscar estatísticas do usuário
-  useEffect(() => {
-    const fetchUserStats = async () => {
-      if (!user) return;
-      
-      try {
-        // Aqui você buscaria os dados reais do usuário no Supabase
-        // Por enquanto, vamos simular alguns dados
-        setStats({
-          studyHours: 87,
-          completedSessions: 42,
-          completedExams: 15,
-          questionsAnswered: 534,
-          streak: 12
-        });
-      } catch (error) {
-        console.error('Erro ao buscar estatísticas:', error);
-      }
-    };
-
-    fetchUserStats();
-  }, [user]);
 
   // Função para salvar alterações no perfil
   const handleSaveProfile = async () => {
@@ -110,11 +48,7 @@ export default function ProfilePage() {
       const { error } = await supabase.auth.updateUser({
         data: {
           name: profileData.name,
-          bio: profileData.bio,
-          location: profileData.location,
-          specialty: profileData.specialty,
-          university: profileData.university,
-          graduationYear: profileData.graduationYear
+          bio: profileData.bio
         }
       });
 
@@ -319,53 +253,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Localização</label>
-                    <input 
-                      type="text" 
-                      value={profileData.location} 
-                      onChange={(e) => setProfileData({...profileData, location: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Especialidade</label>
-                    <select 
-                      value={profileData.specialty} 
-                      onChange={(e) => setProfileData({...profileData, specialty: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      {specialties.map((specialty) => (
-                        <option key={specialty} value={specialty}>{specialty}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Universidade</label>
-                    <input 
-                      type="text" 
-                      value={profileData.university} 
-                      onChange={(e) => setProfileData({...profileData, university: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Ano de Formatura</label>
-                    <select 
-                      value={profileData.graduationYear} 
-                      onChange={(e) => setProfileData({...profileData, graduationYear: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      {graduationYears.map((year) => (
-                        <option key={year} value={year}>{year}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+
                 
                 <div className="flex justify-end space-x-3 pt-2">
                   <button 
@@ -403,26 +291,6 @@ export default function ProfilePage() {
                     <Mail className="h-4 w-4 mr-2 text-gray-400" />
                     {user?.email}
                   </div>
-                  
-                  <div className="flex items-center">
-                    <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-                    {profileData.location}
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <BookOpen className="h-4 w-4 mr-2 text-gray-400" />
-                    {profileData.specialty}
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <Award className="h-4 w-4 mr-2 text-gray-400" />
-                    {profileData.university}
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                    Formatura em {profileData.graduationYear}
-                  </div>
                 </div>
               </>
             )}
@@ -430,189 +298,73 @@ export default function ProfilePage() {
         </div>
       </div>
       
-      {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-          <div className="flex items-center">
-            <div className="p-3 bg-blue-100 rounded-full mr-4">
-              <Clock className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Horas de Estudo</p>
-              <h3 className="text-2xl font-bold text-gray-800">{stats.studyHours}</h3>
-            </div>
-          </div>
+      {/* Links Rápidos */}
+      <div className="bg-white rounded-xl shadow-md border border-gray-100 max-w-md">
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="text-lg font-bold text-gray-900">Links Rápidos</h2>
         </div>
         
-        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-          <div className="flex items-center">
-            <div className="p-3 bg-purple-100 rounded-full mr-4">
-              <BookOpen className="h-6 w-6 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Sessões Completadas</p>
-              <h3 className="text-2xl font-bold text-gray-800">{stats.completedSessions}</h3>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-          <div className="flex items-center">
-            <div className="p-3 bg-green-100 rounded-full mr-4">
-              <Award className="h-6 w-6 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Simulados Feitos</p>
-              <h3 className="text-2xl font-bold text-gray-800">{stats.completedExams}</h3>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-          <div className="flex items-center">
-            <div className="p-3 bg-amber-100 rounded-full mr-4">
-              <Award className="h-6 w-6 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Sequência de Dias</p>
-              <h3 className="text-2xl font-bold text-gray-800">{stats.streak}</h3>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Seções adicionais */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Atividades Recentes */}
-        <div className="bg-white rounded-xl shadow-md border border-gray-100 lg:col-span-2">
-          <div className="p-6 border-b border-gray-100">
-            <h2 className="text-lg font-bold text-gray-900">Atividades Recentes</h2>
-          </div>
-          
-          <div className="p-6">
-            <div className="space-y-6">
-              {/* Atividade 1 */}
-              <div className="flex">
-                <div className="flex-shrink-0 mt-1">
-                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                    <BookOpen className="h-4 w-4 text-blue-600" />
-                  </div>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-900">Completou uma sessão de estudo</p>
-                  <p className="text-sm text-gray-500">Cardiologia - 45 minutos</p>
-                  <p className="text-xs text-gray-400 mt-1">Hoje, 14:30</p>
-                </div>
+        <div className="p-6">
+          <div className="space-y-4">
+            <Link 
+              href="/dashboard" 
+              className="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <div className="p-2 bg-blue-100 rounded-md mr-3">
+                <LayoutDashboard className="h-5 w-5 text-blue-600" />
               </div>
-              
-              {/* Atividade 2 */}
-              <div className="flex">
-                <div className="flex-shrink-0 mt-1">
-                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                    <Award className="h-4 w-4 text-green-600" />
-                  </div>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-900">Completou um simulado</p>
-                  <p className="text-sm text-gray-500">Simulado de Pediatria - 85% de acertos</p>
-                  <p className="text-xs text-gray-400 mt-1">Ontem, 10:15</p>
-                </div>
-              </div>
-              
-              {/* Atividade 3 */}
-              <div className="flex">
-                <div className="flex-shrink-0 mt-1">
-                  <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-                    <BookOpen className="h-4 w-4 text-purple-600" />
-                  </div>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-900">Adicionou uma nova disciplina</p>
-                  <p className="text-sm text-gray-500">Neurologia</p>
-                  <p className="text-xs text-gray-400 mt-1">2 dias atrás</p>
-                </div>
-              </div>
-            </div>
+              <span className="text-gray-700">Dashboard</span>
+            </Link>
             
-            <div className="mt-6">
-              <Link 
-                href="/dashboard" 
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-              >
-                Ver todas as atividades
-              </Link>
-            </div>
-          </div>
-        </div>
-        
-        {/* Links Rápidos */}
-        <div className="bg-white rounded-xl shadow-md border border-gray-100">
-          <div className="p-6 border-b border-gray-100">
-            <h2 className="text-lg font-bold text-gray-900">Links Rápidos</h2>
-          </div>
-          
-          <div className="p-6">
-            <div className="space-y-4">
-              <Link 
-                href="/dashboard" 
-                className="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <div className="p-2 bg-blue-100 rounded-md mr-3">
-                  <LayoutDashboard className="h-5 w-5 text-blue-600" />
-                </div>
-                <span className="text-gray-700">Dashboard</span>
-              </Link>
-              
-              <Link 
-                href="/perfil/assinatura" 
-                className="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <div className="p-2 bg-emerald-100 rounded-md mr-3">
-                  <CreditCard className="h-5 w-5 text-emerald-600" />
-                </div>
-                <span className="text-gray-700">Minha Assinatura</span>
-              </Link>
-              
-              <Link 
-                href="/estudos" 
-                className="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <div className="p-2 bg-green-100 rounded-md mr-3">
-                  <BookOpen className="h-5 w-5 text-green-600" />
-                </div>
-                <span className="text-gray-700">Painel de Estudos</span>
-              </Link>
-              
-              <Link 
-                href="/simulados" 
-                className="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <div className="p-2 bg-purple-100 rounded-md mr-3">
-                  <ClipboardList className="h-5 w-5 text-purple-600" />
-                </div>
-                <span className="text-gray-700">Simulados</span>
-              </Link>
-              
-              <Link 
-                href="/banco-questoes" 
-                className="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <div className="p-2 bg-amber-100 rounded-md mr-3">
-                  <FileQuestion className="h-5 w-5 text-amber-600" />
-                </div>
-                <span className="text-gray-700">Banco de Questões</span>
-              </Link>
-              
-              <Link 
-                href="/comunidade/grupos-estudos" 
-                className="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <div className="p-2 bg-indigo-100 rounded-md mr-3">
-                  <Users className="h-5 w-5 text-indigo-600" />
-                </div>
-                <span className="text-gray-700">Grupos de Estudo</span>
-              </Link>
-            </div>
+            <Link 
+              href="/perfil/assinatura" 
+              className="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <div className="p-2 bg-emerald-100 rounded-md mr-3">
+                <CreditCard className="h-5 w-5 text-emerald-600" />
+              </div>
+              <span className="text-gray-700">Minha Assinatura</span>
+            </Link>
+            
+            <Link 
+              href="/estudos" 
+              className="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <div className="p-2 bg-green-100 rounded-md mr-3">
+                <BookOpen className="h-5 w-5 text-green-600" />
+              </div>
+              <span className="text-gray-700">Painel de Estudos</span>
+            </Link>
+            
+            <Link 
+              href="/simulados" 
+              className="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <div className="p-2 bg-purple-100 rounded-md mr-3">
+                <ClipboardList className="h-5 w-5 text-purple-600" />
+              </div>
+              <span className="text-gray-700">Simulados</span>
+            </Link>
+            
+            <Link 
+              href="/banco-questoes" 
+              className="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <div className="p-2 bg-amber-100 rounded-md mr-3">
+                <FileQuestion className="h-5 w-5 text-amber-600" />
+              </div>
+              <span className="text-gray-700">Banco de Questões</span>
+            </Link>
+            
+            <Link 
+              href="/comunidade/grupos-estudos" 
+              className="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <div className="p-2 bg-indigo-100 rounded-md mr-3">
+                <Users className="h-5 w-5 text-indigo-600" />
+              </div>
+              <span className="text-gray-700">Grupos de Estudo</span>
+            </Link>
           </div>
         </div>
       </div>

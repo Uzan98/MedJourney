@@ -14,6 +14,10 @@ type AuthContextType = {
     error: Error | null;
     success: boolean;
   }>;
+  signInWithGoogle: () => Promise<{
+    error: Error | null;
+    success: boolean;
+  }>;
   signUp: (email: string, password: string, name: string, additionalData?: Record<string, any>) => Promise<{
     error: Error | null;
     success: boolean;
@@ -209,6 +213,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Login com Google
+  const signInWithGoogle = async () => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      
+      if (error) {
+        console.error('Erro no login com Google:', error.message);
+        return {
+          success: false,
+          error: error,
+        };
+      }
+      
+      return {
+        success: true,
+        error: null,
+      };
+    } catch (error) {
+      console.error('Erro ao fazer login com Google:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error('Erro desconhecido ao fazer login com Google'),
+      };
+    }
+  };
+
   // Registrar novo usuário
   const signUp = async (email: string, password: string, name: string, additionalData?: Record<string, any>) => {
     try {
@@ -264,6 +299,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     session,
     isLoading,
     signIn,
+    signInWithGoogle,
     signUp,
     signOut,
     isAuthenticated,
@@ -275,4 +311,4 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export default AuthContext; 
+export default AuthContext;

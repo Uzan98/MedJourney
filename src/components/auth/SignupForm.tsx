@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { FcGoogle } from 'react-icons/fc';
+import { toast } from 'react-hot-toast';
 
 export default function SignupForm() {
   const [name, setName] = useState('');
@@ -14,16 +15,9 @@ export default function SignupForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [showAdditionalFields, setShowAdditionalFields] = useState(false);
+
   
-  // Campos adicionais
-  const [location, setLocation] = useState('');
-  const [specialty, setSpecialty] = useState('');
-  const [university, setUniversity] = useState('');
-  const [graduationYear, setGraduationYear] = useState('');
-  const [bio, setBio] = useState('');
-  
-  const { signUp } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,16 +43,7 @@ export default function SignupForm() {
       setError(null);
       setLoading(true);
       
-      // Preparar os dados adicionais do usuário
-      const additionalData = {
-        bio: bio || 'Estudante apaixonado por aprender e compartilhar conhecimento.',
-        location: location || '',
-        specialty: specialty || '',
-        university: university || '',
-        graduationYear: graduationYear || ''
-      };
-      
-      const { success, error } = await signUp(email, password, name, additionalData);
+      const { success, error } = await signUp(email, password, name);
       
       if (success) {
         setSuccess(true);
@@ -69,6 +54,31 @@ export default function SignupForm() {
     } catch (err) {
       setError('Ocorreu um erro ao processar o cadastro');
       console.error('Erro de cadastro:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignup = async () => {
+    try {
+      setError(null);
+      setLoading(true);
+      console.log('Tentando fazer cadastro com Google');
+      
+      const { success, error } = await signInWithGoogle();
+      
+      if (!success && error) {
+        const errorMessage = error?.message || 'Erro ao fazer cadastro com Google';
+        console.error('Erro no cadastro com Google:', errorMessage);
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
+      // Note: Se o cadastro for bem-sucedido, o usuário será redirecionado pelo OAuth
+    } catch (err) {
+      const errorMessage = 'Ocorreu um erro ao processar o cadastro com Google';
+      console.error('Erro de cadastro com Google:', err);
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -92,29 +102,7 @@ export default function SignupForm() {
     );
   }
 
-  // Lista de áreas de estudo para o select
-  const specialties = [
-    'Estudos Gerais',
-    'Cardiologia',
-    'Dermatologia',
-    'Neurologia',
-    'Pediatria',
-    'Ginecologia e Obstetrícia',
-    'Ortopedia',
-    'Psiquiatria',
-    'Oftalmologia',
-    'Radiologia',
-    'Anestesiologia',
-    'Cirurgia Geral',
-    'Endocrinologia',
-    'Gastroenterologia',
-    'Urologia',
-    'Outra'
-  ];
 
-  // Gerar anos para o select de ano de formatura
-  const currentYear = new Date().getFullYear();
-  const graduationYears = Array.from({ length: 10 }, (_, i) => (currentYear + i).toString());
 
   return (
     <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
@@ -189,114 +177,28 @@ export default function SignupForm() {
             required
           />
         </div>
+
         
-        {/* Botão para mostrar/ocultar campos adicionais */}
-        <div className="mb-6">
-          <button
-            type="button"
-            className="flex items-center justify-between w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-left"
-            onClick={() => setShowAdditionalFields(!showAdditionalFields)}
-          >
-            <span className="font-medium">
-              {showAdditionalFields ? "Ocultar informações adicionais" : "Adicionar mais informações (opcional)"}
-            </span>
-            {showAdditionalFields ? (
-              <ChevronUp className="h-5 w-5" />
-            ) : (
-              <ChevronDown className="h-5 w-5" />
-            )}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleGoogleSignup}
+          className={`w-full py-2 px-4 mb-4 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center justify-center gap-2 ${
+            loading ? 'opacity-70 cursor-not-allowed' : ''
+          }`}
+          disabled={loading}
+        >
+          <FcGoogle className="w-5 h-5" />
+          {loading ? 'Criando Conta...' : 'Cadastrar com Google'}
+        </button>
         
-        {/* Campos adicionais (opcionais) */}
-        {showAdditionalFields && (
-          <div className="mb-6 space-y-4 border-t border-gray-200 pt-4">
-            <div>
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="specialty">
-                Especialidade
-              </label>
-              <select
-                id="specialty"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={specialty}
-                onChange={(e) => setSpecialty(e.target.value)}
-                disabled={loading}
-              >
-                <option value="">Selecione uma especialidade</option>
-                {specialties.map((spec) => (
-                  <option key={spec} value={spec}>
-                    {spec}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="university">
-                Universidade
-              </label>
-              <input
-                id="university"
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={university}
-                onChange={(e) => setUniversity(e.target.value)}
-                disabled={loading}
-                placeholder="Ex: Universidade de São Paulo"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="graduationYear">
-                Ano de Formatura
-              </label>
-              <select
-                id="graduationYear"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={graduationYear}
-                onChange={(e) => setGraduationYear(e.target.value)}
-                disabled={loading}
-              >
-                <option value="">Selecione o ano</option>
-                {graduationYears.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="location">
-                Localização
-              </label>
-              <input
-                id="location"
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                disabled={loading}
-                placeholder="Ex: São Paulo, Brasil"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="bio">
-                Biografia
-              </label>
-              <textarea
-                id="bio"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                disabled={loading}
-                rows={3}
-                placeholder="Conte um pouco sobre você e seus objetivos de estudo"
-              />
-            </div>
+        <div className="relative mb-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300" />
           </div>
-        )}
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">ou</span>
+          </div>
+        </div>
         
         <button
           type="submit"
@@ -305,7 +207,7 @@ export default function SignupForm() {
           }`}
           disabled={loading}
         >
-          {loading ? 'Criando Conta...' : 'Criar Conta'}
+          {loading ? 'Criando Conta...' : 'Criar Conta com Email'}
         </button>
       </form>
       

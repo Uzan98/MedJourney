@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
+import { FcGoogle } from 'react-icons/fc';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -13,7 +14,7 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loginSuccess, setLoginSuccess] = useState(false);
   
-  const { signIn, isAuthenticated } = useAuth();
+  const { signIn, signInWithGoogle, isAuthenticated } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -70,6 +71,31 @@ export default function LoginForm() {
     } catch (err) {
       const errorMessage = 'Ocorreu um erro ao processar o login';
       console.error('Erro de login:', err);
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setError(null);
+      setLoading(true);
+      console.log('Tentando fazer login com Google');
+      
+      const { success, error } = await signInWithGoogle();
+      
+      if (!success && error) {
+        const errorMessage = error?.message || 'Erro ao fazer login com Google';
+        console.error('Erro no login com Google:', errorMessage);
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
+      // Note: Se o login for bem-sucedido, o usuário será redirecionado pelo OAuth
+    } catch (err) {
+      const errorMessage = 'Ocorreu um erro ao processar o login com Google';
+      console.error('Erro de login com Google:', err);
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -140,13 +166,34 @@ export default function LoginForm() {
         </div>
         
         <button
+          type="button"
+          onClick={handleGoogleLogin}
+          className={`w-full py-2 px-4 mb-4 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center justify-center gap-2 ${
+            loading ? 'opacity-70 cursor-not-allowed' : ''
+          }`}
+          disabled={loading}
+        >
+          <FcGoogle className="w-5 h-5" />
+          {loading ? 'Entrando...' : 'Entrar com Google'}
+        </button>
+        
+        <div className="relative mb-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">ou</span>
+          </div>
+        </div>
+        
+        <button
           type="submit"
           className={`w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${
             loading ? 'opacity-70 cursor-not-allowed' : ''
           }`}
           disabled={loading}
         >
-          {loading ? 'Entrando...' : 'Entrar'}
+          {loading ? 'Entrando...' : 'Entrar com Email'}
         </button>
       </form>
       
