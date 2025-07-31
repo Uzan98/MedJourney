@@ -266,68 +266,84 @@ export default function SimuladosPage() {
         {showMyExams ? (
           myExams.length > 0 ? (
             myExams.map(exam => (
-              <div key={exam.id} className="bg-white rounded-xl shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg">
+              <div key={exam.id} className="bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-gray-100">
+                {/* Header com gradiente */}
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 text-white relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+                  <div className="relative z-10">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-lg font-bold line-clamp-2 pr-4">{exam.title}</h3>
+                      <button 
+                        onClick={() => setShowExamInfo(exam)}
+                        className="text-white/80 hover:text-white transition-colors p-1 rounded-full hover:bg-white/20"
+                        aria-label="Informações do simulado"
+                      >
+                        <FaClipboard className="text-sm" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-white/90">
+                      <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full font-medium">
+                        {formatTime(exam.time_limit)}
+                      </span>
+                      <span className={`px-3 py-1 rounded-full font-medium ${
+                        exam.is_public 
+                          ? 'bg-green-500/20 text-green-100 border border-green-400/30' 
+                          : 'bg-amber-500/20 text-amber-100 border border-amber-400/30'
+                      }`}>
+                        {exam.is_public ? 'Público' : 'Privado'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Conteúdo */}
                 <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-xl font-semibold text-gray-800 line-clamp-2">{exam.title}</h3>
-                    <button 
-                      onClick={() => setShowExamInfo(exam)}
-                      className="text-blue-500 hover:text-blue-700"
-                      aria-label="Informações do simulado"
-                    >
-                      <FaClipboard />
-                    </button>
-                  </div>
+                  <p className="text-gray-600 mb-6 line-clamp-3 leading-relaxed">
+                    {exam.description || 'Sem descrição disponível'}
+                  </p>
                   
-                  <p className="text-gray-600 mb-4 line-clamp-3">{exam.description || 'Sem descrição'}</p>
-                  
-                  <div className="flex items-center text-sm text-gray-500 mb-5">
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full mr-2">
-                      {formatTime(exam.time_limit)}
-                    </span>
-                    <span className={`px-2 py-1 rounded-full ${exam.is_public ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                      {exam.is_public ? 'Público' : 'Privado'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    <Link 
-                      href={`/simulados/${exam.id}`}
-                      className="flex items-center justify-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                    >
-                      <FaClipboard className="mr-1" /> Detalhes
-                    </Link>
-                    
+                  {/* Botões principais */}
+                  <div className="flex gap-3 mb-4">
                     <Link 
                       href={`/simulados/${exam.id}/iniciar`}
-                      className="flex items-center justify-center px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                      className="flex-1 flex items-center justify-center px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl"
                     >
-                      <FaPlay className="mr-1" /> Iniciar
+                      <FaPlay className="mr-2 text-sm" /> Iniciar Simulado
                     </Link>
                     
-                      <Link 
-                        href={`/simulados/${exam.id}/editar`}
-                      className="flex items-center justify-center px-3 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition"
-                      >
-                      <FaEdit className="mr-1" /> Editar
-                      </Link>
-                    
-                      <button 
-                        onClick={() => {
-                        setDeleteExamId(exam.id!);
-                          setShowDeleteConfirmation(true);
-                        }}
-                      className="flex items-center justify-center px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                    <Link 
+                      href={`/simulados/${exam.id}`}
+                      className="flex items-center justify-center px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200 font-medium"
                     >
-                      <FaTrash className="mr-1" /> Excluir
-                    </button>
+                      <FaClipboard className="text-sm" />
+                    </Link>
+                  </div>
+                  
+                  {/* Botões secundários */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <Link 
+                      href={`/simulados/${exam.id}/editar`}
+                      className="flex items-center justify-center px-3 py-2 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-all duration-200 text-sm font-medium border border-amber-200"
+                    >
+                      <FaEdit className="mr-1 text-xs" /> Editar
+                    </Link>
                     
                     <button 
                       onClick={() => handleShareExam(exam)}
-                      className="flex items-center justify-center px-3 py-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
-                      >
-                      <FaShare className="mr-1" /> Compartilhar
-                      </button>
+                      className="flex items-center justify-center px-3 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-all duration-200 text-sm font-medium border border-purple-200"
+                    >
+                      <FaShare className="mr-1 text-xs" /> Compartilhar
+                    </button>
+                    
+                    <button 
+                      onClick={() => {
+                        setDeleteExamId(exam.id!);
+                        setShowDeleteConfirmation(true);
+                      }}
+                      className="flex items-center justify-center px-3 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-all duration-200 text-sm font-medium border border-red-200"
+                    >
+                      <FaTrash className="mr-1 text-xs" /> Excluir
+                    </button>
                   </div>
                 </div>
               </div>

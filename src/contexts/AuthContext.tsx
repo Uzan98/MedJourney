@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
+import { performCompleteDataCleanup, forceCleanRedirect } from '@/utils/data-cleanup';
 
 // Tipo para o contexto de autenticação
 type AuthContextType = {
@@ -281,15 +282,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Logout
+  // Logout com limpeza completa
   const signOut = async () => {
     try {
+      // 1. Fazer logout no Supabase
       await supabase.auth.signOut();
-      // Session será atualizado pelo evento onAuthStateChange
-      // Resetar o estado de anúncio de login
+      
+      // 2. Resetar estados imediatamente
+      setUser(null);
+      setSession(null);
+      setIsAdmin(false);
       loginAnnouncedRef.current = false;
+      
+      // 3. Executar limpeza completa de dados
+      await performCompleteDataCleanup();
+      
+      console.log('Logout completo: dados locais limpos');
+      
+      // 4. Forçar redirecionamento limpo para login
+      setTimeout(() => {
+        forceCleanRedirect('/auth/login');
+      }, 100);
+      
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
+      
+      // Em caso de erro, ainda tentar redirecionar
+      setTimeout(() => {
+        forceCleanRedirect('/auth/login');
+      }, 500);
     }
   };
 

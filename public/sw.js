@@ -255,4 +255,46 @@ self.addEventListener('message', event => {
   if (event.data.action === 'skipWaiting') {
     self.skipWaiting();
   }
+  
+  // Handler para limpeza de dados do usuário no logout
+  if (event.data.type === 'CLEAR_USER_DATA') {
+    console.log('[Service Worker] Recebida solicitação de limpeza de dados do usuário');
+    
+    // Limpar todos os caches relacionados ao MedJourney
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName.includes('medjourney')) {
+            console.log(`[Service Worker] Removendo cache: ${cacheName}`);
+            return caches.delete(cacheName);
+          }
+          return Promise.resolve();
+        })
+      );
+    }).then(() => {
+      console.log('[Service Worker] Limpeza de cache concluída');
+      
+      // Limpar IndexedDB se existir
+      if ('indexedDB' in self) {
+        try {
+          // Tentar deletar o banco de dados do MedJourney
+          const deleteRequest = indexedDB.deleteDatabase('medjourney-offline-db');
+          deleteRequest.onsuccess = () => {
+            console.log('[Service Worker] IndexedDB limpo com sucesso');
+          };
+          deleteRequest.onerror = (error) => {
+            console.warn('[Service Worker] Erro ao limpar IndexedDB:', error);
+          };
+        } catch (error) {
+          console.warn('[Service Worker] Erro ao acessar IndexedDB:', error);
+        }
+      }
+      
+      // Notificar o cliente que a limpeza foi concluída
+      event.ports[0]?.postMessage({ success: true });
+    }).catch(error => {
+      console.error('[Service Worker] Erro na limpeza de dados:', error);
+      event.ports[0]?.postMessage({ success: false, error: error.message });
+    });
+  }
 });

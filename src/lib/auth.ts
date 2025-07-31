@@ -93,9 +93,32 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
 
 // Função para logout
 export async function logout(): Promise<void> {
-  // Em uma aplicação real, aqui você removeria o token JWT e limparia o contexto de autenticação
-  // Por enquanto, apenas simulamos isso
-  console.log('Usuário deslogado');
+  // Esta função é mantida para compatibilidade, mas recomenda-se usar o AuthContext.signOut()
+  // que implementa limpeza completa de dados
+  console.warn('Função logout() depreciada. Use AuthContext.signOut() para limpeza completa.');
+  
+  // Limpeza básica para compatibilidade usando utilitário
+  try {
+    const { clearLocalStorageData } = await import('../utils/data-cleanup');
+    clearLocalStorageData();
+    console.log('Logout básico realizado - dados locais limpos');
+  } catch (error) {
+    console.error('Erro na limpeza básica de logout:', error);
+    
+    // Fallback: limpeza manual
+    try {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('@medjourney:')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+    } catch (fallbackError) {
+      console.error('Erro no fallback de limpeza:', fallbackError);
+    }
+  }
 }
 
 // Função para verificar se o usuário está autenticado
@@ -114,4 +137,4 @@ export function getCurrentUser(): User | null {
     Name: 'Usuário de Teste',
     Email: 'teste@exemplo.com',
   };
-} 
+}
