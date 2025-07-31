@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSupabase } from './SupabaseProvider';
-import { SubscriptionTier, UserSubscriptionLimits } from '../types/subscription';
+import { SubscriptionTier, UserSubscriptionLimits, SubscriptionStatus } from '../types/subscription';
 import { Session, User } from '@supabase/supabase-js';
 
 interface SubscriptionContextType {
@@ -353,8 +353,14 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         .eq('user_id', session.user.id)
         .gte('created_at', firstDayOfMonth.toISOString());
       
-      // If no subscription found, use FREE tier defaults
-      if (!userSubscription) {
+      // Debug logs
+      console.log('Debug - userSubscription:', userSubscription);
+      console.log('Debug - userSubscription.status:', userSubscription?.status);
+      console.log('Debug - SubscriptionStatus.CANCELED:', SubscriptionStatus.CANCELED);
+      console.log('Debug - comparison result:', userSubscription?.status === SubscriptionStatus.CANCELED);
+      
+      // If no subscription found or subscription is canceled, use FREE tier defaults
+      if (!userSubscription || userSubscription.status === SubscriptionStatus.CANCELED) {
         const limits = {
           ...defaultSubscriptionLimits,
           disciplinesUsed: disciplinesCount || 0,
@@ -362,6 +368,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           studySessionsUsedToday: studySessionsToday || 0,
           simuladosUsedThisWeek: simuladosThisWeek || 0,
           simuladosUsedThisMonth: simuladosThisMonth || 0,
+          // Add subscription status information for canceled subscriptions
+          status: userSubscription?.status as SubscriptionStatus || SubscriptionStatus.CANCELED,
+          cancelAtPeriodEnd: userSubscription?.cancel_at_period_end || false,
+          currentPeriodEnd: userSubscription?.current_period_end,
         };
         setSubscriptionLimits(limits);
       } else {
@@ -391,6 +401,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           simuladosUsedThisMonth: simuladosThisMonth || 0,
           maxQuestionsPerSimulado: features.maxQuestionsPerSimulado || 30,
           maxFlashcardsPerDeck: features.maxFlashcardsPerDeck || 30,
+          // Add subscription status information
+          status: userSubscription.status as SubscriptionStatus,
+          cancelAtPeriodEnd: userSubscription.cancel_at_period_end || false,
+          currentPeriodEnd: userSubscription.current_period_end,
         };
         
         setSubscriptionLimits(limits);
@@ -482,4 +496,4 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       )}
     </SubscriptionContext.Provider>
   );
-}; 
+};

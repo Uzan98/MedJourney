@@ -124,8 +124,8 @@ serve(async (req: Request) => {
       console.error('Error counting simulados this week:', simuladosWeekError);
     }
 
-    // If no subscription found, use FREE tier from the database
-    if (!userSubscription) {
+    // If no subscription found OR subscription is canceled, use FREE tier from the database
+    if (!userSubscription || userSubscription.status === 'canceled') {
       // Busca o plano Free do banco
       const { data: freePlan, error: freePlanError } = await supabase
         .from('subscription_plans')
@@ -229,4 +229,4 @@ serve(async (req: Request) => {
     },
   });
   }
-}); 
+});

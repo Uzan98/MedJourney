@@ -24,9 +24,9 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
 
   // Use localStorage para persistir o estado entre mudanças de abas
   const getInitialState = () => {
-    if (typeof window === 'undefined') return 'idle';
+    if (typeof window === 'undefined') return 'focus';
     const storedState = localStorage.getItem(`pomodoro-state-${groupId}`);
-    return storedState ? storedState as PomodoroState : 'idle';
+    return storedState ? storedState as PomodoroState : 'focus';
   };
 
   const getInitialTimeLeft = () => {
@@ -446,7 +446,7 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
     
     // Resetar todos os estados
     setIsActive(false);
-    setState('idle');
+    setState('focus'); // Sempre resetar para estado de foco
     setCompletedSessions(0);
     setTimeLeft(focusTime * 60);
     
@@ -499,8 +499,9 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
         return 'from-green-500 to-teal-500';
       case 'longBreak':
         return 'from-purple-500 to-pink-500';
+      case 'idle':
       default:
-        return 'from-gray-400 to-gray-500';
+        return 'from-blue-600 to-indigo-600'; // Usar cores de foco por padrão
     }
   };
 
@@ -603,4 +604,4 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
   );
 };
 
-export default PomodoroTimer; 
+export default PomodoroTimer;

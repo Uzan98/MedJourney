@@ -87,6 +87,10 @@ export interface UserSubscriptionLimits {
   maxSimuladosPerMonth?: number;
   simuladosUsedThisMonth?: number;
   maxQuestionsPerSimulado?: number;
+  // Subscription status information
+  status?: SubscriptionStatus;
+  cancelAtPeriodEnd?: boolean;
+  currentPeriodEnd?: string;
 }
 
 // Default features for each subscription tier
@@ -121,4 +125,4 @@ export const DEFAULT_SUBSCRIPTION_FEATURES: Record<SubscriptionTier, Subscriptio
     advancedAnalytics: true,
     prioritySupport: true,
   },
-}; 
+};

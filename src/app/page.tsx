@@ -131,59 +131,12 @@ export default function HomePage() {
           {/* Imagem ilustrativa */}
           <div className="relative hidden md:block">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-3xl opacity-10 blur-2xl transform rotate-3"></div>
-            <div className="relative bg-white p-6 rounded-3xl shadow-xl border border-blue-100">
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 h-16 rounded-xl mb-6 flex items-center px-6">
-                <div className="flex space-x-2">
-                  <div className="w-3 h-3 bg-white/20 rounded-full"></div>
-                  <div className="w-3 h-3 bg-white/20 rounded-full"></div>
-                  <div className="w-3 h-3 bg-white/20 rounded-full"></div>
-                </div>
-                <div className="ml-auto text-white font-medium">Dashboard</div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                  <div className="flex items-center mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white mr-3">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-                      </svg>
-                    </div>
-                    <span className="font-medium text-blue-800">Planejamento</span>
-                  </div>
-                  <div className="h-2 bg-blue-200 rounded-full w-3/4 mb-2"></div>
-                  <div className="h-2 bg-blue-200 rounded-full w-1/2"></div>
-                </div>
-                
-                <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
-                  <div className="flex items-center mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center text-white mr-3">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                      </svg>
-                    </div>
-                    <span className="font-medium text-indigo-800">Questões</span>
-                  </div>
-                  <div className="h-2 bg-indigo-200 rounded-full w-2/3 mb-2"></div>
-                  <div className="h-2 bg-indigo-200 rounded-full w-1/2"></div>
-                </div>
-              </div>
-              
-              <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
-                <div className="flex items-center mb-3">
-                  <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center text-white mr-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"></path>
-                      <path d="M10 2c1 .5 2 2 2 5"></path>
-                    </svg>
-                  </div>
-                  <span className="font-medium text-purple-800">Simulados</span>
-                </div>
-                <div className="h-2 bg-purple-200 rounded-full w-5/6 mb-2"></div>
-                <div className="h-2 bg-purple-200 rounded-full w-2/3"></div>
-              </div>
+            <div className="relative">
+              <img 
+                src="/icons/dashboard1.png" 
+                alt="Dashboard da plataforma Genoma" 
+                className="w-full h-auto rounded-3xl shadow-xl border border-blue-100/50 backdrop-blur-sm"
+              />
             </div>
           </div>
         </div>
@@ -224,7 +177,7 @@ export default function HomePage() {
             {/* Feature 3 */}
              <div className="group relative bg-white/10 backdrop-blur-xl rounded-2xl p-6 hover:bg-white/20 transition-all duration-500 border border-white/20 hover:border-purple-400/50 hover:shadow-2xl hover:shadow-purple-500/20">
                <div className="w-full h-48 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl mb-6 flex items-center justify-center overflow-hidden border border-white/20 backdrop-blur-sm">
-                 <img src="/simulados-screenshot.svg" alt="Simulações Personalizadas" className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-500" />
+                 <img src="/simulados-screenshot.png" alt="Simulações Personalizadas" className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-500" />
                </div>
                <h3 className="text-xl font-semibold mb-3 text-white group-hover:text-purple-300 transition-colors duration-300">Simulações Personalizadas</h3>
                <p className="text-white/70 group-hover:text-white/90 transition-colors duration-300">Pratique com simulados adaptados ao seu nível e objetivos.</p>
@@ -233,7 +186,7 @@ export default function HomePage() {
             {/* Feature 4 */}
              <div className="group relative bg-white/10 backdrop-blur-xl rounded-2xl p-6 hover:bg-white/20 transition-all duration-500 border border-white/20 hover:border-yellow-400/50 hover:shadow-2xl hover:shadow-yellow-500/20">
                <div className="w-full h-48 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl mb-6 flex items-center justify-center overflow-hidden border border-white/20 backdrop-blur-sm">
-                 <img src="/dashboard-screenshot.svg" alt="Dashboard" className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-500" />
+                 <img src="/dashboard.png" alt="Dashboard" className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-500" />
                </div>
                <h3 className="text-xl font-semibold mb-3 text-white group-hover:text-yellow-300 transition-colors duration-300">Dashboard Completo</h3>
                <p className="text-white/70 group-hover:text-white/90 transition-colors duration-300">Visualize seu progresso e estatísticas de estudo em um painel intuitivo.</p>

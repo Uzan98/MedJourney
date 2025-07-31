@@ -28,9 +28,9 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
 
   // Persistência no localStorage
   const getInitialState = () => {
-    if (typeof window === 'undefined') return 'idle';
+    if (typeof window === 'undefined') return 'focus';
     const storedState = localStorage.getItem('study-pomodoro-state');
-    return storedState ? storedState as PomodoroState : 'idle';
+    return storedState ? storedState as PomodoroState : 'focus';
   };
 
   const getInitialTimeLeft = () => {
@@ -300,7 +300,8 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
       case 'focus': return 'from-red-500 to-red-700';
       case 'shortBreak': return 'from-green-500 to-green-700';
       case 'longBreak': return 'from-blue-500 to-blue-700';
-      default: return 'from-gray-500 to-gray-700';
+      case 'idle':
+      default: return 'from-red-500 to-red-700'; // Usar cores de foco por padrão
     }
   };
 

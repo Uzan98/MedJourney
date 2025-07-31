@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSubscription } from '../../contexts/SubscriptionContext';
-import { SubscriptionTier, SubscriptionPeriod } from '../../types/subscription';
+import { SubscriptionTier, SubscriptionPeriod, SubscriptionStatus } from '../../types/subscription';
 import { DbSubscriptionPlan } from '../../types/database-subscription';
 import { supabase } from '../../lib/supabase';
 
@@ -130,7 +130,7 @@ export const SubscriptionPlans: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [apiError, setApiError] = useState(false);
-  const { subscriptionLimits, session, user } = useSubscription();
+  const { subscriptionLimits, session, user, refreshLimits } = useSubscription();
   const router = useRouter();
 
   // Log para depuração
@@ -294,7 +294,9 @@ export const SubscriptionPlans: React.FC = () => {
       
       if (result.success) {
         alert('Assinatura cancelada com sucesso! As alterações serão aplicadas ao final do período atual.');
-        // Refresh the page to update subscription status
+        // Refresh subscription limits to update the UI
+        await refreshLimits();
+        // Also refresh the page to ensure all components are updated
         router.refresh();
       } else {
         throw new Error('Resposta não contém confirmação de sucesso');
@@ -378,6 +380,20 @@ export const SubscriptionPlans: React.FC = () => {
     }
     // Para PRO/PRO_PLUS, só o plano do mesmo tier e period (se quiser considerar period)
     return plan.tier === subscriptionLimits.tier;
+  };
+
+  const isSubscriptionCanceled = () => {
+    return subscriptionLimits?.cancelAtPeriodEnd === true || subscriptionLimits?.status === SubscriptionStatus.CANCELED;
+  };
+
+  const getSubscriptionStatusMessage = () => {
+    if (subscriptionLimits?.status === SubscriptionStatus.CANCELED && !subscriptionLimits?.cancelAtPeriodEnd) {
+      return 'Assinatura cancelada - Plano alterado para gratuito';
+    }
+    if (subscriptionLimits?.cancelAtPeriodEnd) {
+      return `Assinatura cancelada - Válida até ${subscriptionLimits?.currentPeriodEnd ? new Date(subscriptionLimits.currentPeriodEnd).toLocaleDateString('pt-BR') : 'o final do período'}`;
+    }
+    return '';
   };
 
   return (
@@ -475,13 +491,23 @@ export const SubscriptionPlans: React.FC = () => {
                         Plano atual
                       </button>
                       {tierEnum !== SubscriptionTier.FREE && (
-                        <button
-                          className="w-full mt-2 px-4 py-2 border border-red-500 text-red-500 rounded-md font-medium hover:bg-red-50"
-                          onClick={handleCancelSubscription}
-                          disabled={isProcessing}
-                        >
-                          {isProcessing ? 'Processando...' : 'Cancelar assinatura'}
-                        </button>
+                        <div>
+                          {isSubscriptionCanceled() ? (
+                            <div className="mt-2">
+                              <div className="w-full px-4 py-2 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-md text-sm text-center">
+                                {getSubscriptionStatusMessage()}
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              className="w-full mt-2 px-4 py-2 border border-red-500 text-red-500 rounded-md font-medium hover:bg-red-50"
+                              onClick={handleCancelSubscription}
+                              disabled={isProcessing}
+                            >
+                              {isProcessing ? 'Processando...' : 'Cancelar assinatura'}
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   ) : (
@@ -515,4 +541,4 @@ export const SubscriptionPlans: React.FC = () => {
       )}
     </div>
   );
-}; 
+};
