@@ -15,13 +15,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 import type { Discipline, Subject } from '@/lib/supabase';
 
-interface CreateDeckModalProps {
+interface EditDeckModalProps {
   isOpen: boolean;
   onClose: () => void;
+  deck: Deck;
   onSuccess?: (deck: Deck) => void;
 }
 
-export default function CreateDeckModal({ isOpen, onClose, onSuccess }: CreateDeckModalProps) {
+export default function EditDeckModal({ isOpen, onClose, deck, onSuccess }: EditDeckModalProps) {
   const { user } = useAuth();
   const router = useRouter();
   const [name, setName] = useState('');
@@ -49,21 +50,51 @@ export default function CreateDeckModal({ isOpen, onClose, onSuccess }: CreateDe
   ];
 
   useEffect(() => {
-    // Carregar as disciplinas do usuário quando o modal for aberto
-    if (isOpen) {
+    // Preencher os campos com os dados do deck quando o modal for aberto
+    if (isOpen && deck) {
+      setName(deck.name || '');
+      setDescription(deck.description || '');
+      setIsPublic(deck.is_public || false);
+      setCoverColor(deck.cover_color || '#4f46e5');
+      setTags(deck.tags ? deck.tags.join(', ') : '');
+      setError('');
+      
+      // Carregar as disciplinas do usuário
       const loadDisciplines = async () => {
         try {
           const userDisciplines = await DisciplinesRestService.getDisciplines(true);
           setDisciplines(userDisciplines);
+          
+          // Verificar se o discipline_id do deck existe nas disciplinas do usuário
+          const disciplineExists = deck.discipline_id && 
+            userDisciplines.some(d => d.id === deck.discipline_id);
+          
+          setDisciplineId(disciplineExists ? deck.discipline_id.toString() : 'none');
+          
+          // Se a disciplina existe, carregar as matérias e verificar se subject_id existe
+          if (disciplineExists && deck.subject_id) {
+            try {
+              const disciplineSubjects = await DisciplinesRestService.getSubjects(deck.discipline_id);
+              const subjectExists = disciplineSubjects.some(s => s.id === deck.subject_id);
+              setSubjectId(subjectExists ? deck.subject_id.toString() : 'none');
+            } catch (err) {
+              console.error('Erro ao carregar assuntos:', err);
+              setSubjectId('none');
+            }
+          } else {
+            setSubjectId('none');
+          }
         } catch (err) {
           console.error('Erro ao carregar disciplinas:', err);
           setError('Não foi possível carregar as disciplinas');
+          setDisciplineId('none');
+          setSubjectId('none');
         }
       };
       
       loadDisciplines();
     }
-  }, [isOpen]);
+  }, [isOpen, deck]);
 
   useEffect(() => {
     // Quando a disciplina muda, atualiza as matérias disponíveis
@@ -82,14 +113,19 @@ export default function CreateDeckModal({ isOpen, onClose, onSuccess }: CreateDe
     } else {
       setSubjects([]);
     }
-    setSubjectId('none');
-  }, [disciplineId]);
+    
+    // Só resetar o subject se a disciplina mudou (não é a inicialização)
+    // Agora consideramos que se disciplineId for 'none', é porque a disciplina original não existe mais
+    if (disciplineId !== 'none' && disciplineId !== (deck.discipline_id ? deck.discipline_id.toString() : 'none')) {
+      setSubjectId('none');
+    }
+  }, [disciplineId, deck.discipline_id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!user) {
-      setError('Você precisa estar logado para criar um deck');
+      setError('Você precisa estar logado para editar um deck');
       return;
     }
     
@@ -102,8 +138,7 @@ export default function CreateDeckModal({ isOpen, onClose, onSuccess }: CreateDe
     setError('');
     
     try {
-      const newDeck = await FlashcardsService.createDeck({
-        user_id: user.id,
+      const updatedDeck = await FlashcardsService.updateDeck(deck.id, {
         name: name.trim(),
         description: description.trim() || undefined,
         cover_color: coverColor,
@@ -113,18 +148,18 @@ export default function CreateDeckModal({ isOpen, onClose, onSuccess }: CreateDe
         tags: tags.split(',').map(tag => tag.trim()).filter(Boolean)
       });
       
-      if (newDeck) {
+      if (updatedDeck) {
         if (onSuccess) {
-          onSuccess(newDeck);
+          onSuccess(updatedDeck);
         }
         onClose();
         router.refresh();
       } else {
-        setError('Erro ao criar o deck');
+        setError('Erro ao atualizar o deck');
       }
     } catch (err) {
-      console.error('Erro ao criar deck:', err);
-      setError('Ocorreu um erro ao criar o deck');
+      console.error('Erro ao atualizar deck:', err);
+      setError('Ocorreu um erro ao atualizar o deck');
     } finally {
       setIsLoading(false);
     }
@@ -136,7 +171,7 @@ export default function CreateDeckModal({ isOpen, onClose, onSuccess }: CreateDe
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
         <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-xl font-semibold">Criar Novo Deck</h2>
+          <h2 className="text-xl font-semibold">Editar Deck</h2>
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={onClose} disabled={isLoading}>
             <X className="h-5 w-5" />
           </Button>
@@ -266,7 +301,14 @@ export default function CreateDeckModal({ isOpen, onClose, onSuccess }: CreateDe
               type="submit"
               disabled={isLoading}
             >
-              {isLoading ? 'Criando...' : 'Criar Deck'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                'Salvar Alterações'
+              )}
             </Button>
           </div>
         </form>

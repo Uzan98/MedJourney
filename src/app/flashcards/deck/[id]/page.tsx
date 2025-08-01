@@ -31,6 +31,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import CreateFlashcardModal from '@/components/flashcards/CreateFlashcardModal';
+import EditDeckModal from '@/components/flashcards/EditDeckModal';
 import ImportFromExcel from '@/components/flashcards/ImportFromExcel';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { toast } from 'react-hot-toast';
@@ -130,6 +131,7 @@ export default function DeckPage({ params }: { params: { id: string } }) {
   const [activeTab, setActiveTab] = useState('all');
   const [showAddCardModal, setShowAddCardModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDeleteCardModal, setShowDeleteCardModal] = useState(false);
   const [selectedCard, setSelectedCard] = useState<Flashcard | null>(null);
@@ -220,16 +222,13 @@ export default function DeckPage({ params }: { params: { id: string } }) {
     setIsDeleting(true);
     try {
       const deckId = deck.deck_id || params.id;
-      const success = await FlashcardsService.deleteDeck(deckId);
+      await FlashcardsService.deleteDeck(deckId);
       
-      if (success) {
-        router.push('/flashcards');
-      } else {
-        alert('Erro ao excluir o deck. Tente novamente.');
-      }
+      toast.success('Deck excluído com sucesso!');
+      router.push('/flashcards');
     } catch (error) {
       console.error('Erro ao excluir deck:', error);
-      alert('Ocorreu um erro ao excluir o deck.');
+      toast.error('Ocorreu um erro ao excluir o deck.');
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
@@ -241,18 +240,15 @@ export default function DeckPage({ params }: { params: { id: string } }) {
     
     setIsDeletingCard(true);
     try {
-      const success = await FlashcardsService.deleteFlashcard(selectedCard.id);
+      await FlashcardsService.deleteFlashcard(selectedCard.id);
       
-      if (success) {
-        // Remove o cartão da lista local
-        setFlashcards(flashcards.filter(card => card.id !== selectedCard.id));
-        setShowDeleteCardModal(false);
-      } else {
-        alert('Erro ao excluir o cartão. Tente novamente.');
-      }
+      // Remove o cartão da lista local
+      setFlashcards(flashcards.filter(card => card.id !== selectedCard.id));
+      setShowDeleteCardModal(false);
+      toast.success('Cartão excluído com sucesso!');
     } catch (error) {
       console.error('Erro ao excluir flashcard:', error);
-      alert('Ocorreu um erro ao excluir o cartão.');
+      toast.error('Ocorreu um erro ao excluir o cartão.');
     } finally {
       setIsDeletingCard(false);
     }
@@ -392,7 +388,12 @@ export default function DeckPage({ params }: { params: { id: string } }) {
                 </Button>
                 
                 <div className="grid grid-cols-2 gap-2 mb-2">
-                  <Button variant="outline" size="sm" className="flex items-center justify-center gap-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center justify-center gap-1"
+                    onClick={() => setShowEditModal(true)}
+                  >
                     <Edit className="h-3 w-3" />
                     <span>Editar</span>
                   </Button>
@@ -572,6 +573,19 @@ export default function DeckPage({ params }: { params: { id: string } }) {
         message={`Tem certeza que deseja excluir o deck "${deck?.name}" e todos os seus ${flashcards.length} cartões? Esta ação não pode ser desfeita.`}
       />
       
+      {/* Modal de edição de deck */}
+      {deck && (
+        <EditDeckModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          deck={deck}
+          onSuccess={(updatedDeck) => {
+            setDeck(updatedDeck);
+            toast.success('Deck atualizado com sucesso!');
+          }}
+        />
+      )}
+      
       {/* Modal de confirmação para excluir cartão */}
       <ConfirmationModal
         isOpen={showDeleteCardModal}
@@ -582,4 +596,4 @@ export default function DeckPage({ params }: { params: { id: string } }) {
       />
     </div>
   );
-} 
+}
