@@ -40,6 +40,7 @@ import ImageCarousel from '@/components/dashboard/ImageCarousel';
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import FlashcardStatsCard from '@/components/dashboard/FlashcardStatsCard';
 import FlashcardReviewsCard from '@/components/dashboard/FlashcardReviewsCard';
+import GenobotTourModal from '@/components/tour/genobot-tour-modal';
 
 // Função auxiliar para gerar dias da semana
 const getDaysOfWeek = () => {
@@ -93,6 +94,7 @@ export default function DashboardPage() {
   const [isStudySessionModalOpen, setIsStudySessionModalOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [carouselImages, setCarouselImages] = useState<any[]>([]);
+  const [showTourModal, setShowTourModal] = useState(false);
   
   // Checar se o dispositivo é mobile
   useEffect(() => {
@@ -244,6 +246,27 @@ export default function DashboardPage() {
     
     return () => clearTimeout(safetyTimeout);
   }, []);
+
+  // Verificar se é a primeira visita do usuário
+  useEffect(() => {
+    const hasSeenTour = localStorage.getItem('genoma-tour-seen');
+    if (!hasSeenTour && !loading) {
+      // Mostrar o tour após um pequeno delay para melhor UX
+      const timer = setTimeout(() => {
+        setShowTourModal(true);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
+
+  const handleCloseTour = () => {
+    setShowTourModal(false);
+    localStorage.setItem('genoma-tour-seen', 'true');
+  };
+
+  const handleOpenTour = () => {
+    setShowTourModal(true);
+  };
   
   useEffect(() => {
     async function fetchCarouselImages() {
@@ -843,6 +866,25 @@ export default function DashboardPage() {
           window.location.reload();
         }}
       />
+
+      {/* Botão flutuante do Genobot */}
+      <button
+        onClick={handleOpenTour}
+        className="fixed bottom-6 right-6 z-40 w-16 h-16 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 rounded-full shadow-2xl hover:shadow-cyan-500/25 transition-all duration-300 flex items-center justify-center group"
+        title="Conheça o Genobot e todas as funcionalidades!"
+      >
+        <div className="relative">
+          <img 
+            src="/Genobot.png" 
+            alt="Genobot" 
+            className="w-10 h-10 rounded-full group-hover:scale-110 transition-transform duration-300"
+          />
+          <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
+        </div>
+      </button>
+
+      {/* Tour Modal */}
+      <GenobotTourModal isOpen={showTourModal} onClose={handleCloseTour} />
     </div>
   );
-} 
+}

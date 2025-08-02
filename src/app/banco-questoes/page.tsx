@@ -25,9 +25,12 @@ import QuestionCard from '@/components/banco-questoes/QuestionCard';
 import AIQuestionGeneratorModal from '@/components/banco-questoes/AIQuestionGeneratorModal';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { ImportQuestionsFromExcel } from '@/components/banco-questoes/ImportQuestionsFromExcel';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import MobileBancoQuestoes from '@/components/banco-questoes/MobileBancoQuestoes';
 
 export default function BancoQuestoesPage() {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   
   // Estados para gerenciar questões e filtros
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -443,6 +446,47 @@ export default function BancoQuestoesPage() {
       </div>
     );
   };
+
+  // Renderizar layout mobile se for dispositivo móvel
+  if (isMobile) {
+    return (
+      <MobileBancoQuestoes
+        questions={questions}
+        paginatedQuestions={paginatedQuestions}
+        filteredQuestions={filteredQuestions}
+        loading={loading}
+        disciplines={disciplines}
+        subjects={subjects}
+        totalQuestionCount={totalQuestionCount}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        selectedDiscipline={selectedDiscipline}
+        setSelectedDiscipline={setSelectedDiscipline}
+        selectedSubject={selectedSubject}
+        setSelectedSubject={setSelectedSubject}
+        selectedDifficulty={selectedDifficulty}
+        setSelectedDifficulty={setSelectedDifficulty}
+        selectedType={selectedType}
+        setSelectedType={setSelectedType}
+        showFromGenomaOnly={showFromGenomaOnly}
+        setShowFromGenomaOnly={setShowFromGenomaOnly}
+        sortOrder={sortOrder}
+        toggleSortOrder={toggleSortOrder}
+        loadData={loadData}
+        handleDeleteQuestion={handleDeleteQuestion}
+        getDisciplineName={getDisciplineName}
+        handleQuestionAccess={handleQuestionAccess}
+        setShowAIModal={setShowAIModal}
+        setShowImportModal={setShowImportModal}
+        handleDisciplineChange={handleDisciplineChange}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        changePage={changePage}
+        nextPage={nextPage}
+        prevPage={prevPage}
+      />
+    );
+  }
 
   return (
     <div>

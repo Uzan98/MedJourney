@@ -1,0 +1,392 @@
+"use client";
+
+import { useState } from 'react';
+import { Question, Discipline, Subject } from '@/lib/supabase';
+import { 
+  Search, 
+  Plus, 
+  Filter, 
+  FileText, 
+  ChevronDown,
+  RefreshCw,
+  SortAsc,
+  SortDesc,
+  Wand2,
+  FileSpreadsheet,
+  X,
+  Menu
+} from 'lucide-react';
+import Link from 'next/link';
+import QuestionCard from './QuestionCard';
+
+interface MobileBancoQuestoesProps {
+  questions: Question[];
+  filteredQuestions: Question[];
+  paginatedQuestions: Question[];
+  loading: boolean;
+  disciplines: Discipline[];
+  subjects: Subject[];
+  totalQuestionCount: number;
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  selectedDiscipline: number | null;
+  setSelectedDiscipline: (id: number | null) => void;
+  selectedSubject: number | null;
+  setSelectedSubject: (id: number | null) => void;
+  selectedDifficulty: string | null;
+  setSelectedDifficulty: (difficulty: string | null) => void;
+  selectedType: string | null;
+  setSelectedType: (type: string | null) => void;
+  showFromGenomaOnly: boolean;
+  setShowFromGenomaOnly: (show: boolean) => void;
+  sortOrder: 'newest' | 'oldest';
+  toggleSortOrder: () => void;
+  loadData: () => void;
+  handleDeleteQuestion: (id: number) => void;
+  getDisciplineName: (id: number) => string;
+  handleQuestionAccess: () => boolean;
+  setShowAIModal: (show: boolean) => void;
+  setShowImportModal: (show: boolean) => void;
+  handleDisciplineChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  currentPage: number;
+  totalPages: number;
+  changePage: (page: number) => void;
+  nextPage: () => void;
+  prevPage: () => void;
+}
+
+export default function MobileBancoQuestoes({
+  questions,
+  filteredQuestions,
+  paginatedQuestions,
+  loading,
+  disciplines,
+  subjects,
+  totalQuestionCount,
+  searchTerm,
+  setSearchTerm,
+  selectedDiscipline,
+  setSelectedDiscipline,
+  selectedSubject,
+  setSelectedSubject,
+  selectedDifficulty,
+  setSelectedDifficulty,
+  selectedType,
+  setSelectedType,
+  showFromGenomaOnly,
+  setShowFromGenomaOnly,
+  sortOrder,
+  toggleSortOrder,
+  loadData,
+  handleDeleteQuestion,
+  getDisciplineName,
+  handleQuestionAccess,
+  setShowAIModal,
+  setShowImportModal,
+  handleDisciplineChange,
+  currentPage,
+  totalPages,
+  changePage,
+  nextPage,
+  prevPage
+}: MobileBancoQuestoesProps) {
+  const [showFilters, setShowFilters] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+  const MobilePagination = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200">
+        <button
+          onClick={prevPage}
+          disabled={currentPage === 1}
+          className={`px-3 py-2 rounded-lg text-sm font-medium ${
+            currentPage === 1
+              ? 'text-gray-400 bg-gray-100'
+              : 'text-blue-600 bg-blue-50 hover:bg-blue-100'
+          }`}
+        >
+          Anterior
+        </button>
+        
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-gray-600">
+            {currentPage} de {totalPages}
+          </span>
+        </div>
+        
+        <button
+          onClick={nextPage}
+          disabled={currentPage === totalPages}
+          className={`px-3 py-2 rounded-lg text-sm font-medium ${
+            currentPage === totalPages
+              ? 'text-gray-400 bg-gray-100'
+              : 'text-blue-600 bg-blue-50 hover:bg-blue-100'
+          }`}
+        >
+          Próxima
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header Mobile */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-4 py-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center text-white">
+            <FileText className="h-6 w-6 mr-2" />
+            <h1 className="text-xl font-bold">Banco de Questões</h1>
+          </div>
+          <button
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        </div>
+        
+        {/* Stats Cards */}
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="bg-blue-500/30 px-3 py-2 rounded-lg backdrop-blur-sm">
+            <div className="text-xs text-blue-100">Total</div>
+            <div className="text-sm font-semibold text-white">{totalQuestionCount}</div>
+          </div>
+          <div className="bg-blue-500/30 px-3 py-2 rounded-lg backdrop-blur-sm">
+            <div className="text-xs text-blue-100">Filtradas</div>
+            <div className="text-sm font-semibold text-white">{filteredQuestions.length}</div>
+          </div>
+          <div className="bg-blue-500/30 px-3 py-2 rounded-lg backdrop-blur-sm">
+            <div className="text-xs text-blue-100">Disciplinas</div>
+            <div className="text-sm font-semibold text-white">{disciplines.length}</div>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Pesquisar questões..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 pr-4 py-3 w-full border-0 rounded-xl bg-white/90 backdrop-blur-sm focus:ring-2 focus:ring-white focus:bg-white transition-all text-gray-900 placeholder-gray-500"
+          />
+        </div>
+      </div>
+
+      {/* Mobile Menu Overlay */}
+      {showMobileMenu && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50">
+          <div className="bg-white w-80 h-full shadow-xl">
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-800">Menu</h2>
+                <button
+                  onClick={() => setShowMobileMenu(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-4 space-y-3">
+              <button
+                onClick={() => {
+                  setShowAIModal(true);
+                  setShowMobileMenu(false);
+                }}
+                className="w-full flex items-center px-4 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors"
+              >
+                <Wand2 className="h-5 w-5 mr-3" />
+                <span className="font-medium">Criar com IA</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  setShowImportModal(true);
+                  setShowMobileMenu(false);
+                }}
+                className="w-full flex items-center px-4 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors"
+              >
+                <FileSpreadsheet className="h-5 w-5 mr-3" />
+                <span className="font-medium">Importar Excel</span>
+              </button>
+              
+              <Link 
+                href="/banco-questoes/nova-questao"
+                className="w-full flex items-center px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                <Plus className="h-5 w-5 mr-3" />
+                <span className="font-medium">Nova Questão</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filters Bar */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center px-3 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            <Filter className="h-4 w-4 mr-2 text-blue-600" />
+            <span className="text-sm font-medium text-gray-700">Filtros</span>
+            <ChevronDown className={`ml-2 h-4 w-4 text-gray-500 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+          </button>
+          
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={toggleSortOrder}
+              className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              title={sortOrder === 'newest' ? 'Mais recentes primeiro' : 'Mais antigas primeiro'}
+            >
+              {sortOrder === 'newest' ? (
+                <SortDesc className="h-4 w-4 text-blue-600" />
+              ) : (
+                <SortAsc className="h-4 w-4 text-blue-600" />
+              )}
+            </button>
+            
+            <button
+              onClick={loadData}
+              className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              title="Atualizar"
+            >
+              <RefreshCw className="h-4 w-4 text-blue-600" />
+            </button>
+          </div>
+        </div>
+        
+        {/* Expanded Filters */}
+        {showFilters && (
+          <div className="mt-4 space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Disciplina</label>
+              <select
+                value={selectedDiscipline?.toString() || ''}
+                onChange={handleDisciplineChange}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              >
+                <option value="">Todas as disciplinas</option>
+                {disciplines.map(discipline => (
+                  <option key={discipline.id} value={discipline.id}>
+                    {discipline.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Assunto</label>
+              <select
+                value={selectedSubject?.toString() || ''}
+                onChange={(e) => setSelectedSubject(e.target.value ? parseInt(e.target.value) : null)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                disabled={!selectedDiscipline || subjects.length === 0}
+              >
+                <option value="">Todos os assuntos</option>
+                {subjects.map(subject => (
+                  <option key={subject.id} value={subject.id}>
+                    {subject.title || subject.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Dificuldade</label>
+                <select
+                  value={selectedDifficulty || ''}
+                  onChange={(e) => setSelectedDifficulty(e.target.value || null)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                  <option value="">Todas</option>
+                  <option value="facil">Fácil</option>
+                  <option value="medio">Médio</option>
+                  <option value="dificil">Difícil</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Tipo</label>
+                <select
+                  value={selectedType || ''}
+                  onChange={(e) => setSelectedType(e.target.value || null)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                  <option value="">Todos</option>
+                  <option value="multipla_escolha">Múltipla Escolha</option>
+                  <option value="verdadeiro_falso">Verdadeiro/Falso</option>
+                  <option value="dissertativa">Dissertativa</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="genoma-only"
+                checked={showFromGenomaOnly}
+                onChange={(e) => setShowFromGenomaOnly(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="genoma-only" className="ml-2 text-sm text-gray-700">
+                Apenas questões do Genoma
+              </label>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Questions List */}
+      <div className="px-4 py-4">
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="w-8 h-8 border-4 border-t-blue-600 border-blue-200 rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-600">Carregando questões...</p>
+            </div>
+          </div>
+        ) : paginatedQuestions.length === 0 ? (
+          <div className="text-center py-12">
+            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma questão encontrada</h3>
+            <p className="text-gray-600 mb-6">Tente ajustar os filtros ou criar uma nova questão.</p>
+            <Link 
+              href="/banco-questoes/nova-questao"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Questão
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {paginatedQuestions.map((question) => (
+              <QuestionCard
+                key={question.id}
+                question={question}
+                onDelete={handleDeleteQuestion}
+                disciplineName={getDisciplineName(question.discipline_id)}
+                onAccess={handleQuestionAccess}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Mobile Pagination */}
+      <MobilePagination />
+    </div>
+  );
+}

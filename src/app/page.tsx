@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 
+
+
 export default function HomePage() {
   const { isAuthenticated, isLoading } = useAuth();
   const [rendering, setRendering] = useState(false);
@@ -262,6 +264,8 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+
     </div>
   );
 }

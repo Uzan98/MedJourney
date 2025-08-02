@@ -9,13 +9,16 @@ import { ChevronLeft, Edit, Trash2, AlertTriangle, Globe, Lock, Plus } from 'luc
 import { Question, QuestionsBankService, AnswerOption } from '@/services/questions-bank.service';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 import QuestionModal from '@/components/banco-questoes/QuestionModal';
+import MobileQuestionView from '@/components/banco-questoes/MobileQuestionView';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 export default function QuestaoDetalhePage() {
   const router = useRouter();
   const params = useParams();
   const questionId = params.id ? parseInt(params.id as string) : null;
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   
   const [question, setQuestion] = useState<Question | null>(null);
   const [loading, setLoading] = useState(true);
@@ -285,6 +288,29 @@ export default function QuestaoDetalhePage() {
     );
   }
 
+  // Renderização mobile
+  if (isMobile && question) {
+    return (
+      <MobileQuestionView
+        question={question}
+        questionId={questionId?.toString() || ''}
+        disciplineName={disciplineName}
+        subjectName={subjectName}
+        isQuestionOwner={!!isQuestionOwner}
+        isUpdatingPublicStatus={isUpdatingPublicStatus}
+        isAddingToBank={isAddingToBank}
+        onEdit={() => setIsEditing(true)}
+        onDelete={handleDeleteQuestion}
+        onTogglePublicStatus={togglePublicStatus}
+        onAddToMyBank={handleAddToMyBank}
+        getDifficultyColor={getDifficultyColor}
+        normalizeDifficulty={normalizeDifficulty}
+        getQuestionTypeLabel={getQuestionTypeLabel}
+        formatDate={formatDate}
+      />
+    );
+  }
+
   return (
     <div>
       <Link 
@@ -527,4 +553,4 @@ export default function QuestaoDetalhePage() {
       </div>
     </div>
   );
-} 
+}
