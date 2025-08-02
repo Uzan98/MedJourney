@@ -27,6 +27,8 @@ import { FlashcardsService } from '@/services/flashcards.service';
 import { Deck, Flashcard, StudySession, CardReview } from '@/types/flashcards';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import MobileStudy from '@/components/flashcards/MobileStudy';
 
 // Estilos CSS para a página de estudo
 const styles = {
@@ -62,6 +64,7 @@ const styles = {
 export default function StudyPage({ params }: { params: { id: string } }) {
   const { user } = useAuth();
   const router = useRouter();
+  const isMobile = useIsMobile();
   const [deck, setDeck] = useState<Deck | null>(null);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -448,6 +451,33 @@ export default function StudyPage({ params }: { params: { id: string } }) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const restartStudySession = () => {
+    setCurrentCardIndex(0);
+    setIsFlipped(false);
+    setStudyStats({
+      correct: 0,
+      incorrect: 0,
+      skipped: 0,
+      total: flashcards.length,
+      completed: 0
+    });
+    setTimeElapsed(0);
+    setAllCardsCompleted(false);
+    setShowCustomStudyModal(false);
+  };
+
+  const handleAnswerCard = (difficulty: 'easy' | 'medium' | 'hard' | 'incorrect') => {
+    // Mapeia as dificuldades do mobile para as do sistema existente
+    const difficultyMap = {
+      'easy': 'easy' as const,
+      'medium': 'correct' as const,
+      'hard': 'hard' as const,
+      'incorrect': 'incorrect' as const
+    };
+    
+    handleCardResponse(difficultyMap[difficulty]);
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-6 flex justify-center items-center h-64">
@@ -476,8 +506,13 @@ export default function StudyPage({ params }: { params: { id: string } }) {
     );
   }
 
-  const currentCard = flashcards[currentCardIndex];
+  const currentCard = flashcards[currentCardIndex] || null;
   const progress = (studyStats.completed / studyStats.total) * 100;
+
+  // Debug log para verificar o estado
+  console.log('Debug - currentCard:', currentCard);
+  console.log('Debug - flashcards length:', flashcards.length);
+  console.log('Debug - currentCardIndex:', currentCardIndex);
 
   if (allCardsCompleted) {
     return (
@@ -528,6 +563,30 @@ export default function StudyPage({ params }: { params: { id: string } }) {
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (isMobile) {
+    return (
+      <MobileStudy
+        deck={deck}
+        currentCard={currentCard}
+        currentCardIndex={currentCardIndex}
+        totalCards={flashcards.length}
+        isFlipped={isFlipped}
+        studyStats={studyStats}
+        timeElapsed={timeElapsed}
+        isLoading={isLoading}
+        showCompletionScreen={allCardsCompleted}
+        onFlipCard={handleFlipCard}
+        onAnswerCard={handleAnswerCard}
+        onPreviousCard={goToPreviousCard}
+        onFinishSession={finishStudySession}
+        onRestartSession={restartStudySession}
+        onGoBack={() => router.push('/flashcards')}
+        calculateProjectedMastery={calculateProjectedMastery}
+        formatTime={formatTime}
+      />
     );
   }
 
@@ -790,4 +849,4 @@ export default function StudyPage({ params }: { params: { id: string } }) {
       </div>
     </div>
   );
-} 
+}

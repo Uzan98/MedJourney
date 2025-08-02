@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Question, QuestionsBankService } from '@/services/questions-bank.service';
-import { Edit, Trash2, Eye, Book, Lock, Globe, User, Plus, Loader2, Download } from 'lucide-react';
+import { Trash2, Eye, Book, Lock, Globe, User, Plus, Loader2, Download } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 interface QuestionCardProps {
@@ -149,31 +149,17 @@ export default function QuestionCard({ question, onDelete, disciplineName, onAcc
               )}
             </Link>
             
-            {/* Mostrar botões de edição/exclusão apenas se não for do Genoma Bank */}
+            {/* Mostrar botão de exclusão apenas se não for do Genoma Bank */}
             {(!isGenomeBank && onDelete) && (
-              <>
-                <Link
-                  href={`/banco-questoes/questao/${question.id}/editar`}
-                  onClick={handleQuestionAccess}
-                  className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors relative group"
-                >
-                  <Edit className="h-4 w-4" />
-                  {onAccess && (
-                    <span className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 -bottom-8 left-1/2 transform -translate-x-1/2 w-max">
-                      Editar
-                    </span>
-                  )}
-                </Link>
-                <button
-                  onClick={() => question.id && onDelete(question.id)}
-                  className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors relative group"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  <span className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 -bottom-8 left-1/2 transform -translate-x-1/2 w-max">
-                    Excluir
-                  </span>
-                </button>
-              </>
+              <button
+                onClick={() => question.id && onDelete(question.id)}
+                className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors relative group"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 -bottom-8 left-1/2 transform -translate-x-1/2 w-max">
+                  Excluir
+                </span>
+              </button>
             )}
             
             {/* Botão para adicionar ao banco pessoal quando for do Genoma Bank */}
@@ -261,4 +247,4 @@ export default function QuestionCard({ question, onDelete, disciplineName, onAcc
       </div>
     </div>
   );
-} 
+}

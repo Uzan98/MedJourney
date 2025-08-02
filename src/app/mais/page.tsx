@@ -15,7 +15,8 @@ import {
   Award,
   MessageSquare,
   Sparkles,
-  CheckSquare
+  CheckSquare,
+  Layers
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -38,6 +39,14 @@ export default function MaisPage() {
       description: "Teste seus conhecimentos",
       bgColor: "bg-green-50",
       iconColor: "text-green-600"
+    },
+    {
+      path: "/flashcards",
+      label: "Flashcards",
+      icon: <Layers className="h-6 w-6" />,
+      description: "Estude com cartões",
+      bgColor: "bg-teal-50",
+      iconColor: "text-teal-600"
     },
     {
       path: "/estudos",

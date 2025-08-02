@@ -23,13 +23,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import CreateDeckModal from '@/components/flashcards/CreateDeckModal';
+import MobileFlashcards from '@/components/flashcards/MobileFlashcards';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { toast } from 'react-hot-toast';
 
 export default function FlashcardsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const { hasReachedLimit, subscriptionLimits } = useSubscription();
+  const isMobile = useIsMobile();
   const [decks, setDecks] = useState<Deck[]>([]);
   const [stats, setStats] = useState<FlashcardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -97,6 +100,25 @@ export default function FlashcardsPage() {
   const handleDeckCreated = (newDeck: Deck) => {
     setDecks([newDeck, ...decks]);
   };
+
+  // Renderização condicional para mobile
+  if (isMobile) {
+    return (
+      <MobileFlashcards
+        decks={decks}
+        stats={stats}
+        isLoading={isLoading}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        showCreateDeckModal={showCreateDeckModal}
+        setShowCreateDeckModal={setShowCreateDeckModal}
+        handleCreateDeck={handleCreateDeck}
+        handleDeckCreated={handleDeckCreated}
+        filteredDecks={filteredDecks}
+        adjustColor={adjustColor}
+      />
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
@@ -309,4 +331,4 @@ export default function FlashcardsPage() {
       />
     </div>
   );
-} 
+}
