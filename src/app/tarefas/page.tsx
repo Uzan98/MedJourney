@@ -20,12 +20,15 @@ import { draggable } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { autoScrollForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-scroll/element';
 import TaskChecklistDisplay from '@/components/ui/task-checklist-display';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import MobileTaskPanel from '@/components/tarefas/MobileTaskPanel';
 
 import { Task } from '@/types/dashboard';
 import { Discipline } from '@/lib/supabase';
 
 const TaskPanel = () => {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const [loading, setLoading] = useState(true);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [loadingDisciplines, setLoadingDisciplines] = useState(true);
@@ -418,6 +421,24 @@ const TaskPanel = () => {
       </div>
     );
   };
+
+  // Renderizar versão mobile se for dispositivo móvel
+   if (isMobile) {
+     return (
+       <MobileTaskPanel 
+         tasks={tasks}
+         disciplines={disciplines}
+         loading={loading}
+         loadingDisciplines={loadingDisciplines}
+         selectedDiscipline={selectedDiscipline}
+         setSelectedDiscipline={setSelectedDiscipline}
+         onCreateTask={handleCreateTask}
+         onEditTask={handleEditTask}
+         onDeleteTask={handleDeleteTask}
+         onMoveTask={moveTask}
+       />
+     );
+   }
 
   return (
     <div className="container mx-auto py-6">
