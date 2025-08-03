@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+// Removido import das Tabs do Radix UI - usando botões customizados
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
@@ -68,12 +68,6 @@ const MobileTaskPanel: React.FC<MobileTaskPanelProps> = ({
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [activeTab, setActiveTab] = useState('pending');
   const [showFilters, setShowFilters] = useState(false);
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  // Garantir hidratação adequada para evitar problemas de SSR
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
 
   // Renderizar prioridade da tarefa
   const renderPriorityBadge = (priority: string) => {
@@ -334,96 +328,113 @@ const MobileTaskPanel: React.FC<MobileTaskPanelProps> = ({
 
       {/* Conteúdo principal */}
       <div className="px-4 pt-4">
-        {!isHydrated ? (
-          <div className="space-y-3">
-            {Array(3).fill(0).map((_, i) => (
-              <Skeleton key={i} className="h-24 w-full rounded-lg" />
-            ))}
-          </div>
-        ) : (
-        <Tabs key="mobile-tabs" value={activeTab} onValueChange={setActiveTab} className="w-full" defaultValue="pending">
-          <TabsList className="grid w-full grid-cols-3 mb-4">
-            <TabsTrigger value="pending" className="text-xs">
+        <div className="w-full">
+          {/* Botões de navegação customizados */}
+          <div className="grid grid-cols-3 gap-1 mb-4 p-1 bg-muted rounded-lg">
+            <button
+              onClick={() => setActiveTab('pending')}
+              className={`flex items-center justify-center px-3 py-2 text-xs font-medium rounded-md transition-all duration-200 ${
+                activeTab === 'pending'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+              }`}
+            >
               <CircleDot className="h-4 w-4 mr-1" />
               A Fazer ({tasks.pending.length})
-            </TabsTrigger>
-            <TabsTrigger value="in-progress" className="text-xs">
+            </button>
+            <button
+              onClick={() => setActiveTab('in-progress')}
+              className={`flex items-center justify-center px-3 py-2 text-xs font-medium rounded-md transition-all duration-200 ${
+                activeTab === 'in-progress'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+              }`}
+            >
               <PlayCircle className="h-4 w-4 mr-1" />
               Progresso ({tasks['in-progress'].length})
-            </TabsTrigger>
-            <TabsTrigger value="completed" className="text-xs">
+            </button>
+            <button
+              onClick={() => setActiveTab('completed')}
+              className={`flex items-center justify-center px-3 py-2 text-xs font-medium rounded-md transition-all duration-200 ${
+                activeTab === 'completed'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+              }`}
+            >
               <CheckCircle className="h-4 w-4 mr-1" />
               Feito ({tasks.completed.length})
-            </TabsTrigger>
-          </TabsList>
+            </button>
+          </div>
 
-          <TabsContent value="pending" className="mt-0">
-            {loading ? (
-              <div className="space-y-3">
-                {Array(3).fill(0).map((_, i) => (
-                  <Skeleton key={i} className="h-24 w-full rounded-lg" />
-                ))}
-              </div>
-            ) : tasks.pending.length === 0 ? (
-              <Card className="p-6 text-center">
-                <CircleDot className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-600 font-medium">Nenhuma tarefa pendente</p>
-                <p className="text-sm text-gray-500 mt-1">Crie sua primeira tarefa!</p>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {tasks.pending.map((task) => (
-                  <MobileTaskCard key={task.id} task={task} />
-                ))}
-              </div>
+          {/* Conteúdo das abas */}
+          <div className="mt-0">
+            {activeTab === 'pending' && (
+              loading ? (
+                <div className="space-y-3">
+                  {Array(3).fill(0).map((_, i) => (
+                    <Skeleton key={i} className="h-24 w-full rounded-lg" />
+                  ))}
+                </div>
+              ) : tasks.pending.length === 0 ? (
+                <Card className="p-6 text-center">
+                  <CircleDot className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-600 font-medium">Nenhuma tarefa pendente</p>
+                  <p className="text-sm text-gray-500 mt-1">Crie sua primeira tarefa!</p>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {tasks.pending.map((task) => (
+                    <MobileTaskCard key={task.id} task={task} />
+                  ))}
+                </div>
+              )
             )}
-          </TabsContent>
 
-          <TabsContent value="in-progress" className="mt-0">
-            {loading ? (
-              <div className="space-y-3">
-                {Array(3).fill(0).map((_, i) => (
-                  <Skeleton key={i} className="h-24 w-full rounded-lg" />
-                ))}
-              </div>
-            ) : tasks['in-progress'].length === 0 ? (
-              <Card className="p-6 text-center">
-                <PlayCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-600 font-medium">Nenhuma tarefa em progresso</p>
-                <p className="text-sm text-gray-500 mt-1">Mova tarefas para cá quando começar a trabalhar nelas</p>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {tasks['in-progress'].map((task) => (
-                  <MobileTaskCard key={task.id} task={task} />
-                ))}
-              </div>
+            {activeTab === 'in-progress' && (
+              loading ? (
+                <div className="space-y-3">
+                  {Array(3).fill(0).map((_, i) => (
+                    <Skeleton key={i} className="h-24 w-full rounded-lg" />
+                  ))}
+                </div>
+              ) : tasks['in-progress'].length === 0 ? (
+                <Card className="p-6 text-center">
+                  <PlayCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-600 font-medium">Nenhuma tarefa em progresso</p>
+                  <p className="text-sm text-gray-500 mt-1">Mova tarefas para cá quando começar a trabalhar nelas</p>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {tasks['in-progress'].map((task) => (
+                    <MobileTaskCard key={task.id} task={task} />
+                  ))}
+                </div>
+              )
             )}
-          </TabsContent>
 
-          <TabsContent value="completed" className="mt-0">
-            {loading ? (
-              <div className="space-y-3">
-                {Array(3).fill(0).map((_, i) => (
-                  <Skeleton key={i} className="h-24 w-full rounded-lg" />
-                ))}
-              </div>
-            ) : tasks.completed.length === 0 ? (
-              <Card className="p-6 text-center">
-                <CheckCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-600 font-medium">Nenhuma tarefa concluída</p>
-                <p className="text-sm text-gray-500 mt-1">Complete suas tarefas para vê-las aqui</p>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {tasks.completed.map((task) => (
-                  <MobileTaskCard key={task.id} task={task} />
-                ))}
-              </div>
+            {activeTab === 'completed' && (
+              loading ? (
+                <div className="space-y-3">
+                  {Array(3).fill(0).map((_, i) => (
+                    <Skeleton key={i} className="h-24 w-full rounded-lg" />
+                  ))}
+                </div>
+              ) : tasks.completed.length === 0 ? (
+                <Card className="p-6 text-center">
+                  <CheckCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-600 font-medium">Nenhuma tarefa concluída</p>
+                  <p className="text-sm text-gray-500 mt-1">Complete suas tarefas para vê-las aqui</p>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {tasks.completed.map((task) => (
+                    <MobileTaskCard key={task.id} task={task} />
+                  ))}
+                </div>
+              )
             )}
-          </TabsContent>
-        </Tabs>
-        )}
+          </div>
+        </div>
       </div>
 
       {/* Dialog para edição de tarefa */}
