@@ -23,6 +23,25 @@ body {
   overflow-x: hidden; /* Prevenir scroll horizontal em toda a aplicação */
 }
 
+/* Estilos específicos para abas móveis */
+[data-radix-tabs-trigger] {
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+[data-radix-tabs-trigger]:focus {
+  outline: none;
+}
+
+[data-radix-tabs-content] {
+  display: block;
+}
+
+[data-radix-tabs-content][data-state="inactive"] {
+  display: none;
+}
+
 /* Animações para os cards de estatísticas */
 @keyframes fadeInUp {
   from {

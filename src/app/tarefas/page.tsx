@@ -23,7 +23,7 @@ import TaskChecklistDisplay from '@/components/ui/task-checklist-display';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import MobileTaskPanel from '@/components/tarefas/MobileTaskPanel';
 
-import { Task } from '@/types/dashboard';
+import { Task } from '@/lib/types/dashboard';
 import { Discipline } from '@/lib/supabase';
 
 const TaskPanel = () => {
