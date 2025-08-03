@@ -7,12 +7,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import MobileFacultyView from '@/components/minha-faculdade/MobileFacultyView';
 
 export default function MinhaFaculdadePage() {
   const { user } = useAuth();
   const router = useRouter();
   const [userFaculties, setUserFaculties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     async function loadUserFaculties() {
@@ -56,6 +59,17 @@ export default function MinhaFaculdadePage() {
     loadUserFaculties();
   }, [user]);
 
+  // Render mobile view for mobile devices
+  if (isMobile) {
+    return (
+      <MobileFacultyView 
+        userFaculties={userFaculties} 
+        loading={loading} 
+      />
+    );
+  }
+
+  // Render desktop view for larger screens
   return (
     <div className="container mx-auto px-4 py-8">
       <header className="mb-8">
@@ -163,4 +177,4 @@ export default function MinhaFaculdadePage() {
       )}
     </div>
   );
-} 
+}

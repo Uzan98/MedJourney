@@ -12,9 +12,10 @@ interface CreateEventModalProps {
   facultyId: number;
   onEventCreated: () => void;
   isAdmin: boolean; // Nova propriedade para verificar se o usuário é administrador
+  isMobile?: boolean; // Nova propriedade para responsividade
 }
 
-export function CreateEventModal({ isOpen, onClose, facultyId, onEventCreated, isAdmin }: CreateEventModalProps) {
+export function CreateEventModal({ isOpen, onClose, facultyId, onEventCreated, isAdmin, isMobile = false }: CreateEventModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
@@ -130,19 +131,19 @@ export function CreateEventModal({ isOpen, onClose, facultyId, onEventCreated, i
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
-      <div className="bg-white rounded-lg shadow-lg max-w-[600px] w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">Novo Evento</h2>
+      <div className={`bg-white rounded-lg shadow-lg ${isMobile ? 'max-w-[95vw]' : 'max-w-[600px]'} w-full max-h-[90vh] overflow-y-auto`}>
+        <div className={`${isMobile ? 'p-4' : 'p-6'}`}>
+          <div className={`flex justify-between items-center ${isMobile ? 'mb-3' : 'mb-4'}`}>
+            <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold`}>Novo Evento</h2>
             <button 
               onClick={handleClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width={isMobile ? "20" : "24"} height={isMobile ? "20" : "24"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
             </button>
           </div>
           
-          <div className="text-sm text-gray-500 mb-4">
+          <div className={`text-sm text-gray-500 ${isMobile ? 'mb-3' : 'mb-4'}`}>
             {isAdmin ? 
               "Crie um novo evento para compartilhar com os membros da faculdade." : 
               "Apenas administradores podem criar eventos para a faculdade."}
@@ -327,4 +328,4 @@ export function CreateEventModal({ isOpen, onClose, facultyId, onEventCreated, i
       </div>
     </div>
   );
-} 
+}

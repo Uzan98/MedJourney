@@ -266,7 +266,7 @@ export function UploadMaterialModal({ isOpen, onClose, facultyId, onMaterialUplo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Adicionar Material de Estudo</DialogTitle>
           <DialogDescription>
@@ -289,7 +289,7 @@ export function UploadMaterialModal({ isOpen, onClose, facultyId, onMaterialUplo
             />
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label htmlFor="periodo" className="text-sm font-medium">
                 Período
@@ -433,7 +433,7 @@ export function UploadMaterialModal({ isOpen, onClose, facultyId, onMaterialUplo
                   <div className="flex items-center space-x-3">
                     {getFileIcon(file.name)}
                     <div>
-                      <p className="text-sm font-medium truncate max-w-[250px]">
+                      <p className="text-sm font-medium truncate max-w-[200px] sm:max-w-[250px]">
                         {file.name}
                       </p>
                       <p className="text-xs text-gray-500">
@@ -463,11 +463,11 @@ export function UploadMaterialModal({ isOpen, onClose, facultyId, onMaterialUplo
             </div>
           )}
           
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isUploading}>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={onClose} disabled={isUploading} className="w-full sm:w-auto">
               Cancelar
             </Button>
-            <Button type="submit" disabled={isUploading || !file}>
+            <Button type="submit" disabled={isUploading || !file} className="w-full sm:w-auto">
               {isUploading ? <Spinner size="sm" className="mr-2" /> : null}
               {isUploading ? 'Enviando...' : 'Enviar Material'}
             </Button>
@@ -476,4 +476,4 @@ export function UploadMaterialModal({ isOpen, onClose, facultyId, onMaterialUplo
       </DialogContent>
     </Dialog>
   );
-} 
+}

@@ -33,12 +33,14 @@ import { ptBR } from 'date-fns/locale';
 import { FacultyTabMenu } from '@/components/comunidade/FacultyTabMenu';
 import { CreateEventModal } from '@/components/comunidade/CreateEventModal';
 import { EventsList } from '@/components/comunidade/EventsList';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 export default function FacultyDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [faculty, setFaculty] = useState<Faculty | null>(null);
   const [members, setMembers] = useState<FacultyMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -999,9 +1001,9 @@ export default function FacultyDetailsPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className={`container mx-auto ${isMobile ? 'px-2 py-4' : 'px-4 py-6'} overflow-x-hidden w-full box-border`}>
       {/* Cabeçalho */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-700 rounded-xl shadow-lg p-0 mb-8">
+      <div className={`relative overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-700 rounded-xl shadow-lg p-0 ${isMobile ? 'mb-4' : 'mb-8'}`}>
         {/* Padrão de fundo */}
         <div className="absolute inset-0 opacity-10">
           <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -1020,42 +1022,42 @@ export default function FacultyDetailsPage() {
         
         <div className="relative z-10">
           {/* Conteúdo superior */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 pb-0">
-            <div className="flex items-center gap-4">
-              <div className="bg-white p-3 rounded-xl shadow-md transform transition-transform hover:scale-105">
-                <School className="h-8 w-8 text-purple-600" />
+          <div className={`flex flex-col md:flex-row justify-between items-start md:items-center ${isMobile ? 'p-4 pb-0' : 'p-6 pb-0'} max-w-full`}>
+            <div className={`flex items-center ${isMobile ? 'gap-3' : 'gap-4'} max-w-full`}>
+              <div className={`bg-white ${isMobile ? 'p-2' : 'p-3'} rounded-xl shadow-md transform transition-transform hover:scale-105`}>
+                <School className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-purple-600`} />
               </div>
           <div>
                 <div className="flex items-center">
-                  <h1 className="text-2xl md:text-3xl font-bold text-white">{faculty?.name}</h1>
+                  <h1 className={`${isMobile ? 'text-lg' : 'text-2xl md:text-3xl'} font-bold text-white`}>{faculty?.name}</h1>
                   {faculty?.is_public ? (
-                    <Badge className="ml-2 bg-emerald-400/20 text-emerald-100 border-none">
+                    <Badge className={`${isMobile ? 'ml-1 text-xs' : 'ml-2'} bg-emerald-400/20 text-emerald-100 border-none`}>
                       Público
                     </Badge>
                   ) : (
-                    <Badge className="ml-2 bg-amber-400/20 text-amber-100 border-none">
+                    <Badge className={`${isMobile ? 'ml-1 text-xs' : 'ml-2'} bg-amber-400/20 text-amber-100 border-none`}>
                       Privado
                     </Badge>
                   )}
                 </div>
-                <p className="text-purple-100 flex items-center gap-1">
+                <p className={`text-purple-100 flex items-center gap-1 ${isMobile ? 'text-xs flex-wrap' : ''}`}>
                   <span>{faculty?.institution}</span>
                   {faculty?.institution && faculty?.course && (
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-purple-300/70"></span>
+                    <span className={`inline-block ${isMobile ? 'w-1 h-1' : 'w-1.5 h-1.5'} rounded-full bg-purple-300/70`}></span>
                   )}
                   <span>{faculty?.course}</span>
                 </p>
               </div>
         </div>
-          <div className="flex mt-4 md:mt-0 space-x-2">
+          <div className={`flex ${isMobile ? 'mt-3 w-full gap-2' : 'mt-4 md:mt-0 space-x-2'}`}>
             <Button 
                 variant="secondary" 
               size="sm"
               onClick={handleShareCode}
-                className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm"
+                className={`bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm ${isMobile ? 'flex-1 text-xs' : ''}`}
             >
-              <Share2 className="h-4 w-4 mr-2" />
-              Compartilhar
+              <Share2 className={`${isMobile ? 'h-3 w-3 mr-1' : 'h-4 w-4 mr-2'}`} />
+              {isMobile ? 'Compartilhar' : 'Compartilhar'}
           </Button>
           
           {isAdmin && (
@@ -1063,38 +1065,38 @@ export default function FacultyDetailsPage() {
                   variant="secondary" 
                 size="sm"
                 onClick={openManageMembersModal}
-                  className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm"
+                  className={`bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm ${isMobile ? 'flex-1 text-xs' : ''}`}
               >
-                <Users className="h-4 w-4 mr-2" />
-                Gerenciar Membros
+                <Users className={`${isMobile ? 'h-3 w-3 mr-1' : 'h-4 w-4 mr-2'}`} />
+                {isMobile ? 'Membros' : 'Gerenciar Membros'}
             </Button>
           )}
         </div>
       </div>
       
           {/* Descrição */}
-          <div className="px-6 pt-4 pb-2">
-            <p className="text-white/90 text-sm md:text-base line-clamp-2 hover:line-clamp-none transition-all duration-300 cursor-pointer">
+          <div className={`${isMobile ? 'px-4 pt-3 pb-2' : 'px-6 pt-4 pb-2'}`}>
+            <p className={`text-white/90 ${isMobile ? 'text-xs' : 'text-sm md:text-base'} line-clamp-2 hover:line-clamp-none transition-all duration-300 cursor-pointer`}>
               {faculty?.description || "Sem descrição disponível"}
             </p>
           </div>
 
           {/* Badges */}
-          <div className="px-6 pt-2 pb-6 flex flex-wrap gap-2">
-            <Badge className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm transition-all duration-200 hover:scale-105">
-            <Users className="h-3 w-3 mr-1" />
+          <div className={`${isMobile ? 'px-4 pt-2 pb-4' : 'px-6 pt-2 pb-6'} flex flex-wrap gap-2`}>
+            <Badge className={`bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm transition-all duration-200 hover:scale-105 ${isMobile ? 'text-xs' : ''}`}>
+            <Users className={`${isMobile ? 'h-2 w-2 mr-1' : 'h-3 w-3 mr-1'}`} />
               {faculty?.member_count || 0} {faculty?.member_count === 1 ? 'membro' : 'membros'}
                 </Badge>
           
             {faculty?.semester && (
-              <Badge className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm transition-all duration-200 hover:scale-105">
-              <School className="h-3 w-3 mr-1" />
+              <Badge className={`bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm transition-all duration-200 hover:scale-105 ${isMobile ? 'text-xs' : ''}`}>
+              <School className={`${isMobile ? 'h-2 w-2 mr-1' : 'h-3 w-3 mr-1'}`} />
               {faculty.semester}
                 </Badge>
           )}
           
-            <Badge className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm transition-all duration-200 hover:scale-105">
-            <Calendar className="h-3 w-3 mr-1" />
+            <Badge className={`bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-sm transition-all duration-200 hover:scale-105 ${isMobile ? 'text-xs' : ''}`}>
+            <Calendar className={`${isMobile ? 'h-2 w-2 mr-1' : 'h-3 w-3 mr-1'}`} />
               {faculty ? `Criado em ${new Date(faculty.created_at).toLocaleDateString()}` : "Data desconhecida"}
                 </Badge>
           </div>
@@ -1102,9 +1104,9 @@ export default function FacultyDetailsPage() {
       </div>
 
       {/* Layout principal com conteúdo e barra lateral */}
-      <div className="flex flex-col md:flex-row gap-6">
+      <div className={`flex flex-col ${isMobile ? 'gap-4' : 'md:flex-row gap-6'} overflow-x-hidden`}>
         {/* Conteúdo principal */}
-        <div className="w-full md:w-2/3">
+        <div className={`w-full ${isMobile ? '' : 'md:w-2/3'} min-w-0`}>
           {/* Tabs de navegação */}
           <FacultyTabMenu activeTab={activeTab} onChange={(tab) => {
             setActiveTab(tab);
@@ -1118,32 +1120,32 @@ export default function FacultyDetailsPage() {
             
             {/* Conteúdo do Feed */}
           {activeTab === 'feed' && (
-            <div className="space-y-4">
+            <div className={`${isMobile ? 'space-y-3' : 'space-y-4'} max-w-full`}>
               {/* Criar post */}
-              <div className="rounded-lg overflow-hidden shadow-sm border border-gray-100">
-                <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4 text-white">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-semibold flex items-center">
-                      <MessageSquare className="h-5 w-5 mr-2 text-white" />
+              <div className="rounded-lg overflow-hidden shadow-sm border border-gray-100 max-w-full">
+                <div className={`bg-gradient-to-r from-purple-600 to-blue-600 ${isMobile ? 'px-4 py-3' : 'px-6 py-4'} text-white`}>
+                  <div className={`flex ${isMobile ? 'flex-col gap-2' : 'justify-between items-center'}`}>
+                    <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold flex items-center`}>
+                      <MessageSquare className={`${isMobile ? 'h-4 w-4 mr-2' : 'h-5 w-5 mr-2'} text-white`} />
                       Feed da Faculdade
                     </h2>
                     
-                    <Badge className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm">
+                    <Badge className={`bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm ${isMobile ? 'text-xs self-start' : ''}`}>
                       {posts.length} {posts.length === 1 ? 'publicação' : 'publicações'}
                     </Badge>
                   </div>
                   
-                  <p className="text-sm text-white/80 mt-1">
+                  <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-white/80 mt-1`}>
                     Compartilhe informações, materiais e novidades com os membros da faculdade.
                   </p>
                 </div>
                 
-                <div className="bg-white p-6">
-                  <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow mb-6">
-                <CardContent className="pt-6">
+                <div className={`bg-white ${isMobile ? 'p-4' : 'p-6'} max-w-full`}>
+                  <Card className={`border border-gray-100 shadow-sm hover:shadow-md transition-shadow ${isMobile ? 'mb-4' : 'mb-6'} max-w-full`}>
+                <CardContent className={`${isMobile ? 'pt-4' : 'pt-6'}`}>
                   <form onSubmit={handleCreatePost}>
-                    <div className="flex gap-3">
-                          <Avatar className="h-10 w-10 border-2 border-purple-100">
+                    <div className={`flex ${isMobile ? 'gap-2' : 'gap-3'}`}>
+                          <Avatar className={`${isMobile ? 'h-8 w-8' : 'h-10 w-10'} border-2 border-purple-100`}>
                             <AvatarFallback className="bg-purple-50 text-purple-700">{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
@@ -1151,32 +1153,32 @@ export default function FacultyDetailsPage() {
                           placeholder="Título (opcional)"
                           value={postTitle}
                           onChange={(e) => setPostTitle(e.target.value)}
-                              className="mb-3 border-gray-200 focus:border-purple-500 focus:ring-purple-500"
+                              className={`${isMobile ? 'mb-2 text-sm' : 'mb-3'} border-gray-200 focus:border-purple-500 focus:ring-purple-500 max-w-full`}
                         />
                         <Input
                           placeholder="Compartilhe uma novidade, dúvida ou material..."
                           value={postContent}
                           onChange={(e) => setPostContent(e.target.value)}
-                              className="mb-3 border-gray-200 focus:border-purple-500 focus:ring-purple-500"
+                              className={`${isMobile ? 'mb-2 text-sm' : 'mb-3'} border-gray-200 focus:border-purple-500 focus:ring-purple-500 max-w-full`}
                         />
-                        <div className="flex justify-between items-center">
-                          <div className="flex gap-2">
+                        <div className={`flex ${isMobile ? 'flex-col gap-2' : 'justify-between items-center'}`}>
+                          <div className={`flex ${isMobile ? 'justify-start' : 'gap-2'}`}>
                             <Button 
                               type="button" 
-                              size="sm" 
+                              size={isMobile ? "sm" : "sm"}
                               variant="outline"
                               onClick={() => setShowLinkInput(true)}
-                                  className="border-gray-200 hover:bg-purple-50 hover:text-purple-700"
+                                  className={`border-gray-200 hover:bg-purple-50 hover:text-purple-700 ${isMobile ? 'text-xs' : ''}`}
                             >
-                              <FileText className="h-4 w-4 mr-2" />
+                              <FileText className={`${isMobile ? 'h-3 w-3 mr-1' : 'h-4 w-4 mr-2'}`} />
                               Link
                             </Button>
                     </div>
                           <Button 
                             type="submit" 
-                            size="sm" 
+                            size={isMobile ? "sm" : "sm"}
                             disabled={!postContent.trim() || isSubmittingPost}
-                                className="bg-purple-600 hover:bg-purple-700"
+                                className={`bg-purple-600 hover:bg-purple-700 ${isMobile ? 'text-xs w-full' : ''}`}
                           >
                             {isSubmittingPost ? <Spinner size="sm" className="mr-2" /> : null}
                             Publicar
@@ -1714,12 +1716,12 @@ export default function FacultyDetailsPage() {
                 
             {/* Conteúdo de Membros */}
           {activeTab === 'members' && (
-            <div className="space-y-4">
+            <div className={`${isMobile ? 'space-y-3' : 'space-y-4'}`}>
               <div className="rounded-lg overflow-hidden shadow-sm border border-gray-100">
-                <div className="bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-4 text-white">
-              <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-semibold flex items-center">
-                      <Users className="h-5 w-5 mr-2 text-white" />
+                <div className={`bg-gradient-to-r from-amber-500 to-orange-600 ${isMobile ? 'px-4 py-3' : 'px-6 py-4'} text-white`}>
+              <div className={`flex ${isMobile ? 'flex-col gap-2' : 'justify-between items-center'}`}>
+                    <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold flex items-center`}>
+                      <Users className={`${isMobile ? 'h-4 w-4 mr-2' : 'h-5 w-5 mr-2'} text-white`} />
                   Membros
                     </h2>
                     
@@ -1728,20 +1730,20 @@ export default function FacultyDetailsPage() {
                         variant="outline" 
                         size="sm" 
                         onClick={openManageMembersModal}
-                        className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-none"
+                        className={`bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-none ${isMobile ? 'text-xs self-start' : ''}`}
                       >
                     Gerenciar
                   </Button>
                 )}
               </div>
                   
-                  <p className="text-sm text-white/80 mt-1">
+                  <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-white/80 mt-1`}>
                     {faculty?.member_count || 0} {faculty?.member_count === 1 ? 'membro' : 'membros'} participando neste ambiente.
                   </p>
                 </div>
                 
-                <div className="bg-white p-6">
-              <div className="space-y-3">
+                <div className={`bg-white ${isMobile ? 'p-4' : 'p-6'}`}>
+              <div className={`${isMobile ? 'space-y-2' : 'space-y-3'}`}>
                 {members.length > 0 ? (
                   members.slice(0, 5).map((member) => {
                     const userName = member.user?.name || member.user?.email?.split('@')[0] || 'Usuário';
@@ -1749,21 +1751,21 @@ export default function FacultyDetailsPage() {
                     const isAdmin = member.role === 'admin';
                     
                     return (
-                      <div key={member.user_id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                      <div key={member.user_id} className={`flex items-center justify-between ${isMobile ? 'p-2' : 'p-2'} rounded-md hover:bg-muted`}>
                         <div className="flex items-center">
-                              <Avatar className={`h-10 w-10 mr-3 ${isAdmin ? 'ring-2 ring-amber-500 border-2 border-white' : ''}`}>
+                              <Avatar className={`${isMobile ? 'h-8 w-8 mr-2' : 'h-10 w-10 mr-3'} ${isAdmin ? 'ring-2 ring-amber-500 border-2 border-white' : ''}`}>
                             <AvatarImage src={member.user?.avatar_url} />
                                 <AvatarFallback className={isAdmin ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' : 'bg-gray-100'}>
                               {userInitial}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                                <p className="font-medium">{userName}</p>
-                            <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
+                                <p className={`font-medium ${isMobile ? 'text-sm' : ''}`}>{userName}</p>
+                            <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground capitalize`}>{member.role}</p>
                           </div>
                         </div>
                         {isAdmin && (
-                              <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200">Admin</Badge>
+                              <Badge variant="secondary" className={`bg-amber-100 text-amber-800 hover:bg-amber-200 ${isMobile ? 'text-xs' : ''}`}>Admin</Badge>
                         )}
                       </div>
                     );
@@ -1794,25 +1796,25 @@ export default function FacultyDetailsPage() {
         </div>
           
         {/* Barra lateral */}
-        <div className="w-full md:w-1/3 space-y-6">
+        <div className={`w-full ${isMobile ? 'space-y-4' : 'md:w-1/3 space-y-6'} overflow-x-hidden min-w-0`}>
           {/* Card de eventos */}
-          <Card>
-            <CardHeader className="pb-3">
+          <Card className="max-w-full">
+            <CardHeader className={`${isMobile ? 'pb-2' : 'pb-3'}`}>
               <div className="flex justify-between items-center">
-              <CardTitle className="text-lg flex items-center">
-                  <Calendar className="h-5 w-5 mr-2 text-blue-500" />
+              <CardTitle className={`${isMobile ? 'text-base' : 'text-lg'} flex items-center`}>
+                  <Calendar className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} mr-2 text-blue-500`} />
                   Próximos Eventos
               </CardTitle>
                 {isAdmin && (
-                  <Button variant="ghost" size="sm" onClick={openCreateEventModal}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Novo
+                  <Button variant="ghost" size={isMobile ? "sm" : "sm"} onClick={openCreateEventModal}>
+                    <Plus className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} mr-1`} />
+                    {!isMobile && 'Novo'}
                   </Button>
                 )}
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+            <CardContent className={isMobile ? 'px-3' : ''}>
+              <div className={`${isMobile ? 'space-y-2' : 'space-y-3'}`}>
                 {faculty ? (
                   <EventsList facultyId={faculty.id} limit={3} />
                 ) : (
@@ -1822,11 +1824,11 @@ export default function FacultyDetailsPage() {
                 )}
               </div>
             </CardContent>
-            <CardFooter className="pt-0">
+            <CardFooter className={`pt-0 ${isMobile ? 'px-3' : ''}`}>
               <Button 
                 variant="ghost" 
                 className="w-full" 
-                size="sm"
+                size={isMobile ? "sm" : "sm"}
                 onClick={() => router.push(`/minha-faculdade/${faculty?.id}/eventos`)}
               >
                 Ver todos os eventos
@@ -1836,30 +1838,42 @@ export default function FacultyDetailsPage() {
 
           {/* Configurações (apenas para administradores) */}
           {isAdmin && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center">
-                  <Settings className="h-5 w-5 mr-2 text-blue-500" />
+            <Card className="max-w-full">
+              <CardHeader className={`${isMobile ? 'pb-2' : 'pb-3'}`}>
+                <CardTitle className={`${isMobile ? 'text-base' : 'text-lg'} flex items-center`}>
+                  <Settings className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} mr-2 text-blue-500`} />
                   Configurações
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className={isMobile ? 'px-3' : ''}>
                 <div className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Editar informações
+                  <Button variant="outline" className="w-full justify-start" size={isMobile ? "sm" : "default"}>
+                    <Settings className={`mr-2 ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+                    <span className={isMobile ? 'text-sm' : ''}>
+                      Editar informações
+                    </span>
                   </Button>
                   <Button 
                     variant="outline" 
                     className="w-full justify-start"
+                    size={isMobile ? "sm" : "default"}
                     onClick={openManageMembersModal}
                   >
-                    <Users className="mr-2 h-4 w-4" />
-                    Gerenciar membros
+                    <Users className={`mr-2 ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+                    <span className={isMobile ? 'text-sm' : ''}>
+                      Gerenciar membros
+                    </span>
                   </Button>
                   <Separator className="my-2" />
-                  <Button variant="destructive" className="w-full" onClick={() => setDeleteConfirmationOpen(true)}>
-                    Excluir ambiente
+                  <Button 
+                    variant="destructive" 
+                    className="w-full" 
+                    size={isMobile ? "sm" : "default"}
+                    onClick={() => setDeleteConfirmationOpen(true)}
+                  >
+                    <span className={isMobile ? 'text-sm' : ''}>
+                      Excluir ambiente
+                    </span>
                   </Button>
                 </div>
               </CardContent>
@@ -1885,28 +1899,28 @@ export default function FacultyDetailsPage() {
       {/* Modal para criar nova discussão */}
       {createTopicModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-lg max-w-[600px] w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">Nova Discussão</h2>
+          <div className={`bg-white rounded-lg shadow-lg ${isMobile ? 'max-w-[95vw]' : 'max-w-[600px]'} w-full max-h-[90vh] overflow-y-auto`}>
+            <div className={`${isMobile ? 'p-4' : 'p-6'}`}>
+              <div className={`flex justify-between items-center ${isMobile ? 'mb-3' : 'mb-4'}`}>
+                <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold`}>Nova Discussão</h2>
                 <button 
                   onClick={() => setCreateTopicModalOpen(false)}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width={isMobile ? "20" : "24"} height={isMobile ? "20" : "24"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                 </button>
               </div>
               
-              <div className="text-sm text-gray-500 mb-4">
+              <div className={`text-sm text-gray-500 ${isMobile ? 'mb-3' : 'mb-4'}`}>
                 Crie um novo tópico no fórum de dúvidas. Seja específico para facilitar as respostas.
               </div>
               
-              <form onSubmit={handleCreateTopic} className="space-y-4">
+              <form onSubmit={handleCreateTopic} className={`${isMobile ? 'space-y-3' : 'space-y-4'}`}>
                 <div className="space-y-2">
                   <label htmlFor="title" className="block text-sm font-medium">Título</label>
                   <input
                     id="title"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className={`w-full ${isMobile ? 'px-2 py-2' : 'px-3 py-2'} border border-gray-300 rounded-md text-sm`}
                     placeholder="Digite um título claro e objetivo"
                     value={topicTitle}
                     onChange={(e) => setTopicTitle(e.target.value)}
@@ -1917,24 +1931,24 @@ export default function FacultyDetailsPage() {
                   <label htmlFor="content" className="block text-sm font-medium">Descrição da dúvida</label>
                   <textarea
                     id="content"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md min-h-[150px]"
+                    className={`w-full ${isMobile ? 'px-2 py-2 min-h-[120px]' : 'px-3 py-2 min-h-[150px]'} border border-gray-300 rounded-md text-sm`}
                     placeholder="Descreva sua dúvida com detalhes..."
                     value={topicContent}
                     onChange={(e) => setTopicContent(e.target.value)}
                   />
                 </div>
                 
-                <div className="flex justify-end gap-2 pt-4">
+                <div className={`flex ${isMobile ? 'flex-col gap-2' : 'justify-end gap-2'} pt-4`}>
                   <button
                     type="button"
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm"
+                    className={`${isMobile ? 'w-full order-2' : ''} px-4 py-2 border border-gray-300 rounded-md text-sm`}
                     onClick={() => setCreateTopicModalOpen(false)}
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm"
+                    className={`${isMobile ? 'w-full order-1' : ''} px-4 py-2 bg-blue-600 text-white rounded-md text-sm`}
                     disabled={isSubmittingTopic || !topicTitle.trim() || !topicContent.trim()}
                   >
                     {isSubmittingTopic ? 'Publicando...' : 'Publicar Dúvida'}
@@ -1957,16 +1971,28 @@ export default function FacultyDetailsPage() {
       {/* Modal de confirmação de exclusão */}
       {deleteConfirmationOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-lg max-w-[400px] w-full p-6">
-            <h3 className="text-lg font-semibold mb-4">Confirmar Exclusão</h3>
-            <p className="text-sm text-gray-700 mb-6">
+          <div className={`bg-white rounded-lg shadow-lg ${isMobile ? 'max-w-[90vw]' : 'max-w-[400px]'} w-full ${isMobile ? 'p-4' : 'p-6'}`}>
+            <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold ${isMobile ? 'mb-3' : 'mb-4'}`}>Confirmar Exclusão</h3>
+            <p className={`text-sm text-gray-700 ${isMobile ? 'mb-4' : 'mb-6'}`}>
               Tem certeza de que deseja excluir o ambiente "{faculty?.name}"? Esta ação é irreversível.
             </p>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setDeleteConfirmationOpen(false)} disabled={isDeleting}>
+            <div className={`flex ${isMobile ? 'flex-col gap-2' : 'justify-end gap-2'}`}>
+              <Button 
+                variant="outline" 
+                onClick={() => setDeleteConfirmationOpen(false)} 
+                disabled={isDeleting}
+                size={isMobile ? "sm" : "default"}
+                className={isMobile ? 'order-2' : ''}
+              >
                 Cancelar
               </Button>
-              <Button variant="destructive" onClick={handleConfirmDeleteFaculty} disabled={isDeleting}>
+              <Button 
+                variant="destructive" 
+                onClick={handleConfirmDeleteFaculty} 
+                disabled={isDeleting}
+                size={isMobile ? "sm" : "default"}
+                className={isMobile ? 'order-1' : ''}
+              >
                 {isDeleting ? <Spinner size="sm" /> : 'Excluir'}
               </Button>
             </div>
@@ -1981,8 +2007,9 @@ export default function FacultyDetailsPage() {
           facultyId={faculty.id}
           onEventCreated={handleEventCreated}
           isAdmin={isAdmin}
+          isMobile={isMobile}
         />
       )}
     </div>
   );
-} 
+}

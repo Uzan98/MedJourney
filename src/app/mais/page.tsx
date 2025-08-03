@@ -16,7 +16,8 @@ import {
   MessageSquare,
   Sparkles,
   CheckSquare,
-  Layers
+  Layers,
+  School
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -79,6 +80,14 @@ export default function MaisPage() {
       description: "Estude em grupo",
       bgColor: "bg-indigo-50",
       iconColor: "text-indigo-600"
+    },
+    {
+      path: "/minha-faculdade",
+      label: "Minha Faculdade",
+      icon: <School className="h-6 w-6" />,
+      description: "Informações da faculdade",
+      bgColor: "bg-emerald-50",
+      iconColor: "text-emerald-600"
     },
     {
       path: "/perfil",

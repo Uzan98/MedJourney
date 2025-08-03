@@ -220,7 +220,7 @@ export function ManageMembersModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Gerenciar Membros</DialogTitle>
             <DialogDescription>
@@ -249,24 +249,24 @@ export function ManageMembersModal({
                       const isProcessing = processingMemberId === member.user_id;
                       
                       return (
-                        <div key={member.user_id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                          <div className="flex items-center">
-                            <Avatar className={`h-8 w-8 mr-2 ${member.role === 'admin' ? 'border-2 border-blue-500' : ''}`}>
+                        <div key={member.user_id} className="flex flex-col sm:flex-row sm:items-center justify-between p-2 rounded-md hover:bg-muted gap-2">
+                          <div className="flex items-center min-w-0 flex-1">
+                            <Avatar className={`h-8 w-8 mr-2 flex-shrink-0 ${member.role === 'admin' ? 'border-2 border-blue-500' : ''}`}>
                               <AvatarImage src={member.user?.avatar_url} />
                               <AvatarFallback className={member.role === 'admin' ? 'bg-blue-100 text-blue-800' : ''}>
                                 {userInitial}
                               </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <p className="text-sm font-medium">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium truncate">
                                 {userName}
                                 {isCurrentUser && <span className="text-xs text-muted-foreground ml-2">(Você)</span>}
                               </p>
-                              <p className="text-xs text-muted-foreground">{member.user?.email}</p>
+                              <p className="text-xs text-muted-foreground truncate">{member.user?.email}</p>
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                             {isProcessing ? (
                               <Spinner size="sm" />
                             ) : (
@@ -276,7 +276,7 @@ export function ManageMembersModal({
                                   onValueChange={(value) => handleRoleChange(member.user_id, value)}
                                   disabled={!isOwner && member.role === 'admin'}
                                 >
-                                  <SelectTrigger className="w-28">
+                                  <SelectTrigger className="w-20 sm:w-28">
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -350,32 +350,32 @@ export function ManageMembersModal({
                       const bannedDate = new Date(bannedUser.banned_at).toLocaleDateString('pt-BR');
                       
                       return (
-                        <div key={bannedUser.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                          <div className="flex items-center">
-                            <Avatar className="h-8 w-8 mr-2 border-2 border-red-500">
+                        <div key={bannedUser.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-2 rounded-md hover:bg-muted gap-2">
+                          <div className="flex items-center min-w-0 flex-1">
+                            <Avatar className="h-8 w-8 mr-2 border-2 border-red-500 flex-shrink-0">
                               <AvatarImage src={bannedUser.user?.avatar_url} />
                               <AvatarFallback className="bg-red-100 text-red-800">
                                 {userInitial}
                               </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <p className="text-sm font-medium">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium truncate">
                                 {userName}
                                 <Badge variant="destructive" className="ml-2 text-xs">Banido</Badge>
                               </p>
-                              <p className="text-xs text-muted-foreground">{bannedUser.user?.email}</p>
-                              <p className="text-xs text-muted-foreground">
+                              <p className="text-xs text-muted-foreground truncate">{bannedUser.user?.email}</p>
+                              <p className="text-xs text-muted-foreground truncate">
                                 Banido em {bannedDate} por {bannedUser.banned_by_user?.name || 'Administrador'}
                               </p>
                               {bannedUser.reason && (
-                                <p className="text-xs text-muted-foreground mt-1">
+                                <p className="text-xs text-muted-foreground mt-1 truncate">
                                   <strong>Motivo:</strong> {bannedUser.reason}
                                 </p>
                               )}
                             </div>
                           </div>
                           
-                          <div className="flex items-center">
+                          <div className="flex items-center flex-shrink-0">
                             {isProcessing ? (
                               <Spinner size="sm" />
                             ) : (
@@ -383,10 +383,10 @@ export function ManageMembersModal({
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleUnbanUser(bannedUser.user_id)}
-                                className="flex items-center gap-1"
+                                className="flex items-center gap-1 text-xs sm:text-sm"
                               >
                                 <UserCheck className="h-4 w-4" />
-                                <span>Desbanir</span>
+                                <span className="hidden sm:inline">Desbanir</span>
                               </Button>
                             )}
                           </div>
@@ -403,11 +403,11 @@ export function ManageMembersModal({
             </TabsContent>
           </Tabs>
           
-          <DialogFooter className="sm:justify-between">
-            <Button variant="outline" onClick={onClose}>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0 sm:justify-between">
+            <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
               Fechar
             </Button>
-            <Button onClick={loadData} disabled={isLoading}>
+            <Button onClick={loadData} disabled={isLoading} className="w-full sm:w-auto">
               Atualizar lista
             </Button>
           </DialogFooter>
@@ -416,7 +416,7 @@ export function ManageMembersModal({
 
       {/* Diálogo de confirmação de banimento */}
       <Dialog open={showBanDialog} onOpenChange={setShowBanDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Banir Usuário</DialogTitle>
             <DialogDescription>
@@ -472,4 +472,4 @@ export function ManageMembersModal({
       </Dialog>
     </>
   );
-} 
+}
