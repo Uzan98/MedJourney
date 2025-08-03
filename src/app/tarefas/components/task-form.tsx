@@ -14,7 +14,7 @@ import "react-datepicker/dist/react-datepicker.css"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
-import { Task } from '@/types/dashboard';
+import { Task } from '@/lib/types/dashboard';
 import { TaskFormData } from '@/lib/services/task.service';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 import { Discipline } from '@/lib/supabase';

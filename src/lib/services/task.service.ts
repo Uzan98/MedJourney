@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { Task } from '@/types/dashboard';
+import { Task } from '@/lib/types/dashboard';
 
 import { ChecklistItem } from '@/lib/types/dashboard';
 

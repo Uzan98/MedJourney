@@ -26,12 +26,12 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import TaskForm from '../../app/tarefas/components/task-form';
+import TaskForm from '@/app/tarefas/components/task-form';
 import { TaskService } from '@/lib/services/task.service';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 import { toast } from 'sonner';
 import TaskChecklistDisplay from '@/components/ui/task-checklist-display';
-import { Task } from '@/types/dashboard';
+import { Task } from '@/lib/types/dashboard';
 import { Discipline } from '@/lib/supabase';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
