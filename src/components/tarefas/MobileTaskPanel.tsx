@@ -68,6 +68,12 @@ const MobileTaskPanel: React.FC<MobileTaskPanelProps> = ({
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [activeTab, setActiveTab] = useState('pending');
   const [showFilters, setShowFilters] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Garantir hidratação adequada para evitar problemas de SSR
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   // Renderizar prioridade da tarefa
   const renderPriorityBadge = (priority: string) => {
@@ -328,7 +334,14 @@ const MobileTaskPanel: React.FC<MobileTaskPanelProps> = ({
 
       {/* Conteúdo principal */}
       <div className="px-4 pt-4">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        {!isHydrated ? (
+          <div className="space-y-3">
+            {Array(3).fill(0).map((_, i) => (
+              <Skeleton key={i} className="h-24 w-full rounded-lg" />
+            ))}
+          </div>
+        ) : (
+        <Tabs key="mobile-tabs" value={activeTab} onValueChange={setActiveTab} className="w-full" defaultValue="pending">
           <TabsList className="grid w-full grid-cols-3 mb-4">
             <TabsTrigger value="pending" className="text-xs">
               <CircleDot className="h-4 w-4 mr-1" />
@@ -410,6 +423,7 @@ const MobileTaskPanel: React.FC<MobileTaskPanelProps> = ({
             )}
           </TabsContent>
         </Tabs>
+        )}
       </div>
 
       {/* Dialog para edição de tarefa */}
