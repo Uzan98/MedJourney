@@ -21,7 +21,8 @@ import {
   Layers,
   School,
   CreditCard,
-  GraduationCap
+  GraduationCap,
+  CalendarDays
 } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -154,6 +155,11 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
       path: "/minha-faculdade",
       label: "Minha Faculdade",
       icon: <School className="h-5 w-5 flex-shrink-0" />
+    },
+    {
+      path: "/planner",
+      label: "Planner",
+      icon: <CalendarDays className="h-5 w-5 flex-shrink-0" />
     },
     {
       path: "/admin",

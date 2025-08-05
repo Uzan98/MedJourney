@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
+import { Toaster as SonnerToaster } from 'sonner';
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import ClientLayout from './ClientLayout';
 
@@ -104,6 +105,7 @@ export default function RootLayout({
         
         {/* Componente de Toast para notificações */}
         <Toaster position="top-right" />
+        <SonnerToaster position="top-center" richColors />
         
         {/* Vercel Speed Insights */}
         <SpeedInsights />
