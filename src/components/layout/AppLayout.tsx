@@ -35,6 +35,7 @@ import {
 import CustomLogo from '@/components/ui/CustomLogo';
 import { getLogoPath, LOGO_CONFIG } from '@/config/logo';
 import SidebarMenu from './SidebarMenu';
+import MobileMenu from './MobileMenu';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationPermission from '../NotificationPermission';
 
@@ -656,7 +657,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         </header>
         
         {/* Page content */}
-        <main className="flex-1 overflow-auto p-0 sm:p-6 bg-gray-50 max-w-full w-full pb-16 md:pb-6">
+        <main className="flex-1 overflow-auto p-0 sm:p-6 bg-gray-50 max-w-full w-full pb-20 md:pb-6">
           {children}
         </main>
       </div>
@@ -665,6 +666,9 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
       {/* Componente de permissão de notificação */}
       <NotificationPermission />
+      
+      {/* Menu Mobile */}
+      <MobileMenu lockMobileSidebar={lockMobileSidebar} />
     </div>
   );
 };

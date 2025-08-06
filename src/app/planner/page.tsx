@@ -17,10 +17,12 @@ import { Task } from '@/lib/types/dashboard';
 import { GoalsService, CreateGoalData } from '@/lib/services/goals.service';
 import { EventsClientService, CreateEventData } from '@/lib/services/events-client.service';
 import { SubscriptionClientService } from '@/services/subscription-client.service';
-import EventModal from '@/components/modals/event-modal';
-import GoalModal from '@/components/modals/goal-modal';
+import SimpleEventModal from '@/components/modals/simple-event-modal';
+import SimpleGoalModal from '@/components/modals/simple-goal-modal';
 import UpdateGoalProgressModal from '@/components/modals/update-goal-progress-modal';
 import QuickGoalIncrementModal from '@/components/modals/quick-goal-increment-modal';
+import MobilePlannerPanel from '@/components/planner/MobilePlannerPanel';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -44,6 +46,7 @@ interface CalendarEvent {
 
 export default function PlannerPage() {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const [activeView, setActiveView] = useState<'today' | 'week' | 'goals'>('today');
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [calendar, setCalendar] = useState<any>(null);
@@ -54,7 +57,7 @@ export default function PlannerPage() {
   const [showUpdateProgressModal, setShowUpdateProgressModal] = useState(false);
   const [selectedGoalForUpdate, setSelectedGoalForUpdate] = useState<StudyGoal | null>(null);
   const [showQuickIncrementModal, setShowQuickIncrementModal] = useState(false);
-  const [selectedGoalForQuickIncrement, setSelectedGoalForQuickIncrement] = useState<Goal | null>(null);
+  const [selectedGoalForQuickIncrement, setSelectedGoalForQuickIncrement] = useState<StudyGoal | null>(null);
   
   // Absence states
 
@@ -93,14 +96,20 @@ export default function PlannerPage() {
       
       const calendarEvents: CalendarEvent[] = supabaseEvents.map(event => {
         // Converter datas do formato ISO para o formato esperado pelo Schedule-X (YYYY-MM-DD HH:mm)
+        // Mantém o horário original sem conversão de timezone
         const formatDateForScheduleX = (isoDate: string) => {
-          const date = new Date(isoDate);
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const day = String(date.getDate()).padStart(2, '0');
-          const hours = String(date.getHours()).padStart(2, '0');
-          const minutes = String(date.getMinutes()).padStart(2, '0');
-          return `${year}-${month}-${day} ${hours}:${minutes}`;
+          // Remove o timezone e mantém apenas a data e hora
+          const dateTimeString = isoDate.replace(/[TZ]/g, ' ').replace(/\+.*$/, '').trim();
+          const [datePart, timePart] = dateTimeString.split(' ');
+          
+          if (timePart) {
+            // Se tem hora, formata como YYYY-MM-DD HH:mm
+            const [hours, minutes] = timePart.split(':');
+            return `${datePart} ${hours}:${minutes}`;
+          } else {
+            // Se não tem hora, adiciona 00:00
+            return `${datePart} 00:00`;
+          }
         };
 
         return {
@@ -447,9 +456,13 @@ export default function PlannerPage() {
     return isSameDay(new Date(task.due_date), selectedDate);
   });
   
-  const selectedDateEvents = events.filter(event => 
-    isSameDay(new Date(event.start), selectedDate)
-  );
+  const selectedDateEvents = events.filter(event => {
+    const eventDate = new Date(event.start);
+    if (isNaN(eventDate.getTime())) {
+      return false;
+    }
+    return isSameDay(eventDate, selectedDate);
+  });
 
   const completedToday = selectedDateTasks.filter(task => task.status === 'completed').length;
 
@@ -558,6 +571,72 @@ export default function PlannerPage() {
     return minutes; // Retorna os minutos como offset
   };
 
+  // Renderizar versão mobile se for dispositivo móvel
+  if (isMobile) {
+    return (
+      <>
+        <MobilePlannerPanel
+          tasks={tasks}
+          events={events}
+          goals={goals}
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+          onCreateEvent={async () => setShowEventModal(true)}
+          onCreateGoal={async () => setShowGoalModal(true)}
+          onUpdateGoalProgress={handleUpdateGoalProgress}
+          onDeleteGoal={handleDeleteGoal}
+          onQuickIncrementProgress={handleQuickIncrementProgress}
+          onOpenUpdateProgressModal={handleOpenUpdateProgressModal}
+          onOpenQuickIncrementModal={handleOpenQuickIncrementModal}
+          onLoadEvents={loadEvents}
+          loading={loading}
+        />
+
+        {/* Modais para Mobile */}
+        <SimpleEventModal
+          isOpen={showEventModal}
+          onClose={() => setShowEventModal(false)}
+          onEventCreated={async (event) => {
+            await loadEvents();
+          }}
+        />
+
+        <SimpleGoalModal
+          isOpen={showGoalModal}
+          onClose={() => setShowGoalModal(false)}
+          onGoalCreated={async (goal) => {
+            await loadGoals();
+          }}
+        />
+
+        {selectedGoalForUpdate && (
+          <UpdateGoalProgressModal
+            isOpen={showUpdateProgressModal}
+            onClose={() => {
+              setShowUpdateProgressModal(false);
+              setSelectedGoalForUpdate(null);
+            }}
+            goal={selectedGoalForUpdate}
+            onUpdateProgress={handleUpdateGoalProgress}
+          />
+        )}
+
+        {selectedGoalForQuickIncrement && (
+          <QuickGoalIncrementModal
+            isOpen={showQuickIncrementModal}
+            onClose={() => {
+              setShowQuickIncrementModal(false);
+              setSelectedGoalForQuickIncrement(null);
+            }}
+            goal={selectedGoalForQuickIncrement}
+            onIncrementProgress={handleQuickIncrementProgress}
+          />
+        )}
+      </>
+    );
+  }
+
+  // Renderizar versão desktop
   return (
     <div className="space-y-6">
         {/* Header */}
@@ -782,7 +861,14 @@ export default function PlannerPage() {
 
 
                                       <div className="text-xs opacity-75">
-                                        {format(new Date(event.start), 'HH:mm')} - {format(new Date(event.end), 'HH:mm')}
+                                        {(() => {
+                                          const startDate = new Date(event.start);
+                                          const endDate = new Date(event.end);
+                                          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                                            return 'Horário inválido';
+                                          }
+                                          return `${format(startDate, 'HH:mm')} - ${format(endDate, 'HH:mm')}`;
+                                        })()} 
                                       </div>
                                     </div>
                                     <button
@@ -1037,17 +1123,18 @@ export default function PlannerPage() {
         )}
 
         {/* Modals */}
-        <EventModal
+        <SimpleEventModal
           isOpen={showEventModal}
           onClose={() => setShowEventModal(false)}
-          onEventCreated={(event) => {
+          onEventCreated={async (event) => {
             toast.success('Evento criado com sucesso!');
-            // Refresh calendar or events list if needed
+            // Recarregar a lista de eventos após criação
+            await loadEvents();
           }}
           selectedDate={selectedDate}
         />
 
-        <GoalModal
+        <SimpleGoalModal
           isOpen={showGoalModal}
           onClose={() => setShowGoalModal(false)}
           onGoalCreated={async (goal) => {

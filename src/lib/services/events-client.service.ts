@@ -166,7 +166,7 @@ export class EventsClientService {
         .from('events')
         .update({
           ...updates,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toLocaleString('sv-SE').replace(' ', 'T')
         })
         .eq('id', id)
         .eq('user_id', user.id)
@@ -252,9 +252,14 @@ export class EventsClientService {
       const futureDate = new Date();
       futureDate.setDate(now.getDate() + days);
 
+      // Formatar datas mantendo o horário local
+      const formatLocalDate = (date: Date): string => {
+        return date.toLocaleString('sv-SE').replace(' ', 'T');
+      };
+
       return await this.getEventsByDateRange(
-        now.toISOString(),
-        futureDate.toISOString()
+        formatLocalDate(now),
+        formatLocalDate(futureDate)
       );
     } catch (error) {
       console.error('Erro ao obter eventos próximos:', error);
