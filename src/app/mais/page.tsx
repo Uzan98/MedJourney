@@ -17,7 +17,8 @@ import {
   Sparkles,
   CheckSquare,
   Layers,
-  School
+  School,
+  CalendarDays
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -88,6 +89,14 @@ export default function MaisPage() {
       description: "Informações da faculdade",
       bgColor: "bg-emerald-50",
       iconColor: "text-emerald-600"
+    },
+    {
+      path: "/planner",
+      label: "Planner",
+      icon: <CalendarDays className="h-6 w-6" />,
+      description: "Planejamento de estudos",
+      bgColor: "bg-blue-50",
+      iconColor: "text-blue-600"
     },
     {
       path: "/perfil",

@@ -15,7 +15,8 @@ import {
   Settings,
   CreditCard,
   BookMarked,
-  Trello
+  Trello,
+  CalendarDays
 } from 'lucide-react';
 import { SubscriptionTier } from '@/types/subscription';
 
@@ -64,6 +65,12 @@ export const mainNavigation: NavigationItem[] = [
     name: 'Painel de Tarefas',
     href: '/tarefas',
     icon: Trello,
+    requiresAuth: true,
+  },
+  {
+    name: 'Planner',
+    href: '/planner',
+    icon: CalendarDays,
     requiresAuth: true,
   },
   {
