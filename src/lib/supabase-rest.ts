@@ -678,6 +678,203 @@ export const DisciplinesRestService = {
   },
   
   /**
+   * Configura uma disciplina como acadêmica com dados de controle de faltas
+   * @param disciplineId ID da disciplina
+   * @param academicData Dados acadêmicos da disciplina
+   */
+  async setDisciplineAsAcademic(
+    disciplineId: number,
+    academicData: {
+      semester_start_date: string;
+      semester_end_date: string;
+      weekly_frequency: number;
+      minimum_attendance_percentage: number;
+      class_schedule?: any;
+    }
+  ): Promise<Discipline | null> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+      
+      // Primeiro, buscar a disciplina para obter o nome
+      const { data: discipline, error: disciplineError } = await supabase
+        .from('disciplines')
+        .select('name')
+        .eq('id', disciplineId)
+        .eq('user_id', user.id)
+        .single();
+      
+      if (disciplineError || !discipline) {
+        console.error('Erro ao buscar disciplina:', disciplineError);
+        return null;
+      }
+      
+      console.log('🔍 Verificando se já existe academic_subject para disciplina:', {
+        disciplineId,
+        userId: user.id,
+        disciplineName: discipline.name
+      });
+      
+      // Verificar se já existe um academic_subject para esta disciplina
+      // Usando .limit(1) ao invés de .single() para evitar erro PGRST116 com duplicatas
+      const { data: existingAcademicSubjects, error: checkError } = await supabase
+        .from('academic_subjects')
+        .select('id, name, created_at')
+        .eq('discipline_id', disciplineId)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10); // Buscar até 10 para detectar duplicatas
+      
+      console.log('📊 Resultado da verificação:', {
+        existingAcademicSubjects,
+        checkError,
+        count: existingAcademicSubjects?.length || 0
+      });
+      
+      // Se encontrou múltiplos registros, limpar duplicatas
+      if (existingAcademicSubjects && existingAcademicSubjects.length > 1) {
+        console.log('⚠️ Detectadas duplicatas de academic_subject. Limpando...');
+        await this.cleanDuplicateAcademicSubjects(disciplineId, user.id);
+        
+        // Buscar novamente após limpeza
+        const { data: cleanedSubjects } = await supabase
+          .from('academic_subjects')
+          .select('id, name')
+          .eq('discipline_id', disciplineId)
+          .eq('user_id', user.id)
+          .limit(1);
+        
+        var existingAcademicSubject = cleanedSubjects?.[0] || null;
+      } else {
+        var existingAcademicSubject = existingAcademicSubjects?.[0] || null;
+      }
+      
+      // Se não existe, criar o academic_subject
+      if (!existingAcademicSubject) {
+        console.log('➕ Criando novo academic_subject...');
+        
+        // Calcular total de aulas e faltas permitidas
+        const startDate = new Date(academicData.semester_start_date);
+        const endDate = new Date(academicData.semester_end_date);
+        const weeksDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 7));
+        const totalClasses = weeksDiff * academicData.weekly_frequency;
+        const allowedAbsences = Math.floor(totalClasses * (1 - academicData.minimum_attendance_percentage / 100));
+        
+        const academicSubjectData = {
+          user_id: user.id,
+          discipline_id: disciplineId,
+          name: discipline.name,
+          start_date: academicData.semester_start_date,
+          end_date: academicData.semester_end_date,
+          weekly_frequency: academicData.weekly_frequency,
+          days_of_week: ['segunda', 'terça', 'quarta', 'quinta', 'sexta'].slice(0, academicData.weekly_frequency),
+          approval_percentage: academicData.minimum_attendance_percentage,
+          class_duration: 60, // Duração padrão de 60 minutos
+          total_classes: totalClasses,
+          allowed_absences: allowedAbsences
+        };
+        
+        console.log('📝 Dados do academic_subject a ser criado:', academicSubjectData);
+        
+        const { data: createdAcademicSubject, error: academicSubjectError } = await supabase
+          .from('academic_subjects')
+          .insert(academicSubjectData)
+          .select('id, name, discipline_id')
+          .single();
+        
+        if (academicSubjectError) {
+          console.error('❌ Erro ao criar academic_subject:', academicSubjectError);
+          return null;
+        }
+        
+        console.log('✅ Academic subject criado com sucesso:', createdAcademicSubject);
+      } else {
+        console.log('ℹ️ Academic subject já existe:', existingAcademicSubject);
+      }
+      
+      // Atualizar a disciplina como acadêmica
+      const updateData = {
+        ...academicData,
+        is_academic: true
+      };
+      
+      const { data: updatedDiscipline, error } = await supabase
+        .from('disciplines')
+        .update(updateData)
+        .eq('id', disciplineId)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Erro ao configurar disciplina como acadêmica:', error);
+        return null;
+      }
+      
+      return updatedDiscipline;
+    } catch (error) {
+      console.error('Erro ao configurar disciplina acadêmica:', error);
+      return null;
+    }
+  },
+  
+  /**
+   * Obtém estatísticas de frequência de uma disciplina
+   * @param disciplineId ID da disciplina
+   */
+  async getDisciplineAttendanceStats(disciplineId: number): Promise<any> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+      
+      const { data, error } = await supabase
+        .rpc('get_discipline_attendance_stats', {
+          discipline_id: disciplineId,
+          user_id_param: user.id
+        });
+      
+      if (error) {
+        console.error('Erro ao obter estatísticas de frequência:', error);
+        return null;
+      }
+      
+      return data?.[0] || null;
+    } catch (error) {
+      console.error('Erro ao obter estatísticas de frequência:', error);
+      return null;
+    }
+  },
+  
+  /**
+   * Calcula faltas permitidas para uma disciplina
+   * @param disciplineId ID da disciplina
+   */
+  async calculateAllowedAbsences(disciplineId: number): Promise<number> {
+    try {
+      const { data, error } = await supabase
+        .rpc('calculate_allowed_absences', {
+          discipline_id: disciplineId
+        });
+      
+      if (error) {
+        console.error('Erro ao calcular faltas permitidas:', error);
+        return 0;
+      }
+      
+      return data || 0;
+    } catch (error) {
+      console.error('Erro ao calcular faltas permitidas:', error);
+      return 0;
+    }
+  },
+  
+  /**
    * Remove uma disciplina
    * @param disciplineId ID da disciplina a ser removida
    */
@@ -746,5 +943,58 @@ export const DisciplinesRestService = {
       console.error('Erro ao excluir disciplina:', error);
       return false;
     }
+  },
+
+  /**
+   * Limpa registros duplicados de academic_subjects para uma disciplina
+   * @param disciplineId ID da disciplina
+   * @param userId ID do usuário
+   */
+  async cleanDuplicateAcademicSubjects(disciplineId: number, userId: string): Promise<void> {
+    try {
+      console.log('🧹 Iniciando limpeza de duplicatas para disciplina:', disciplineId);
+      
+      // Buscar todos os academic_subjects duplicados
+      const { data: duplicates, error } = await supabase
+        .from('academic_subjects')
+        .select('id, created_at')
+        .eq('discipline_id', disciplineId)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('❌ Erro ao buscar duplicatas:', error);
+        return;
+      }
+      
+      if (!duplicates || duplicates.length <= 1) {
+        console.log('✅ Nenhuma duplicata encontrada');
+        return;
+      }
+      
+      // Manter o mais recente (primeiro da lista ordenada) e remover os outros
+      const toKeep = duplicates[0];
+      const toDelete = duplicates.slice(1);
+      
+      console.log(`🗑️ Removendo ${toDelete.length} duplicatas, mantendo ID ${toKeep.id}`);
+      
+      // Remover duplicatas
+      for (const duplicate of toDelete) {
+        const { error: deleteError } = await supabase
+          .from('academic_subjects')
+          .delete()
+          .eq('id', duplicate.id);
+        
+        if (deleteError) {
+          console.error(`❌ Erro ao remover duplicata ${duplicate.id}:`, deleteError);
+        } else {
+          console.log(`✅ Duplicata ${duplicate.id} removida`);
+        }
+      }
+      
+      console.log('🧹 Limpeza de duplicatas concluída');
+    } catch (error) {
+      console.error('❌ Erro durante limpeza de duplicatas:', error);
+    }
   }
-}; 
+};

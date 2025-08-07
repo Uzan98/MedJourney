@@ -240,6 +240,35 @@ export type Discipline = {
   user_id: string;
   created_at: string;
   updated_at: string;
+  // Campos acadêmicos
+  semester_start_date?: string | null;
+  semester_end_date?: string | null;
+  weekly_frequency?: number;
+  minimum_attendance_percentage?: number;
+  class_schedule?: any; // JSONB
+  is_academic?: boolean;
+};
+
+// Interface para estatísticas de frequência de uma disciplina
+export type DisciplineAttendanceStats = {
+  total_absences: number;
+  allowed_absences: number;
+  remaining_absences: number;
+  attendance_percentage: number;
+  risk_status: 'safe' | 'warning' | 'critical';
+};
+
+// Interface para dados acadêmicos de uma disciplina
+export type AcademicDisciplineData = {
+  semester_start_date: string;
+  semester_end_date: string;
+  weekly_frequency: number;
+  minimum_attendance_percentage: number;
+  class_schedule?: {
+    day: string;
+    start_time: string;
+    end_time: string;
+  }[];
 };
 
 export type Subject = {
@@ -264,4 +293,4 @@ export type Subject = {
   
   created_at: string;
   updated_at: string;
-}; 
+};
