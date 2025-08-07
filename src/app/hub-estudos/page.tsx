@@ -12,7 +12,8 @@ import {
   Sparkles,
   Target,
   TrendingUp,
-  Zap
+  Zap,
+  UserX
 } from 'lucide-react';
 
 interface StudyHubCard {
@@ -60,6 +61,14 @@ const studyHubItems: StudyHubCard[] = [
     icon: <Clock className="h-8 w-8" />,
     gradient: 'from-orange-500 to-red-500',
     features: ['Cronômetro Pomodoro', 'Análise de produtividade', 'Histórico de sessões']
+  },
+  {
+    title: 'Controle de Faltas',
+    description: 'Gerencie suas faltas acadêmicas, monitore frequência e mantenha controle sobre sua presença nas disciplinas.',
+    href: '/faltas',
+    icon: <UserX className="h-8 w-8" />,
+    gradient: 'from-red-500 to-orange-500',
+    features: ['Registro de faltas', 'Controle de frequência', 'Alertas de risco']
   }
 ];
 
