@@ -18,7 +18,8 @@ import {
   CheckSquare,
   Layers,
   School,
-  CalendarDays
+  CalendarDays,
+  UserX
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -97,6 +98,14 @@ export default function MaisPage() {
       description: "Planejamento de estudos",
       bgColor: "bg-blue-50",
       iconColor: "text-blue-600"
+    },
+    {
+      path: "/faltas",
+      label: "Controle de Faltas",
+      icon: <UserX className="h-6 w-6" />,
+      description: "Gerencie suas faltas",
+      bgColor: "bg-red-50",
+      iconColor: "text-red-600"
     },
     {
       path: "/perfil",

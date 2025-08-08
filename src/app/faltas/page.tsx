@@ -117,100 +117,210 @@ export default function FaltasPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Controle de Faltas
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Acompanhe a frequência de todas as suas disciplinas acadêmicas
-          </p>
-        </div>
-        <Link href="/dashboard/disciplinas">
-          <Button variant="outline" className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
-            Gerenciar Disciplinas
-          </Button>
-        </Link>
-      </div>
-
-      {/* Estatísticas Gerais */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total de Disciplinas</p>
-                <p className="text-2xl font-bold text-gray-900">{overallStats.totalDisciplines}</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8 space-y-8">
+        {/* Header Desktop */}
+        <div className="hidden md:block">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-white/20 p-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+              <div className="space-y-3">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                  Controle de Faltas
+                </h1>
+                <p className="text-gray-600 text-lg leading-relaxed max-w-2xl">
+                  Acompanhe a frequência de todas as suas disciplinas acadêmicas com precisão e facilidade
+                </p>
               </div>
-              <BookOpen className="w-8 h-8 text-blue-500" />
+              <Link href="/dashboard/disciplinas">
+                <Button variant="outline" className="flex items-center gap-2 px-6 py-3 text-base hover:bg-blue-50 hover:border-blue-300 transition-all duration-200">
+                  <BookOpen className="h-5 w-5" />
+                  Gerenciar Disciplinas
+                </Button>
+              </Link>
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Disciplinas Seguras</p>
-                <p className="text-2xl font-bold text-green-600">{overallStats.safeDisciplines}</p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Em Atenção</p>
-                <p className="text-2xl font-bold text-yellow-600">{overallStats.warningDisciplines}</p>
-              </div>
-              <AlertTriangle className="w-8 h-8 text-yellow-500" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Situação Crítica</p>
-                <p className="text-2xl font-bold text-red-600">{overallStats.criticalDisciplines}</p>
-              </div>
-              <X className="w-8 h-8 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filtros */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Buscar disciplina..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
           </div>
         </div>
-        <Select value={filterStatus} onValueChange={(value: any) => setFilterStatus(value)}>
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Filtrar por status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            <SelectItem value="safe">Seguro</SelectItem>
-            <SelectItem value="warning">Atenção</SelectItem>
-            <SelectItem value="critical">Crítico</SelectItem>
-          </SelectContent>
-        </Select>
+
+        {/* Header Mobile */}
+        <div className="block md:hidden">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm border border-white/20 p-6">
+            <div className="flex items-center justify-between mb-3">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Controle de Faltas
+              </h1>
+              <Link href="/dashboard/disciplinas">
+                <Button variant="outline" size="sm" className="flex items-center gap-2 px-4 py-2 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200">
+                  <BookOpen className="h-4 w-4" />
+                  <span className="hidden xs:inline">Disciplinas</span>
+                </Button>
+              </Link>
+            </div>
+            <p className="text-gray-600 leading-relaxed">
+              Acompanhe a frequência das suas disciplinas
+            </p>
+          </div>
+        </div>
+
+      {/* Estatísticas Gerais Desktop */}
+         <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-blue-300 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-blue-100">Total de Disciplinas</p>
+                <p className="text-3xl font-bold text-white">{overallStats.totalDisciplines}</p>
+              </div>
+              <div className="h-12 w-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                <BookOpen className="h-6 w-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-gradient-to-br from-green-500 to-green-600 border-green-300 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-green-100">Disciplinas Seguras</p>
+                <p className="text-3xl font-bold text-white">{overallStats.safeDisciplines}</p>
+              </div>
+              <div className="h-12 w-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-gradient-to-br from-orange-500 to-yellow-500 border-orange-300 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-orange-100">Em Atenção</p>
+                <p className="text-3xl font-bold text-white">{overallStats.warningDisciplines}</p>
+              </div>
+              <div className="h-12 w-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                <AlertTriangle className="h-6 w-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-gradient-to-br from-red-500 to-red-600 border-red-300 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-red-100">Situação Crítica</p>
+                <p className="text-3xl font-bold text-white">{overallStats.criticalDisciplines}</p>
+              </div>
+              <div className="h-12 w-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                <X className="h-6 w-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Estatísticas Gerais Mobile */}
+      <div className="md:hidden grid grid-cols-2 gap-4">
+        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-blue-300 shadow-lg hover:shadow-xl transition-all duration-300">
+          <CardContent className="p-4">
+            <div className="text-center space-y-1">
+              <BookOpen className="w-6 h-6 text-white mx-auto mb-1" />
+              <p className="text-xs font-medium text-blue-100">Total</p>
+              <p className="text-xl font-bold text-white">{overallStats.totalDisciplines}</p>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-gradient-to-br from-green-500 to-green-600 border-green-300 shadow-lg hover:shadow-xl transition-all duration-300">
+          <CardContent className="p-4">
+            <div className="text-center space-y-1">
+              <CheckCircle className="w-6 h-6 text-white mx-auto mb-1" />
+              <p className="text-xs font-medium text-green-100">Seguras</p>
+              <p className="text-xl font-bold text-white">{overallStats.safeDisciplines}</p>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-gradient-to-br from-orange-500 to-yellow-500 border-orange-300 shadow-lg hover:shadow-xl transition-all duration-300">
+          <CardContent className="p-4">
+            <div className="text-center space-y-1">
+              <AlertTriangle className="w-6 h-6 text-white mx-auto mb-1" />
+              <p className="text-xs font-medium text-orange-100">Atenção</p>
+              <p className="text-xl font-bold text-white">{overallStats.warningDisciplines}</p>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-gradient-to-br from-red-500 to-red-600 border-red-300 shadow-lg hover:shadow-xl transition-all duration-300">
+          <CardContent className="p-4">
+            <div className="text-center space-y-1">
+              <X className="w-6 h-6 text-white mx-auto mb-1" />
+              <p className="text-xs font-medium text-red-100">Críticas</p>
+              <p className="text-xl font-bold text-white">{overallStats.criticalDisciplines}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filtros Desktop */}
+      <div className="hidden md:block">
+        <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Buscar disciplina..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400/20"
+                  />
+                </div>
+              </div>
+              <Select value={filterStatus} onValueChange={(value: any) => setFilterStatus(value)}>
+                <SelectTrigger className="w-full sm:w-48 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400/20">
+                  <SelectValue placeholder="Filtrar por status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="safe">Seguro</SelectItem>
+                  <SelectItem value="warning">Atenção</SelectItem>
+                  <SelectItem value="critical">Crítico</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filtros Mobile */}
+      <div className="md:hidden">
+        <Card className="bg-white/90 backdrop-blur-sm border-white/20 shadow-sm">
+          <CardContent className="p-4 space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Buscar disciplina..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400/20"
+              />
+            </div>
+            <Select value={filterStatus} onValueChange={(value: any) => setFilterStatus(value)}>
+              <SelectTrigger className="w-full bg-white/50 border-gray-200 focus:border-blue-400 focus:ring-blue-400/20">
+                <SelectValue placeholder="Filtrar por status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
+                <SelectItem value="safe">Seguro</SelectItem>
+                <SelectItem value="warning">Atenção</SelectItem>
+                <SelectItem value="critical">Crítico</SelectItem>
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Lista de Disciplinas */}
@@ -238,9 +348,11 @@ export default function FaltasPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <>
+        {/* Desktop Layout */}
+        <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-6">
           {filteredDisciplines.map(({ discipline, stats }) => (
-            <Card key={discipline.id} className="hover:shadow-lg transition-shadow">
+            <Card key={discipline.id} className="bg-white/80 backdrop-blur-sm border-white/20 shadow-sm hover:shadow-lg hover:bg-white/90 transition-all duration-300">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -334,7 +446,95 @@ export default function FaltasPage() {
             </Card>
           ))}
         </div>
+
+        {/* Mobile Layout */}
+        <div className="md:hidden space-y-4">
+          {filteredDisciplines.map(({ discipline, stats }) => (
+            <Card key={discipline.id} className="bg-white/90 backdrop-blur-sm border-white/20 shadow-sm hover:shadow-md hover:bg-white/95 transition-all duration-300">
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base font-semibold text-gray-900 mb-1 truncate">
+                      {discipline.name}
+                    </CardTitle>
+                    {discipline.description && (
+                      <p className="text-xs text-gray-600 line-clamp-1">
+                        {discipline.description}
+                      </p>
+                    )}
+                  </div>
+                  <div className={`flex items-center gap-1 px-2 py-1 rounded-full border ${getStatusColor(stats.risk_status)} ml-2`}>
+                    {getStatusIcon(stats.risk_status)}
+                    <span className="text-xs font-medium">
+                      {getStatusText(stats.risk_status)}
+                    </span>
+                  </div>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="space-y-3">
+                {/* Estatísticas de Faltas Mobile */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="bg-red-50 rounded-lg p-2">
+                    <p className="text-lg font-bold text-red-600">{stats.total_absences}</p>
+                    <p className="text-[10px] text-gray-600">Usadas</p>
+                  </div>
+                  <div className="bg-blue-50 rounded-lg p-2">
+                    <p className="text-lg font-bold text-blue-600">{stats.allowed_absences}</p>
+                    <p className="text-[10px] text-gray-600">Permitidas</p>
+                  </div>
+                  <div className="bg-green-50 rounded-lg p-2">
+                    <p className="text-lg font-bold text-green-600">{stats.remaining_absences}</p>
+                    <p className="text-[10px] text-gray-600">Restantes</p>
+                  </div>
+                </div>
+                
+                {/* Barra de Progresso Mobile */}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-600">Frequência</span>
+                    <span className="font-medium">{stats.attendance_percentage.toFixed(1)}%</span>
+                  </div>
+                  <Progress 
+                    value={stats.attendance_percentage} 
+                    className={`h-2 ${
+                      stats.risk_status === 'safe' ? '[&>div]:bg-green-500' :
+                      stats.risk_status === 'warning' ? '[&>div]:bg-yellow-500' :
+                      '[&>div]:bg-red-500'
+                    }`}
+                  />
+                </div>
+                
+                {/* Informações Acadêmicas Mobile */}
+                {discipline.is_academic && (
+                  <div className="bg-gray-50 rounded-lg p-2 space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600">Semanal:</span>
+                      <span className="font-medium">{discipline.weekly_frequency}x</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600">Mínimo:</span>
+                      <span className="font-medium">{discipline.minimum_attendance_percentage}%</span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Ações Mobile */}
+                <div className="pt-1">
+                  <Link href={`/dashboard/disciplinas/${discipline.id}`} className="block">
+                    <Button variant="outline" size="sm" className="w-full flex items-center justify-center gap-2">
+                      <ExternalLink className="h-3 w-3" />
+                      <span className="text-xs">Ver Detalhes</span>
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        </>
       )}
+      </div>
     </div>
   );
 }
