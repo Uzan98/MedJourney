@@ -301,141 +301,283 @@ export default function DisciplineDetailsPage() {
   const renderSubjectsList = () => {
     if (subjects.length === 0) {
       return (
-        <div className="text-center py-10">
-          <BookOpen className="mx-auto h-12 w-12 text-gray-300" />
-          <h3 className="mt-2 text-sm font-semibold text-gray-900">Nenhum assunto cadastrado</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Comece adicionando assuntos a esta disciplina.
-          </p>
-          <div className="mt-6">
-            <button
-              onClick={openCreateModal}
-              className="inline-flex items-center px-4 py-2 border border-transparent 
-                         rounded-md shadow-sm text-sm font-medium text-white 
-                         bg-blue-600 hover:bg-blue-700 focus:outline-none"
-            >
-              <PlusCircle className="-ml-1 mr-2 h-5 w-5" />
-              Novo Assunto
-            </button>
+        <>
+          {/* Empty state - Desktop */}
+          <div className="text-center py-10 hidden md:block">
+            <BookOpen className="mx-auto h-12 w-12 text-gray-300" />
+            <h3 className="mt-2 text-sm font-semibold text-gray-900">Nenhum assunto cadastrado</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Comece adicionando assuntos a esta disciplina.
+            </p>
+            <div className="mt-6">
+              <button
+                onClick={openCreateModal}
+                className="inline-flex items-center px-4 py-2 border border-transparent 
+                           rounded-md shadow-sm text-sm font-medium text-white 
+                           bg-blue-600 hover:bg-blue-700 focus:outline-none"
+              >
+                <PlusCircle className="-ml-1 mr-2 h-5 w-5" />
+                Novo Assunto
+              </button>
+            </div>
           </div>
-        </div>
+          
+          {/* Empty state - Mobile */}
+          <div className="text-center py-8 md:hidden">
+            <BookOpen className="mx-auto h-10 w-10 text-gray-300" />
+            <h3 className="mt-2 text-sm font-semibold text-gray-900">Nenhum assunto</h3>
+            <p className="mt-1 text-xs text-gray-500">
+              Adicione assuntos para começar.
+            </p>
+            <div className="mt-4">
+              <button
+                onClick={openCreateModal}
+                className="inline-flex items-center px-3 py-2 border border-transparent 
+                           rounded-lg shadow-sm text-sm font-medium text-white 
+                           bg-blue-600 hover:bg-blue-700 focus:outline-none"
+              >
+                <PlusCircle className="-ml-1 mr-1 h-4 w-4" />
+                Novo Assunto
+              </button>
+            </div>
+          </div>
+        </>
       );
     }
     
     return (
-      <div className="mt-6 grid gap-5 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {subjects.map((subject) => (
-          <div key={subject.id} className="bg-white overflow-hidden shadow rounded-lg relative group">
-            <div className="p-5">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-medium text-gray-900 truncate pr-2">{subject.title}</h3>
-                
-                {/* Menu de opções - posicionado no canto superior direito */}
-                <div className="relative flex-shrink-0">
-                  <button
-                    onClick={(e) => toggleOptionsMenu(e, subject.id)}
-                    className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors flex items-center justify-center"
-                    title="Opções"
-                    data-options-button="true"
-                    style={{ minWidth: '28px', minHeight: '28px' }}
-                  >
-                    <MoreVertical className="h-4 w-4" />
-                  </button>
+      <>
+        {/* Desktop Grid */}
+        <div className="mt-6 grid gap-5 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 hidden md:grid">
+          {subjects.map((subject) => (
+            <div key={subject.id} className="bg-white overflow-hidden shadow rounded-lg relative group">
+              <div className="p-5">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-medium text-gray-900 truncate pr-2">{subject.title}</h3>
                   
-                  {/* Menu dropdown */}
-                  {openMenuId === subject.id && (
-                    <div 
-                      className="absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg z-10 py-1 border border-gray-200"
+                  {/* Menu de opções - posicionado no canto superior direito */}
+                  <div className="relative flex-shrink-0">
+                    <button
+                      onClick={(e) => toggleOptionsMenu(e, subject.id)}
+                      className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors flex items-center justify-center"
+                      title="Opções"
                       data-options-button="true"
+                      style={{ minWidth: '28px', minHeight: '28px' }}
                     >
-                      <button
-                        onClick={(e) => handleEditClick(e, subject)}
-                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                    
+                    {/* Menu dropdown */}
+                    {openMenuId === subject.id && (
+                      <div 
+                        className="absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg z-10 py-1 border border-gray-200"
                         data-options-button="true"
                       >
-                        <Edit className="h-4 w-4 mr-2" />
-                        Editar assunto
-                      </button>
-                      <button
-                        onClick={(e) => handleDeleteClick(e, subject.id)}
-                        className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-gray-100 flex items-center"
-                        data-options-button="true"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Excluir assunto
-                      </button>
-                    </div>
-                  )}
+                        <button
+                          onClick={(e) => handleEditClick(e, subject)}
+                          className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                          data-options-button="true"
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Editar assunto
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteClick(e, subject.id)}
+                          className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-gray-100 flex items-center"
+                          data-options-button="true"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Excluir assunto
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="text-sm text-gray-500 line-clamp-3 mb-3">
+                  {subject.content || 'Sem descrição'}
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <Clock className="mr-1 h-3 w-3" />
+                    {subject.estimated_hours || 0}h estimadas
+                  </span>
+                  
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                   ${subject.importance === 'alta' ? 'bg-purple-100 text-purple-800' : 
+                                     subject.importance === 'média' ? 'bg-blue-100 text-blue-800' : 
+                                     'bg-gray-100 text-gray-800'}`}>
+                    <Flag className="mr-1 h-3 w-3" />
+                    Importância: {subject.importance}
+                  </span>
+                  
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                   ${subject.difficulty === 'alta' ? 'bg-red-100 text-red-800' : 
+                                     subject.difficulty === 'média' ? 'bg-yellow-100 text-yellow-800' : 
+                                     'bg-green-100 text-green-800'}`}>
+                    <BookOpen className="mr-1 h-3 w-3" />
+                    Dificuldade: {subject.difficulty}
+                  </span>
                 </div>
               </div>
               
-              <div className="text-sm text-gray-500 line-clamp-3 mb-3">
-                {subject.content || 'Sem descrição'}
-              </div>
-              
-              <div className="flex flex-wrap gap-2">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  <Clock className="mr-1 h-3 w-3" />
-                  {subject.estimated_hours || 0}h estimadas
-                </span>
+              <div className="bg-gray-50 px-5 py-3 flex justify-between items-center">
+                <div className="text-sm text-gray-500">
+                  Criado em {formatDate(subject.created_at)}
+                </div>
                 
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                 ${subject.importance === 'alta' ? 'bg-purple-100 text-purple-800' : 
-                                   subject.importance === 'média' ? 'bg-blue-100 text-blue-800' : 
-                                   'bg-gray-100 text-gray-800'}`}>
-                  <Flag className="mr-1 h-3 w-3" />
-                  Importância: {subject.importance}
-                </span>
-                
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                 ${subject.difficulty === 'alta' ? 'bg-red-100 text-red-800' : 
-                                   subject.difficulty === 'média' ? 'bg-yellow-100 text-yellow-800' : 
-                                   'bg-green-100 text-green-800'}`}>
-                  <BookOpen className="mr-1 h-3 w-3" />
-                  Dificuldade: {subject.difficulty}
-                </span>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleCompleteSubject(subject.id)}
+                    disabled={completingSubject === subject.id}
+                    className={`inline-flex items-center px-2 py-1 border border-transparent 
+                               rounded text-xs font-medium text-white 
+                               ${completingSubject === subject.id 
+                                 ? 'bg-gray-400 cursor-not-allowed' 
+                                 : 'bg-green-600 hover:bg-green-700'}`}
+                  >
+                    {completingSubject === subject.id ? (
+                      <div className="h-3 w-3 border-t-2 border-white rounded-full animate-spin mr-1"></div>
+                    ) : (
+                      <CheckCircle className="mr-1 h-3 w-3" />
+                    )}
+                    Concluído
+                  </button>
+                </div>
               </div>
             </div>
-            
-            <div className="bg-gray-50 px-5 py-3 flex justify-between items-center">
-              <div className="text-sm text-gray-500">
-                Criado em {formatDate(subject.created_at)}
-              </div>
-              
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleCompleteSubject(subject.id)}
-                  disabled={completingSubject === subject.id}
-                  className={`inline-flex items-center px-2 py-1 border border-transparent 
-                             rounded text-xs font-medium text-white 
-                             ${completingSubject === subject.id 
-                               ? 'bg-gray-400 cursor-not-allowed' 
-                               : 'bg-green-600 hover:bg-green-700'}`}
-                >
-                  {completingSubject === subject.id ? (
-                    <div className="h-3 w-3 border-t-2 border-white rounded-full animate-spin mr-1"></div>
-                  ) : (
-                    <CheckCircle className="mr-1 h-3 w-3" />
-                  )}
-                  Concluído
-                </button>
+          ))}
+        </div>
+        
+        {/* Mobile List */}
+        <div className="mt-4 space-y-3 md:hidden">
+          {subjects.map((subject) => (
+            <div key={subject.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="text-base font-medium text-gray-900 flex-1 pr-2">{subject.title}</h3>
+                  
+                  {/* Menu de opções mobile */}
+                  <div className="relative flex-shrink-0">
+                    <button
+                      onClick={(e) => toggleOptionsMenu(e, subject.id)}
+                      className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+                      title="Opções"
+                      data-options-button="true"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                    
+                    {/* Menu dropdown mobile */}
+                    {openMenuId === subject.id && (
+                      <div 
+                        className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg z-10 py-1 border border-gray-200"
+                        data-options-button="true"
+                      >
+                        <button
+                          onClick={(e) => handleEditClick(e, subject)}
+                          className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                          data-options-button="true"
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Editar
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteClick(e, subject.id)}
+                          className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-gray-100 flex items-center"
+                          data-options-button="true"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Excluir
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {subject.content && (
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                    {subject.content}
+                  </p>
+                )}
+                
+                {/* Tags compactas para mobile */}
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <Clock className="mr-1 h-3 w-3" />
+                    {subject.estimated_hours || 0}h
+                  </span>
+                  
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                   ${subject.importance === 'alta' ? 'bg-purple-100 text-purple-800' : 
+                                     subject.importance === 'média' ? 'bg-blue-100 text-blue-800' : 
+                                     'bg-gray-100 text-gray-800'}`}>
+                    <Flag className="mr-1 h-3 w-3" />
+                    {subject.importance}
+                  </span>
+                  
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                   ${subject.difficulty === 'alta' ? 'bg-red-100 text-red-800' : 
+                                     subject.difficulty === 'média' ? 'bg-yellow-100 text-yellow-800' : 
+                                     'bg-green-100 text-green-800'}`}>
+                    <BookOpen className="mr-1 h-3 w-3" />
+                    {subject.difficulty}
+                  </span>
+                </div>
+                
+                {/* Footer mobile */}
+                <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+                  <div className="text-xs text-gray-500">
+                    {formatDate(subject.created_at)}
+                  </div>
+                  
+                  <button
+                    onClick={() => handleCompleteSubject(subject.id)}
+                    disabled={completingSubject === subject.id}
+                    className={`inline-flex items-center px-3 py-1.5 border border-transparent 
+                               rounded-lg text-xs font-medium text-white transition-colors 
+                               ${completingSubject === subject.id 
+                                 ? 'bg-gray-400 cursor-not-allowed' 
+                                 : 'bg-green-600 hover:bg-green-700 active:bg-green-800'}`}
+                  >
+                    {completingSubject === subject.id ? (
+                      <div className="h-3 w-3 border-t-2 border-white rounded-full animate-spin mr-1"></div>
+                    ) : (
+                      <CheckCircle className="mr-1 h-3 w-3" />
+                    )}
+                    Concluído
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </>
     );
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="mb-6">
+    <div className="container mx-auto px-6 md:px-8 lg:px-12 py-6 pb-28 md:pb-6">
+      {/* Desktop Back Button */}
+      <div className="mb-6 hidden md:block">
         <Link 
           href="/dashboard/disciplinas" 
           className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors font-medium"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           <span>Voltar para Disciplinas</span>
+        </Link>
+      </div>
+      
+      {/* Mobile Back Button */}
+      <div className="mb-4 md:hidden">
+        <Link 
+          href="/dashboard/disciplinas" 
+          className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors font-medium text-sm"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          <span>Voltar</span>
         </Link>
       </div>
 
@@ -457,8 +599,8 @@ export default function DisciplineDetailsPage() {
         </div>
       ) : discipline ? (
         <>
-          {/* Cabeçalho da disciplina */}
-          <div className={`bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-8 mb-8 text-white shadow-lg`}>
+          {/* Cabeçalho da disciplina - Desktop */}
+          <div className={`bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-8 mb-8 text-white shadow-lg hidden md:block`}>
             {loading ? (
               <div className="animate-pulse h-8 bg-white/20 rounded w-1/4 mb-2"></div>
             ) : (
@@ -512,90 +654,216 @@ export default function DisciplineDetailsPage() {
               </div>
             </div>
           </div>
+          
+          {/* Cabeçalho da disciplina - Mobile */}
+           <div className={`bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-4 mb-6 text-white shadow-lg md:hidden`}>
+             {loading ? (
+               <div className="animate-pulse h-6 bg-white/20 rounded w-3/4 mb-2"></div>
+             ) : (
+               <>
+                 <div className="flex items-center gap-3 mb-3">
+                   <div className="bg-white/20 p-2 rounded-lg">
+                     <BookOpen className="h-6 w-6 text-white" />
+                   </div>
+                   <div className="flex-1">
+                     <h1 className="text-lg font-bold">{discipline.name}</h1>
+                     <div className="text-white/80 text-xs">
+                       {subjects.length} {subjects.length === 1 ? 'assunto' : 'assuntos'}
+                     </div>
+                   </div>
+                 </div>
+                 
+                 {discipline.description && (
+                   <p className="text-white/90 text-sm mb-3 line-clamp-2">{discipline.description}</p>
+                 )}
+                 
+                 <div className="flex gap-2">
+                   <button
+                     onClick={openStudySessionModal}
+                     className="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg flex items-center space-x-1 transition-colors text-sm flex-1"
+                   >
+                     <Clock className="h-4 w-4" />
+                     <span>Estudar</span>
+                   </button>
+                   <button
+                     onClick={openCreateModal}
+                     className="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg flex items-center space-x-1 transition-colors text-sm flex-1"
+                   >
+                     <Plus className="h-4 w-4" />
+                     <span>Novo</span>
+                   </button>
+                 </div>
+               </>
+             )}
+           </div>
 
-          {/* Sistema de Abas */}
-          <div className="mt-10">
-            {/* Navegação das Abas */}
-            <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-8">
-                <button
-                  onClick={() => setActiveTab('subjects')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'subjects'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="w-4 h-4" />
-                    Assuntos
-                  </div>
-                </button>
-                <button
-                  onClick={() => setActiveTab('attendance')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'attendance'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    Controle de Faltas
-                  </div>
-                </button>
-              </nav>
-            </div>
+          {/* Sistema de Abas - Desktop */}
+           <div className="mt-10 hidden md:block">
+             {/* Navegação das Abas */}
+             <div className="border-b border-gray-200">
+               <nav className="-mb-px flex space-x-8">
+                 <button
+                   onClick={() => setActiveTab('subjects')}
+                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                     activeTab === 'subjects'
+                       ? 'border-blue-500 text-blue-600'
+                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                   }`}
+                 >
+                   <div className="flex items-center gap-2">
+                     <BookOpen className="w-4 h-4" />
+                     Assuntos
+                   </div>
+                 </button>
+                 <button
+                   onClick={() => setActiveTab('attendance')}
+                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                     activeTab === 'attendance'
+                       ? 'border-blue-500 text-blue-600'
+                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                   }`}
+                 >
+                   <div className="flex items-center gap-2">
+                     <Users className="w-4 h-4" />
+                     Controle de Faltas
+                   </div>
+                 </button>
+               </nav>
+             </div>
+           </div>
+           
+           {/* Sistema de Abas - Mobile */}
+           <div className="mt-6 md:hidden">
+             {/* Navegação das Abas Mobile */}
+             <div className="bg-gray-100 p-1 rounded-lg">
+               <div className="grid grid-cols-2 gap-1">
+                 <button
+                   onClick={() => setActiveTab('subjects')}
+                   className={`py-3 px-4 rounded-md font-medium text-sm transition-all ${
+                     activeTab === 'subjects'
+                       ? 'bg-white text-blue-600 shadow-sm'
+                       : 'text-gray-600 hover:text-gray-800'
+                   }`}
+                 >
+                   <div className="flex items-center justify-center gap-2">
+                     <BookOpen className="w-4 h-4" />
+                     <span>Assuntos</span>
+                   </div>
+                 </button>
+                 <button
+                   onClick={() => setActiveTab('attendance')}
+                   className={`py-3 px-4 rounded-md font-medium text-sm transition-all ${
+                     activeTab === 'attendance'
+                       ? 'bg-white text-blue-600 shadow-sm'
+                       : 'text-gray-600 hover:text-gray-800'
+                   }`}
+                 >
+                   <div className="flex items-center justify-center gap-2">
+                     <Users className="w-4 h-4" />
+                     <span>Faltas</span>
+                   </div>
+                 </button>
+               </div>
+             </div>
+           </div>
 
-            {/* Conteúdo das Abas */}
-            <div className="mt-6">
-              {activeTab === 'subjects' && (
-                <div>
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-gray-900">
-                      Assuntos da Disciplina
-                    </h2>
-                    <button
-                      onClick={openCreateModal}
-                      className="inline-flex items-center px-4 py-2 border border-transparent 
-                                rounded-md shadow-sm text-sm font-medium text-white 
-                                bg-blue-600 hover:bg-blue-700 focus:outline-none"
-                    >
-                      <PlusCircle className="-ml-1 mr-2 h-5 w-5" />
-                      Novo Assunto
-                    </button>
-                  </div>
+            {/* Conteúdo das Abas - Desktop */}
+             <div className="mt-6 hidden md:block">
+               {activeTab === 'subjects' && (
+                 <div>
+                   <div className="flex justify-between items-center mb-6">
+                     <h2 className="text-2xl font-bold text-gray-900">
+                       Assuntos da Disciplina
+                     </h2>
+                     <button
+                       onClick={openCreateModal}
+                       className="inline-flex items-center px-4 py-2 border border-transparent 
+                                 rounded-md shadow-sm text-sm font-medium text-white 
+                                 bg-blue-600 hover:bg-blue-700 focus:outline-none"
+                     >
+                       <PlusCircle className="-ml-1 mr-2 h-5 w-5" />
+                       Novo Assunto
+                     </button>
+                   </div>
 
-                  {loading ? (
-                    <div className="text-center py-10">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                      <p className="mt-3 text-sm text-gray-500">Carregando assuntos...</p>
+                   {loading ? (
+                     <div className="text-center py-10">
+                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                       <p className="mt-3 text-sm text-gray-500">Carregando assuntos...</p>
+                     </div>
+                   ) : (
+                     renderSubjectsList()
+                   )}
+                 </div>
+               )}
+
+               {activeTab === 'attendance' && (
+                 <div>
+                   <div className="mb-6">
+                     <h2 className="text-lg font-bold text-gray-900 mb-2">
+                       Controle de Faltas
+                     </h2>
+                     <p className="text-gray-600 text-sm">
+                       Gerencie as faltas e acompanhe a frequência.
+                     </p>
+                   </div>
+                   
+                   <AttendanceControlTab 
+                     discipline={discipline} 
+                     onDisciplineUpdate={setDiscipline}
+                   />
+                 </div>
+               )}
+              </div>
+              
+              {/* Conteúdo das Abas - Mobile */}
+              <div className="mt-4 md:hidden">
+                {activeTab === 'subjects' && (
+                  <div>
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-lg font-bold text-gray-900">
+                        Assuntos
+                      </h2>
+                      <button
+                        onClick={openCreateModal}
+                        className="inline-flex items-center px-3 py-2 border border-transparent 
+                                  rounded-lg shadow-sm text-sm font-medium text-white 
+                                  bg-blue-600 hover:bg-blue-700 focus:outline-none"
+                      >
+                        <PlusCircle className="-ml-1 mr-1 h-4 w-4" />
+                        Novo
+                      </button>
                     </div>
-                  ) : (
-                    renderSubjectsList()
-                  )}
-                </div>
-              )}
 
-              {activeTab === 'attendance' && (
-                <div>
-                  <div className="mb-6">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                      Controle de Faltas
-                    </h2>
-                    <p className="text-gray-600">
-                      Gerencie as faltas e acompanhe a frequência desta disciplina.
-                    </p>
+                    {loading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                        <p className="mt-2 text-sm text-gray-500">Carregando...</p>
+                      </div>
+                    ) : (
+                      renderSubjectsList()
+                    )}
                   </div>
-                  
-                  <AttendanceControlTab 
-                    discipline={discipline} 
-                    onDisciplineUpdate={setDiscipline}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
+                )}
+
+                {activeTab === 'attendance' && (
+                  <div>
+                    <div className="mb-4">
+                      <h2 className="text-lg font-bold text-gray-900 mb-2">
+                        Controle de Faltas
+                      </h2>
+                      <p className="text-gray-600 text-sm">
+                        Gerencie as faltas e acompanhe a frequência.
+                      </p>
+                    </div>
+                    
+                    <AttendanceControlTab 
+                      discipline={discipline} 
+                      onDisciplineUpdate={setDiscipline}
+                    />
+                  </div>
+                )}
+              </div>
         </>
       ) : (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800 shadow-sm">
