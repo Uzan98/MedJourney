@@ -36,6 +36,7 @@
     "@radix-ui/react-tabs": "^1.1.12",
     "@radix-ui/react-toast": "^1.2.13",
     "@schedule-x/calendar": "^2.36.0",
+    "@schedule-x/calendar-controls": "^2.36.0",
     "@schedule-x/theme-default": "^2.36.0",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.6.1",

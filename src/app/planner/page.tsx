@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createCalendar, createViewDay, createViewWeek, createViewMonthGrid } from '@schedule-x/calendar';
+import { createCalendarControlsPlugin } from '@schedule-x/calendar-controls';
 import '@schedule-x/theme-default/dist/index.css';
 import { Calendar, Clock, Target, BookOpen, Plus, CheckCircle, Circle, Star, TrendingUp, Edit, Trash2, X, ChevronLeft, ChevronRight, Crown, Zap, CalendarDays, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,6 +51,7 @@ export default function PlannerPage() {
   const [activeView, setActiveView] = useState<'today' | 'week' | 'goals'>('today');
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [calendar, setCalendar] = useState<any>(null);
+  const [calendarControls, setCalendarControls] = useState<any>(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -388,6 +390,8 @@ export default function PlannerPage() {
 
   // Inicializar o calendário Schedule-X
   useEffect(() => {
+    const calendarControlsPlugin = createCalendarControlsPlugin();
+    
     const calendarInstance = createCalendar({
       views: [createViewDay(), createViewWeek(), createViewMonthGrid()],
       defaultView: 'week',
@@ -402,9 +406,10 @@ export default function PlannerPage() {
           setSelectedDate(new Date(date));
         }
       }
-    });
+    }, [calendarControlsPlugin]);
     
     setCalendar(calendarInstance);
+    setCalendarControls(calendarControlsPlugin);
     
     return () => {
       if (calendarInstance) {
@@ -420,17 +425,35 @@ export default function PlannerPage() {
     }
   }, [calendar, events]);
 
-  // Renderizar o calendário no DOM quando a visualização semanal for ativada
+  // Renderizar o calendário no DOM apenas quando necessário (mudança de view, calendar, calendarControls)
   useEffect(() => {
-    if (calendar && activeView === 'week') {
-      const calendarElement = document.getElementById('schedule-x-calendar');
+    if (calendar && calendarControls && (activeView === 'week' || activeView === 'today')) {
+      // Usar ID único baseado na visualização ativa
+      const calendarId = activeView === 'today' ? 'schedule-x-calendar-today' : 'schedule-x-calendar-week';
+      const calendarElement = document.getElementById(calendarId);
       if (calendarElement) {
-        // Limpar o elemento antes de renderizar
-        calendarElement.innerHTML = '';
-        calendar.render(calendarElement);
+        // Verificar se o calendário já foi renderizado neste elemento
+        if (calendarElement.children.length === 0) {
+          // Definir a visualização baseada no activeView
+          if (activeView === 'today') {
+            calendarControls.setView('day');
+            calendarControls.setDate(selectedDate.toISOString().split('T')[0]);
+          } else {
+            calendarControls.setView('week');
+          }
+          
+          calendar.render(calendarElement);
+        }
       }
     }
-  }, [calendar, activeView, events]);
+  }, [calendar, calendarControls, activeView]);
+
+  // Atualizar data do calendário quando selectedDate mudar (apenas para visão diária)
+  useEffect(() => {
+    if (calendar && calendarControls && activeView === 'today') {
+      calendarControls.setDate(selectedDate.toISOString().split('T')[0]);
+    }
+  }, [calendar, calendarControls, activeView, selectedDate]);
 
 
 
@@ -450,18 +473,10 @@ export default function PlannerPage() {
     return 'bg-red-500';
   };
 
-  // Filtrar tarefas e eventos por data selecionada
+  // Filtrar tarefas por data selecionada
   const selectedDateTasks = tasks.filter(task => {
     if (!task.due_date) return false;
     return isSameDay(new Date(task.due_date), selectedDate);
-  });
-  
-  const selectedDateEvents = events.filter(event => {
-    const eventDate = new Date(event.start);
-    if (isNaN(eventDate.getTime())) {
-      return false;
-    }
-    return isSameDay(eventDate, selectedDate);
   });
 
   const completedToday = selectedDateTasks.filter(task => task.status === 'completed').length;
@@ -533,43 +548,8 @@ export default function PlannerPage() {
     setEvents(events.filter(event => event.id !== eventId));
   };
 
-  // Gerar slots de tempo para a agenda diária
-  const generateTimeSlots = () => {
-    const slots = [];
-    for (let hour = 6; hour <= 23; hour++) {
-      slots.push({
-        time: `${hour.toString().padStart(2, '0')}:00`,
-        hour: hour
-      });
-    }
-    return slots;
-  };
-
-  const timeSlots = generateTimeSlots();
-
-  // Função para obter eventos em um slot específico
-  const getEventsForTimeSlot = (hour: number) => {
-    return selectedDateEvents.filter(event => {
-      const eventStart = new Date(event.start);
-      const eventHour = eventStart.getHours();
-      return eventHour === hour;
-    });
-  };
-
-  // Função para calcular a altura do evento baseado na duração
-  const getEventHeight = (event: CalendarEvent) => {
-    const start = new Date(event.start);
-    const end = new Date(event.end);
-    const durationMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
-    return Math.max(durationMinutes, 30); // Mínimo de 30 minutos de altura
-  };
-
-  // Função para calcular o offset do evento dentro do slot
-  const getEventTopOffset = (event: CalendarEvent) => {
-    const start = new Date(event.start);
-    const minutes = start.getMinutes();
-    return minutes; // Retorna os minutos como offset
-  };
+  // Funções removidas: generateTimeSlots, getEventsForTimeSlot, getEventHeight, getEventTopOffset
+  // Agora usando Schedule-X para renderização da agenda diária
 
   // Renderizar versão mobile se for dispositivo móvel
   if (isMobile) {
@@ -740,7 +720,7 @@ export default function PlannerPage() {
 
             {/* Main Content */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Daily Schedule */}
+              {/* Daily Schedule using Schedule-X */}
               <div className="lg:col-span-2">
                 <Card className="bg-gradient-to-br from-white to-indigo-50/50 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -832,64 +812,7 @@ export default function PlannerPage() {
                     </Dialog>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                      {timeSlots.map((slot) => {
-                        const eventsInSlot = getEventsForTimeSlot(slot.hour);
-                        return (
-                          <div key={slot.time} className="flex border-b border-gray-100 min-h-[60px] relative">
-                            <div className="w-16 text-sm text-gray-500 py-2 pr-4 text-right">
-                              {slot.time}
-                            </div>
-                            <div className="flex-1 py-2 pl-4 relative">
-                              {eventsInSlot.map((event) => (
-                                <div
-                                  key={event.id}
-                                  className="absolute left-4 right-4 rounded-md p-2 text-white text-sm shadow-sm group cursor-pointer"
-                                  style={{
-                                    backgroundColor: event.color || '#3b82f6',
-                                    top: `${getEventTopOffset(event)}px`,
-                                    height: `${Math.max(getEventHeight(event), 30)}px`,
-                                    minHeight: '30px'
-                                  }}
-                                >
-                                  <div className="flex justify-between items-start">
-                                    <div className="flex-1">
-                                      <div className="font-medium truncate">{event.title}</div>
-                                      {event.description && (
-                                        <div className="text-xs opacity-90 truncate">{event.description}</div>
-                                      )}
-
-
-                                      <div className="text-xs opacity-75">
-                                        {(() => {
-                                          const startDate = new Date(event.start);
-                                          const endDate = new Date(event.end);
-                                          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-                                            return 'Horário inválido';
-                                          }
-                                          return `${format(startDate, 'HH:mm')} - ${format(endDate, 'HH:mm')}`;
-                                        })()} 
-                                      </div>
-                                    </div>
-                                    <button
-                                      onClick={() => deleteEvent(event.id)}
-                                      className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 hover:bg-white/20 rounded p-1"
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                              {eventsInSlot.length === 0 && (
-                                <div className="text-gray-300 text-sm py-4">
-                                  Horário livre
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <div id="schedule-x-calendar-today" className="h-[700px] rounded-xl overflow-hidden border border-gray-100 shadow-inner"></div>
                   </CardContent>
                 </Card>
               </div>
@@ -982,7 +905,7 @@ export default function PlannerPage() {
                 <CardTitle className="text-2xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Visão Semanal</CardTitle>
               </CardHeader>
               <CardContent>
-                <div id="schedule-x-calendar" className="h-[700px] rounded-xl overflow-hidden border border-gray-100 shadow-inner"></div>
+                <div id="schedule-x-calendar-week" className="h-[700px] rounded-xl overflow-hidden border border-gray-100 shadow-inner"></div>
               </CardContent>
             </Card>
           </div>
