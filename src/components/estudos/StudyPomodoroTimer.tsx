@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Play, Pause, RotateCcw, Coffee, BookOpen, Bell, SkipForward, Timer, X, Maximize, CheckCircle, Calendar } from 'lucide-react';
+import { Play, Pause, RotateCcw, Coffee, BookOpen, Bell, SkipForward, Timer, X, Maximize, CheckCircle, Calendar, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import { PomodoroService } from '@/services/pomodoro.service';
@@ -68,13 +68,367 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
   const [notificationMessage, setNotificationMessage] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [pipWindow, setPipWindow] = useState<Window | null>(null);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const endTimeRef = useRef<number | null>(null);
+  const pipSyncRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Função para abrir timer em Picture-in-Picture
+  const openPiP = () => {
+    if (pipWindow && !pipWindow.closed) {
+      pipWindow.focus();
+      return;
+    }
 
+    const popup = window.open(
+      '',
+      'pomodoroTimer',
+      'width=400,height=300,top=100,left=100,resizable=no,scrollbars=no,toolbar=no,menubar=no,location=no,status=no,alwaysRaised=yes'
+    );
+
+    if (!popup) {
+      toast.error('Popup bloqueado! Permita popups para usar o Picture-in-Picture.');
+      return;
+    }
+
+    setPipWindow(popup);
+
+    // HTML da janela PiP
+    popup.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Timer Pomodoro</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <style>
+            body { margin: 0; padding: 0; font-family: system-ui; }
+            .timer-container {
+              background: linear-gradient(135deg, #ef4444, #dc2626);
+              height: 100vh;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              text-align: center;
+            }
+            .timer-display {
+              font-size: 3rem;
+              font-weight: bold;
+              font-family: monospace;
+              margin-bottom: 1rem;
+            }
+            .progress-bar {
+              width: 80%;
+              height: 8px;
+              background: rgba(255,255,255,0.2);
+              border-radius: 4px;
+              margin-bottom: 1rem;
+            }
+            .progress-fill {
+              height: 100%;
+              background: white;
+              border-radius: 4px;
+              transition: width 1s ease-linear;
+            }
+            .controls {
+              display: flex;
+              gap: 0.5rem;
+            }
+            .btn {
+              width: 40px;
+              height: 40px;
+              border: none;
+              border-radius: 50%;
+              background: rgba(255,255,255,0.2);
+              color: white;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transition: all 0.2s;
+            }
+            .btn:hover {
+              background: rgba(255,255,255,0.3);
+              transform: scale(1.1);
+            }
+            .state-text {
+              font-size: 0.9rem;
+              opacity: 0.8;
+              margin-bottom: 1rem;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="timer-container" id="timerContainer">
+            <div class="state-text" id="stateText">Foco</div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="timer-display" id="timerDisplay">25:00</div>
+            <div class="controls">
+              <button class="btn" id="playPauseBtn" onclick="toggleTimer()">▶</button>
+              <button class="btn" id="resetBtn" onclick="resetTimer()">↻</button>
+              <button class="btn" id="skipBtn" onclick="skipCycle()">⏭</button>
+              <button class="btn" onclick="window.close()">✕</button>
+            </div>
+          </div>
+          <script>
+            function formatTime(seconds) {
+              const mins = Math.floor(seconds / 60);
+              const secs = seconds % 60;
+              return mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
+            }
+
+            function updateDisplay() {
+              const data = JSON.parse(localStorage.getItem('pip-pomodoro-sync') || '{}');
+              if (data.timeLeft !== undefined) {
+                document.getElementById('timerDisplay').textContent = formatTime(data.timeLeft);
+                document.getElementById('playPauseBtn').textContent = data.isActive ? '⏸' : '▶';
+                document.getElementById('stateText').textContent = 
+                  data.state === 'focus' ? 'Foco' : 
+                  data.state === 'shortBreak' ? 'Pausa Curta' : 'Pausa Longa';
+                
+                const totalTime = data.state === 'focus' ? 1500 : 
+                                data.state === 'shortBreak' ? 300 : 900;
+                const progress = ((totalTime - data.timeLeft) / totalTime) * 100;
+                document.getElementById('progressFill').style.width = progress + '%';
+                
+                const container = document.getElementById('timerContainer');
+                if (data.state === 'focus') {
+                  container.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                } else if (data.state === 'shortBreak') {
+                  container.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
+                } else {
+                  container.style.background = 'linear-gradient(135deg, #3b82f6, #2563eb)';
+                }
+              }
+            }
+
+            function toggleTimer() {
+              window.opener.postMessage({ action: 'toggleTimer' }, '*');
+            }
+
+            function resetTimer() {
+              window.opener.postMessage({ action: 'resetTimer' }, '*');
+            }
+
+            function skipCycle() {
+              window.opener.postMessage({ action: 'skipCycle' }, '*');
+            }
+
+            // Atualizar display a cada segundo
+            setInterval(updateDisplay, 1000);
+            updateDisplay();
+
+            // Fechar quando a janela principal fechar
+            window.addEventListener('beforeunload', () => {
+              if (window.opener) {
+                window.opener.postMessage({ action: 'pipClosed' }, '*');
+              }
+            });
+          </script>
+        </body>
+      </html>
+    `);
+
+    popup.document.close();
+  };
+
+  // Sincronizar estado com PiP
+  const syncWithPiP = () => {
+    if (typeof window !== 'undefined') {
+      const syncData = {
+        timeLeft,
+        isActive,
+        state,
+        completedSessions
+      };
+      localStorage.setItem('pip-pomodoro-sync', JSON.stringify(syncData));
+    }
+  };
+
+  // Função para abrir timer em popup
+  const openTimerPopup = () => {
+    const popupFeatures = [
+      'width=800',
+      'height=600',
+      'left=' + (screen.width / 2 - 400),
+      'top=' + (screen.height / 2 - 300),
+      'resizable=yes',
+      'scrollbars=no',
+      'toolbar=no',
+      'menubar=no',
+      'location=no',
+      'status=no'
+    ].join(',');
+
+    const popup = window.open('', 'PomodoroTimer', popupFeatures);
+    
+    if (popup) {
+      // Criar conteúdo HTML para o popup
+      const popupContent = `
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Pomodoro Timer</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <style>
+            body { margin: 0; padding: 0; overflow: hidden; }
+            .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+          </style>
+        </head>
+        <body class="gradient-bg text-white">
+          <div class="min-h-screen flex items-center justify-center p-8">
+            <div class="text-center">
+              <div class="mb-8">
+                <h1 class="text-4xl font-bold mb-4">Pomodoro Timer</h1>
+                <div class="w-full max-w-md mx-auto bg-white/20 rounded-full h-4 mb-8">
+                  <div id="progress-bar" class="bg-white h-4 rounded-full transition-all duration-1000 ease-linear" style="width: 0%"></div>
+                </div>
+              </div>
+              
+              <div class="mb-8">
+                <div id="timer-display" class="text-8xl font-mono font-bold mb-4 tracking-wider">
+                  ${formatTime(timeLeft)}
+                </div>
+                <p id="timer-message" class="text-2xl text-white/80">
+                  ${state === 'focus' ? 'Mantenha o foco nos estudos' : 
+                    state === 'shortBreak' ? 'Descanse um pouco' : 
+                    'Faça uma pausa mais longa'}
+                </p>
+              </div>
+              
+              <div class="flex justify-center space-x-6">
+                <button id="play-pause-btn" class="flex items-center justify-center w-20 h-20 bg-white/20 hover:bg-white/30 rounded-full transition-all hover:scale-110">
+                  <svg class="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
+                    ${isActive ? 
+                      '<path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>' : 
+                      '<path d="M8 5v14l11-7z"/>'
+                    }
+                  </svg>
+                </button>
+                
+                <button id="reset-btn" class="flex items-center justify-center w-20 h-20 bg-white/20 hover:bg-white/30 rounded-full transition-all hover:scale-110">
+                  <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                  </svg>
+                </button>
+                
+                <button id="skip-btn" class="flex items-center justify-center w-20 h-20 bg-white/20 hover:bg-white/30 rounded-full transition-all hover:scale-110">
+                  <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </button>
+              </div>
+              
+              <div class="mt-8 text-white/60 text-lg">
+                Pressione <kbd class="px-2 py-1 bg-white/20 rounded text-sm">ESC</kbd> para fechar
+              </div>
+            </div>
+          </div>
+          
+          <script>
+            // Sincronização com a janela principal
+            let timerInterval;
+            let currentTime = ${timeLeft};
+            let isRunning = ${isActive};
+            let currentState = '${state}';
+            
+            function updateDisplay() {
+              const minutes = Math.floor(currentTime / 60);
+              const seconds = currentTime % 60;
+              document.getElementById('timer-display').textContent = 
+                minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
+              
+              const totalTime = currentState === 'focus' ? 25 * 60 : 
+                               currentState === 'shortBreak' ? 5 * 60 : 15 * 60;
+              const progress = ((totalTime - currentTime) / totalTime) * 100;
+              document.getElementById('progress-bar').style.width = progress + '%';
+            }
+            
+            function startTimer() {
+              if (!isRunning) {
+                isRunning = true;
+                timerInterval = setInterval(() => {
+                  if (currentTime > 0) {
+                    currentTime--;
+                    updateDisplay();
+                  } else {
+                    clearInterval(timerInterval);
+                    isRunning = false;
+                    // Notificar conclusão
+                    alert('Ciclo concluído!');
+                  }
+                }, 1000);
+              }
+            }
+            
+            function pauseTimer() {
+              isRunning = false;
+              clearInterval(timerInterval);
+            }
+            
+            function resetTimer() {
+              pauseTimer();
+              currentTime = currentState === 'focus' ? 25 * 60 : 
+                           currentState === 'shortBreak' ? 5 * 60 : 15 * 60;
+              updateDisplay();
+            }
+            
+            function skipCycle() {
+              pauseTimer();
+              // Lógica para pular ciclo
+              if (currentState === 'focus') {
+                currentState = 'shortBreak';
+                currentTime = 5 * 60;
+              } else {
+                currentState = 'focus';
+                currentTime = 25 * 60;
+              }
+              updateDisplay();
+            }
+            
+            // Event listeners
+            document.getElementById('play-pause-btn').addEventListener('click', () => {
+              if (isRunning) {
+                pauseTimer();
+              } else {
+                startTimer();
+              }
+            });
+            
+            document.getElementById('reset-btn').addEventListener('click', resetTimer);
+            document.getElementById('skip-btn').addEventListener('click', skipCycle);
+            
+            // Fechar popup com ESC
+            document.addEventListener('keydown', (e) => {
+              if (e.key === 'Escape') {
+                window.close();
+              }
+            });
+            
+            // Inicializar display
+            updateDisplay();
+          </script>
+        </body>
+        </html>
+      `;
+      
+      popup.document.write(popupContent);
+      popup.document.close();
+      popup.focus();
+      
+      toast.success('Timer aberto em popup! 🚀');
+    } else {
+      toast.error('Não foi possível abrir o popup. Verifique se popups estão habilitados.');
+    }
+  };
 
   // Verificar se está montado no cliente
   useEffect(() => {
@@ -88,8 +442,13 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
       localStorage.setItem('study-pomodoro-time', timeLeft.toString());
       localStorage.setItem('study-pomodoro-active', isActive.toString());
       localStorage.setItem('study-pomodoro-sessions', completedSessions.toString());
+      
+      // Sincronizar com PiP se estiver aberto
+      if (pipWindow && !pipWindow.closed) {
+        syncWithPiP();
+      }
     }
-  }, [state, timeLeft, isActive, completedSessions]);
+  }, [state, timeLeft, isActive, completedSessions, pipWindow]);
 
   // Inicializar áudio e eventos
   useEffect(() => {
@@ -103,14 +462,37 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
       }
     };
     
+    // Listener para mensagens do PiP
+    const handlePipMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      
+      switch (event.data.action) {
+        case 'toggleTimer':
+          isActive ? pauseTimer() : startTimer();
+          break;
+        case 'resetTimer':
+          resetTimer();
+          break;
+        case 'skipCycle':
+          skipCycle();
+          break;
+        case 'pipClosed':
+          setPipWindow(null);
+          break;
+      }
+    };
+    
     document.addEventListener('keydown', handleKeyPress);
+    window.addEventListener('message', handlePipMessage);
     
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (pipSyncRef.current) clearInterval(pipSyncRef.current);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       document.removeEventListener('keydown', handleKeyPress);
+      window.removeEventListener('message', handlePipMessage);
     };
-  }, [isFullscreen]);
+  }, [isFullscreen, isActive]);
 
   // Gerenciar timer
   useEffect(() => {
@@ -540,6 +922,13 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
               <div className="text-sm bg-white/20 px-2 py-1 rounded-full">
                 {completedSessions} sessões
               </div>
+              <button
+                onClick={openPiP}
+                className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-all hover:scale-110"
+                title="Abrir Picture-in-Picture"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </button>
               {isActive && (
                 <button
                   onClick={() => setIsFullscreen(true)}
