@@ -8,6 +8,12 @@ import { Discipline, Subject } from '@/lib/supabase';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 import { StudyStreakService, StudyStreak, WeekDay } from '@/lib/study-streak-service';
 import { StudySessionService } from '@/services/study-sessions.service';
+import { PomodoroService } from '@/services/pomodoro.service';
+import { GoalsService } from '@/lib/services/goals.service';
+import { FlashcardsService } from '@/services/flashcards.service';
+import { ExamsService } from '@/services/exams.service';
+import { StudyRoomService } from '@/services/study-room.service';
+import { StudyGroupService } from '@/services/study-group.service';
 import {
   BookOpen,
   Clock,
@@ -31,7 +37,8 @@ import {
   ChevronDown,
   Bell,
   BookOpenCheck,
-  Lightbulb
+  Lightbulb,
+  Target
 } from 'lucide-react';
 import QuickStudySessionModal from '@/components/estudos/QuickStudySessionModal';
 import MobileDashboard from '@/components/MobileDashboard';
@@ -79,11 +86,16 @@ export default function DashboardPage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [studyByDiscipline, setStudyByDiscipline] = useState<StudyByDiscipline[]>([]);
   const [stats, setStats] = useState({
-    totalDisciplines: 0,
-    totalSubjects: 0,
-    subjectsByDifficulty: { baixa: 0, média: 0, alta: 0 },
-    subjectsByImportance: { baixa: 0, média: 0, alta: 0 },
-    studyHours: 0
+    totalStudyTime: 0, // em horas
+    goalPercentage: 0, // porcentagem média das metas
+    flashcardMastery: 0, // domínio geral dos flashcards
+    completedExams: 0 // simulados concluídos
+  });
+  const [statsLoading, setStatsLoading] = useState({
+    studyTime: true,
+    goals: true,
+    flashcards: true,
+    exams: true
   });
   const [studyStreak, setStudyStreak] = useState<StudyStreak>({
     currentStreak: 0,
@@ -123,58 +135,12 @@ export default function DashboardPage() {
         // Registrar login diário do usuário
         await StudyStreakService.recordDailyLogin();
         
-        // Carregar disciplinas
+        // Carregar disciplinas para outros componentes
         const disciplinesData = await DisciplinesRestService.getDisciplines(true);
         setDisciplines(disciplinesData || []);
         
-        // Variáveis para estatísticas
-        let allSubjects: Subject[] = [];
-        let totalHours = 0;
-        
-        // Verificar se existem disciplinas
-        if (disciplinesData && disciplinesData.length > 0) {
-          // Carregar assuntos de cada disciplina
-          for (const discipline of disciplinesData) {
-            try {
-              const disciplineSubjects = await DisciplinesRestService.getSubjects(discipline.id);
-              if (disciplineSubjects) {
-                allSubjects = [...allSubjects, ...disciplineSubjects];
-                
-                // Calcular horas estimadas
-                disciplineSubjects.forEach((subject: Subject) => {
-                  totalHours += subject.estimated_hours || 0;
-                });
-              }
-            } catch (error) {
-              console.error(`Erro ao carregar assuntos da disciplina ${discipline.id}:`, error);
-            }
-          }
-        }
-        
-        // Atualizar estado com os assuntos
-        setSubjects(allSubjects);
-        
-        // Calcular contagens por dificuldade e importância
-        const subjectsByDifficulty = {
-          baixa: allSubjects.filter(s => s.difficulty === 'baixa').length,
-          média: allSubjects.filter(s => s.difficulty === 'média').length,
-          alta: allSubjects.filter(s => s.difficulty === 'alta').length
-        };
-        
-        const subjectsByImportance = {
-          baixa: allSubjects.filter(s => s.importance === 'baixa').length,
-          média: allSubjects.filter(s => s.importance === 'média').length,
-          alta: allSubjects.filter(s => s.importance === 'alta').length
-        };
-        
-        // Atualizar estatísticas
-        setStats({
-          totalDisciplines: disciplinesData?.length || 0,
-          totalSubjects: allSubjects.length,
-          subjectsByDifficulty,
-          subjectsByImportance,
-          studyHours: totalHours
-        });
+        // Carregar estatísticas em paralelo
+        loadNewStats();
 
         // Carregar sessões de estudo completadas
         const completedSessions = await StudySessionService.getUserSessions(true);
@@ -246,6 +212,108 @@ export default function DashboardPage() {
     
     return () => clearTimeout(safetyTimeout);
   }, []);
+
+  // Função para carregar as novas estatísticas
+  const loadNewStats = async () => {
+    // Carregar tempo total de estudo
+    loadStudyTimeStats();
+    
+    // Carregar porcentagem de metas
+    loadGoalsStats();
+    
+    // Carregar domínio de flashcards
+    loadFlashcardsStats();
+    
+    // Carregar simulados concluídos
+    loadExamsStats();
+  };
+
+  // Carregar tempo total de estudo
+  const loadStudyTimeStats = async () => {
+    try {
+      setStatsLoading(prev => ({ ...prev, studyTime: true }));
+      
+      // Carregar sessões de estudo regulares
+      const completedSessions = await StudySessionService.getUserSessions(true);
+      const completedSessionsOnly = completedSessions?.filter(s => s.completed) || [];
+      
+      // Calcular tempo das sessões regulares
+      const regularStudyMinutes = completedSessionsOnly.reduce((total, s) => 
+        total + (s.actual_duration_minutes || s.duration_minutes), 0);
+      
+      // Carregar estatísticas do Pomodoro
+      const pomodoroStats = await PomodoroService.getPomodoroStats();
+      const pomodoroFocusMinutes = pomodoroStats?.focusMinutes || 0;
+      
+      // Carregar estatísticas do Study Room
+      const studyRoomStats = await StudyRoomService.getUserStats();
+      const studyRoomMinutes = Math.floor((studyRoomStats?.total_time || 0) / 60); // Converter segundos para minutos
+      
+      // Carregar estatísticas do Study Group
+      const studyGroupStats = await StudyGroupService.getUserStats();
+      const studyGroupMinutes = Math.floor((studyGroupStats?.total_time || 0) / 60); // Converter segundos para minutos
+      
+      // Calcular tempo total em horas
+      const totalMinutes = regularStudyMinutes + pomodoroFocusMinutes + studyRoomMinutes + studyGroupMinutes;
+      const totalHours = Math.round((totalMinutes / 60) * 10) / 10; // Arredondar para 1 casa decimal
+      
+      setStats(prev => ({ ...prev, totalStudyTime: totalHours }));
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas de tempo de estudo:', error);
+    } finally {
+      setStatsLoading(prev => ({ ...prev, studyTime: false }));
+    }
+  };
+
+  // Carregar porcentagem de metas
+  const loadGoalsStats = async () => {
+    try {
+      setStatsLoading(prev => ({ ...prev, goals: true }));
+      
+      const goalsStats = await GoalsService.getGoalsStats();
+      const averageProgress = goalsStats?.averageProgress || 0;
+      
+      setStats(prev => ({ ...prev, goalPercentage: Math.round(averageProgress) }));
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas de metas:', error);
+    } finally {
+      setStatsLoading(prev => ({ ...prev, goals: false }));
+    }
+  };
+
+  // Carregar domínio de flashcards
+  const loadFlashcardsStats = async () => {
+    try {
+      setStatsLoading(prev => ({ ...prev, flashcards: true }));
+      
+      if (user?.id) {
+        const flashcardStats = await FlashcardsService.getUserStats(user.id);
+        const masteryPercentage = flashcardStats?.mastery_percentage || 0;
+        
+        setStats(prev => ({ ...prev, flashcardMastery: Math.round(masteryPercentage) }));
+      }
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas de flashcards:', error);
+    } finally {
+      setStatsLoading(prev => ({ ...prev, flashcards: false }));
+    }
+  };
+
+  // Carregar simulados concluídos
+  const loadExamsStats = async () => {
+    try {
+      setStatsLoading(prev => ({ ...prev, exams: true }));
+      
+      const userAttempts = await ExamsService.getUserAttempts();
+      const completedAttempts = userAttempts?.filter(attempt => attempt.completed_at) || [];
+      
+      setStats(prev => ({ ...prev, completedExams: completedAttempts.length }));
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas de simulados:', error);
+    } finally {
+      setStatsLoading(prev => ({ ...prev, exams: false }));
+    }
+  };
 
   // Verificar se é a primeira visita do usuário
   useEffect(() => {
@@ -604,11 +672,17 @@ export default function DashboardPage() {
             <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-lg border border-blue-400/30 shadow-md">
               <div className="flex items-center">
                 <div className="rounded-full bg-white/20 p-3 mr-4 shadow-inner">
-                  <BookOpen className="h-6 w-6 text-white" />
+                  <Clock className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-blue-100">Disciplinas</p>
-                  <h3 className="text-2xl font-bold text-white">{stats.totalDisciplines}</h3>
+                  <p className="text-sm text-blue-100">Tempo Total de Estudo</p>
+                  <h3 className="text-2xl font-bold text-white">
+                    {statsLoading.studyTime ? (
+                      <span className="animate-pulse">--</span>
+                    ) : (
+                      `${stats.totalStudyTime}h`
+                    )}
+                  </h3>
                 </div>
               </div>
             </div>
@@ -616,11 +690,17 @@ export default function DashboardPage() {
             <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-lg border border-purple-400/30 shadow-md">
               <div className="flex items-center">
                 <div className="rounded-full bg-white/20 p-3 mr-4 shadow-inner">
-                  <BookMarked className="h-6 w-6 text-white" />
+                  <TrendingUp className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-purple-100">Assuntos</p>
-                  <h3 className="text-2xl font-bold text-white">{stats.totalSubjects}</h3>
+                  <p className="text-sm text-purple-100">Porcentagem de Meta</p>
+                  <h3 className="text-2xl font-bold text-white">
+                    {statsLoading.goals ? (
+                      <span className="animate-pulse">--</span>
+                    ) : (
+                      `${stats.goalPercentage}%`
+                    )}
+                  </h3>
                 </div>
               </div>
             </div>
@@ -628,11 +708,17 @@ export default function DashboardPage() {
             <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 rounded-lg border border-emerald-400/30 shadow-md">
               <div className="flex items-center">
                 <div className="rounded-full bg-white/20 p-3 mr-4 shadow-inner">
-                  <Clock className="h-6 w-6 text-white" />
+                  <Brain className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-emerald-100">Horas de Estudo</p>
-                  <h3 className="text-2xl font-bold text-white">{stats.studyHours}</h3>
+                  <p className="text-sm text-emerald-100">Domínio Geral dos Flashcards</p>
+                  <h3 className="text-2xl font-bold text-white">
+                    {statsLoading.flashcards ? (
+                      <span className="animate-pulse">--</span>
+                    ) : (
+                      `${stats.flashcardMastery}%`
+                    )}
+                  </h3>
                 </div>
               </div>
             </div>
@@ -640,11 +726,17 @@ export default function DashboardPage() {
             <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-6 rounded-lg border border-amber-400/30 shadow-md">
               <div className="flex items-center">
                 <div className="rounded-full bg-white/20 p-3 mr-4 shadow-inner">
-                  <Award className="h-6 w-6 text-white" />
+                  <CheckCircle className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-amber-100">Alta Importância</p>
-                  <h3 className="text-2xl font-bold text-white">{stats.subjectsByImportance.alta}</h3>
+                  <p className="text-sm text-amber-100">Simulados Concluídos</p>
+                  <h3 className="text-2xl font-bold text-white">
+                    {statsLoading.exams ? (
+                      <span className="animate-pulse">--</span>
+                    ) : (
+                      stats.completedExams
+                    )}
+                  </h3>
                 </div>
               </div>
             </div>
