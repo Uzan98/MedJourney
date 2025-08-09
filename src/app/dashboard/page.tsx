@@ -48,6 +48,7 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import FlashcardStatsCard from '@/components/dashboard/FlashcardStatsCard';
 import FlashcardReviewsCard from '@/components/dashboard/FlashcardReviewsCard';
 import GenobotTourModal from '@/components/tour/genobot-tour-modal';
+import StudyStreakComponent from '@/components/dashboard/StudyStreak';
 
 // Função auxiliar para gerar dias da semana
 const getDaysOfWeek = () => {
@@ -759,92 +760,19 @@ export default function DashboardPage() {
         </div>
 
         {/* Sequência de Estudos */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-              <div className="p-2 rounded-md bg-orange-100 text-orange-600 mr-3">
-                <Flame className="h-5 w-5" />
-              </div>
-              Sequência de Estudos
-            </h2>
-            <div className="text-sm bg-orange-100 text-orange-600 py-1.5 px-4 rounded-full font-medium shadow-sm border border-orange-200">
-              <span className="font-bold">{studyStreak.currentStreak}</span> dias consecutivos
-            </div>
-          </div>
-          
-          <div className="flex justify-between items-center">
-            <button className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            
-            <div className="flex justify-between space-x-2 md:space-x-5">
-              {studyStreak.weekDays.map((day, index) => (
-                <div key={index} className="flex flex-col items-center">
-                  <div className="text-xs font-medium text-gray-500">{day.dayName}</div>
-                  <div 
-                    className={`
-                      w-12 h-12 flex items-center justify-center rounded-full my-2
-                      ${day.isToday ? 'ring-2 ring-blue-400 ring-offset-2' : ''}
-                      ${day.hasStudied 
-                        ? 'bg-gradient-to-br from-orange-400 to-red-500 text-white shadow-lg transform hover:scale-105 transition-all' 
-                        : 'bg-gray-100 text-gray-400 hover:bg-gray-200 transition-colors'}
-                    `}
-                  >
-                    {day.hasStudied 
-                      ? <Flame className="h-6 w-6" /> 
-                      : <span className="text-sm font-medium">{day.dayNumber}</span>}
-                  </div>
-                  <div className="text-xs font-medium">
-                    {day.hasStudied ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-green-100 text-green-800">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        <span>OK</span>
-                      </span>
-                    ) : day.isToday ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">Hoje</span>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            <button className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          </div>
-          
-          <div className="mt-6 pt-4 border-t border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex items-center p-4 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl shadow-sm">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-white shadow-inner">
-                <Flame className="h-6 w-6" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-orange-100">Sequência Atual</p>
-                <p className="text-xl font-bold text-white">{studyStreak.currentStreak} dias</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center p-4 bg-gradient-to-br from-purple-400 to-purple-500 rounded-xl shadow-sm">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-white shadow-inner">
-                <Award className="h-6 w-6" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-purple-100">Maior Sequência</p>
-                <p className="text-xl font-bold text-white">{studyStreak.longestStreak} dias</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center p-4 bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl shadow-sm">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-white shadow-inner">
-                <Calendar className="h-6 w-6" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-blue-100">Total na Semana</p>
-                <p className="text-xl font-bold text-white">{studyStreak.totalDaysStudied} dias</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <StudyStreakComponent 
+          streak={{
+            currentStreak: studyStreak.currentStreak,
+            longestStreak: studyStreak.longestStreak,
+            totalDaysStudied: studyStreak.totalDaysStudied,
+            lastWeekActivities: studyStreak.weekDays.map(day => ({
+              date: day.date.toISOString(),
+              hasActivity: day.hasStudied
+            })),
+            lastActivity: studyStreak.weekDays.find(day => day.hasStudied)?.date.toISOString()
+          }}
+          isLoading={loading}
+        />
         
         {/* Gráfico de desempenho em simulados */}
         <div className="mt-8 mb-8">
