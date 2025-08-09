@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { Play, Pause, RotateCcw, Coffee, BookOpen, Bell, SkipForward, Timer, X, Maximize, CheckCircle, Calendar } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-hot-toast';
+import { PomodoroService } from '@/services/pomodoro.service';
 
 interface StudyPomodoroTimerProps {
   onComplete?: () => void;
@@ -72,6 +73,8 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const endTimeRef = useRef<number | null>(null);
+
+
 
   // Verificar se está montado no cliente
   useEffect(() => {
@@ -176,6 +179,17 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
     if (state === 'focus') {
       const newCompletedSessions = completedSessions + 1;
       setCompletedSessions(newCompletedSessions);
+      
+      // Salvar sessão de foco no banco de dados
+      console.log('💾 Salvando sessão de foco no banco de dados...');
+      PomodoroService.recordPomodoroSession(focusTime, 'focus')
+        .then(() => {
+          console.log('✅ Sessão de foco salva com sucesso no banco!');
+        })
+        .catch((error) => {
+          console.error('❌ Erro ao salvar sessão de foco:', error);
+          toast.error('Erro ao salvar sessão no banco de dados');
+        });
       
       if (newCompletedSessions % longBreakInterval === 0) {
         nextState = 'longBreak';
@@ -592,6 +606,8 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
               <span>Finalizar e Salvar</span>
             </button>
           )}
+          
+
         </div>
       </div>
 

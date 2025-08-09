@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { StudySessionService } from '@/services/study-sessions.service';
+import { PomodoroService } from '@/services/pomodoro.service';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import { 
@@ -535,14 +536,29 @@ export default function EstudosPage() {
       }
       // Se não estudou nem hoje nem ontem, a sequência é zero
         
-      // Calcular métricas
+      // Calcular métricas incluindo sessões Pomodoro
       if (todaySessions) {
         const allSessions = [...todaySessions, ...completedSessions];
+        
+        // Buscar estatísticas das sessões Pomodoro
+        const pomodoroStats = await PomodoroService.getPomodoroStats();
+        
+        // Calcular tempo total das sessões de estudo regulares
+        const regularStudyMinutes = completedSessions.reduce((total, s) => 
+          total + (s.actual_duration_minutes || s.duration_minutes), 0);
+        
+        // Adicionar tempo das sessões Pomodoro de foco ao tempo total
+        const pomodoroFocusMinutes = pomodoroStats?.focusMinutes || 0;
+        const totalMinutes = regularStudyMinutes + pomodoroFocusMinutes;
+        
+        // Adicionar sessões Pomodoro de foco ao total de sessões completadas
+        const pomodoroFocusSessions = pomodoroStats?.focusSessions || 0;
+        const totalCompletedSessions = completedSessions.length + pomodoroFocusSessions;
+        
         setMetrics({
-          totalSessions: allSessions.length,
-          completedSessions: completedSessions.length,
-          totalMinutes: completedSessions.reduce((total, s) => 
-            total + (s.actual_duration_minutes || s.duration_minutes), 0),
+          totalSessions: allSessions.length + pomodoroFocusSessions,
+          completedSessions: totalCompletedSessions,
+          totalMinutes: totalMinutes,
           streakDays: streakDays
         });
       }
