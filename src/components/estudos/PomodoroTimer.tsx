@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Play, Pause, RotateCcw, Coffee, BookOpen, Bell, SkipForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { StudyGroupAchievementsService } from '@/services/study-group-achievements.service';
+import { PomodoroService } from '@/services/pomodoro.service';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 
@@ -28,6 +29,8 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
     const storedState = localStorage.getItem(`pomodoro-state-${groupId}`);
     return storedState ? storedState as PomodoroState : 'focus';
   };
+
+
 
   const getInitialTimeLeft = () => {
     if (typeof window === 'undefined') return focusTime * 60;
@@ -257,6 +260,26 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
     if (state === 'focus') {
       const newCompletedSessions = completedSessions + 1;
       setCompletedSessions(newCompletedSessions);
+      
+      // Registrar sessão Pomodoro no banco de dados
+      const sessionDuration = Math.ceil((totalTimeRef.current - timeLeft) / 60); // Duração em minutos
+      console.log('🍅 Iniciando salvamento da sessão Pomodoro:', {
+        duration: sessionDuration,
+        type: 'focus',
+        timestamp: new Date().toISOString()
+      });
+      
+      setTimeout(() => {
+        PomodoroService.recordPomodoroSession(sessionDuration, 'focus')
+          .then(session => {
+            if (session) {
+              console.log('✅ Sessão Pomodoro registrada no banco:', session);
+            }
+          })
+          .catch(error => {
+            console.error('❌ Erro ao registrar sessão Pomodoro:', error);
+          });
+      }, 100);
       
       // Registrar conquista se estiver em um grupo
       if (groupId && user) {
@@ -594,6 +617,8 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
           Pular
         </Button>
       </div>
+      
+
       
       {showNotification && (
         <div className="mt-4 p-3 bg-blue-50 text-blue-700 rounded-lg text-center">

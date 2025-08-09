@@ -1,16 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createCalendar, createViewDay, createViewWeek, createViewMonthGrid } from '@schedule-x/calendar';
+import { createCalendar, createViewDay, createViewWeek, createViewMonthGrid, createViewList } from '@schedule-x/calendar';
+import { createCalendarControlsPlugin } from '@schedule-x/calendar-controls';
 import '@schedule-x/theme-default/dist/index.css';
-import { Calendar, Clock, Target, BookOpen, Plus, CheckCircle, Circle, Star, TrendingUp, Edit, Trash2, X, ChevronLeft, ChevronRight, Crown, Zap, CalendarDays, AlertTriangle } from 'lucide-react';
+import { Calendar, Clock, Target, BookOpen, Plus, CheckCircle, Circle, Star, TrendingUp, Edit, Trash2, X, Crown, Zap, CalendarDays, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { format, addDays, subDays, isSameDay, startOfDay, endOfDay } from 'date-fns';
+import { format, isSameDay, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { TaskService } from '@/lib/services/task.service';
 import { Task } from '@/lib/types/dashboard';
@@ -20,7 +21,7 @@ import { SubscriptionClientService } from '@/services/subscription-client.servic
 import SimpleEventModal from '@/components/modals/simple-event-modal';
 import SimpleGoalModal from '@/components/modals/simple-goal-modal';
 import UpdateGoalProgressModal from '@/components/modals/update-goal-progress-modal';
-import QuickGoalIncrementModal from '@/components/modals/quick-goal-increment-modal';
+
 import MobilePlannerPanel from '@/components/planner/MobilePlannerPanel';
 import { useIsMobile } from '@/hooks/useIsMobile';
 
@@ -47,17 +48,17 @@ interface CalendarEvent {
 export default function PlannerPage() {
   const router = useRouter();
   const isMobile = useIsMobile();
-  const [activeView, setActiveView] = useState<'today' | 'week' | 'goals'>('today');
+  const [activeView, setActiveView] = useState<'today' | 'week' | 'list' | 'goals'>('today');
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [calendar, setCalendar] = useState<any>(null);
+  const [calendarControls, setCalendarControls] = useState<any>(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeModalType, setUpgradeModalType] = useState<'event' | 'goal'>('event');
   const [showUpdateProgressModal, setShowUpdateProgressModal] = useState(false);
   const [selectedGoalForUpdate, setSelectedGoalForUpdate] = useState<StudyGoal | null>(null);
-  const [showQuickIncrementModal, setShowQuickIncrementModal] = useState(false);
-  const [selectedGoalForQuickIncrement, setSelectedGoalForQuickIncrement] = useState<StudyGoal | null>(null);
+
   
   // Absence states
 
@@ -87,6 +88,13 @@ export default function PlannerPage() {
     }
   };
 
+  // Função para gerar calendarId baseado na cor
+  const getCalendarIdFromColor = (color: string) => {
+    // Normalizar a cor removendo # se presente
+    const normalizedColor = color.replace('#', '').toLowerCase();
+    return `calendar-${normalizedColor}`;
+  };
+
   // Carregar eventos do Supabase
   const loadEvents = async () => {
     try {
@@ -112,13 +120,15 @@ export default function PlannerPage() {
           }
         };
 
+        console.log('🎨 Cor do evento:', event.color, 'CalendarId:', getCalendarIdFromColor(event.color || '#3b82f6'));
+
         return {
           id: event.id,
           title: event.title,
           description: event.description,
           start: formatDateForScheduleX(event.start_date),
           end: formatDateForScheduleX(event.end_date),
-          color: event.color
+          calendarId: getCalendarIdFromColor(event.color || '#3b82f6')
         };
       });
       
@@ -301,47 +311,7 @@ export default function PlannerPage() {
     setSelectedGoalForUpdate(null);
   };
 
-  const handleOpenQuickIncrementModal = (goal: StudyGoal) => {
-    setSelectedGoalForQuickIncrement(goal);
-    setShowQuickIncrementModal(true);
-  };
 
-  const handleCloseQuickIncrementModal = () => {
-    setShowQuickIncrementModal(false);
-    setSelectedGoalForQuickIncrement(null);
-  };
-
-  const handleQuickIncrementProgress = async (goalId: string, increment: number) => {
-    try {
-      const result = await GoalsService.incrementGoalProgress(goalId, increment);
-      
-      if (result) {
-        // Atualizar a lista de metas
-        await loadGoals();
-        
-        if (result.wasCompleted) {
-          toast.success(
-            `🎉 Parabéns! Você completou a meta "${result.goal.title}"! 🎉`,
-            {
-              duration: 5000,
-              style: {
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                color: 'white',
-                border: 'none',
-                fontSize: '16px',
-                fontWeight: '600'
-              }
-            }
-          );
-        } else {
-          toast.success(`Progresso incrementado! +${increment} ${result.goal.unit}`);
-        }
-      }
-    } catch (error) {
-      console.error('Erro ao incrementar progresso:', error);
-      toast.error('Erro ao incrementar progresso');
-    }
-  };
 
 
 
@@ -386,14 +356,47 @@ export default function PlannerPage() {
     unit: 'horas'
   });
 
+  // Função para gerar calendários dinâmicos baseados nas cores dos eventos
+  const generateCalendarsFromEvents = (events: CalendarEvent[]) => {
+    const calendars: Record<string, any> = {};
+    
+    events.forEach(event => {
+      if (event.calendarId && !calendars[event.calendarId]) {
+        // Extrair a cor do calendarId
+        const colorHex = event.calendarId.replace('calendar-', '');
+        const fullColorHex = colorHex.length === 6 ? `#${colorHex}` : '#3b82f6';
+        
+        calendars[event.calendarId] = {
+          colorName: event.calendarId,
+          lightColors: {
+            main: fullColorHex,
+            container: `${fullColorHex}20`, // 20% opacity
+            onContainer: '#000000',
+          },
+          darkColors: {
+            main: fullColorHex,
+            container: `${fullColorHex}30`, // 30% opacity
+            onContainer: '#ffffff',
+          },
+        };
+      }
+    });
+    
+    console.log('📅 Calendários gerados:', calendars);
+    return calendars;
+  };
+
   // Inicializar o calendário Schedule-X
   useEffect(() => {
+    const calendarControlsPlugin = createCalendarControlsPlugin();
+    
     const calendarInstance = createCalendar({
-      views: [createViewDay(), createViewWeek(), createViewMonthGrid()],
+      views: [createViewDay(), createViewWeek(), createViewMonthGrid(), createViewList()],
       defaultView: 'week',
       locale: 'pt-BR',
       firstDayOfWeek: 0,
-      events: events,
+      calendars: generateCalendarsFromEvents(events),
+      events: [], // Inicializar vazio, eventos serão adicionados via events.set()
       callbacks: {
         onEventClick: (calendarEvent: any) => {
           console.log('Event clicked:', calendarEvent);
@@ -402,9 +405,10 @@ export default function PlannerPage() {
           setSelectedDate(new Date(date));
         }
       }
-    });
+    }, [calendarControlsPlugin]);
     
     setCalendar(calendarInstance);
+    setCalendarControls(calendarControlsPlugin);
     
     return () => {
       if (calendarInstance) {
@@ -415,22 +419,82 @@ export default function PlannerPage() {
 
   // Atualizar eventos no calendário quando mudarem
   useEffect(() => {
-    if (calendar) {
-      calendar.events.set(events);
+    if (calendar && events.length > 0) {
+      console.log('🔄 Atualizando eventos no calendário:', events);
+      
+      // Atualizar calendários com as novas cores
+      const newCalendars = generateCalendarsFromEvents(events);
+      console.log('🎨 Atualizando calendários com cores:', newCalendars);
+      
+      // Recriar o calendário com os novos calendários e eventos
+      const calendarControlsPlugin = createCalendarControlsPlugin();
+      
+      const newCalendarInstance = createCalendar({
+        views: [createViewDay(), createViewWeek(), createViewMonthGrid(), createViewList()],
+        defaultView: 'week',
+        locale: 'pt-BR',
+        firstDayOfWeek: 0,
+        calendars: newCalendars,
+        events: events,
+        callbacks: {
+          onEventClick: (calendarEvent: any) => {
+            console.log('Event clicked:', calendarEvent);
+          },
+          onClickDate: (date: string) => {
+            setSelectedDate(new Date(date));
+          }
+        }
+      }, [calendarControlsPlugin]);
+      
+      // Destruir o calendário anterior
+      if (calendar) {
+        calendar.destroy?.();
+      }
+      
+      setCalendar(newCalendarInstance);
+      setCalendarControls(calendarControlsPlugin);
+      
+      console.log('✅ Calendário atualizado com novas cores!');
     }
-  }, [calendar, events]);
+  }, [events]);
 
-  // Renderizar o calendário no DOM quando a visualização semanal for ativada
+  // Renderizar o calendário no DOM apenas quando necessário (mudança de view, calendar, calendarControls)
   useEffect(() => {
-    if (calendar && activeView === 'week') {
-      const calendarElement = document.getElementById('schedule-x-calendar');
+    if (calendar && calendarControls && (activeView === 'week' || activeView === 'today' || activeView === 'list')) {
+      // Usar ID único baseado na visualização ativa
+      let calendarId = 'schedule-x-calendar-week';
+      if (activeView === 'today') {
+        calendarId = 'schedule-x-calendar-today';
+      } else if (activeView === 'list') {
+        calendarId = 'schedule-x-calendar-list';
+      }
+      
+      const calendarElement = document.getElementById(calendarId);
       if (calendarElement) {
-        // Limpar o elemento antes de renderizar
-        calendarElement.innerHTML = '';
-        calendar.render(calendarElement);
+        // Verificar se o calendário já foi renderizado neste elemento
+        if (calendarElement.children.length === 0) {
+          // Definir a visualização baseada no activeView
+          if (activeView === 'today') {
+            calendarControls.setView('day');
+            calendarControls.setDate(selectedDate.toISOString().split('T')[0]);
+          } else if (activeView === 'list') {
+            calendarControls.setView('list');
+          } else {
+            calendarControls.setView('week');
+          }
+          
+          calendar.render(calendarElement);
+        }
       }
     }
-  }, [calendar, activeView, events]);
+  }, [calendar, calendarControls, activeView]);
+
+  // Atualizar data do calendário quando selectedDate mudar (apenas para visão diária)
+  useEffect(() => {
+    if (calendar && calendarControls && activeView === 'today') {
+      calendarControls.setDate(selectedDate.toISOString().split('T')[0]);
+    }
+  }, [calendar, calendarControls, activeView, selectedDate]);
 
 
 
@@ -450,34 +514,15 @@ export default function PlannerPage() {
     return 'bg-red-500';
   };
 
-  // Filtrar tarefas e eventos por data selecionada
+  // Filtrar tarefas por data selecionada
   const selectedDateTasks = tasks.filter(task => {
     if (!task.due_date) return false;
     return isSameDay(new Date(task.due_date), selectedDate);
   });
-  
-  const selectedDateEvents = events.filter(event => {
-    const eventDate = new Date(event.start);
-    if (isNaN(eventDate.getTime())) {
-      return false;
-    }
-    return isSameDay(eventDate, selectedDate);
-  });
 
   const completedToday = selectedDateTasks.filter(task => task.status === 'completed').length;
 
-  // Funções de navegação de data
-  const goToPreviousDay = () => {
-    setSelectedDate(subDays(selectedDate, 1));
-  };
 
-  const goToNextDay = () => {
-    setSelectedDate(addDays(selectedDate, 1));
-  };
-
-  const goToToday = () => {
-    setSelectedDate(new Date());
-  };
 
   const handleCreateEvent = async () => {
     // Verificar permissão antes de criar o evento
@@ -533,43 +578,8 @@ export default function PlannerPage() {
     setEvents(events.filter(event => event.id !== eventId));
   };
 
-  // Gerar slots de tempo para a agenda diária
-  const generateTimeSlots = () => {
-    const slots = [];
-    for (let hour = 6; hour <= 23; hour++) {
-      slots.push({
-        time: `${hour.toString().padStart(2, '0')}:00`,
-        hour: hour
-      });
-    }
-    return slots;
-  };
-
-  const timeSlots = generateTimeSlots();
-
-  // Função para obter eventos em um slot específico
-  const getEventsForTimeSlot = (hour: number) => {
-    return selectedDateEvents.filter(event => {
-      const eventStart = new Date(event.start);
-      const eventHour = eventStart.getHours();
-      return eventHour === hour;
-    });
-  };
-
-  // Função para calcular a altura do evento baseado na duração
-  const getEventHeight = (event: CalendarEvent) => {
-    const start = new Date(event.start);
-    const end = new Date(event.end);
-    const durationMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
-    return Math.max(durationMinutes, 30); // Mínimo de 30 minutos de altura
-  };
-
-  // Função para calcular o offset do evento dentro do slot
-  const getEventTopOffset = (event: CalendarEvent) => {
-    const start = new Date(event.start);
-    const minutes = start.getMinutes();
-    return minutes; // Retorna os minutos como offset
-  };
+  // Funções removidas: generateTimeSlots, getEventsForTimeSlot, getEventHeight, getEventTopOffset
+  // Agora usando Schedule-X para renderização da agenda diária
 
   // Renderizar versão mobile se for dispositivo móvel
   if (isMobile) {
@@ -585,9 +595,7 @@ export default function PlannerPage() {
           onCreateGoal={async () => setShowGoalModal(true)}
           onUpdateGoalProgress={handleUpdateGoalProgress}
           onDeleteGoal={handleDeleteGoal}
-          onQuickIncrementProgress={handleQuickIncrementProgress}
           onOpenUpdateProgressModal={handleOpenUpdateProgressModal}
-          onOpenQuickIncrementModal={handleOpenQuickIncrementModal}
           onLoadEvents={loadEvents}
           loading={loading}
         />
@@ -621,17 +629,7 @@ export default function PlannerPage() {
           />
         )}
 
-        {selectedGoalForQuickIncrement && (
-          <QuickGoalIncrementModal
-            isOpen={showQuickIncrementModal}
-            onClose={() => {
-              setShowQuickIncrementModal(false);
-              setSelectedGoalForQuickIncrement(null);
-            }}
-            goal={selectedGoalForQuickIncrement}
-            onIncrementProgress={handleQuickIncrementProgress}
-          />
-        )}
+
       </>
     );
   }
@@ -673,6 +671,17 @@ export default function PlannerPage() {
           >
             <BookOpen className="w-4 h-4 inline mr-2" />
             Visão Semanal
+          </button>
+          <button
+            onClick={() => setActiveView('list')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeView === 'list'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <CalendarDays className="w-4 h-4 inline mr-2" />
+            Lista
           </button>
           <button
             onClick={() => setActiveView('goals')}
@@ -740,43 +749,20 @@ export default function PlannerPage() {
 
             {/* Main Content */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Daily Schedule */}
+              {/* Daily Schedule using Schedule-X */}
               <div className="lg:col-span-2">
                 <Card className="bg-gradient-to-br from-white to-indigo-50/50 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                    <div className="flex items-center space-x-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={goToPreviousDay}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <div className="text-center">
-                        <CardTitle className="text-lg">
-                          {isSameDay(selectedDate, new Date()) 
-                            ? 'Hoje' 
-                            : format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })
-                          }
-                        </CardTitle>
-                        <p className="text-sm text-gray-600">
-                          {format(selectedDate, 'dd/MM/yyyy')}
-                        </p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={goToNextDay}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={goToToday}
-                      >
-                        Hoje
-                      </Button>
+                    <div>
+                      <CardTitle className="text-lg">
+                        {isSameDay(selectedDate, new Date()) 
+                          ? 'Hoje' 
+                          : format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })
+                        }
+                      </CardTitle>
+                      <p className="text-sm text-gray-600">
+                        {format(selectedDate, 'dd/MM/yyyy')}
+                      </p>
                     </div>
                     <Dialog open={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}>
                       <DialogTrigger asChild>
@@ -832,64 +818,7 @@ export default function PlannerPage() {
                     </Dialog>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                      {timeSlots.map((slot) => {
-                        const eventsInSlot = getEventsForTimeSlot(slot.hour);
-                        return (
-                          <div key={slot.time} className="flex border-b border-gray-100 min-h-[60px] relative">
-                            <div className="w-16 text-sm text-gray-500 py-2 pr-4 text-right">
-                              {slot.time}
-                            </div>
-                            <div className="flex-1 py-2 pl-4 relative">
-                              {eventsInSlot.map((event) => (
-                                <div
-                                  key={event.id}
-                                  className="absolute left-4 right-4 rounded-md p-2 text-white text-sm shadow-sm group cursor-pointer"
-                                  style={{
-                                    backgroundColor: event.color || '#3b82f6',
-                                    top: `${getEventTopOffset(event)}px`,
-                                    height: `${Math.max(getEventHeight(event), 30)}px`,
-                                    minHeight: '30px'
-                                  }}
-                                >
-                                  <div className="flex justify-between items-start">
-                                    <div className="flex-1">
-                                      <div className="font-medium truncate">{event.title}</div>
-                                      {event.description && (
-                                        <div className="text-xs opacity-90 truncate">{event.description}</div>
-                                      )}
-
-
-                                      <div className="text-xs opacity-75">
-                                        {(() => {
-                                          const startDate = new Date(event.start);
-                                          const endDate = new Date(event.end);
-                                          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-                                            return 'Horário inválido';
-                                          }
-                                          return `${format(startDate, 'HH:mm')} - ${format(endDate, 'HH:mm')}`;
-                                        })()} 
-                                      </div>
-                                    </div>
-                                    <button
-                                      onClick={() => deleteEvent(event.id)}
-                                      className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 hover:bg-white/20 rounded p-1"
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                              {eventsInSlot.length === 0 && (
-                                <div className="text-gray-300 text-sm py-4">
-                                  Horário livre
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <div id="schedule-x-calendar-today" className="h-[700px] rounded-xl overflow-hidden border border-gray-100 shadow-inner"></div>
                   </CardContent>
                 </Card>
               </div>
@@ -974,6 +903,20 @@ export default function PlannerPage() {
           </div>
         )}
 
+        {/* List View */}
+        {activeView === 'list' && (
+          <div className="space-y-6">
+            <Card className="bg-gradient-to-br from-white to-green-50/50 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <CardHeader>
+                <CardTitle className="text-2xl bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Visualização em Lista</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div id="schedule-x-calendar-list" className="h-[700px] rounded-xl overflow-hidden border border-gray-100 shadow-inner"></div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Week View */}
         {activeView === 'week' && (
           <div className="space-y-6">
@@ -982,7 +925,7 @@ export default function PlannerPage() {
                 <CardTitle className="text-2xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Visão Semanal</CardTitle>
               </CardHeader>
               <CardContent>
-                <div id="schedule-x-calendar" className="h-[700px] rounded-xl overflow-hidden border border-gray-100 shadow-inner"></div>
+                <div id="schedule-x-calendar-week" className="h-[700px] rounded-xl overflow-hidden border border-gray-100 shadow-inner"></div>
               </CardContent>
             </Card>
           </div>
@@ -1066,15 +1009,6 @@ export default function PlannerPage() {
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-lg bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{goal.title}</CardTitle>
                       <div className="flex space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleOpenQuickIncrementModal(goal)}
-                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                          title="Incremento Rápido"
-                        >
-                          <Zap className="h-4 w-4" />
-                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -1208,15 +1142,7 @@ export default function PlannerPage() {
           />
         )}
 
-        {/* Quick Goal Increment Modal */}
-        {selectedGoalForQuickIncrement && (
-          <QuickGoalIncrementModal
-            isOpen={showQuickIncrementModal}
-            onClose={handleCloseQuickIncrementModal}
-            goal={selectedGoalForQuickIncrement}
-            onIncrementProgress={handleQuickIncrementProgress}
-          />
-        )}
+
 
 
     </div>
