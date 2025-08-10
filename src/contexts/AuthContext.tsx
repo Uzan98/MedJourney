@@ -272,6 +272,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return {
         success: true,
         error: null,
+        user: data.user,
       };
     } catch (error) {
       console.error('Erro ao cadastrar:', error);

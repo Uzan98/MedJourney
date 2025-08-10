@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from 'react-hot-toast';
 import { Toaster as SonnerToaster } from 'sonner';
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/react";
 import ClientLayout from './ClientLayout';
 
 const inter = Inter({
@@ -109,6 +110,9 @@ export default function RootLayout({
         
         {/* Vercel Speed Insights */}
         <SpeedInsights />
+        
+        {/* Vercel Analytics */}
+        <Analytics />
 
         <script
           dangerouslySetInnerHTML={{
