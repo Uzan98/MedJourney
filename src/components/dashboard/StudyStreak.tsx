@@ -25,7 +25,7 @@ const StudyStreak: React.FC<StudyStreakProps> = ({ streak, isLoading }) => {
     }).format(date);
   };
 
-  // Função para gerar dados simulados de estudo para o calendário
+  // Função para gerar dados simulados de estudo para o calendário (simplificada)
   const generateFakeStudyData = (currentStreak: number) => {
     const studyData = new Map();
     const today = new Date();
@@ -35,7 +35,7 @@ const StudyStreak: React.FC<StudyStreakProps> = ({ streak, isLoading }) => {
       const date = new Date();
       date.setDate(today.getDate() - i);
       const dateString = date.toISOString().split('T')[0];
-      studyData.set(dateString, { minutes: 30 + Math.floor(Math.random() * 120), activities: Math.floor(Math.random() * 3) + 1 });
+      studyData.set(dateString, { hasActivity: true });
     }
     
     // Alguns dias aleatórios com estudo nos últimos 3 meses
@@ -44,7 +44,7 @@ const StudyStreak: React.FC<StudyStreakProps> = ({ streak, isLoading }) => {
         const date = new Date();
         date.setDate(today.getDate() - i);
         const dateString = date.toISOString().split('T')[0];
-        studyData.set(dateString, { minutes: 15 + Math.floor(Math.random() * 150), activities: Math.floor(Math.random() * 2) + 1 });
+        studyData.set(dateString, { hasActivity: true });
       }
     }
     
@@ -98,8 +98,6 @@ const StudyStreak: React.FC<StudyStreakProps> = ({ streak, isLoading }) => {
         day,
         date,
         hasStudied: !!studyInfo,
-        activities: studyInfo?.activities || 0,
-        minutes: studyInfo?.minutes || 0,
         isToday: date.toDateString() === new Date().toDateString()
       };
       
@@ -113,28 +111,11 @@ const StudyStreak: React.FC<StudyStreakProps> = ({ streak, isLoading }) => {
     return calendar;
   };
 
-  // Função para converter minutos em formato de horas
-  const formatMinutesToHours = (minutes: number): string => {
-    if (minutes < 60) {
-      return `${minutes}min`;
-    }
-    
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    
-    if (remainingMinutes === 0) {
-      return `${hours}h`;
-    }
-    
-    return `${hours}h ${remainingMinutes}min`;
-  };
 
-  // Função para obter a intensidade da cor baseada no número de atividades
-  const getIntensityColor = (activities: number) => {
-    if (activities === 0) return 'bg-gray-100';
-    if (activities === 1) return 'bg-orange-200';
-    if (activities === 2) return 'bg-orange-400';
-    return 'bg-orange-500';
+
+  // Função para obter a cor baseada na presença de atividade (simplificada)
+  const getActivityColor = (hasActivity: boolean) => {
+    return hasActivity ? 'bg-orange-400' : 'bg-gray-200';
   };
 
   // Gerar dados de estudo simulados
@@ -290,8 +271,9 @@ const StudyStreak: React.FC<StudyStreakProps> = ({ streak, isLoading }) => {
       {/* Modal de calendário completo */}
       {showFullCalendar && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
-            <div className="p-6">
+          <div className="bg-white rounded-lg shadow-lg max-w-5xl w-full max-h-[95vh] flex flex-col">
+            {/* Cabeçalho fixo */}
+            <div className="p-6 border-b border-gray-200 flex-shrink-0">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
                   <Flame className="h-6 w-6 text-orange-500" />
@@ -306,7 +288,7 @@ const StudyStreak: React.FC<StudyStreakProps> = ({ streak, isLoading }) => {
               </div>
 
               {/* Navegação de meses */}
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between">
                 <button 
                   onClick={() => navigateMonth(-1)}
                   className="bg-gray-100 hover:bg-gray-200 text-gray-600 p-2 rounded-lg transition-colors"
@@ -325,7 +307,10 @@ const StudyStreak: React.FC<StudyStreakProps> = ({ streak, isLoading }) => {
                   <ChevronRight className="h-5 w-5" />
                 </button>
               </div>
+            </div>
 
+            {/* Área de conteúdo com scroll */}
+            <div className="flex-1 overflow-auto p-6">
               {/* Calendário */}
               <div className="border border-gray-200 rounded-lg overflow-hidden">
                 {/* Cabeçalho dos dias da semana */}
@@ -366,18 +351,14 @@ const StudyStreak: React.FC<StudyStreakProps> = ({ streak, isLoading }) => {
                                     <Flame className="h-4 w-4 text-orange-500" />
                                     {/* Tooltip */}
                                     <div className="absolute bottom-full right-0 bg-gray-800 text-white text-xs rounded py-1 px-2 hidden group-hover:block whitespace-nowrap z-10">
-                                      <div>{day.activities} atividade{day.activities > 1 ? 's' : ''}</div>
-                                      <div>{formatMinutesToHours(day.minutes)}</div>
+                                      <div>Atividade realizada</div>
                                     </div>
                                   </div>
                                 )}
                               </div>
                               {day.hasStudied && (
                                 <div className="mt-1">
-                                  <div className={`h-2 w-full rounded ${
-                                    day.activities === 1 ? 'bg-orange-200' :
-                                    day.activities === 2 ? 'bg-orange-400' :
-                                    'bg-orange-500'
+                                  <div className={`h-2 w-full rounded ${getActivityColor(day.hasStudied)}
                                   }`}></div>
                                 </div>
                               )}
@@ -392,23 +373,15 @@ const StudyStreak: React.FC<StudyStreakProps> = ({ streak, isLoading }) => {
 
               {/* Legenda */}
               <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h5 className="text-sm font-medium text-gray-700 mb-3 text-center">Legenda de Intensidade</h5>
+                <h5 className="text-sm font-medium text-gray-700 mb-3 text-center">Legenda</h5>
                 <div className="flex flex-wrap gap-4 justify-center">
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-gray-200 rounded"></div>
                     <span className="text-sm text-gray-600">Sem atividade</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-orange-200 rounded"></div>
-                    <span className="text-sm text-gray-600">1 atividade</span>
-                  </div>
-                  <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-orange-400 rounded"></div>
-                    <span className="text-sm text-gray-600">2 atividades</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-orange-500 rounded"></div>
-                    <span className="text-sm text-gray-600">3+ atividades</span>
+                    <span className="text-sm text-gray-600">Com atividade</span>
                   </div>
                 </div>
               </div>
@@ -444,7 +417,7 @@ const StudyStreak: React.FC<StudyStreakProps> = ({ streak, isLoading }) => {
                 </div>
               </div>
               
-              <div className="mt-8 flex justify-center">
+              <div className="mt-8 flex justify-center pb-8">
                 <button 
                   onClick={() => setShowFullCalendar(false)}
                   className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-6 rounded-lg transition-colors flex items-center gap-2"

@@ -320,8 +320,8 @@ export class StudyStreakService {
         return null;
       }
       
-      // Chamar a função SQL personalizada para calcular a sequência
-      const { data, error } = await supabase.rpc('get_study_streak', {
+      // Chamar a função SQL personalizada para calcular a sequência baseada apenas em login diário
+      const { data, error } = await supabase.rpc('get_daily_login_streak', {
         p_user_id: userId
       });
       
@@ -437,4 +437,4 @@ export class StudyStreakService {
     
     return days;
   }
-} 
+}

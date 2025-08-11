@@ -6,6 +6,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FcGoogle } from 'react-icons/fc';
 import { toast } from 'react-hot-toast';
+import TermsOfServiceModal from './terms-of-service-modal';
+import { recordTermsAcceptance } from '@/lib/terms-service';
+import { useTermsAcceptance } from '@/hooks/useTermsAcceptance';
+import PrivacyPolicyModal from './privacy-policy-modal';
+import { recordPrivacyAcceptance } from '@/lib/privacy-policy-service';
+import { usePrivacyAcceptance } from '@/hooks/usePrivacyAcceptance';
 
 export default function SignupForm() {
   const [name, setName] = useState('');
@@ -15,10 +21,18 @@ export default function SignupForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
 
   
   const { signUp, signInWithGoogle } = useAuth();
   const router = useRouter();
+  
+  // Hooks para registrar aceitação dos termos e política de privacidade em cadastros OAuth
+  useTermsAcceptance(termsAccepted);
+  usePrivacyAcceptance(privacyAccepted);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +40,20 @@ export default function SignupForm() {
     // Validação dos campos obrigatórios
     if (!name || !email || !password || !confirmPassword) {
       setError('Por favor, preencha todos os campos obrigatórios');
+      return;
+    }
+    
+    // Validação dos termos de uso
+    if (!termsAccepted) {
+      setError('Você deve aceitar os Termos de Uso para continuar');
+      setShowTermsModal(true);
+      return;
+    }
+    
+    // Validação da política de privacidade
+    if (!privacyAccepted) {
+      setError('Você deve aceitar a Política de Privacidade para continuar');
+      setShowPrivacyModal(true);
       return;
     }
     
@@ -43,9 +71,28 @@ export default function SignupForm() {
       setError(null);
       setLoading(true);
       
-      const { success, error } = await signUp(email, password, name);
+      const { success, error, user } = await signUp(email, password, name, {
+        terms_accepted: true,
+        terms_accepted_at: new Date().toISOString()
+      });
       
-      if (success) {
+      if (success && user) {
+        // Registrar aceitação dos termos no banco de dados
+        const termsResult = await recordTermsAcceptance(user.id);
+        
+        if (!termsResult.success) {
+          console.warn('Erro ao registrar aceitação dos termos:', termsResult.error);
+          // Não bloquear o cadastro por erro nos termos, apenas logar
+        }
+        
+        // Registrar aceitação da política de privacidade no banco de dados
+        const privacyResult = await recordPrivacyAcceptance(user.id);
+        
+        if (!privacyResult.success) {
+          console.warn('Erro ao registrar aceitação da política de privacidade:', privacyResult.error);
+          // Não bloquear o cadastro por erro na política, apenas logar
+        }
+        
         setSuccess(true);
         // Não redirecionamos aqui porque o usuário pode precisar confirmar o email
       } else {
@@ -55,33 +102,64 @@ export default function SignupForm() {
       setError('Ocorreu um erro ao processar o cadastro');
       console.error('Erro de cadastro:', err);
     } finally {
-      setLoading(false);
+       setLoading(false);
     }
   };
 
   const handleGoogleSignup = async () => {
+    // Verificar se os termos foram aceitos
+    if (!termsAccepted) {
+      setError('Você deve aceitar os termos de uso para continuar.');
+      setShowTermsModal(true);
+      return;
+    }
+    
+    // Verificar se a política de privacidade foi aceita
+    if (!privacyAccepted) {
+      setError('Você deve aceitar a política de privacidade para continuar.');
+      setShowPrivacyModal(true);
+      return;
+    }
+
+    setLoading(true);
+     setError('');
+
     try {
-      setError(null);
-      setLoading(true);
-      console.log('Tentando fazer cadastro com Google');
+      const result = await signInWithGoogle();
       
-      const { success, error } = await signInWithGoogle();
-      
-      if (!success && error) {
-        const errorMessage = error?.message || 'Erro ao fazer cadastro com Google';
-        console.error('Erro no cadastro com Google:', errorMessage);
-        setError(errorMessage);
-        toast.error(errorMessage);
+      if (result.success) {
+        toast.success('Cadastro realizado com sucesso!');
+        router.push('/dashboard');
+      } else {
+        setError(result.error?.message || 'Erro ao fazer cadastro com Google');
       }
-      // Note: Se o cadastro for bem-sucedido, o usuário será redirecionado pelo OAuth
-    } catch (err) {
-      const errorMessage = 'Ocorreu um erro ao processar o cadastro com Google';
-      console.error('Erro de cadastro com Google:', err);
-      setError(errorMessage);
-      toast.error(errorMessage);
+    } catch (error) {
+      setError('Erro inesperado ao fazer cadastro');
     } finally {
       setLoading(false);
     }
+  };
+  
+  const handleTermsAccept = () => {
+    setTermsAccepted(true);
+    setError(null);
+    setShowTermsModal(false);
+  };
+
+  const handleTermsReject = () => {
+    setTermsAccepted(false);
+    setShowTermsModal(false);
+  };
+
+  const handlePrivacyAccept = () => {
+    setPrivacyAccepted(true);
+    setError(null);
+    setShowPrivacyModal(false);
+  };
+
+  const handlePrivacyReject = () => {
+    setPrivacyAccepted(false);
+    setShowPrivacyModal(false);
   };
 
   if (success) {
@@ -178,6 +256,55 @@ export default function SignupForm() {
           />
         </div>
 
+        {/* Termos de Uso */}
+        <div className="mb-6">
+          <div className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="terms-checkbox"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              disabled={loading}
+            />
+            <label htmlFor="terms-checkbox" className="text-sm text-gray-700 leading-relaxed">
+              Li e aceito os{' '}
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(true)}
+                className="text-blue-600 hover:text-blue-800 underline font-medium"
+              >
+                Termos de Uso
+              </button>
+              {' '}do Genoma <span className="text-red-500">*</span>
+            </label>
+          </div>
+        </div>
+        {/* Política de Privacidade */}
+        <div className="mb-6">
+          <div className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="privacy-checkbox"
+              checked={privacyAccepted}
+              onChange={(e) => setPrivacyAccepted(e.target.checked)}
+              className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              disabled={loading}
+            />
+            <label htmlFor="privacy-checkbox" className="text-sm text-gray-700 leading-relaxed">
+              Li e aceito a{' '}
+              <button
+                type="button"
+                onClick={() => setShowPrivacyModal(true)}
+                className="text-blue-600 hover:text-blue-800 underline font-medium"
+              >
+                Política de Privacidade
+              </button>
+              {' '}do Genoma <span className="text-red-500">*</span>
+            </label>
+          </div>
+        </div>
+
         
         <button
           type="button"
@@ -219,6 +346,20 @@ export default function SignupForm() {
           </Link>
         </p>
       </div>
+      
+      {/* Modal de Termos de Uso */}
+      <TermsOfServiceModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        onAccept={handleTermsAccept}
+        onReject={handleTermsReject}
+      />
+      <PrivacyPolicyModal
+        isOpen={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+        onAccept={handlePrivacyAccept}
+        onReject={handlePrivacyReject}
+      />
     </div>
   );
 }
