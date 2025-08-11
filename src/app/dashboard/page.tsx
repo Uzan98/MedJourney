@@ -87,11 +87,21 @@ export default function DashboardPage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [studyByDiscipline, setStudyByDiscipline] = useState<StudyByDiscipline[]>([]);
   const [stats, setStats] = useState({
-    totalStudyTime: 0, // em horas
+    totalStudyTime: 0, // em minutos
     goalPercentage: 0, // porcentagem média das metas
     flashcardMastery: 0, // domínio geral dos flashcards
     completedExams: 0 // simulados concluídos
   });
+  
+  // Função para formatar tempo em minutos para horas e minutos
+  const formatStudyTime = (minutes: number) => {
+    if (minutes === 0) return '0m';
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours === 0) return `${mins}m`;
+    if (mins === 0) return `${hours}h`;
+    return `${hours}h ${mins}m`;
+  };
   const [statsLoading, setStatsLoading] = useState({
     studyTime: true,
     goals: true,
@@ -234,11 +244,13 @@ export default function DashboardPage() {
     try {
       setStatsLoading(prev => ({ ...prev, studyTime: true }));
       
-      // Carregar sessões de estudo regulares
+      // Carregar sessões de estudo regulares (excluindo Pomodoro para evitar duplicação)
       const completedSessions = await StudySessionService.getUserSessions(true);
-      const completedSessionsOnly = completedSessions?.filter(s => s.completed) || [];
+      const completedSessionsOnly = completedSessions?.filter(s => 
+        s.completed && s.type !== 'pomodoro'
+      ) || [];
       
-      // Calcular tempo das sessões regulares
+      // Calcular tempo das sessões regulares (sem Pomodoro)
       const regularStudyMinutes = completedSessionsOnly.reduce((total, s) => 
         total + (s.actual_duration_minutes || s.duration_minutes), 0);
       
@@ -246,19 +258,10 @@ export default function DashboardPage() {
       const pomodoroStats = await PomodoroService.getPomodoroStats();
       const pomodoroFocusMinutes = pomodoroStats?.focusMinutes || 0;
       
-      // Carregar estatísticas do Study Room
-      const studyRoomStats = await StudyRoomService.getUserStats();
-      const studyRoomMinutes = Math.floor((studyRoomStats?.total_time || 0) / 60); // Converter segundos para minutos
+      // Calcular tempo total em minutos
+      const totalMinutes = regularStudyMinutes + pomodoroFocusMinutes;
       
-      // Carregar estatísticas do Study Group
-      const studyGroupStats = await StudyGroupService.getUserStats();
-      const studyGroupMinutes = Math.floor((studyGroupStats?.total_time || 0) / 60); // Converter segundos para minutos
-      
-      // Calcular tempo total em horas
-      const totalMinutes = regularStudyMinutes + pomodoroFocusMinutes + studyRoomMinutes + studyGroupMinutes;
-      const totalHours = Math.round((totalMinutes / 60) * 10) / 10; // Arredondar para 1 casa decimal
-      
-      setStats(prev => ({ ...prev, totalStudyTime: totalHours }));
+      setStats(prev => ({ ...prev, totalStudyTime: totalMinutes }));
     } catch (error) {
       console.error('Erro ao carregar estatísticas de tempo de estudo:', error);
     } finally {
@@ -678,12 +681,12 @@ export default function DashboardPage() {
                 <div>
                   <p className="text-sm text-blue-100">Tempo Total de Estudo</p>
                   <h3 className="text-2xl font-bold text-white">
-                    {statsLoading.studyTime ? (
-                      <span className="animate-pulse">--</span>
-                    ) : (
-                      `${stats.totalStudyTime}h`
-                    )}
-                  </h3>
+                     {statsLoading.studyTime ? (
+                       <span className="animate-pulse">--</span>
+                     ) : (
+                       formatStudyTime(stats.totalStudyTime)
+                     )}
+                   </h3>
                 </div>
               </div>
             </div>
