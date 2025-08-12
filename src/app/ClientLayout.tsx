@@ -9,6 +9,7 @@ import { StartupProvider } from './providers';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import PWABanner from '@/components/PWABanner';
 import { registerServiceWorker } from '@/lib/utils/offline';
+// import { UpdateNotification } from '@/components/ui/update-notification'; // Removido - atualização automática
 import dynamic from 'next/dynamic';
 
 // Dynamically import the MobileMenu component with no SSR
@@ -36,6 +37,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
               {/* PWA Components */}
                <PWABanner />
                <PWAInstallPrompt />
+               
+               {/* Update Notification - Removido: atualização automática silenciosa */}
             </StartupProvider>
           </PWAProvider>
         </SubscriptionProvider>

@@ -1,13 +1,18 @@
 {
   "name": "medjourney-app",
-  "version": "0.1.0",
+  "version": "2025.08.11.2129",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "vercel-build": "npm install -g typescript && npm install --save typescript tailwindcss autoprefixer postcss tailwindcss-animate && node build-setup.js && node mock-setup.js && node serverless-check.js && node fix-routes.js && node emergency-fix.js && node fix-vercel-deployment.js && next build || exit 0",
+    "dev": "node scripts/build-with-version.js --dev",
+    "dev:original": "next dev",
+    "build": "node scripts/build-with-version.js --production",
+    "build:original": "next build",
+    "vercel-build": "node scripts/update-version.js --update-package && npm install -g typescript && npm install --save typescript tailwindcss autoprefixer postcss tailwindcss-animate && node build-setup.js && node mock-setup.js && node serverless-check.js && node fix-routes.js && node emergency-fix.js && node fix-vercel-deployment.js && next build || exit 0",
     "start": "next start",
     "lint": "next lint",
+    "version:update": "node scripts/update-version.js --update-package",
+    "version:timestamp": "node scripts/update-version.js --timestamp --update-package",
+    "version:semantic": "node scripts/update-version.js --semantic --update-package",
     "db:test": "node --experimental-json-modules scripts/test-db-connection.js",
     "db:deploy": "node --experimental-json-modules scripts/deploy-schema.js",
     "supabase:test": "node scripts/test-supabase.js"

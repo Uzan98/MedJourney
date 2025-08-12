@@ -74,6 +74,7 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
   
   // Referências para controle do timer
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerWorkerRef = useRef<Worker | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const startTimeRef = useRef<number | null>(getStartTimestamp());
   const endTimeRef = useRef<number | null>(getEndTimestamp());
@@ -95,6 +96,56 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
   useEffect(() => {
     audioRef.current = typeof Audio !== 'undefined' ? new Audio('/notification.mp3') : null;
     
+    // Criar Web Worker para timer em background
+    if (typeof Worker !== 'undefined' && !timerWorkerRef.current) {
+      try {
+        const workerBlob = new Blob([`
+          let timerId = null;
+          let isPaused = false;
+          
+          self.onmessage = function(e) {
+            if (e.data.action === 'start') {
+              isPaused = false;
+              if (timerId === null) {
+                timerId = setInterval(() => {
+                  if (!isPaused) {
+                    self.postMessage({ type: 'tick' });
+                  }
+                }, 1000);
+              }
+            } else if (e.data.action === 'pause') {
+              isPaused = true;
+            } else if (e.data.action === 'stop') {
+              if (timerId !== null) {
+                clearInterval(timerId);
+                timerId = null;
+              }
+            }
+          };
+        `], { type: 'application/javascript' });
+        
+        const workerUrl = URL.createObjectURL(workerBlob);
+        timerWorkerRef.current = new Worker(workerUrl);
+        
+        // Configurar handler de mensagens do worker
+        timerWorkerRef.current.onmessage = (e) => {
+          if (e.data.type === 'tick' && isActive && endTimeRef.current) {
+            const now = Date.now();
+            const remaining = Math.max(0, Math.floor((endTimeRef.current - now) / 1000));
+            
+            if (remaining <= 0) {
+              handleTimerComplete();
+              return;
+            }
+            
+            setTimeLeft(remaining);
+          }
+        };
+      } catch (error) {
+        console.error('Erro ao criar worker:', error);
+      }
+    }
+    
     // Adicionar eventos para detectar quando a página fica visível/invisível
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
@@ -109,14 +160,21 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
         const remaining = Math.max(0, Math.floor((endTimeRef.current - now) / 1000));
         setTimeLeft(remaining);
         
-        // Iniciar o timer novamente
-        startTimer();
+        // Iniciar o worker se necessário
+        if (timerWorkerRef.current) {
+          timerWorkerRef.current.postMessage({ action: 'start' });
+        }
       }
     }
     
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
+      }
+      if (timerWorkerRef.current) {
+        timerWorkerRef.current.postMessage({ action: 'stop' });
+        timerWorkerRef.current.terminate();
+        timerWorkerRef.current = null;
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
@@ -162,6 +220,12 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
         }
       }
       
+      // Iniciar o Web Worker
+      if (timerWorkerRef.current) {
+        timerWorkerRef.current.postMessage({ action: 'start' });
+      }
+      
+      // Manter setInterval como fallback caso o Worker falhe
       timerRef.current = setInterval(() => {
         const now = Date.now();
         
@@ -177,8 +241,15 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
           setTimeLeft(remaining);
         }
       }, 1000);
-    } else if (timerRef.current) {
-      clearInterval(timerRef.current);
+    } else {
+      // Pausar o Web Worker
+      if (timerWorkerRef.current) {
+        timerWorkerRef.current.postMessage({ action: 'pause' });
+      }
+      
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
       
       // Se o timer foi pausado (não completado), armazenar o tempo restante
       if (timeLeft > 0) {
@@ -235,6 +306,11 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
   }, [timeLeft, isActive, groupId]);
 
   const handleTimerComplete = () => {
+    // Parar o Web Worker
+    if (timerWorkerRef.current) {
+      timerWorkerRef.current.postMessage({ action: 'stop' });
+    }
+    
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
@@ -363,6 +439,11 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
 
   // Nova função para pular o ciclo atual
   const skipCycle = () => {
+    // Parar o Web Worker
+    if (timerWorkerRef.current) {
+      timerWorkerRef.current.postMessage({ action: 'stop' });
+    }
+    
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
@@ -462,6 +543,11 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
   };
 
   const resetTimer = () => {
+    // Parar o Web Worker
+    if (timerWorkerRef.current) {
+      timerWorkerRef.current.postMessage({ action: 'stop' });
+    }
+    
     // Parar o timer
     if (timerRef.current) {
       clearInterval(timerRef.current);
