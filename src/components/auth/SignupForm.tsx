@@ -11,6 +11,7 @@ import { recordTermsAcceptance } from '@/lib/terms-service';
 import { useTermsAcceptance } from '@/hooks/useTermsAcceptance';
 import PrivacyPolicyModal from './privacy-policy-modal';
 import { recordPrivacyAcceptance } from '@/lib/privacy-policy-service';
+import { usePrivacyAcceptance } from '@/hooks/usePrivacyAcceptance';
 
 export default function SignupForm() {
   const [name, setName] = useState('');
@@ -29,8 +30,9 @@ export default function SignupForm() {
   const { signUp, signInWithGoogle } = useAuth();
   const router = useRouter();
   
-  // Hook para registrar aceitação dos termos em cadastros OAuth
+  // Hooks para registrar aceitação dos termos e política de privacidade em cadastros OAuth
   useTermsAcceptance(termsAccepted);
+  usePrivacyAcceptance(privacyAccepted);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

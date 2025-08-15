@@ -13,12 +13,9 @@ export interface PrivacyAcceptance {
 export interface PrivacyPolicyData {
   id: string;
   version: string;
-  title: string;
   content: string;
   effective_date: string;
   created_at: string;
-  updated_at: string;
-  is_active: boolean;
 }
 
 /**
@@ -29,14 +26,24 @@ export async function recordPrivacyAcceptance(
   policyVersion: string = privacyPolicy.version
 ): Promise<{ success: boolean; error?: Error }> {
   try {
-    const userAgent = typeof window !== "undefined" ? window.navigator.userAgent : null;
+    // Primeiro, obter o ID da política de privacidade atual
+    const { data: policyData, error: policyError } = await supabase
+      .from("privacy_policy")
+      .select("id")
+      .eq("version", policyVersion)
+      .single();
+    
+    if (policyError) {
+      console.error("Erro ao obter política:", policyError);
+      return { success: false, error: new Error(policyError.message) };
+    }
+
     const { error } = await supabase
       .from("user_privacy_acceptance")
       .insert({
         user_id: userId,
-        policy_version: policyVersion,
-        accepted_at: new Date().toISOString(),
-        user_agent: userAgent
+        privacy_policy_id: policyData.id,
+        accepted_at: new Date().toISOString()
       });
     if (error) {
       console.error("Erro ao registrar aceitação da política:", error);
@@ -64,7 +71,6 @@ export async function checkPrivacyAcceptance(
       .from("user_privacy_acceptance")
       .select("id")
       .eq("user_id", userId)
-      .eq("policy_version", policyVersion)
       .single();
     if (error && error.code !== "PGRST116") {
       console.error("Erro ao verificar aceitação da política:", error);
@@ -81,7 +87,7 @@ export async function checkPrivacyAcceptance(
 }
 
 /**
- * Obtém a política de privacidade ativa do banco de dados
+ * Obtém a política de privacidade mais recente do banco de dados
  */
 export async function getActivePrivacyPolicy(): Promise<{
   policy: PrivacyPolicyData | null;
@@ -91,7 +97,8 @@ export async function getActivePrivacyPolicy(): Promise<{
     const { data, error } = await supabase
       .from("privacy_policy")
       .select("*")
-      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
       .single();
     if (error) {
       console.error("Erro ao obter política ativa:", error);
@@ -115,18 +122,24 @@ export async function updatePrivacyPolicyInDatabase(): Promise<{
   error?: Error;
 }> {
   try {
-    await supabase
+    // Verificar se já existe uma política com esta versão
+    const { data: existingPolicy } = await supabase
       .from("privacy_policy")
-      .update({ is_active: false })
-      .eq("is_active", true);
+      .select("id")
+      .eq("version", privacyPolicy.version)
+      .single();
+
+    if (existingPolicy) {
+      console.log("Política de privacidade já existe no banco de dados");
+      return { success: true };
+    }
+
     const { error } = await supabase
       .from("privacy_policy")
       .insert({
         version: privacyPolicy.version,
-        title: privacyPolicy.title,
         content: privacyPolicy.content,
-        effective_date: privacyPolicy.effectiveDate,
-        is_active: true
+        effective_date: privacyPolicy.effectiveDate
       });
     if (error) {
       console.error("Erro ao atualizar política no banco:", error);

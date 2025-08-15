@@ -4,6 +4,12 @@ import { Question, AnswerOption } from '@/services/questions-bank.service';
 import { toast } from 'react-hot-toast';
 import { Discipline, Subject } from '@/lib/supabase';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
+import dynamic from 'next/dynamic';
+
+// Importar ReactQuill dinamicamente para evitar problemas de SSR
+const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
+import 'react-quill/dist/quill.snow.css';
+import '@/styles/quill-custom.css';
 
 interface QuestionModalProps {
   isOpen: boolean;
@@ -442,15 +448,30 @@ export default function QuestionModal({
               <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
                 Conteúdo da Questão <span className="text-red-500">*</span>
               </label>
-              <textarea
-                id="content"
-                rows={3}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Digite o conteúdo da questão aqui..."
-                required
-              />
+              <div className="border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-blue-500">
+                <ReactQuill
+                  value={content}
+                  onChange={setContent}
+                  placeholder="Digite o conteúdo da questão aqui..."
+                  modules={{
+                    toolbar: [
+                      [{ 'header': [1, 2, 3, false] }],
+                      ['bold', 'italic', 'underline', 'strike'],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      [{ 'script': 'sub'}, { 'script': 'super' }],
+                      ['blockquote', 'code-block'],
+                      ['link', 'image'],
+                      ['clean']
+                    ]
+                  }}
+                  formats={[
+                    'header', 'bold', 'italic', 'underline', 'strike',
+                    'list', 'bullet', 'script', 'blockquote', 'code-block',
+                    'link', 'image'
+                  ]}
+                  style={{ minHeight: '120px' }}
+                />
+              </div>
             </div>
             
             {/* Tipo de Questão */}
@@ -582,14 +603,28 @@ export default function QuestionModal({
               <label htmlFor="explanation" className="block text-sm font-medium text-gray-700 mb-1">
                 Explicação
               </label>
-              <textarea
-                id="explanation"
-                rows={2}
-                value={explanation}
-                onChange={(e) => setExplanation(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Explicação opcional sobre a resposta correta..."
-              />
+              <div className="border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-blue-500">
+                <ReactQuill
+                  value={explanation}
+                  onChange={setExplanation}
+                  placeholder="Explicação opcional sobre a resposta correta..."
+                  modules={{
+                    toolbar: [
+                      [{ 'header': [1, 2, 3, false] }],
+                      ['bold', 'italic', 'underline'],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      [{ 'script': 'sub'}, { 'script': 'super' }],
+                      ['link'],
+                      ['clean']
+                    ]
+                  }}
+                  formats={[
+                    'header', 'bold', 'italic', 'underline',
+                    'list', 'bullet', 'script', 'link'
+                  ]}
+                  style={{ minHeight: '100px' }}
+                />
+              </div>
             </div>
             
             {/* Grid de Seleções */}
