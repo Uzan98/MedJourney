@@ -1,3 +1,5 @@
+// TESTE DE COMMIT
+
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { recordPrivacyAcceptance } from '@/lib/privacy-policy-service';
