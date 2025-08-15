@@ -1,7 +1,7 @@
 // Versão do cache - será atualizada automaticamente pelo build
-const CACHE_VERSION = `v${Date.now()}`;
+const CACHE_VERSION = 'v' + Date.now(); // Versão baseada em timestamp
 const CACHE_NAME = `medjourney-${CACHE_VERSION}`;
-const APP_VERSION = '2025.08.11.2138'; // Atualizada automaticamente pelo script de build
+const APP_VERSION = '2025.08.15.1910'; // Versão da aplicação
 const OFFLINE_URL = '/offline.html';
 const SUPABASE_URL = self.location.origin.includes('localhost') 
   ? 'https://ipfjehdwmenpaeuefntd.supabase.co' 

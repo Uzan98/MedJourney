@@ -543,11 +543,6 @@ const PomodoroTimer = ({ onComplete, onStateChange, groupId }: PomodoroTimerProp
   };
 
   const resetTimer = () => {
-    // Parar o Web Worker
-    if (timerWorkerRef.current) {
-      timerWorkerRef.current.postMessage({ action: 'stop' });
-    }
-    
     // Parar o timer
     if (timerRef.current) {
       clearInterval(timerRef.current);

@@ -13,7 +13,7 @@ import { APP_VERSION } from '../version';
 
 // Versão atual da aplicação (importada automaticamente)
 const CURRENT_APP_VERSION = APP_VERSION;
-const VERSION_CHECK_INTERVAL = 10000; // 10 segundos para atualização mais rápida
+const VERSION_CHECK_INTERVAL = 30000; // 30 segundos
 
 // Registra o service worker para funcionalidades offline
 export function registerServiceWorker() {
@@ -295,8 +295,13 @@ function openDatabase() {
   });
 }
 
-// Função removida - notifyUserAboutUpdate
-// A atualização agora é automática e silenciosa
+// Notifica o usuário sobre atualização do service worker
+function notifyUserAboutUpdate() {
+  // Implementar uma notificação visual para o usuário
+  // Ex: exibir um toast ou banner
+  const event = new CustomEvent('serviceWorkerUpdateAvailable');
+  window.dispatchEvent(event);
+}
 
 // Força a atualização do service worker
 export async function forceServiceWorkerUpdate(): Promise<boolean> {

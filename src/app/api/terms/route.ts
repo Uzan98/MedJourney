@@ -26,13 +26,4 @@ export async function GET(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error('Erro ao obter termos de uso:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Erro interno do servidor' 
-      },
-      { status: 500 }
-    );
-  }
-}
+    console.error('Erro ao obter termos de uso:', error)

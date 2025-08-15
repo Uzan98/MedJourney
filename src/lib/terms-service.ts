@@ -92,6 +92,9 @@ export async function checkTermsAcceptance(
  */
 export async function getActiveTerms(): Promise<{ terms: TermsOfServiceData | null; error?: Error }> {
   try {
+    // Criar cliente autenticado
+    const supabase = createClientComponentClient();
+    
     const { data, error } = await supabase
       .from('terms_of_service')
       .select('*')

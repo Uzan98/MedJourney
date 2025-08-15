@@ -126,7 +126,7 @@ export default function TermsOfServiceModal({
               <span className={`text-sm ${
                 hasScrolledToEnd ? 'text-gray-900' : 'text-gray-400'
               }`}>
-                Li e aceito os Termos de Uso do Genoma
+                Li e aceito os Termos de Uso do MedJourney
               </span>
             </label>
           </div>

@@ -25,27 +25,18 @@ export interface PrivacyPolicyData {
  * Registra a aceitação da política de privacidade pelo usuário
  */
 export async function recordPrivacyAcceptance(
-  userId: string
+  userId: string,
+  policyVersion: string = privacyPolicy.version
 ): Promise<{ success: boolean; error?: Error }> {
   try {
-    // Primeiro, obter a política ativa
-    const { data: policy, error: policyError } = await supabase
-      .from("privacy_policy")
-      .select("id")
-      .limit(1)
-      .single();
-    
-    if (policyError || !policy) {
-      console.error("Erro ao obter política ativa:", policyError);
-      return { success: false, error: new Error("Política de privacidade não encontrada") };
-    }
-    
+    const userAgent = typeof window !== "undefined" ? window.navigator.userAgent : null;
     const { error } = await supabase
       .from("user_privacy_acceptance")
       .insert({
         user_id: userId,
-        privacy_policy_id: policy.id,
-        accepted_at: new Date().toISOString()
+        policy_version: policyVersion,
+        accepted_at: new Date().toISOString(),
+        user_agent: userAgent
       });
     if (error) {
       console.error("Erro ao registrar aceitação da política:", error);
@@ -65,26 +56,15 @@ export async function recordPrivacyAcceptance(
  * Verifica se o usuário já aceitou a política de privacidade atual
  */
 export async function checkPrivacyAcceptance(
-  userId: string
+  userId: string,
+  policyVersion: string = privacyPolicy.version
 ): Promise<{ accepted: boolean; error?: Error }> {
   try {
-    // Primeiro, obter a política ativa
-    const { data: policy, error: policyError } = await supabase
-      .from("privacy_policy")
-      .select("id")
-      .limit(1)
-      .single();
-    
-    if (policyError || !policy) {
-      console.error("Erro ao obter política ativa:", policyError);
-      return { accepted: false, error: new Error("Política de privacidade não encontrada") };
-    }
-    
     const { data, error } = await supabase
       .from("user_privacy_acceptance")
       .select("id")
       .eq("user_id", userId)
-      .eq("privacy_policy_id", policy.id)
+      .eq("policy_version", policyVersion)
       .single();
     if (error && error.code !== "PGRST116") {
       console.error("Erro ao verificar aceitação da política:", error);

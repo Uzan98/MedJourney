@@ -271,7 +271,7 @@ const StudyStreak: React.FC<StudyStreakProps> = ({ streak, isLoading }) => {
       {/* Modal de calendário completo */}
       {showFullCalendar && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg max-w-5xl w-full max-h-[95vh] flex flex-col">
+          <div className="bg-white rounded-lg shadow-lg max-w-5xl w-full h-[95vh] flex flex-col">
             {/* Cabeçalho fixo */}
             <div className="p-6 border-b border-gray-200 flex-shrink-0">
               <div className="flex items-center justify-between mb-6">

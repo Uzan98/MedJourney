@@ -90,7 +90,7 @@ export default function FlashcardReviewsCard() {
                 <div>
                   <h3 className="font-medium text-gray-900">{deck.name}</h3>
                   <p className="text-xs text-gray-500">
-                    {deck.cards_to_review || 0} cartões para revisar • {Math.round(Number(deck.mastery_level || 0))}% dominado
+                    {deck.cards_due || 0} cartões para revisar • {Math.round(Number(deck.mastery_level || 0))}% dominado
                   </p>
                 </div>
               </div>

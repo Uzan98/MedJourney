@@ -1,10 +1,10 @@
-# Sistema de Atualização Automática e Silenciosa do Service Worker
+# Sistema de Atualização Automática do Service Worker
 
-Este documento explica como funciona o sistema de atualização automática e silenciosa implementado para forçar atualizações do service worker sempre que uma nova versão da aplicação for deployada.
+Este documento explica como funciona o sistema de atualização automática implementado para forçar atualizações do service worker sempre que uma nova versão da aplicação for deployada.
 
 ## 🎯 Problema Resolvido
 
-Antes da implementação deste sistema, era necessário limpar o cache manualmente a cada nova versão para que as atualizações fossem aplicadas. Agora, o sistema detecta automaticamente novas versões e força a atualização de forma completamente silenciosa, sem intervenção do usuário.
+Antes da implementação deste sistema, era necessário limpar o cache manualmente a cada nova versão para que as atualizações fossem aplicadas. Agora, o sistema detecta automaticamente novas versões e força a atualização.
 
 ## 🏗️ Arquitetura do Sistema
 
@@ -65,28 +65,28 @@ npm run dev:original
 - `forceUpdate`: Força atualização e recarrega a página
 - Cache automático com limpeza de versões antigas
 
-### 4. Sistema de Detecção e Atualização Automática
+### 4. Sistema de Detecção e Notificação
 
 **Arquivo:** `src/lib/utils/offline.ts`
 
-- Verifica atualizações a cada 10 segundos
-- Força atualização automática quando nova versão é detectada
+- Verifica atualizações a cada 30 segundos
+- Força atualização quando nova versão é detectada
 - Gerencia o ciclo de vida do service worker
-- Processo completamente silencioso
+- Dispara eventos para notificar a UI
 
 **Funções principais:**
 - `forceServiceWorkerUpdate()`: Força atualização imediata
 - `checkForUpdates()`: Verifica se há atualizações
 - `getCurrentServiceWorkerVersion()`: Obtém versão atual
 
-### 5. Experiência do Usuário
+### 5. Interface de Usuário
 
-**Processo transparente:**
+**Arquivo:** `src/components/ui/update-notification.tsx`
 
-- Atualizações aplicadas automaticamente sem notificações
-- Recarregamento suave com delay de 1 segundo
-- Logs detalhados no console para debugging
-- Usuário sempre tem a versão mais recente sem interrupções
+- Componente React para notificar sobre atualizações
+- Permite ao usuário escolher quando atualizar
+- Mostra versão atual e progresso da atualização
+- Integrado automaticamente no layout principal
 
 ## 🚀 Fluxo de Atualização
 
@@ -96,20 +96,20 @@ npm run dev:original
    - Aplicação é buildada e deployada
 
 2. **Detecção no Cliente:**
-   - Sistema verifica atualizações a cada 10 segundos
+   - Sistema verifica atualizações a cada 30 segundos
    - Compara versão local com versão do servidor
    - Detecta quando nova versão está disponível
 
-3. **Atualização Silenciosa:**
-   - Processo completamente automático e transparente
-   - Nenhuma notificação ou prompt ao usuário
-   - Logs detalhados no console para monitoramento
+3. **Notificação ao Usuário:**
+   - Componente de notificação aparece na tela
+   - Usuário pode escolher atualizar agora ou depois
+   - Mostra versão atual para referência
 
 4. **Atualização Forçada:**
    - Service worker antigo é terminado
    - Novo service worker é ativado imediatamente
    - Cache antigo é limpo
-   - Página é recarregada automaticamente após 1 segundo
+   - Página é recarregada automaticamente
 
 ## 📋 Scripts Disponíveis
 
@@ -145,7 +145,7 @@ npm run build:original
 Para alterar o intervalo de verificação de atualizações, edite a constante em `src/lib/utils/offline.ts`:
 
 ```typescript
-const VERSION_CHECK_INTERVAL = 10000; // 10 segundos
+const VERSION_CHECK_INTERVAL = 30000; // 30 segundos
 ```
 
 ### Formato de Versão
@@ -157,16 +157,6 @@ function generateVersion() {
   // Personalizar formato aqui
   return `${year}.${month}.${day}.${hour}${minute}`;
 }
-```
-
-### Delay de Recarregamento
-
-Para ajustar o tempo antes do recarregamento automático:
-
-```typescript
-setTimeout(() => {
-  window.location.reload();
-}, 1000); // 1 segundo
 ```
 
 ### Desabilitar Verificação Automática
@@ -186,12 +176,11 @@ Para desabilitar a verificação automática, comente a chamada em `src/lib/util
 3. Verificar console do navegador para erros
 4. Limpar cache manualmente como último recurso
 
-### Atualização não é aplicada automaticamente
+### Notificação não aparece
 
-1. Verificar se o service worker está registrado
+1. Verificar se o componente está importado no layout
 2. Confirmar que o evento `serviceWorkerUpdateAvailable` está sendo disparado
 3. Verificar se há erros no console
-4. Verificar se o intervalo de verificação está funcionando
 
 ### Build falha
 
@@ -202,12 +191,11 @@ Para desabilitar a verificação automática, comente a chamada em `src/lib/util
 ## 📈 Benefícios
 
 - ✅ **Atualizações automáticas**: Usuários sempre têm a versão mais recente
-- ✅ **Experiência transparente**: Atualizações silenciosas sem interrupção
+- ✅ **Experiência suave**: Notificação não intrusiva com opção de escolha
 - ✅ **Cache inteligente**: Limpeza automática de versões antigas
 - ✅ **Desenvolvimento facilitado**: Versionamento automático em builds
 - ✅ **Monitoramento**: Logs detalhados para debugging
-- ✅ **Performance otimizada**: Verificações mais frequentes (10s vs 30s)
-- ✅ **UX aprimorada**: Sem prompts ou notificações desnecessárias
+- ✅ **Flexibilidade**: Suporte a diferentes estratégias de versionamento
 
 ## 🔄 Próximos Passos
 

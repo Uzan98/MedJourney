@@ -681,12 +681,12 @@ export default function DashboardPage() {
                 <div>
                   <p className="text-sm text-blue-100">Tempo Total de Estudo</p>
                   <h3 className="text-2xl font-bold text-white">
-                     {statsLoading.studyTime ? (
-                       <span className="animate-pulse">--</span>
-                     ) : (
-                       formatStudyTime(stats.totalStudyTime)
-                     )}
-                   </h3>
+                    {statsLoading.studyTime ? (
+                      <span className="animate-pulse">--</span>
+                    ) : (
+                      `${stats.totalStudyTime}h`
+                    )}
+                  </h3>
                 </div>
               </div>
             </div>
