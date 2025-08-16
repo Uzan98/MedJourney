@@ -189,6 +189,22 @@ const PerformanceCharts = ({ studyData, testData }: PerformanceChartsProps) => {
     maintainAspectRatio: false,
   };
 
+  // Função para converter minutos em formato de horas
+  const formatMinutesToHours = (minutes: number): string => {
+    if (minutes < 60) {
+      return `${minutes}min`;
+    }
+    
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    
+    if (remainingMinutes === 0) {
+      return `${hours}h`;
+    }
+    
+    return `${hours}h ${remainingMinutes}min`;
+  };
+
   const totalMinutes = studyData.reduce((total, item) => total + item.minutes, 0);
   const avgMinutes = totalMinutes / studyData.length;
   const avgPerformance = testData.length > 0 ? (testData.reduce((total, test) => total + (test.correctAnswers / test.totalQuestions) * 100, 0) / testData.length).toFixed(2) : '0.00';
@@ -205,7 +221,7 @@ const PerformanceCharts = ({ studyData, testData }: PerformanceChartsProps) => {
           <div>
             <h4 className="text-sm font-medium text-blue-600">Últimos 7 dias</h4>
             <p className="text-3xl font-bold text-gray-800">
-              {totalMinutes} <span className="text-lg font-medium text-gray-600">min</span>
+              {formatMinutesToHours(totalMinutes)}
             </p>
           </div>
           
@@ -254,4 +270,4 @@ const PerformanceCharts = ({ studyData, testData }: PerformanceChartsProps) => {
   );
 };
 
-export default PerformanceCharts; 
+export default PerformanceCharts;

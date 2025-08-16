@@ -172,12 +172,12 @@ const Dashboard = () => {
           const today = new Date();
           const todayString = today.toISOString().split('T')[0];
           
-          // Calcular horas de estudo hoje
+          // Calcular minutos de estudo hoje (manter em minutos para consistência com a API)
           const hoursToday = completedSessions
             .filter((s: StudySession) => new Date(s.scheduledDate).toISOString().split('T')[0] === todayString)
             .reduce((sum: number, s: StudySession) => sum + (s.actualDuration || s.duration), 0);
           
-          // Calcular horas de estudo esta semana (últimos 7 dias)
+          // Calcular minutos de estudo esta semana (últimos 7 dias) (manter em minutos para consistência com a API)
           const sevenDaysAgo = new Date();
           sevenDaysAgo.setDate(today.getDate() - 6);
           
@@ -555,4 +555,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard; 
+export default Dashboard;

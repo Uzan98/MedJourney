@@ -427,11 +427,7 @@ export default function DashboardPage() {
       <div className="space-y-4">
         {studyByDiscipline.map((discipline, index) => {
           const percent = Math.min(100, (discipline.minutes / maxMinutes) * 100);
-          const hours = Math.floor(discipline.minutes / 60);
-          const mins = discipline.minutes % 60;
-          const timeDisplay = hours > 0 
-            ? `${hours}h${mins > 0 ? ` ${mins}m` : ''}`
-            : `${mins}m`;
+          const timeDisplay = formatStudyTime(discipline.minutes);
           
           // Usar a cor do esquema definido ou gerar uma cor baseada no índice
           const color = colorScheme[index % colorScheme.length];
@@ -684,7 +680,7 @@ export default function DashboardPage() {
                     {statsLoading.studyTime ? (
                       <span className="animate-pulse">--</span>
                     ) : (
-                      `${stats.totalStudyTime}h`
+                      formatStudyTime(stats.totalStudyTime)
                     )}
                   </h3>
                 </div>

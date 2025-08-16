@@ -109,13 +109,25 @@ export default function QuestaoDetalhePage() {
   // Função compatível com a interface do QuestionModal 
   const handleSaveQuestion = async (updatedQuestion: Question, answerOptions: AnswerOption[]): Promise<boolean> => {
     try {
-      // O salvamento acontece dentro do modal
-      // Apenas atualizamos os dados locais e saímos do modo de edição
-      const savedQuestion = {...updatedQuestion, answer_options: answerOptions};
-      setQuestion(savedQuestion);
-      setIsEditing(false);
-      toast.success('Questão atualizada com sucesso');
-      return true;
+      if (!questionId) {
+        toast.error('ID da questão não encontrado');
+        return false;
+      }
+
+      // Salvar a questão no banco de dados usando o serviço
+      const success = await QuestionsBankService.updateQuestion(questionId, updatedQuestion, answerOptions);
+      
+      if (success) {
+        // Atualizar os dados locais após o salvamento bem-sucedido
+        const savedQuestion = {...updatedQuestion, answer_options: answerOptions};
+        setQuestion(savedQuestion);
+        setIsEditing(false);
+        toast.success('Questão atualizada com sucesso');
+        return true;
+      } else {
+        toast.error('Erro ao salvar questão no banco de dados');
+        return false;
+      }
     } catch (error) {
       console.error('Erro ao atualizar questão:', error);
       toast.error('Ocorreu um erro ao atualizar a questão');

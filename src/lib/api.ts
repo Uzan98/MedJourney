@@ -877,29 +877,29 @@ export async function recalcularMetricas(): Promise<ApiResponse<StudyMetrics>> {
     const lastWeekStart = new Date(thisWeekStart);
     lastWeekStart.setDate(lastWeekStart.getDate() - 7); // 14 dias atrás
     
-    // Calcular horas de estudo hoje
+    // Calcular minutos de estudo hoje (manter em minutos para consistência com a API)
     const hoursToday = completedSessions
       .filter(s => {
         const sessionDate = new Date(s.scheduledDate);
         return sessionDate >= todayStart && sessionDate <= today;
       })
-      .reduce((sum, s) => sum + (s.actualDuration || s.duration), 0) / 60; // Converter minutos para horas
+      .reduce((sum, s) => sum + (s.actualDuration || s.duration), 0); // Manter em minutos
     
-    // Calcular horas de estudo esta semana
+    // Calcular minutos de estudo esta semana (manter em minutos para consistência com a API)
     const hoursThisWeek = completedSessions
       .filter(s => {
         const sessionDate = new Date(s.scheduledDate);
         return sessionDate >= thisWeekStart && sessionDate <= today;
       })
-      .reduce((sum, s) => sum + (s.actualDuration || s.duration), 0) / 60; // Converter minutos para horas
+      .reduce((sum, s) => sum + (s.actualDuration || s.duration), 0); // Manter em minutos
     
-    // Calcular horas de estudo na semana passada (para comparação)
+    // Calcular minutos de estudo na semana passada (para comparação)
     const hoursLastWeek = completedSessions
       .filter(s => {
         const sessionDate = new Date(s.scheduledDate);
         return sessionDate >= lastWeekStart && sessionDate < thisWeekStart;
       })
-      .reduce((sum, s) => sum + (s.actualDuration || s.duration), 0) / 60; // Converter minutos para horas
+      .reduce((sum, s) => sum + (s.actualDuration || s.duration), 0); // Manter em minutos
     
     // Calcular mudança percentual em horas
     let hoursChange = 0;
@@ -1185,4 +1185,4 @@ export async function deleteSubject(disciplineId: number, subjectId: number): Pr
       error: 'Erro ao excluir assunto'
     };
   }
-} 
+}
