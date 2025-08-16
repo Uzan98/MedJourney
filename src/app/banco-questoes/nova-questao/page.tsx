@@ -60,12 +60,7 @@ export default function NovaQuestaoPage() {
     }
   };
 
-  // Criando um objeto de questão vazio para inicialData
-  const emptyQuestion: Question = {
-    content: '',
-    question_type: 'multiple_choice',
-    difficulty: 'média',
-  };
+
 
   // Se o usuário atingiu o limite, mostrar mensagem de upgrade
   if (hasReachedQuestionsLimit) {
@@ -134,9 +129,8 @@ export default function NovaQuestaoPage() {
           onClose={() => router.push('/banco-questoes')}
           onSave={handleSaveQuestion}
           title="Nova Questão"
-          initialData={emptyQuestion}
         />
       </div>
     </div>
   );
-} 
+}

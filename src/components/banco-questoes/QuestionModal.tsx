@@ -1,9 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Plus, Trash2, Check, Globe } from 'lucide-react';
 import { Question, AnswerOption } from '@/services/questions-bank.service';
 import { toast } from 'react-hot-toast';
 import { Discipline, Subject } from '@/lib/supabase';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
+import dynamic from 'next/dynamic';
+
+// Importar ReactQuill dinamicamente para evitar problemas de SSR
+const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
+import 'react-quill/dist/quill.snow.css';
+import '@/styles/quill-custom.css';
 
 interface QuestionModalProps {
   isOpen: boolean;
@@ -40,8 +46,61 @@ export default function QuestionModal({
   // Estado de loading
   const [isSaving, setIsSaving] = useState(false);
   
+  // Chave única para persistência baseada no ID da questão
+  const storageKey = `question-modal-${initialData?.id || 'new'}`;
+  
+  // Funções para gerenciar persistência no sessionStorage
+  const saveToStorage = useCallback((data: any) => {
+    try {
+      const storageData = {
+        ...data,
+        timestamp: Date.now()
+      };
+      console.log('💾 Salvando no sessionStorage:', storageKey, storageData);
+      sessionStorage.setItem(storageKey, JSON.stringify(storageData));
+    } catch (error) {
+      console.warn('❌ Erro ao salvar no sessionStorage:', error);
+    }
+  }, [storageKey]);
+  
+  const loadFromStorage = useCallback(() => {
+    try {
+      const stored = sessionStorage.getItem(storageKey);
+      console.log('📂 Tentando carregar do sessionStorage:', storageKey, stored ? 'dados encontrados' : 'nenhum dado');
+      
+      if (stored) {
+        const data = JSON.parse(stored);
+        // Verificar se os dados não são muito antigos (1 hora)
+        const timeDiff = Date.now() - data.timestamp;
+        console.log('⏰ Idade dos dados:', timeDiff, 'ms');
+        
+        if (timeDiff < 60 * 60 * 1000) {
+          console.log('✅ Dados válidos, retornando:', data);
+          return data;
+        } else {
+          console.log('⚠️ Dados muito antigos, removendo');
+          sessionStorage.removeItem(storageKey);
+        }
+      }
+    } catch (error) {
+      console.warn('❌ Erro ao carregar do sessionStorage:', error);
+    }
+    return null;
+  }, [storageKey]);
+  
+  const clearStorage = useCallback(() => {
+    try {
+      console.log('🗑️ Limpando sessionStorage:', storageKey);
+      sessionStorage.removeItem(storageKey);
+    } catch (error) {
+      console.warn('❌ Erro ao limpar sessionStorage:', error);
+    }
+  }, [storageKey]);
+  
   // Carregar dados iniciais se for edição
   useEffect(() => {
+    if (!isOpen) return; // Só executar quando o modal estiver aberto
+    
     if (initialData) {
       setContent(initialData.content || '');
       setExplanation(initialData.explanation || '');
@@ -65,12 +124,113 @@ export default function QuestionModal({
         loadSubjects(initialData.discipline_id);
       }
     } else {
-      resetForm();
+      // Tentar recuperar dados salvos do sessionStorage
+      const savedData = loadFromStorage();
+      if (savedData) {
+        console.log('📂 Carregando dados do sessionStorage:', savedData);
+        console.log('📝 Content recuperado:', savedData.content, 'Length:', savedData.content?.length || 0);
+        setContent(savedData.content || '');
+        setExplanation(savedData.explanation || '');
+        setDisciplineId(savedData.disciplineId || null);
+        setSubjectId(savedData.subjectId || null);
+        setDifficulty(savedData.difficulty || 'média');
+        setQuestionType(savedData.questionType || 'multiple_choice');
+        setAnswerOptions(savedData.answerOptions || []);
+        setCorrectAnswer(savedData.correctAnswer || '');
+        setTags(savedData.tags || []);
+        setIsPublic(savedData.isPublic || false);
+        
+        // Carregar assuntos se uma disciplina estiver selecionada
+        if (savedData.disciplineId) {
+          loadSubjects(savedData.disciplineId);
+        }
+      } else {
+        resetForm();
+      }
     }
     
     // Carregar disciplinas
     loadDisciplines();
-  }, [initialData, isOpen]);
+  }, [initialData, isOpen]); // Removido loadFromStorage das dependências
+  
+  // Salvar automaticamente o estado do formulário no sessionStorage
+  useEffect(() => {
+    if (isOpen && !initialData) { // Só salvar para novas questões
+      const formData = {
+        content,
+        explanation,
+        disciplineId,
+        subjectId,
+        difficulty,
+        questionType,
+        answerOptions,
+        correctAnswer,
+        tags,
+        isPublic
+      };
+      
+      // Sempre salvar os dados, mesmo se estiverem vazios
+      console.log('💾 Salvando dados no sessionStorage (incluindo content):', {
+        content: content,
+        contentLength: content.length,
+        ...formData
+      });
+      saveToStorage(formData);
+    }
+  }, [content, explanation, disciplineId, subjectId, difficulty, questionType, answerOptions, correctAnswer, tags, isPublic, isOpen, initialData, saveToStorage]);
+   
+   // Detectar mudança de visibilidade da página para recuperar dados perdidos
+   useEffect(() => {
+     const handleVisibilityChange = () => {
+       console.log('Visibilidade mudou:', document.hidden ? 'oculta' : 'visível');
+       
+       if (!document.hidden && isOpen && !initialData) {
+         // Verificar se o estado atual está vazio e tentar recuperar dados mais recentes
+         const isEmpty = !content.trim() && !explanation.trim() && answerOptions.length === 0 && tags.length === 0;
+         console.log('Estado atual está vazio:', isEmpty);
+         
+         if (isEmpty) {
+           const savedData = loadFromStorage();
+           console.log('Dados salvos encontrados:', savedData);
+           
+           if (savedData && savedData.timestamp) {
+             // Aumentar o tempo para 5 minutos para teste
+             const timeDiff = Date.now() - savedData.timestamp;
+             console.log('Diferença de tempo:', timeDiff, 'ms');
+             
+             if (timeDiff < 300000) { // 5 minutos
+               console.log('🔄 Recuperando dados do sessionStorage na mudança de visibilidade');
+               console.log('📝 Content a ser recuperado:', savedData.content, 'Length:', savedData.content?.length || 0);
+               setContent(savedData.content || '');
+               setExplanation(savedData.explanation || '');
+               setDisciplineId(savedData.disciplineId || null);
+               setSubjectId(savedData.subjectId || null);
+               setDifficulty(savedData.difficulty || 'média');
+               setQuestionType(savedData.questionType || 'multiple_choice');
+               setAnswerOptions(savedData.answerOptions || []);
+               setCorrectAnswer(savedData.correctAnswer || '');
+               setTags(savedData.tags || []);
+               setIsPublic(savedData.isPublic || false);
+               
+               if (savedData.disciplineId) {
+                 loadSubjects(savedData.disciplineId);
+               }
+               
+               toast.success('Conteúdo recuperado automaticamente!');
+             } else {
+               console.log('Dados muito antigos, não recuperando');
+             }
+           }
+         }
+       }
+     };
+     
+     document.addEventListener('visibilitychange', handleVisibilityChange);
+     
+     return () => {
+       document.removeEventListener('visibilitychange', handleVisibilityChange);
+     };
+   }, [isOpen, initialData]); // Removido dependências que causam re-renders
   
   // Função para resetar o formulário
   const resetForm = () => {
@@ -85,7 +245,10 @@ export default function QuestionModal({
     setTagInput('');
     setTags([]);
     setIsPublic(false);
+    clearStorage();
   };
+
+
   
   // Carregar disciplinas
   const loadDisciplines = async () => {
@@ -248,6 +411,7 @@ export default function QuestionModal({
       
       if (success) {
         toast.success(initialData ? 'Questão atualizada com sucesso' : 'Questão criada com sucesso');
+        clearStorage(); // Limpar dados salvos após sucesso
         resetForm();
         onClose();
       }
@@ -284,15 +448,41 @@ export default function QuestionModal({
               <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
                 Conteúdo da Questão <span className="text-red-500">*</span>
               </label>
-              <textarea
-                id="content"
-                rows={3}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Digite o conteúdo da questão aqui..."
-                required
-              />
+              <div className="border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-blue-500">
+                <ReactQuill
+                  value={content}
+                  onChange={setContent}
+                  placeholder="Digite o conteúdo da questão aqui..."
+                  modules={{
+                    toolbar: [
+                      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                      [{ 'font': [] }],
+                      [{ 'size': ['small', false, 'large', 'huge'] }],
+                      ['bold', 'italic', 'underline', 'strike'],
+                      [{ 'color': [] }, { 'background': [] }],
+                      [{ 'script': 'sub'}, { 'script': 'super' }],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      [{ 'indent': '-1'}, { 'indent': '+1' }],
+                      [{ 'direction': 'rtl' }],
+                      [{ 'align': [] }],
+                      ['blockquote', 'code-block'],
+                      ['link', 'image', 'video'],
+                      ['clean']
+                    ]
+                  }}
+                  formats={[
+                    'header', 'font', 'size',
+                    'bold', 'italic', 'underline', 'strike',
+                    'color', 'background',
+                    'script',
+                    'list', 'bullet', 'indent',
+                    'direction', 'align',
+                    'blockquote', 'code-block',
+                    'link', 'image', 'video'
+                  ]}
+                  style={{ minHeight: '120px' }}
+                />
+              </div>
             </div>
             
             {/* Tipo de Questão */}
@@ -424,14 +614,41 @@ export default function QuestionModal({
               <label htmlFor="explanation" className="block text-sm font-medium text-gray-700 mb-1">
                 Explicação
               </label>
-              <textarea
-                id="explanation"
-                rows={2}
-                value={explanation}
-                onChange={(e) => setExplanation(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Explicação opcional sobre a resposta correta..."
-              />
+              <div className="border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-blue-500">
+                <ReactQuill
+                  value={explanation}
+                  onChange={setExplanation}
+                  placeholder="Explicação opcional sobre a resposta correta..."
+                  modules={{
+                    toolbar: [
+                      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                      [{ 'font': [] }],
+                      [{ 'size': ['small', false, 'large', 'huge'] }],
+                      ['bold', 'italic', 'underline', 'strike'],
+                      [{ 'color': [] }, { 'background': [] }],
+                      [{ 'script': 'sub'}, { 'script': 'super' }],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      [{ 'indent': '-1'}, { 'indent': '+1' }],
+                      [{ 'direction': 'rtl' }],
+                      [{ 'align': [] }],
+                      ['blockquote', 'code-block'],
+                      ['link', 'image', 'video'],
+                      ['clean']
+                    ]
+                  }}
+                  formats={[
+                    'header', 'font', 'size',
+                    'bold', 'italic', 'underline', 'strike',
+                    'color', 'background',
+                    'script',
+                    'list', 'bullet', 'indent',
+                    'direction', 'align',
+                    'blockquote', 'code-block',
+                    'link', 'image', 'video'
+                  ]}
+                  style={{ minHeight: '100px' }}
+                />
+              </div>
             </div>
             
             {/* Grid de Seleções */}
@@ -564,27 +781,29 @@ export default function QuestionModal({
         </div>
         
         {/* Footer */}
-        <div className="border-t border-gray-200 px-6 py-4 flex justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 mr-2"
-            disabled={isSaving}
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className={`px-4 py-2 rounded-md text-white ${
-              isSaving ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-            disabled={isSaving}
-          >
-            {isSaving ? 'Salvando...' : initialData ? 'Atualizar' : 'Salvar'}
-          </button>
+         <div className="border-t border-gray-200 px-6 py-4 flex justify-end">
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              disabled={isSaving}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              className={`px-4 py-2 rounded-md text-white ${
+                isSaving ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+              }`}
+              disabled={isSaving}
+            >
+              {isSaving ? 'Salvando...' : initialData ? 'Atualizar' : 'Salvar'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
-} 
+}

@@ -1,6 +1,7 @@
-// Versão do cache - altere isso ao atualizar o sw.js
-const CACHE_VERSION = 'v1';
+// Versão do cache - será atualizada automaticamente pelo build
+const CACHE_VERSION = 'v' + Date.now(); // Versão baseada em timestamp
 const CACHE_NAME = `medjourney-${CACHE_VERSION}`;
+const APP_VERSION = '2025.08.15.1910'; // Versão da aplicação
 const OFFLINE_URL = '/offline.html';
 const SUPABASE_URL = self.location.origin.includes('localhost') 
   ? 'https://ipfjehdwmenpaeuefntd.supabase.co' 
@@ -254,6 +255,37 @@ function openDatabase() {
 self.addEventListener('message', event => {
   if (event.data.action === 'skipWaiting') {
     self.skipWaiting();
+  }
+  
+  // Responder com a versão atual do service worker
+  if (event.data.action === 'getVersion') {
+    event.ports[0]?.postMessage({
+      version: CACHE_VERSION,
+      appVersion: APP_VERSION,
+      timestamp: Date.now()
+    });
+  }
+  
+  // Forçar atualização do service worker
+  if (event.data.action === 'forceUpdate') {
+    console.log('[Service Worker] Forçando atualização...');
+    // Limpar todos os caches
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          console.log(`[Service Worker] Removendo cache: ${cacheName}`);
+          return caches.delete(cacheName);
+        })
+      );
+    }).then(() => {
+      // Pular a espera e ativar imediatamente
+      self.skipWaiting();
+      // Notificar que a atualização foi concluída
+      event.ports[0]?.postMessage({ success: true });
+    }).catch(error => {
+      console.error('[Service Worker] Erro na atualização forçada:', error);
+      event.ports[0]?.postMessage({ success: false, error: error.message });
+    });
   }
   
   // Handler para limpeza de dados do usuário no logout

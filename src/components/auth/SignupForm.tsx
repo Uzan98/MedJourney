@@ -11,7 +11,7 @@ import { recordTermsAcceptance } from '@/lib/terms-service';
 import { useTermsAcceptance } from '@/hooks/useTermsAcceptance';
 import PrivacyPolicyModal from './privacy-policy-modal';
 import { recordPrivacyAcceptance } from '@/lib/privacy-policy-service';
-import { usePrivacyAcceptance } from '@/hooks/usePrivacyAcceptance';
+import { usePrivacyAcceptance } from '@/hooks/useprivacyacceptance';
 
 export default function SignupForm() {
   const [name, setName] = useState('');

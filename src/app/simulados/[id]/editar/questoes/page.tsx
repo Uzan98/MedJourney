@@ -346,7 +346,7 @@ export default function EditarQuestoesPage({ params }: { params: { id: string } 
                                         </span>
                                       </div>
                                       <div 
-                                        className="text-gray-700 mb-3" 
+                                        className="quill-content text-gray-700 mb-3" 
                                         dangerouslySetInnerHTML={{ __html: questionData.content || '' }}
                                       />
                                     </div>
@@ -552,7 +552,7 @@ export default function EditarQuestoesPage({ params }: { params: { id: string } 
                                 </span>
                               </div>
                               <div 
-                                className="text-gray-700" 
+                                className="quill-content text-gray-700" 
                                 dangerouslySetInnerHTML={{ __html: question.content || '' }}
                               />
                               
@@ -609,4 +609,4 @@ export default function EditarQuestoesPage({ params }: { params: { id: string } 
       )}
     </div>
   );
-} 
+}

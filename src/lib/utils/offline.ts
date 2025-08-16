@@ -9,6 +9,12 @@ interface ExtendedServiceWorkerRegistration extends ServiceWorkerRegistration {
   };
 }
 
+import { APP_VERSION } from '../version';
+
+// Versão atual da aplicação (importada automaticamente)
+const CURRENT_APP_VERSION = APP_VERSION;
+const VERSION_CHECK_INTERVAL = 30000; // 30 segundos
+
 // Registra o service worker para funcionalidades offline
 export function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
@@ -25,13 +31,19 @@ export function registerServiceWorker() {
             if (newWorker) {
               newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  console.log('Nova versão disponível!');
-                  // Notificar o usuário sobre a atualização
-                  notifyUserAboutUpdate();
+                  console.log('Nova versão do service worker detectada, aplicando automaticamente...');
+                  // Forçar atualização imediatamente
+                  forceServiceWorkerUpdate();
                 }
               });
             }
           });
+          
+          // Verificar versão periodicamente
+          startVersionCheck();
+          
+          // Verificar versão imediatamente
+          checkForUpdates();
         })
         .catch(error => {
           console.error('Erro ao registrar o Service Worker:', error);
@@ -291,6 +303,149 @@ function notifyUserAboutUpdate() {
   window.dispatchEvent(event);
 }
 
+// Força a atualização do service worker
+export async function forceServiceWorkerUpdate(): Promise<boolean> {
+  if (!('serviceWorker' in navigator)) {
+    console.warn('Service Worker não é suportado neste navegador');
+    return false;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    
+    // Verificar se há um service worker em espera
+    if (registration.waiting) {
+      console.log('Ativando service worker em espera automaticamente...');
+      
+      // Enviar mensagem para pular a espera
+      const messageChannel = new MessageChannel();
+      
+      return new Promise((resolve) => {
+        messageChannel.port1.onmessage = (event) => {
+          if (event.data.success) {
+            console.log('Service Worker atualizado automaticamente!');
+            // Recarregar a página silenciosamente para aplicar as mudanças
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000); // Pequeno delay para suavizar a transição
+            resolve(true);
+          } else {
+            console.error('Erro na atualização automática do Service Worker:', event.data.error);
+            resolve(false);
+          }
+        };
+        
+        registration.waiting.postMessage(
+          { action: 'forceUpdate' },
+          [messageChannel.port2]
+        );
+      });
+    } else {
+      // Tentar atualizar o registration
+      console.log('Verificando atualizações do service worker...');
+      const updatedRegistration = await registration.update();
+      
+      if (updatedRegistration.installing) {
+        console.log('Nova versão do service worker encontrada, instalando...');
+        return new Promise((resolve) => {
+          updatedRegistration.installing!.addEventListener('statechange', () => {
+            if (updatedRegistration.installing!.state === 'installed') {
+              console.log('Nova versão instalada automaticamente, recarregando...');
+              setTimeout(() => {
+                window.location.reload();
+              }, 1000); // Pequeno delay para suavizar a transição
+              resolve(true);
+            }
+          });
+        });
+      } else {
+        console.log('Nenhuma atualização disponível');
+        return false;
+      }
+    }
+  } catch (error) {
+    console.error('Erro ao forçar atualização do service worker:', error);
+    return false;
+  }
+}
+
+// Verifica se há atualizações disponíveis
+export async function checkForUpdates(): Promise<boolean> {
+  if (!('serviceWorker' in navigator)) {
+    return false;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    
+    // Verificar se há um service worker em espera
+    if (registration.waiting) {
+      console.log('Atualização disponível, aplicando automaticamente...');
+      await forceServiceWorkerUpdate();
+      return true;
+    }
+    
+    // Verificar atualizações no servidor
+    await registration.update();
+    
+    return false;
+  } catch (error) {
+    console.error('Erro ao verificar atualizações:', error);
+    return false;
+  }
+}
+
+// Inicia verificação periódica de versão
+function startVersionCheck() {
+  // Verificar a cada 30 segundos
+  setInterval(async () => {
+    try {
+      const hasUpdate = await checkForUpdates();
+      if (hasUpdate) {
+        console.log('Atualização aplicada automaticamente');
+      }
+    } catch (error) {
+      console.error('Erro na verificação periódica de versão:', error);
+    }
+  }, VERSION_CHECK_INTERVAL);
+  
+  console.log(`Verificação automática de versão iniciada (intervalo: ${VERSION_CHECK_INTERVAL}ms)`);
+}
+
+// Obtém a versão atual do service worker
+export async function getCurrentServiceWorkerVersion(): Promise<string | null> {
+  if (!('serviceWorker' in navigator)) {
+    return null;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    
+    if (registration.active) {
+      const messageChannel = new MessageChannel();
+      
+      return new Promise((resolve) => {
+        messageChannel.port1.onmessage = (event) => {
+          resolve(event.data.version || null);
+        };
+        
+        registration.active!.postMessage(
+          { action: 'getVersion' },
+          [messageChannel.port2]
+        );
+        
+        // Timeout após 5 segundos
+        setTimeout(() => resolve(null), 5000);
+      });
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Erro ao obter versão do service worker:', error);
+    return null;
+  }
+}
+
 /**
  * Verifica se o servidor está disponível
  * @returns Promise<boolean> true se o servidor estiver disponível
@@ -348,4 +503,4 @@ export function getCorrectServerUrl(path: string = '/'): string {
     // Retornar uma URL relativa como fallback
     return path.startsWith('/') ? path : `/${path}`;
   }
-} 
+}
