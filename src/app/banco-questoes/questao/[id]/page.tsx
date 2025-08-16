@@ -479,7 +479,7 @@ export default function QuestaoDetalhePage() {
         <div className="mb-8">
           <h2 className="text-lg font-semibold text-gray-700 mb-4">Enunciado</h2>
           <div className="bg-gray-50 p-5 rounded-lg prose">
-            <div dangerouslySetInnerHTML={{ __html: question?.content || 'Conteúdo não disponível' }} />
+            <div className="quill-content" dangerouslySetInnerHTML={{ __html: question?.content || 'Conteúdo não disponível' }} />
           </div>
         </div>
         
@@ -536,7 +536,7 @@ export default function QuestaoDetalhePage() {
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-gray-700 mb-4">Resposta</h2>
             <div className="bg-gray-50 p-5 rounded-lg prose">
-              <div dangerouslySetInnerHTML={{ __html: question.correct_answer }} />
+              <div className="quill-content" dangerouslySetInnerHTML={{ __html: question.correct_answer }} />
             </div>
           </div>
         )}
@@ -546,7 +546,7 @@ export default function QuestaoDetalhePage() {
           <div>
             <h2 className="text-lg font-semibold text-gray-700 mb-4">Explicação</h2>
             <div className="bg-gray-50 p-5 rounded-lg prose">
-              <div dangerouslySetInnerHTML={{ __html: question.explanation }} />
+              <div className="quill-content" dangerouslySetInnerHTML={{ __html: question.explanation }} />
             </div>
           </div>
         )}

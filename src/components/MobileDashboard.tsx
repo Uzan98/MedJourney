@@ -1073,7 +1073,10 @@ const MobileDashboard = () => {
                   {recentQuestions.map((question, index) => (
                     <Link href={`/banco-questoes/questao/${question.id}`} key={index}>
                       <div className="border border-gray-100 rounded-lg p-2.5 hover:bg-gray-50 transition-colors">
-                          <p className="text-sm font-medium line-clamp-2">{question.content}</p>
+                          <div 
+                            className="quill-content text-sm font-medium line-clamp-2"
+                            dangerouslySetInnerHTML={{ __html: question.content || '' }}
+                          />
                           <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                           <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                               {question.question_type === 'multiple_choice' ? 'Múltipla Escolha' : 

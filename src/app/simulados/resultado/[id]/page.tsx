@@ -217,7 +217,7 @@ export default function ResultadoSimulado({ params }: { params: { id: string } }
         <div className="p-6">
           {/* Enunciado */}
           <div 
-            className="text-gray-700 mb-6 text-lg" 
+            className="quill-content text-gray-700 mb-6 text-lg" 
             dangerouslySetInnerHTML={{ __html: questionData.content || '' }}
           />
           
@@ -252,7 +252,7 @@ export default function ResultadoSimulado({ params }: { params: { id: string } }
                           )}
                         </div>
                         <div 
-                          className="ml-3 text-gray-700" 
+                          className="quill-content ml-3 text-gray-700" 
                           dangerouslySetInnerHTML={{ __html: option.text }}
                         />
                         
@@ -518,4 +518,4 @@ export default function ResultadoSimulado({ params }: { params: { id: string } }
       </div>
     </div>
   );
-} 
+}

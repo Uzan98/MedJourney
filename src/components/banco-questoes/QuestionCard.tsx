@@ -183,7 +183,10 @@ export default function QuestionCard({ question, onDelete, disciplineName, onAcc
         </div>
         
         <div className="mb-4">
-          <h3 className="text-gray-800 font-medium line-clamp-2 text-base">{question.content}</h3>
+          <div 
+            className="quill-content text-gray-800 font-medium line-clamp-2 text-base max-w-none"
+            dangerouslySetInnerHTML={{ __html: question.content || '' }}
+          />
         </div>
         
         <div className="flex flex-wrap items-center justify-between mt-4">

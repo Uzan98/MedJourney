@@ -381,9 +381,10 @@ export default function PraticarQuestoesPage() {
                       <h3 className="font-medium text-gray-800">
                         Questão {index + 1}
                       </h3>
-                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                        {question.content.replace(/<[^>]*>/g, '')}
-                      </p>
+                      <div 
+                        className="text-sm text-gray-600 mt-1 line-clamp-2"
+                        dangerouslySetInnerHTML={{ __html: question.content || '' }}
+                      />
                     </div>
                     
                     <Link 
@@ -473,7 +474,7 @@ export default function PraticarQuestoesPage() {
         
         {/* Conteúdo da questão */}
         <div className="mb-8">
-          <div className="prose max-w-none mb-6">
+          <div className="quill-content max-w-none mb-6">
             <div dangerouslySetInnerHTML={{ __html: currentQuestion.content }} />
           </div>
           
@@ -584,4 +585,4 @@ export default function PraticarQuestoesPage() {
       </div>
     </div>
   );
-} 
+}

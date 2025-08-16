@@ -303,7 +303,7 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
           </div>
           
           <div 
-            className="text-gray-700 mb-8 text-lg" 
+            className="quill-content text-gray-700 mb-8 text-lg" 
             dangerouslySetInnerHTML={{ __html: question.content || '' }}
           />
           
@@ -605,7 +605,7 @@ function MultipleChoiceQuestion({
                 )}
               </div>
               <div 
-                className={`ml-3 flex-grow ${isStrikeThrough ? 'line-through text-gray-400' : 'text-gray-700'}`}
+                className={`quill-content ml-3 flex-grow ${isStrikeThrough ? 'line-through text-gray-400' : 'text-gray-700'}`}
                 dangerouslySetInnerHTML={{ __html: option.text }}
               />
               
@@ -716,4 +716,4 @@ function EssayQuestion({
       />
     </div>
   );
-} 
+}

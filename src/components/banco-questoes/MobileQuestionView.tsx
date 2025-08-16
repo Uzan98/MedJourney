@@ -227,7 +227,7 @@ export default function MobileQuestionView({
         {/* Conteúdo da questão */}
         <div className="bg-white rounded-lg p-4 shadow-sm">
           <h2 className="text-sm font-semibold text-gray-700 mb-3">Enunciado</h2>
-          <div className="bg-gray-50 p-4 rounded-lg prose prose-sm max-w-none">
+          <div className="bg-gray-50 p-4 rounded-lg quill-content max-w-none">
             <div dangerouslySetInnerHTML={{ __html: question?.content || 'Conteúdo não disponível' }} />
           </div>
         </div>
@@ -284,7 +284,7 @@ export default function MobileQuestionView({
         {question?.question_type === 'essay' && question?.correct_answer && (
           <div className="bg-white rounded-lg p-4 shadow-sm">
             <h2 className="text-sm font-semibold text-gray-700 mb-3">Resposta</h2>
-            <div className="bg-gray-50 p-4 rounded-lg prose prose-sm max-w-none">
+            <div className="bg-gray-50 p-4 rounded-lg quill-content max-w-none">
               <div dangerouslySetInnerHTML={{ __html: question.correct_answer }} />
             </div>
           </div>
@@ -294,7 +294,7 @@ export default function MobileQuestionView({
         {question?.explanation && (
           <div className="bg-white rounded-lg p-4 shadow-sm">
             <h2 className="text-sm font-semibold text-gray-700 mb-3">Explicação</h2>
-            <div className="bg-gray-50 p-4 rounded-lg prose prose-sm max-w-none">
+            <div className="bg-gray-50 p-4 rounded-lg quill-content max-w-none">
               <div dangerouslySetInnerHTML={{ __html: question.explanation }} />
             </div>
           </div>

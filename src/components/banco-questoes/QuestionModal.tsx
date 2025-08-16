@@ -455,19 +455,30 @@ export default function QuestionModal({
                   placeholder="Digite o conteúdo da questão aqui..."
                   modules={{
                     toolbar: [
-                      [{ 'header': [1, 2, 3, false] }],
+                      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                      [{ 'font': [] }],
+                      [{ 'size': ['small', false, 'large', 'huge'] }],
                       ['bold', 'italic', 'underline', 'strike'],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      [{ 'color': [] }, { 'background': [] }],
                       [{ 'script': 'sub'}, { 'script': 'super' }],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      [{ 'indent': '-1'}, { 'indent': '+1' }],
+                      [{ 'direction': 'rtl' }],
+                      [{ 'align': [] }],
                       ['blockquote', 'code-block'],
-                      ['link', 'image'],
+                      ['link', 'image', 'video'],
                       ['clean']
                     ]
                   }}
                   formats={[
-                    'header', 'bold', 'italic', 'underline', 'strike',
-                    'list', 'bullet', 'script', 'blockquote', 'code-block',
-                    'link', 'image'
+                    'header', 'font', 'size',
+                    'bold', 'italic', 'underline', 'strike',
+                    'color', 'background',
+                    'script',
+                    'list', 'bullet', 'indent',
+                    'direction', 'align',
+                    'blockquote', 'code-block',
+                    'link', 'image', 'video'
                   ]}
                   style={{ minHeight: '120px' }}
                 />
@@ -610,17 +621,30 @@ export default function QuestionModal({
                   placeholder="Explicação opcional sobre a resposta correta..."
                   modules={{
                     toolbar: [
-                      [{ 'header': [1, 2, 3, false] }],
-                      ['bold', 'italic', 'underline'],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                      [{ 'font': [] }],
+                      [{ 'size': ['small', false, 'large', 'huge'] }],
+                      ['bold', 'italic', 'underline', 'strike'],
+                      [{ 'color': [] }, { 'background': [] }],
                       [{ 'script': 'sub'}, { 'script': 'super' }],
-                      ['link'],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      [{ 'indent': '-1'}, { 'indent': '+1' }],
+                      [{ 'direction': 'rtl' }],
+                      [{ 'align': [] }],
+                      ['blockquote', 'code-block'],
+                      ['link', 'image', 'video'],
                       ['clean']
                     ]
                   }}
                   formats={[
-                    'header', 'bold', 'italic', 'underline',
-                    'list', 'bullet', 'script', 'link'
+                    'header', 'font', 'size',
+                    'bold', 'italic', 'underline', 'strike',
+                    'color', 'background',
+                    'script',
+                    'list', 'bullet', 'indent',
+                    'direction', 'align',
+                    'blockquote', 'code-block',
+                    'link', 'image', 'video'
                   ]}
                   style={{ minHeight: '100px' }}
                 />
