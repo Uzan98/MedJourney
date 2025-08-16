@@ -1,7 +1,7 @@
-// case sensitivity
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { recordPrivacyAcceptance } from '@/lib/privacy-policy-service';
+import { recordPrivacyAcceptance, checkPrivacyAcceptance } from '@/lib/privacy-policy-service';
+import { privacyPolicy } from '@/data/privacy-policy';
 
 /**
  * Hook para registrar automaticamente a aceitação da política de privacidade
@@ -18,7 +18,22 @@ export function usePrivacyAcceptance(privacyAccepted: boolean) {
       // 3. É uma sessão nova (evitar registros duplicados)
       if (user && privacyAccepted && session) {
         try {
-          const result = await recordPrivacyAcceptance(user.id);
+          // Verificar se o usuário já aceitou a política atual
+          const checkResult = await checkPrivacyAcceptance(user.id, privacyPolicy.version);
+          
+          if (checkResult.error) {
+            console.warn('Erro ao verificar aceitação da política de privacidade:', checkResult.error);
+            return;
+          }
+          
+          // Se já aceitou, não registrar novamente
+          if (checkResult.accepted) {
+            console.log('Usuário já aceitou a política de privacidade atual:', user.id);
+            return;
+          }
+          
+          // Registrar a aceitação
+          const result = await recordPrivacyAcceptance(user.id, privacyPolicy.version);
           
           if (result.success) {
             console.log('Aceitação da política de privacidade registrada para usuário OAuth:', user.id);
