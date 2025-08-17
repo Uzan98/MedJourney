@@ -40,7 +40,7 @@ import {
   Lightbulb,
   Target
 } from 'lucide-react';
-import QuickStudySessionModal from '@/components/estudos/QuickStudySessionModal';
+
 import MobileDashboard from '@/components/MobileDashboard';
 import SimuladosPerformanceChart from '@/components/dashboard/SimuladosPerformanceChart';
 import ImageCarousel from '@/components/dashboard/ImageCarousel';
@@ -114,7 +114,7 @@ export default function DashboardPage() {
     totalDaysStudied: 0,
     weekDays: []
   });
-  const [isStudySessionModalOpen, setIsStudySessionModalOpen] = useState(false);
+
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [carouselImages, setCarouselImages] = useState<any[]>([]);
   const [showTourModal, setShowTourModal] = useState(false);
@@ -400,12 +400,6 @@ export default function DashboardPage() {
         <div className="text-center py-6">
           <Clock className="mx-auto h-8 w-8 text-gray-400 mb-2" />
           <p className="text-gray-600">Nenhuma sessão de estudo registrada</p>
-          <button
-            onClick={() => setIsStudySessionModalOpen(true)}
-            className="mt-2 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-          >
-            Registrar estudo
-          </button>
         </div>
       );
     }
@@ -874,17 +868,7 @@ export default function DashboardPage() {
         </div>
       </div>
       
-      {/* Modal de sessão de estudo rápida */}
-      <QuickStudySessionModal
-        isOpen={isStudySessionModalOpen}
-        onClose={() => setIsStudySessionModalOpen(false)}
-        onSuccess={() => {
-          setIsStudySessionModalOpen(false);
-          toast.success('Sessão de estudo registrada com sucesso!');
-          // Recarregar dados após registrar uma sessão
-          window.location.reload();
-        }}
-      />
+
 
       {/* Botão flutuante do Genobot */}
       <button

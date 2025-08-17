@@ -22,7 +22,10 @@ import {
   School,
   CreditCard,
   GraduationCap,
-  CalendarDays
+  CalendarDays,
+  Clock,
+  Timer,
+  Play
 } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -106,11 +109,28 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
           path: "/tarefas",
           label: "Painel de Tarefas",
           icon: <ClipboardList className="h-4 w-4 flex-shrink-0" />
-        },
+        }
+      ]
+    },
+    {
+      path: "/estudos",
+      label: "Sessões de Estudo",
+      icon: <Clock className="h-5 w-5 flex-shrink-0" />,
+      submenu: [
         {
           path: "/estudos",
           label: "Painel de Estudos",
           icon: <BookText className="h-4 w-4 flex-shrink-0" />
+        },
+        {
+          path: "/estudos/sessoes",
+          label: "Minhas Sessões",
+          icon: <Timer className="h-4 w-4 flex-shrink-0" />
+        },
+        {
+          path: "/estudos/pomodoro",
+          label: "Pomodoro",
+          icon: <Play className="h-4 w-4 flex-shrink-0" />
         }
       ]
     },

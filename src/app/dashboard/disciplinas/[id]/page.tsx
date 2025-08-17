@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import SubjectModal from '@/components/estudos/SubjectModal';
-import QuickStudySessionModal from '@/components/estudos/QuickStudySessionModal';
+
 import AttendanceControlTab from '@/components/estudos/AttendanceControlTab';
 import { toast } from '@/components/ui/toast';
 import { StudyStreakService } from '@/lib/study-streak-service';
@@ -106,7 +106,7 @@ export default function DisciplineDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isStudySessionModalOpen, setIsStudySessionModalOpen] = useState(false);
+
   const [completingSubject, setCompletingSubject] = useState<number | null>(null);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
@@ -248,10 +248,7 @@ export default function DisciplineDetailsPage() {
     setIsModalOpen(true);
   };
 
-  // Função para abrir o modal de sessão de estudo rápida
-  const openStudySessionModal = () => {
-    setIsStudySessionModalOpen(true);
-  };
+
 
   // Função chamada após criar assunto com sucesso
   const handleCreateSuccess = () => {
@@ -607,13 +604,7 @@ export default function DisciplineDetailsPage() {
               <div className="flex justify-between items-start mb-2">
                 <h1 className="text-3xl font-bold">{discipline.name}</h1>
                 <div className="flex space-x-3">
-                  <button
-                    onClick={openStudySessionModal}
-                    className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-                  >
-                    <Clock className="h-5 w-5" />
-                    <span>Iniciar Estudo</span>
-                  </button>
+
                   <button
                     onClick={openCreateModal}
                     className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
@@ -678,13 +669,7 @@ export default function DisciplineDetailsPage() {
                  )}
                  
                  <div className="flex gap-2">
-                   <button
-                     onClick={openStudySessionModal}
-                     className="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg flex items-center space-x-1 transition-colors text-sm flex-1"
-                   >
-                     <Clock className="h-4 w-4" />
-                     <span>Estudar</span>
-                   </button>
+
                    <button
                      onClick={openCreateModal}
                      className="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg flex items-center space-x-1 transition-colors text-sm flex-1"
@@ -900,14 +885,7 @@ export default function DisciplineDetailsPage() {
         />
       )}
       
-      {/* Modal para registrar sessão de estudo */}
-      <QuickStudySessionModal
-        isOpen={isStudySessionModalOpen}
-        onClose={() => setIsStudySessionModalOpen(false)}
-        onSuccess={() => toast.success("Sessão de estudo registrada com sucesso!")}
-        disciplineId={disciplineId}
-        disciplineName={discipline?.name || ''}
-      />
+
 
       {/* Modal de confirmação de exclusão */}
       {showDeleteConfirm && (
