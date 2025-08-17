@@ -87,6 +87,9 @@ export default function EstudosPage() {
   const [filteredHistory, setFilteredHistory] = useState<StudySession[]>([]);
   const [historySearchTerm, setHistorySearchTerm] = useState("");
   const [historySort, setHistorySort] = useState<'newest' | 'oldest'>('newest');
+
+  const [allScheduledSessions, setAllScheduledSessions] = useState<StudySession[]>([]);
+  const [activeHistoryTab, setActiveHistoryTab] = useState<'completed' | 'scheduled'>('completed');
   
   // Estado para controlar a sessão em andamento (cronômetro)
   const [activeSession, setActiveSession] = useState<StudySession | null>(null);
@@ -172,6 +175,15 @@ export default function EstudosPage() {
         // Isso irá capturar as sessões criadas em qualquer parte do aplicativo
         const allNonCompletedSessions = await StudySessionService.getUserSessions(false);
         console.log("Todas as sessões não completadas:", allNonCompletedSessions);
+        
+        // Armazenar todas as sessões não completadas para o modal de histórico
+        if (allNonCompletedSessions) {
+          const scheduledWithNames = allNonCompletedSessions.map(session => ({
+            ...session,
+            disciplineName: session.title.split(' - ')[0] || '',
+          }));
+          setAllScheduledSessions(scheduledWithNames);
+        }
         
         // Filtrar apenas as sessões do dia atual (usando métodos que preservam o fuso horário)
         const today = new Date();
@@ -799,14 +811,16 @@ export default function EstudosPage() {
 
   // Função para filtrar sessões do histórico
   const filterHistorySessions = (searchTerm: string) => {
+    const sessions = activeHistoryTab === 'completed' ? completedSessions : allScheduledSessions;
+    
     if (!searchTerm || searchTerm.trim() === "") {
-      // Se não houver termo de pesquisa, mostrar todas as sessões completadas, ordenadas
-      setFilteredHistory(sortHistorySessions(completedSessions));
+      // Se não houver termo de pesquisa, mostrar todas as sessões da aba ativa, ordenadas
+      setFilteredHistory(sortHistorySessions(sessions));
       return;
     }
 
     const term = searchTerm.toLowerCase();
-    const filtered = completedSessions.filter(session => 
+    const filtered = sessions.filter(session => 
       session.title.toLowerCase().includes(term) || 
       session.disciplineName?.toLowerCase().includes(term) ||
       (session.notes && session.notes.toLowerCase().includes(term))
@@ -825,12 +839,32 @@ export default function EstudosPage() {
     setFilteredHistory(sortHistorySessions(filteredHistory));
   };
 
-  // Função para abrir o modal do histórico de sessões completas
+
+
+  // Função para abrir o modal do histórico de sessões
   const handleOpenHistoryModal = () => {
-    // Inicializar o filteredHistory com todas as sessões completadas
+    // Inicializar com a aba de sessões completadas
+    setActiveHistoryTab('completed');
     setFilteredHistory(sortHistorySessions(completedSessions));
     setHistorySearchTerm("");
     setIsHistoryModalOpen(true);
+  };
+
+  // Função para trocar de aba no modal de histórico
+  const handleHistoryTabChange = (tab: 'completed' | 'scheduled') => {
+    setActiveHistoryTab(tab);
+    const sessions = tab === 'completed' ? completedSessions : allScheduledSessions;
+    
+    if (historySearchTerm) {
+      const filtered = sessions.filter(session => 
+        session.title.toLowerCase().includes(historySearchTerm.toLowerCase()) ||
+        (session.disciplineName && session.disciplineName.toLowerCase().includes(historySearchTerm.toLowerCase())) ||
+        (session.notes && session.notes.toLowerCase().includes(historySearchTerm.toLowerCase()))
+      );
+      setFilteredHistory(sortHistorySessions(filtered));
+    } else {
+      setFilteredHistory(sortHistorySessions(sessions));
+    }
   };
 
   // Função para fechar o modal do histórico
@@ -1266,7 +1300,7 @@ export default function EstudosPage() {
             <div className="flex items-center justify-between p-6 border-b">
               <h2 className="text-xl font-semibold text-gray-800 flex items-center">
                 <History className="h-5 w-5 mr-2 text-blue-600" />
-                Histórico de Sessões Completadas
+                Histórico de Sessões
               </h2>
               <button
                 onClick={handleCloseHistoryModal}
@@ -1276,13 +1310,41 @@ export default function EstudosPage() {
                 </button>
               </div>
               
+            {/* Abas de navegação */}
+            <div className="border-b">
+              <div className="flex">
+                <button
+                  onClick={() => handleHistoryTabChange('completed')}
+                  className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
+                    activeHistoryTab === 'completed'
+                      ? 'border-blue-500 text-blue-600 bg-blue-50'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <CheckCircle className="h-4 w-4 inline mr-2" />
+                  Sessões Completadas
+                </button>
+                <button
+                  onClick={() => handleHistoryTabChange('scheduled')}
+                  className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
+                    activeHistoryTab === 'scheduled'
+                      ? 'border-blue-500 text-blue-600 bg-blue-50'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <CalendarClock className="h-4 w-4 inline mr-2" />
+                  Sessões Agendadas
+                </button>
+              </div>
+            </div>
+
             {/* Barra de pesquisa e filtros */}
             <div className="p-4 border-b">
               <div className="flex flex-col md:flex-row gap-3">
                 <div className="relative flex-1">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Search className="h-4 w-4 text-gray-400" />
-                        </div>
+                  </div>
                   <input
                     type="text"
                     placeholder="Buscar por título, disciplina ou notas..."
@@ -1290,7 +1352,7 @@ export default function EstudosPage() {
                     onChange={handleHistorySearchChange}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
-                          </div>
+                </div>
                 
                 {/* Botão de ordenação */}
                 <button 
@@ -1321,10 +1383,21 @@ export default function EstudosPage() {
                     <div key={session.id} className="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:border-blue-200 transition-colors">
                       <div className="flex flex-col md:flex-row justify-between mb-2">
                         <h3 className="font-medium text-blue-700">{session.title}</h3>
-                        <span className="text-sm text-gray-500 flex items-center mt-1 md:mt-0">
-                          <CalendarDays className="h-4 w-4 mr-1" />
-                          {formatDate(session.scheduled_date || session.created_at || '')}
-                        </span>
+                        <div className="flex items-center gap-2 mt-1 md:mt-0">
+                          <span className="text-sm text-gray-500 flex items-center">
+                            <CalendarDays className="h-4 w-4 mr-1" />
+                            {formatDate(session.scheduled_date || session.created_at || '')}
+                          </span>
+                          {!session.completed && (
+                            <button
+                              onClick={() => handleStartSession(session)}
+                              className="px-3 py-1 bg-blue-600 text-white text-xs rounded-full hover:bg-blue-700 transition-colors flex items-center gap-1"
+                            >
+                              <ArrowRight className="h-3 w-3" />
+                              Iniciar
+                            </button>
+                          )}
+                        </div>
                           </div>
                       
                       <div className="flex flex-wrap gap-3 mb-2">
@@ -1339,10 +1412,15 @@ export default function EstudosPage() {
                           {formatMinutesToHours(session.actual_duration_minutes || session.duration_minutes)}
                         </span>
                         
-                        {session.completed && (
+                        {session.completed ? (
                           <span className="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 flex items-center">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Concluída
+                          </span>
+                        ) : (
+                          <span className="text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-700 flex items-center">
+                            <CalendarClock className="h-3 w-3 mr-1" />
+                            Agendada
                           </span>
                         )}
                         </div>
