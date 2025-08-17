@@ -29,13 +29,15 @@ import {
   CalendarDays,
   FileText,
   SortDesc,
-  SortAsc
+  SortAsc,
+  Edit
 } from 'lucide-react';
 import StudySessionModal from '@/components/estudos/StudySessionModal';
 import QuickStudySessionModal from '@/components/estudos/QuickStudySessionModal';
 import StudySessionTimer from '@/components/estudos/StudySessionTimer';
 import GrowingTimer from '@/components/estudos/GrowingTimer';
 import StudyPomodoroTimer from '@/components/estudos/StudyPomodoroTimer';
+import ManualStudyTimeModal from '@/components/estudos/ManualStudyTimeModal';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 
 // Interfaces para tipagem
@@ -82,6 +84,7 @@ export default function EstudosPage() {
   });
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
   const [isQuickSessionModalOpen, setIsQuickSessionModalOpen] = useState(false);
+  const [isManualTimeModalOpen, setIsManualTimeModalOpen] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [filteredHistory, setFilteredHistory] = useState<StudySession[]>([]);
@@ -992,6 +995,13 @@ export default function EstudosPage() {
                 <Clock className="h-4 w-4 mr-1 md:mr-2" />
                 Sessão Rápida
             </button>
+            <button
+                onClick={() => setIsManualTimeModalOpen(true)}
+                className="px-3 py-2 md:px-4 md:py-2 bg-white/20 hover:bg-white/30 text-white rounded-md transition-all flex items-center text-sm md:text-base backdrop-blur-sm hover:scale-105"
+            >
+                <Edit className="h-4 w-4 mr-1 md:mr-2" />
+                Tempo Manual
+            </button>
           <button 
             onClick={handleNewSessionClick}
                 className="px-3 py-2 md:px-4 md:py-2 bg-white text-indigo-700 rounded-md hover:bg-blue-50 transition-all flex items-center font-medium text-sm md:text-base hover:shadow-md hover:scale-105"
@@ -1477,6 +1487,12 @@ export default function EstudosPage() {
         onSuccess={handleSessionCreated}
         initialDuration={activeQuickSession?.elapsedMinutes}
         initialNotes={activeQuickSession?.notes}
+      />
+      
+      <ManualStudyTimeModal
+        isOpen={isManualTimeModalOpen}
+        onClose={() => setIsManualTimeModalOpen(false)}
+        onSuccess={loadStudyData}
       />
       
       {/* Cronômetro de sessão de estudo */}
