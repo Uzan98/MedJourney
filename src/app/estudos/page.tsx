@@ -29,13 +29,13 @@ import {
   CalendarDays,
   FileText,
   SortDesc,
-  SortAsc
+  SortAsc,
+  Edit
 } from 'lucide-react';
 import StudySessionModal from '@/components/estudos/StudySessionModal';
-import QuickStudySessionModal from '@/components/estudos/QuickStudySessionModal';
 import StudySessionTimer from '@/components/estudos/StudySessionTimer';
-import GrowingTimer from '@/components/estudos/GrowingTimer';
 import StudyPomodoroTimer from '@/components/estudos/StudyPomodoroTimer';
+import ManualStudyTimeModal from '@/components/estudos/ManualStudyTimeModal';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 
 // Interfaces para tipagem
@@ -81,7 +81,8 @@ export default function EstudosPage() {
     streakDays: 0
   });
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
-  const [isQuickSessionModalOpen, setIsQuickSessionModalOpen] = useState(false);
+
+  const [isManualTimeModalOpen, setIsManualTimeModalOpen] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [filteredHistory, setFilteredHistory] = useState<StudySession[]>([]);
@@ -93,13 +94,7 @@ export default function EstudosPage() {
   
   // Estado para controlar a sessão em andamento (cronômetro)
   const [activeSession, setActiveSession] = useState<StudySession | null>(null);
-  // Estado para controlar a sessão rápida em andamento (cronômetro crescente)
-  const [activeQuickSession, setActiveQuickSession] = useState<{ 
-    disciplineId?: number; 
-    disciplineName?: string;
-    elapsedMinutes?: number;
-    notes?: string;
-  } | null>(null);
+
 
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
 
@@ -584,24 +579,19 @@ export default function EstudosPage() {
     setIsSessionModalOpen(true);
   };
   
-  const handleQuickSessionClick = () => {
-    // Em vez de abrir o modal, iniciar diretamente o cronômetro crescente
-    setActiveQuickSession({});
-  };
+
 
   const handleCloseSessionModal = () => {
     setIsSessionModalOpen(false);
   };
 
-  const handleCloseQuickSessionModal = () => {
-    setIsQuickSessionModalOpen(false);
-  };
+
 
   const handleSessionCreated = () => {
     toast.success("Sessão de estudo criada com sucesso!");
     loadStudyData();
     handleCloseSessionModal();
-    handleCloseQuickSessionModal();
+
   };
   
   // Função para iniciar uma sessão de estudo (mostrar cronômetro)
@@ -654,89 +644,7 @@ export default function EstudosPage() {
     toast.success("Sessão de estudo cancelada");
   };
 
-  // Função para cancelar uma sessão rápida em andamento
-  const handleCancelQuickSession = () => {
-    setActiveQuickSession(null);
-    toast.success("Sessão rápida cancelada");
-  };
-  
-  // Função para completar uma sessão rápida
-  const handleCompleteQuickSession = async (elapsedMinutes: number, disciplineId?: number, notes?: string) => {
-    try {
-      setLoading(true);
-      
-      // Se não temos uma disciplina selecionada, usamos uma disciplina padrão
-      // Clínica Médica (ID: 8) ou a primeira disciplina disponível
-      if (!disciplineId) {
-        // Tentar encontrar uma disciplina disponível
-        let defaultDisciplineId: number | undefined;
-        
-        // Verificar se temos disciplinas carregadas
-        if (disciplines && disciplines.length > 0) {
-          // Preferir "Clínica Médica" (ID: 8) se disponível
-          const clinicaMedica = disciplines.find(d => d.id === 8);
-          
-          if (clinicaMedica) {
-            defaultDisciplineId = clinicaMedica.id;
-          } else {
-            // Caso contrário, usar a primeira disciplina da lista
-            defaultDisciplineId = disciplines[0].id;
-          }
-        } else {
-          // Se não temos disciplinas carregadas, usar ID 8 (Clínica Médica)
-          defaultDisciplineId = 8;
-        }
-        
-        // Se temos uma disciplina padrão, registrar a sessão
-        if (defaultDisciplineId) {
-          const result = await StudySessionService.recordQuickSession(
-            defaultDisciplineId,
-            elapsedMinutes,
-            notes
-          );
-          
-          if (result) {
-            toast.success("Sessão rápida concluída com sucesso!");
-            
-            // Recarregar os dados
-            await loadStudyData();
-          } else {
-            toast.error("Erro ao concluir a sessão rápida");
-          }
-        } else {
-          // Se mesmo assim não temos uma disciplina, mostrar o modal
-          setActiveQuickSession({
-            elapsedMinutes: elapsedMinutes,
-            notes: notes
-          });
-          setIsQuickSessionModalOpen(true);
-          return;
-        }
-      } else {
-        // Registrar a sessão rápida usando o serviço e a disciplina selecionada
-        const result = await StudySessionService.recordQuickSession(
-          disciplineId,
-          elapsedMinutes,
-          notes
-        );
-        
-        if (result) {
-          toast.success("Sessão rápida concluída com sucesso!");
-          
-          // Recarregar os dados
-          await loadStudyData();
-        } else {
-          toast.error("Erro ao concluir a sessão rápida");
-        }
-      }
-    } catch (error) {
-      console.error("Erro ao concluir sessão rápida:", error);
-      toast.error("Erro ao concluir a sessão rápida");
-    } finally {
-      setActiveQuickSession(null);
-      setLoading(false);
-    }
-  };
+
 
   // Função para formatar minutos em horas e minutos
   const formatMinutesToHours = (minutes: number): string => {
@@ -985,12 +893,13 @@ export default function EstudosPage() {
               </p>
           </div>
             <div className="flex space-x-3">
+
             <button
-                onClick={handleQuickSessionClick}
+                onClick={() => setIsManualTimeModalOpen(true)}
                 className="px-3 py-2 md:px-4 md:py-2 bg-white/20 hover:bg-white/30 text-white rounded-md transition-all flex items-center text-sm md:text-base backdrop-blur-sm hover:scale-105"
             >
-                <Clock className="h-4 w-4 mr-1 md:mr-2" />
-                Sessão Rápida
+                <Edit className="h-4 w-4 mr-1 md:mr-2" />
+                Tempo Manual
             </button>
           <button 
             onClick={handleNewSessionClick}
@@ -1236,31 +1145,7 @@ export default function EstudosPage() {
               }}
             />
             
-            {/* Sessão rápida */}
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl p-6 text-white shadow-md relative overflow-hidden group hover:shadow-lg transition-all">
-              {/* Elementos decorativos de fundo */}
-              <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mt-20 -mr-20 transition-transform group-hover:scale-150"></div>
-              <div className="absolute bottom-0 left-0 w-40 h-40 bg-indigo-500/10 rounded-full -mb-20 -ml-20 transition-transform group-hover:scale-150"></div>
-              
-              <div className="relative z-10">
-                <h2 className="text-xl font-bold mb-4 flex items-center">
-                  <Target className="h-5 w-5 mr-2" />
-                  Sessão Rápida
-                </h2>
-                
-                <p className="text-blue-100 mb-4">
-                  Inicie uma sessão de estudo rápida sem agendamento para registrar seu progresso.
-                </p>
-                
-                    <button 
-                  onClick={handleQuickSessionClick}
-                  className="w-full py-3 px-4 bg-white text-blue-700 rounded-lg font-medium hover:bg-blue-50 transition-all flex items-center justify-center shadow-sm hover:shadow hover:scale-105"
-                    >
-                  <Clock className="h-4 w-4 mr-2" />
-                  Iniciar Sessão Rápida
-                    </button>
-                  </div>
-              </div>
+
             
             {/* Dicas de Estudo */}
             <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 transition-all hover:shadow-lg">
@@ -1471,12 +1356,12 @@ export default function EstudosPage() {
         isScheduling={true}
       />
       
-      <QuickStudySessionModal
-        isOpen={isQuickSessionModalOpen}
-        onClose={handleCloseQuickSessionModal}
-        onSuccess={handleSessionCreated}
-        initialDuration={activeQuickSession?.elapsedMinutes}
-        initialNotes={activeQuickSession?.notes}
+
+      
+      <ManualStudyTimeModal
+        isOpen={isManualTimeModalOpen}
+        onClose={() => setIsManualTimeModalOpen(false)}
+        onSuccess={loadStudyData}
       />
       
       {/* Cronômetro de sessão de estudo */}
@@ -1490,16 +1375,7 @@ export default function EstudosPage() {
         />
       )}
       
-      {/* Cronômetro crescente para sessão rápida */}
-      {activeQuickSession && (
-        <GrowingTimer
-          sessionTitle="Sessão Rápida"
-          disciplineId={activeQuickSession.disciplineId}
-          disciplineName={activeQuickSession.disciplineName}
-          onComplete={handleCompleteQuickSession}
-          onCancel={handleCancelQuickSession}
-          />
-        )}
+
       </div>
   );
 }

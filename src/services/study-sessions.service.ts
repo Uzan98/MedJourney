@@ -542,65 +542,7 @@ export class StudySessionService {
     }
   }
 
-  /**
-   * Registra uma sessão de estudo rápida (sem agendamento)
-   * @param disciplineId ID da disciplina
-   * @param durationMinutes Duração da sessão em minutos
-   * @param notes Notas sobre a sessão
-   * @returns A sessão criada ou null em caso de erro
-   */
-  static async recordQuickSession(
-    disciplineId: number, 
-    durationMinutes: number, 
-    notes?: string
-  ): Promise<StudySession | null> {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
-      
-      if (!userId) {
-        console.error('Usuário não autenticado');
-        return null;
-      }
 
-      // Obter informações da disciplina
-      const { data: discipline, error: disciplineError } = await supabase
-        .from('disciplines')
-        .select('name')
-        .eq('id', disciplineId)
-        .single();
-
-      if (disciplineError) {
-        console.error('Erro ao buscar disciplina:', disciplineError);
-      }
-
-      const sessionData: Omit<StudySession, 'id' | 'created_at' | 'updated_at'> = {
-        user_id: userId,
-        discipline_id: disciplineId,
-        title: `Sessão rápida: ${discipline?.name || 'Disciplina'}`,
-        duration_minutes: durationMinutes,
-        actual_duration_minutes: durationMinutes,
-        completed: true,
-        status: 'concluida',
-        notes: notes,
-        scheduled_date: new Date().toISOString()
-      };
-
-      // Criar a sessão
-      const result = await this.createSession(sessionData);
-
-      // Também registrar a atividade
-      await StudyStreakService.recordStudySession(
-        durationMinutes,
-        disciplineId
-      );
-
-      return result;
-    } catch (error) {
-      console.error('Erro ao registrar sessão rápida:', error);
-      return null;
-    }
-  }
 
   /**
    * Obtém uma sessão de estudo específica pelo ID
@@ -730,4 +672,4 @@ export class StudySessionService {
       timeZone: 'America/Sao_Paulo' // Forçar fuso horário de Brasília
     }).format(date);
   }
-} 
+}
