@@ -181,7 +181,7 @@ function createEnvLocalFile() {
     'NEXT_PUBLIC_SUPABASE_URL': 'YOUR_SUPABASE_URL',
     'NEXT_PUBLIC_SUPABASE_ANON_KEY': 'YOUR_SUPABASE_ANON_KEY',
     'SUPABASE_SERVICE_ROLE_KEY': 'YOUR_SUPABASE_SERVICE_ROLE_KEY',
-    'NEXT_PUBLIC_APP_URL': 'https://medjourney.vercel.app',
+    'NEXT_PUBLIC_APP_URL': 'https://www.genomastudy.com.br',
     'NEXT_PUBLIC_MOCK_DB': 'true',
     'NEXT_IGNORE_ERRORS': '1',
     'NEXT_SKIP_TYPESCRIPT_CHECK': 'true',
@@ -274,4 +274,4 @@ setDynamicApiRoutes();
 createEnvLocalFile();
 createMockDbInit();
 
-console.log('✅ Configuração de mocks concluída com sucesso!'); 
+console.log('✅ Configuração de mocks concluída com sucesso!');
