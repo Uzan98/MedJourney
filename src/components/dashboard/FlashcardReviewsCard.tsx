@@ -24,17 +24,11 @@ export default function FlashcardReviewsCard() {
         const userDecks = await FlashcardsService.getDecks(user.id);
         
         // Filtra apenas decks que têm cartões para revisar hoje
-        const decksWithReviews = [];
-        for (const deck of userDecks) {
-          try {
-            const hasCardsForToday = await FlashcardsService.hasCardsForTodayStudy(deck.deck_id || deck.id);
-            if (hasCardsForToday) {
-              decksWithReviews.push(deck);
-            }
-          } catch (error) {
-            console.error(`Erro ao verificar cartões para revisão do deck ${deck.id}:`, error);
-          }
-        }
+        // CORREÇÃO: Usar cards_to_review da view em vez de hasCardsForTodayStudy
+        const decksWithReviews = userDecks.filter(deck => {
+          const cardsToReview = deck.cards_to_review || deck.cards_due || 0;
+          return cardsToReview > 0;
+        });
         
         setDecks(decksWithReviews);
       } catch (error) {
@@ -90,7 +84,7 @@ export default function FlashcardReviewsCard() {
                 <div>
                   <h3 className="font-medium text-gray-900">{deck.name}</h3>
                   <p className="text-xs text-gray-500">
-                    {deck.cards_due || 0} cartões para revisar • {Math.round(Number(deck.mastery_level || 0))}% dominado
+                    {deck.cards_to_review || deck.cards_due || 0} cartões para revisar • {Math.round(Number(deck.mastery_level || 0))}% dominado
                   </p>
                 </div>
               </div>
