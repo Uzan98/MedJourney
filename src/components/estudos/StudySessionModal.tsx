@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, BookOpen, FileText, CheckCircle } from 'lucide-react';
 import { createStudySession } from '../../lib/api';
-import { toast } from '@/components/ui/toast';
+import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { StudyStreakService } from "@/lib/study-streak-service";
 import { DisciplinesRestService } from "@/lib/supabase-rest";
@@ -198,9 +198,22 @@ const StudySessionModal: React.FC<StudySessionModalProps> = ({
       } else {
         setError('Erro ao criar sessão de estudo');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao criar sessão:', err);
-      setError('Erro ao se comunicar com o servidor');
+      
+      // Verificar se é um erro de upgrade necessário
+      if (err?.message && err.message.includes('UPGRADE_REQUIRED:')) {
+        const message = err.message.replace('UPGRADE_REQUIRED:', '');
+        setError(message);
+        
+        // Mostrar toast de erro
+        toast.error(message, { duration: 5000 });
+      } else if (err?.message && err.message.includes('Limite diário')) {
+        setError(err.message);
+        toast.error(err.message);
+      } else {
+        setError('Erro ao se comunicar com o servidor');
+      }
     } finally {
       setLoading(false);
     }

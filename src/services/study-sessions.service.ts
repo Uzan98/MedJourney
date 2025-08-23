@@ -40,6 +40,29 @@ export class StudySessionService {
         session.user_id = authSession.user.id;
       }
 
+      // Verificar limite de sessões de estudo diárias
+      const today = new Date().toISOString().split('T')[0];
+      const { count: sessionsToday } = await supabase
+        .from('study_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user_id)
+        .gte('created_at', `${today}T00:00:00.000Z`)
+        .lt('created_at', `${today}T23:59:59.999Z`);
+
+      // Buscar limites do usuário
+      const { data: subscriptionData } = await supabase
+        .from('user_subscription_usage')
+        .select('*')
+        .eq('user_id', session.user_id)
+        .single();
+
+      const maxSessionsPerDay = subscriptionData?.max_study_sessions_per_day || 3;
+      
+      if (sessionsToday !== null && sessionsToday >= maxSessionsPerDay) {
+        console.error('Limite diário de sessões de estudo atingido');
+        throw new Error(`UPGRADE_REQUIRED:Você atingiu o limite diário de ${maxSessionsPerDay} sessões de estudo. Faça upgrade do seu plano para criar mais sessões e continuar estudando sem limites!`);
+      }
+
       // Inserir a sessão no banco de dados
       const { data, error } = await supabase
         .from('study_sessions')
@@ -64,7 +87,8 @@ export class StudySessionService {
       return data;
     } catch (error) {
       console.error('Erro ao criar sessão de estudo:', error);
-      return null;
+      // Re-lançar o erro para que seja capturado pelo componente
+      throw error;
     }
   }
 
