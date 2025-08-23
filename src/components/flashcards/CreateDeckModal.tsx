@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { FlashcardsService } from '@/services/flashcards.service';
 import { Deck } from '@/types/flashcards';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 import type { Discipline, Subject } from '@/lib/supabase';
+import toast from 'react-hot-toast';
 
 interface CreateDeckModalProps {
   isOpen: boolean;
@@ -23,6 +25,7 @@ interface CreateDeckModalProps {
 
 export default function CreateDeckModal({ isOpen, onClose, onSuccess }: CreateDeckModalProps) {
   const { user } = useAuth();
+  const { refreshLimits } = useSubscription();
   const router = useRouter();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -128,6 +131,9 @@ export default function CreateDeckModal({ isOpen, onClose, onSuccess }: CreateDe
       });
       
       if (newDeck) {
+        // Atualizar limites de assinatura após criar o deck
+        await refreshLimits();
+        
         if (onSuccess) {
           onSuccess(newDeck);
         }
@@ -138,7 +144,15 @@ export default function CreateDeckModal({ isOpen, onClose, onSuccess }: CreateDe
       }
     } catch (err) {
       console.error('Erro ao criar deck:', err);
-      setError('Ocorreu um erro ao criar o deck');
+      
+      // Verificar se é erro de limite de decks
+      if (err instanceof Error && err.message.startsWith('UPGRADE_REQUIRED:')) {
+        const errorMessage = err.message.replace('UPGRADE_REQUIRED: ', '');
+        setError(errorMessage);
+        toast.error('Limite de decks atingido');
+      } else {
+        setError('Ocorreu um erro ao criar o deck');
+      }
     } finally {
       setIsLoading(false);
     }
