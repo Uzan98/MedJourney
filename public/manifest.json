@@ -39,7 +39,7 @@
       "url": "/estatisticas"
     }
   ],
-  "orientation": "portrait",
+  "orientation": "any", 
   "categories": ["education", "productivity"],
   "screenshots": [
     {
