@@ -38,7 +38,7 @@ const DEFAULT_PLANS: DbSubscriptionPlan[] = [
     tier: SubscriptionTier.PRO,
     period: SubscriptionPeriod.MONTHLY,
     price_cents: 2990,
-    stripe_price_id: 'price_1RNmFOPDAWBZddLbvLvvVYAA',
+    stripe_price_id: 'price_1Rz5nwAeWk8zv2GAvvQL28L5',
     features: {
       maxDisciplines: 15,
       maxFlashcardDecks: 10,
@@ -60,7 +60,7 @@ const DEFAULT_PLANS: DbSubscriptionPlan[] = [
     tier: SubscriptionTier.PRO_PLUS,
     period: SubscriptionPeriod.MONTHLY,
     price_cents: 4990,
-    stripe_price_id: 'price_1RNmFOPDAWBZddLbXYzxYZAB',
+    stripe_price_id: 'price_1Rz5omAeWk8zv2GAQhGgiKSC',
     features: {
       maxDisciplines: -1,
       maxFlashcardDecks: -1,
