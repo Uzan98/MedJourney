@@ -39,14 +39,18 @@ export default function AIQuestionGeneratorModal({
   const [generatedOptions, setGeneratedOptions] = useState<AnswerOption[]>([]);
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   
-  const { hasReachedLimit, refreshLimits } = useSubscription();
+  const { hasReachedLimit, refreshLimits, isProOrHigher, showUpgradeModal } = useSubscription();
   const limiteAtingido = hasReachedLimit('questions_per_day');
+  const hasAIAccess = isProOrHigher();
 
   useEffect(() => {
     if (limiteAtingido && isOpen) {
       toast.error('Você atingiu o limite diário de questões!');
     }
-  }, [limiteAtingido, isOpen]);
+    if (!hasAIAccess && isOpen) {
+      toast.error('Geração de questões por IA é exclusiva para planos Pro e Pro+!');
+    }
+  }, [limiteAtingido, hasAIAccess, isOpen]);
   
   // Carregar disciplinas ao abrir o modal
   useEffect(() => {
@@ -115,6 +119,11 @@ export default function AIQuestionGeneratorModal({
   
   // Função para gerar questão com IA
   const handleGenerateQuestion = async () => {
+    if (!hasAIAccess) {
+      showUpgradeModal('PRO', 'geração de questões por IA');
+      return;
+    }
+    
     if (limiteAtingido) {
       toast.error('Você atingiu o limite diário de questões!');
       onClose();
@@ -214,7 +223,25 @@ export default function AIQuestionGeneratorModal({
         
         {/* Corpo do modal */}
         <div className="p-6 overflow-y-auto max-h-[70vh]">
-          {limiteAtingido && (
+          {!hasAIAccess && (
+            <div className="mb-4 p-4 bg-gradient-to-r from-purple-100 to-blue-100 border border-purple-200 rounded-lg">
+              <div className="flex items-center mb-2">
+                <Wand2 className="h-5 w-5 text-purple-600 mr-2" />
+                <h4 className="font-semibold text-purple-800">Recurso Premium</h4>
+              </div>
+              <p className="text-purple-700 text-sm mb-3">
+                A geração de questões por IA é exclusiva para usuários dos planos Pro e Pro+.
+              </p>
+              <button
+                onClick={() => showUpgradeModal('PRO', 'geração de questões por IA')}
+                className="px-4 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 transition-colors"
+              >
+                Ver Planos
+              </button>
+            </div>
+          )}
+          
+          {limiteAtingido && hasAIAccess && (
             <div className="mb-4 p-3 bg-amber-100 border-l-4 border-amber-500 text-amber-800 rounded">
               Você atingiu o limite diário de questões. Faça upgrade para continuar criando questões!
             </div>
@@ -376,9 +403,9 @@ export default function AIQuestionGeneratorModal({
           </button>
           <button 
             onClick={handleGenerateQuestion}
-            disabled={isGenerating || limiteAtingido}
+            disabled={isGenerating || limiteAtingido || !hasAIAccess}
             className={`px-4 py-2 rounded-md text-white flex items-center ${
-              isGenerating || limiteAtingido ? 'bg-purple-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'
+              isGenerating || limiteAtingido || !hasAIAccess ? 'bg-purple-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'
             }`}
           >
             {isGenerating ? (
@@ -408,4 +435,4 @@ export default function AIQuestionGeneratorModal({
       )}
     </div>
   );
-} 
+}

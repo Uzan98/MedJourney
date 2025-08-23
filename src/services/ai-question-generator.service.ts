@@ -1,4 +1,5 @@
 import { Question, AnswerOption } from './questions-bank.service';
+import { getAccessToken } from '@/lib/auth-utils';
 
 export interface AIQuestionGeneratorParams {
   discipline?: string;
@@ -17,15 +18,50 @@ export class AIQuestionGeneratorService {
   // Agora chama a rota interna protegida
   private static async callGroqAPI(prompt: string): Promise<string> {
     try {
+      // Obter token de acesso para autenticação
+      const accessToken = await getAccessToken();
+      
+      if (!accessToken) {
+        throw new Error('Você precisa estar logado para gerar questões com IA');
+      }
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      };
+
       const response = await fetch('/api/groq', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
+        credentials: 'include', // Importante para enviar cookies de sessão
         body: JSON.stringify({ prompt }),
       });
+      
       if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`API error: ${response.status} - ${errorData}`);
+        const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
+        
+        // Tratar erros específicos de permissão e limite
+        if (response.status === 401) {
+          throw new Error('Você precisa estar logado para gerar questões com IA.');
+        }
+        
+        if (response.status === 403) {
+          if (errorData.requiresUpgrade) {
+            throw new Error('A geração de questões por IA é exclusiva para usuários Pro e Pro+. Faça upgrade do seu plano para acessar este recurso.');
+          }
+          throw new Error('Você não tem permissão para acessar este recurso.');
+        }
+        
+        if (response.status === 429) {
+          if (errorData.limitReached) {
+            throw new Error('Você atingiu o limite diário de questões. Tente novamente amanhã ou faça upgrade para o plano Pro+ para questões ilimitadas.');
+          }
+          throw new Error('Muitas requisições. Tente novamente em alguns minutos.');
+        }
+        
+        throw new Error(errorData.error || `Erro na API: ${response.status}`);
       }
+      
       const data = await response.json();
       return data.result;
     } catch (error) {
@@ -143,4 +179,4 @@ export class AIQuestionGeneratorService {
       throw error;
     }
   }
-} 
+}
