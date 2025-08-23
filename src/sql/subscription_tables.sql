@@ -134,7 +134,7 @@ USING (true);
 -- Insert default subscription plans
 INSERT INTO subscription_plans (name, description, tier, period, price_cents, stripe_price_id, features)
 VALUES 
-  ('Free', 'Plano gratuito com recursos básicos', 'free', 'monthly', 0, 'price_free', '{"maxDisciplines": 5, "maxFlashcardDecks": 2, "maxQuestionsPerDay": 20, "aiPlanningAccess": false, "communityFeaturesAccess": true, "facultyFeaturesAccess": false, "advancedAnalytics": false, "prioritySupport": false}'::jsonb),
+  ('Free', 'Plano gratuito com recursos básicos', 'free', 'monthly', 0, 'price_free', '{"maxDisciplines": 5, "maxFlashcardDecks": 2, "maxQuestionsPerDay": 10, "aiPlanningAccess": false, "communityFeaturesAccess": true, "facultyFeaturesAccess": false, "advancedAnalytics": false, "prioritySupport": false}'::jsonb),
   ('Pro Mensal', 'Acesso a recursos avançados', 'pro', 'monthly', 2990, 'price_pro_monthly', '{"maxDisciplines": 15, "maxFlashcardDecks": 10, "maxQuestionsPerDay": 100, "aiPlanningAccess": true, "communityFeaturesAccess": true, "facultyFeaturesAccess": true, "advancedAnalytics": false, "prioritySupport": false}'::jsonb),
   ('Pro Anual', 'Acesso a recursos avançados com desconto anual', 'pro', 'annual', 29900, 'price_pro_annual', '{"maxDisciplines": 15, "maxFlashcardDecks": 10, "maxQuestionsPerDay": 100, "aiPlanningAccess": true, "communityFeaturesAccess": true, "facultyFeaturesAccess": true, "advancedAnalytics": false, "prioritySupport": false}'::jsonb),
   ('Pro+ Mensal', 'Acesso ilimitado a todos os recursos', 'pro_plus', 'monthly', 4990, 'price_pro_plus_monthly', '{"maxDisciplines": -1, "maxFlashcardDecks": -1, "maxQuestionsPerDay": -1, "aiPlanningAccess": true, "communityFeaturesAccess": true, "facultyFeaturesAccess": true, "advancedAnalytics": true, "prioritySupport": true}'::jsonb),
@@ -146,7 +146,7 @@ INSERT INTO subscription_feature_access (subscription_tier, feature_key, has_acc
 VALUES
   ('free', 'disciplines', true, 5),
   ('free', 'flashcard_decks', true, 2),
-  ('free', 'questions_per_day', true, 20),
+  ('free', 'questions_per_day', true, 10),
   ('free', 'ai_planning', false, null),
   ('free', 'community_features', true, null),
   ('free', 'faculty_features', false, null),
@@ -246,4 +246,4 @@ SELECT cron.schedule(
   'reset-daily-question-usage',
   '0 0 * * *', -- Run at midnight every day
   $$SELECT reset_daily_question_usage()$$
-); 
+);

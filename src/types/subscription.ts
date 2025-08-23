@@ -98,7 +98,7 @@ export const DEFAULT_SUBSCRIPTION_FEATURES: Record<SubscriptionTier, Subscriptio
   [SubscriptionTier.FREE]: {
     maxDisciplines: 5,
     maxFlashcardDecks: 2,
-    maxQuestionsPerDay: 20,
+    maxQuestionsPerDay: 10,
     aiPlanningAccess: false,
     communityFeaturesAccess: true,
     facultyFeaturesAccess: false,

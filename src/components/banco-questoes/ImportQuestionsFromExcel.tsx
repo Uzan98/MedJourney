@@ -7,6 +7,7 @@ import { QuestionsBankService, Question, AnswerOption } from '@/services/questio
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 import { Discipline, Subject } from '@/lib/supabase';
 import { Spinner } from '../Spinner';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 interface ImportQuestionsFromExcelProps {
   onImportComplete?: () => void;
@@ -48,6 +49,7 @@ export const ImportQuestionsFromExcel: React.FC<ImportQuestionsFromExcelProps> =
   className,
   defaultIsPublic = false
 }) => {
+  const { checkFeatureAccess, subscriptionLimits, hasReachedLimit } = useSubscription();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStats, setUploadStats] = useState<{
     total: number;
@@ -231,6 +233,33 @@ export const ImportQuestionsFromExcel: React.FC<ImportQuestionsFromExcelProps> =
       return;
     }
 
+    // Verificar se o usuário tem permissão para importação em lote
+    if (!checkFeatureAccess('bulk_import')) {
+      toast.error('A importação em lote está disponível apenas para planos Pro e Pro+');
+      return;
+    }
+
+    // Verificar se a importação não excederá o limite diário
+    if (subscriptionLimits) {
+      const questionsUsedToday = subscriptionLimits.questionsUsedToday;
+      const questionsLimitPerDay = subscriptionLimits.questionsLimitPerDay;
+      const questionsToImport = parsedQuestions.length;
+      
+      // Se o limite não for ilimitado (-1), verificar se a importação excederá o limite
+      if (questionsLimitPerDay !== -1) {
+        const totalAfterImport = questionsUsedToday + questionsToImport;
+        
+        if (totalAfterImport > questionsLimitPerDay) {
+          const remainingQuestions = questionsLimitPerDay - questionsUsedToday;
+          toast.error(
+            `Você pode importar no máximo ${remainingQuestions} questões hoje. ` +
+            `Tentando importar ${questionsToImport} questões, mas você já usou ${questionsUsedToday} de ${questionsLimitPerDay} questões diárias.`
+          );
+          return;
+        }
+      }
+    }
+
     try {
       setIsUploading(true);
       setError(null);
@@ -253,10 +282,12 @@ export const ImportQuestionsFromExcel: React.FC<ImportQuestionsFromExcelProps> =
             correct_answer: parsedQuestion.correct_answer || '',
           };
 
-          // Adicionar a questão ao banco
+          // Adicionar a questão ao banco com skipLimitCheck=true para importação em lote
           const questionId = await QuestionsBankService.addQuestion(
             question, 
-            parsedQuestion.options
+            parsedQuestion.options,
+            false, // skipCounter = false (queremos contar as questões)
+            true   // skipLimitCheck = true (já verificamos o limite total acima)
           );
           
           if (questionId) {
@@ -692,4 +723,4 @@ const PreviewQuestion = ({
       )}
     </div>
   );
-}; 
+};

@@ -20,7 +20,7 @@ const DEFAULT_PLANS: DbSubscriptionPlan[] = [
     features: {
       maxDisciplines: 5,
       maxFlashcardDecks: 2,
-      maxQuestionsPerDay: 20,
+      maxQuestionsPerDay: 10,
       aiPlanningAccess: false,
       communityFeaturesAccess: true,
       facultyFeaturesAccess: false,
@@ -59,7 +59,7 @@ const DEFAULT_PLANS: DbSubscriptionPlan[] = [
     description: 'Acesso ilimitado a todos os recursos',
     tier: SubscriptionTier.PRO_PLUS,
     period: SubscriptionPeriod.MONTHLY,
-    price_cents: 4490,
+    price_cents: 4990,
     stripe_price_id: 'price_1RNmFOPDAWBZddLbXYzxYZAB',
     features: {
       maxDisciplines: -1,
@@ -103,7 +103,7 @@ const DEFAULT_PLANS: DbSubscriptionPlan[] = [
     description: 'Acesso ilimitado a todos os recursos',
     tier: SubscriptionTier.PRO_PLUS,
     period: SubscriptionPeriod.ANNUAL,
-    price_cents: 43104, // 4490 * 12 * 0.8 (20% discount)
+    price_cents: 47904, // 4990 * 12 * 0.8 (20% discount)
     stripe_price_id: 'price_1RNmFOPDAWBZddLbSTUVWXYZ',
     features: {
       maxDisciplines: -1,
@@ -317,8 +317,10 @@ export const SubscriptionPlans: React.FC = () => {
         return [
           { name: 'Até 5 disciplinas', included: true },
           { name: 'Até 2 baralhos de flashcards', included: true },
-          { name: 'Até 20 questões por dia', included: true },
+          { name: 'Até 10 questões por dia', included: true },
           { name: 'Recursos da comunidade', included: true },
+          { name: 'Criação de questões com IA', included: false },
+          { name: 'Importação em lote com Excel', included: false },
           { name: 'Planejamento Inteligente com IA', included: false },
           { name: 'Recursos da faculdade', included: false },
           { name: 'Análises avançadas', included: false },
@@ -330,6 +332,8 @@ export const SubscriptionPlans: React.FC = () => {
           { name: 'Até 10 baralhos de flashcards', included: true },
           { name: 'Até 100 questões por dia', included: true },
           { name: 'Recursos da comunidade', included: true },
+          { name: 'Criação de questões com IA', included: true },
+          { name: 'Importação em lote com Excel', included: true },
           { name: 'Planejamento Inteligente com IA', included: true },
           { name: 'Recursos da faculdade', included: true },
           { name: 'Análises avançadas', included: false },
@@ -341,6 +345,8 @@ export const SubscriptionPlans: React.FC = () => {
           { name: 'Baralhos de flashcards ilimitados', included: true },
           { name: 'Questões ilimitadas por dia', included: true },
           { name: 'Recursos da comunidade', included: true },
+          { name: 'Criação de questões com IA', included: true },
+          { name: 'Importação em lote com Excel', included: true },
           { name: 'Planejamento Inteligente com IA', included: true },
           { name: 'Recursos da faculdade', included: true },
           { name: 'Análises avançadas', included: true },

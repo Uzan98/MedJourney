@@ -202,7 +202,7 @@ VALUES
     "gradesAndAttendanceTracking": true
   }'::jsonb),
   
-  ('Pro+ Mensal', 'Acesso ilimitado a todos os recursos', 'pro_plus', 'monthly', 4490, 'price_pro_plus_monthly', '{
+  ('Pro+ Mensal', 'Acesso ilimitado a todos os recursos', 'pro_plus', 'monthly', 4990, 'price_pro_plus_monthly', '{
     "maxDisciplines": -1,
     "maxSubjectsPerDiscipline": -1,
     "maxStudySessionsPerDay": -1,
@@ -222,7 +222,7 @@ VALUES
     "gradesAndAttendanceTracking": true
   }'::jsonb),
   
-  ('Pro+ Anual', 'Acesso ilimitado a todos os recursos com desconto anual', 'pro_plus', 'annual', 44900, 'price_pro_plus_annual', '{
+  ('Pro+ Anual', 'Acesso ilimitado a todos os recursos com desconto anual', 'pro_plus', 'annual', 49900, 'price_pro_plus_annual', '{
     "maxDisciplines": -1,
     "maxSubjectsPerDiscipline": -1,
     "maxStudySessionsPerDay": -1,
@@ -348,4 +348,4 @@ BEGIN
     RAISE NOTICE 'A extensão pg_cron não está disponível. Você precisará configurar um job externo para resetar os contadores diariamente.';
     RAISE NOTICE 'Você pode usar Supabase Edge Functions com agendamento ou um serviço externo como o cron-job.org';
   END IF;
-END $$; 
+END $$;
