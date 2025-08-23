@@ -246,4 +246,4 @@ SELECT cron.schedule(
   'reset-daily-question-usage',
   '0 0 * * *', -- Run at midnight every day
   $$SELECT reset_daily_question_usage()$$
-);
+); 

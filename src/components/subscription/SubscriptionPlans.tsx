@@ -404,34 +404,6 @@ export const SubscriptionPlans: React.FC = () => {
 
   return (
     <div>
-      <div className="mb-6">
-        <div className="flex justify-center mb-4">
-          <div className="inline-flex rounded-md shadow-sm" role="group">
-            <button
-              type="button"
-              className={`px-4 py-2 text-sm font-medium border ${
-                selectedPeriod === SubscriptionPeriod.MONTHLY
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              } rounded-l-lg`}
-              onClick={() => setSelectedPeriod(SubscriptionPeriod.MONTHLY)}
-            >
-              Mensal
-            </button>
-            <button
-              type="button"
-              className={`px-4 py-2 text-sm font-medium border ${
-                selectedPeriod === SubscriptionPeriod.ANNUAL
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              } rounded-r-lg`}
-              onClick={() => setSelectedPeriod(SubscriptionPeriod.ANNUAL)}
-            >
-              Anual <span className="text-xs font-bold text-green-500">Economize 20%</span>
-            </button>
-          </div>
-        </div>
-      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {filteredPlans.map((plan) => {

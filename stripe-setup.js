@@ -133,4 +133,4 @@ async function setupStripe() {
 }
 
 // Executar a função principal
-setupStripe();
+setupStripe(); 

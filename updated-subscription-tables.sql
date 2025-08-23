@@ -348,4 +348,4 @@ BEGIN
     RAISE NOTICE 'A extensão pg_cron não está disponível. Você precisará configurar um job externo para resetar os contadores diariamente.';
     RAISE NOTICE 'Você pode usar Supabase Edge Functions com agendamento ou um serviço externo como o cron-job.org';
   END IF;
-END $$;
+END $$; 
