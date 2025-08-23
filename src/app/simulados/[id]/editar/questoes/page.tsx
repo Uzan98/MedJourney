@@ -12,6 +12,8 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { Exam, ExamQuestion, ExamsService } from '@/services/exams.service';
 import { Question, QuestionsBankService } from '@/services/questions-bank.service';
+import { DisciplinesRestService } from '@/lib/supabase-rest';
+import { Discipline } from '@/lib/supabase';
 import Loading from '@/components/Loading';
 import Pill from '@/components/Pill';
 import Modal from '@/components/Modal';
@@ -37,8 +39,15 @@ export default function EditarQuestoesPage({ params }: { params: { id: string } 
   // Filtros
   const [showFilters, setShowFilters] = useState(false);
   const [disciplineFilter, setDisciplineFilter] = useState<number | null>(null);
+  const [subjectFilter, setSubjectFilter] = useState<number | null>(null);
   const [difficultyFilter, setDifficultyFilter] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  
+  // Disciplinas e assuntos para os filtros
+  const [disciplines, setDisciplines] = useState<Discipline[]>([]);
+  const [subjects, setSubjects] = useState<{id: number, name: string}[]>([]);
+  const [loadingDisciplines, setLoadingDisciplines] = useState(false);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
   
   useEffect(() => {
     loadExamData();
@@ -68,8 +77,62 @@ export default function EditarQuestoesPage({ params }: { params: { id: string } 
     }
   };
   
+  const loadDisciplines = async () => {
+    setLoadingDisciplines(true);
+    try {
+      const disciplinesData = await DisciplinesRestService.getDisciplines(true);
+      setDisciplines(disciplinesData || []);
+    } catch (error) {
+      console.error('Erro ao carregar disciplinas:', error);
+    } finally {
+      setLoadingDisciplines(false);
+    }
+  };
+
+  const loadSubjects = async (disciplineId: number) => {
+    console.log('Carregando assuntos para disciplina:', disciplineId);
+    setLoadingSubjects(true);
+    try {
+      const data = await DisciplinesRestService.getSubjects(disciplineId);
+      console.log('Dados recebidos da API:', data);
+      if (data && data.length > 0) {
+        // Converter formato do Supabase (title) para o formato esperado (name)
+        const formattedSubjects = data.map((subject: any) => ({
+          id: subject.id,
+          name: subject.title || subject.name
+        }));
+        console.log('Assuntos formatados:', formattedSubjects);
+        setSubjects(formattedSubjects);
+      } else {
+        console.log('Nenhum assunto encontrado para a disciplina');
+        setSubjects([]);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar assuntos:', error);
+      setSubjects([]);
+    } finally {
+      setLoadingSubjects(false);
+    }
+  };
+
+  // Carregar assuntos quando a disciplina mudar
+  useEffect(() => {
+    if (disciplineFilter) {
+      loadSubjects(disciplineFilter);
+      setSubjectFilter(null); // Limpar filtro de assunto ao mudar disciplina
+    } else {
+      setSubjects([]);
+      setSubjectFilter(null);
+    }
+  }, [disciplineFilter]);
+
   const handleOpenAddQuestions = async () => {
     try {
+      // Carregar disciplinas se ainda não foram carregadas
+      if (disciplines.length === 0) {
+        await loadDisciplines();
+      }
+      
       // Carregar questões disponíveis (que não estão no simulado ainda)
       const allQuestions = await QuestionsBankService.getUserQuestions();
       
@@ -81,6 +144,10 @@ export default function EditarQuestoesPage({ params }: { params: { id: string } 
       setFilteredQuestions(availableQs);
       setSelectedQuestions([]);
       setSearchQuery('');
+      setDisciplineFilter(null);
+      setSubjectFilter(null);
+      setDifficultyFilter(null);
+      setTypeFilter(null);
       setShowAddQuestionsModal(true);
     } catch (error) {
       console.error('Erro ao carregar questões disponíveis:', error);
@@ -104,6 +171,11 @@ export default function EditarQuestoesPage({ params }: { params: { id: string } 
       filtered = filtered.filter(q => q.discipline_id === disciplineFilter);
     }
     
+    // Aplicar filtro de assunto
+    if (subjectFilter) {
+      filtered = filtered.filter(q => q.subject_id === subjectFilter);
+    }
+    
     // Aplicar filtro de dificuldade
     if (difficultyFilter) {
       filtered = filtered.filter(q => q.difficulty === difficultyFilter);
@@ -119,7 +191,7 @@ export default function EditarQuestoesPage({ params }: { params: { id: string } 
   
   useEffect(() => {
     filterQuestions();
-  }, [searchQuery, disciplineFilter, difficultyFilter, typeFilter]);
+  }, [searchQuery, disciplineFilter, subjectFilter, difficultyFilter, typeFilter, availableQuestions]);
   
   const toggleQuestionSelection = (questionId: number) => {
     if (selectedQuestions.includes(questionId)) {
@@ -447,7 +519,7 @@ export default function EditarQuestoesPage({ params }: { params: { id: string } 
               </div>
               
               {showFilters && (
-                <div className="bg-gray-50 p-3 rounded-lg mb-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="bg-gray-50 p-3 rounded-lg mb-3 grid grid-cols-1 md:grid-cols-4 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Disciplina
@@ -456,10 +528,44 @@ export default function EditarQuestoesPage({ params }: { params: { id: string } 
                       value={disciplineFilter || ''}
                       onChange={(e) => setDisciplineFilter(e.target.value ? parseInt(e.target.value) : null)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      disabled={loadingDisciplines}
                     >
                       <option value="">Todas as disciplinas</option>
-                      {/* Opções de disciplina seriam carregadas dinamicamente */}
+                      {disciplines.map((discipline) => (
+                        <option key={discipline.id} value={discipline.id}>
+                          {discipline.name}
+                        </option>
+                      ))}
                     </select>
+                    {loadingDisciplines && (
+                      <div className="text-xs text-gray-500 mt-1">Carregando disciplinas...</div>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Assunto
+                    </label>
+                    <select
+                      value={subjectFilter || ''}
+                      onChange={(e) => setSubjectFilter(e.target.value ? parseInt(e.target.value) : null)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      disabled={!disciplineFilter || loadingSubjects}
+                    >
+                      <option value="">
+                        {loadingSubjects ? 'Carregando assuntos...' : 
+                         !disciplineFilter ? 'Selecione uma disciplina primeiro' : 
+                         'Todos os assuntos'}
+                      </option>
+                      {subjects.map((subject) => (
+                        <option key={subject.id} value={subject.id}>
+                          {subject.name}
+                        </option>
+                      ))}
+                    </select>
+                    {loadingSubjects && (
+                      <div className="text-xs text-gray-500 mt-1">Carregando assuntos...</div>
+                    )}
                   </div>
                   
                   <div>
