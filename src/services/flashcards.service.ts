@@ -69,6 +69,58 @@ export class FlashcardsService {
    * Cria um novo deck
    */
   static async createDeck(deck: Partial<Deck>): Promise<Deck> {
+    // Verificar limite de decks antes de criar
+    if (deck.user_id) {
+      try {
+        // Contar decks existentes do usuário
+        const { count: existingDecksCount, error: countError } = await supabase
+          .from('flashcard_decks')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', deck.user_id);
+
+        if (countError) {
+          console.error('Erro ao contar decks existentes:', countError);
+          throw countError;
+        }
+
+        // Obter limites da assinatura do usuário
+        const { data: userSubscription, error: subscriptionError } = await supabase
+          .from('user_subscriptions')
+          .select(`
+            tier,
+            subscription_plans:plan_id(
+              features
+            )
+          `)
+          .eq('user_id', deck.user_id)
+          .single();
+
+        if (subscriptionError && subscriptionError.code !== 'PGRST116') {
+          console.error('Erro ao obter assinatura do usuário:', subscriptionError);
+          throw subscriptionError;
+        }
+
+        // Definir limite padrão (plano gratuito)
+        let maxDecks = 1;
+        
+        if (userSubscription?.subscription_plans?.features?.maxFlashcardDecks) {
+          maxDecks = userSubscription.subscription_plans.features.maxFlashcardDecks;
+        }
+
+        // Verificar se o limite foi atingido (se não for ilimitado)
+        if (maxDecks !== -1 && (existingDecksCount || 0) >= maxDecks) {
+          throw new Error(`UPGRADE_REQUIRED: Limite diário de decks de flashcards atingido. Você já possui ${existingDecksCount} de ${maxDecks} decks permitidos pelo seu plano. Faça upgrade para criar mais decks.`);
+        }
+      } catch (error) {
+        // Se o erro já é de limite, relançar
+        if (error instanceof Error && error.message.startsWith('UPGRADE_REQUIRED:')) {
+          throw error;
+        }
+        // Para outros erros, logar mas continuar (para não bloquear usuários em caso de erro no sistema)
+        console.error('Erro ao verificar limite de decks:', error);
+      }
+    }
+
     const { data, error } = await supabase
       .from('flashcard_decks')
       .insert(deck)
@@ -509,4 +561,4 @@ export class FlashcardsService {
     
     return data && data.length > 0;
   }
-} 
+}

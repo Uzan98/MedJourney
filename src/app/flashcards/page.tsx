@@ -97,8 +97,21 @@ export default function FlashcardsPage() {
     setShowCreateDeckModal(true);
   };
 
-  const handleDeckCreated = (newDeck: Deck) => {
+  const handleDeckCreated = async (newDeck: Deck) => {
     setDecks([newDeck, ...decks]);
+    
+    // Atualizar estatísticas e limites após criar um novo deck
+    if (user) {
+      try {
+        const updatedStats = await FlashcardsService.getUserStats(user.id);
+        setStats(updatedStats);
+        
+        // Atualizar limites de assinatura
+        await refreshLimits();
+      } catch (error) {
+        console.error('Erro ao atualizar estatísticas:', error);
+      }
+    }
   };
 
   // Renderização condicional para mobile
