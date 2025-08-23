@@ -70,6 +70,7 @@ export class SubscriptionService {
         },
       ],
       mode: 'subscription',
+      allow_promotion_codes: true,
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/perfil/assinatura?success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/perfil/assinatura?canceled=true`,
       metadata: {
