@@ -241,10 +241,21 @@ export default function EstudosPage() {
         
         if (allSessions) {
           const completed = allSessions.filter(s => s.completed);
-          setCompletedSessions(completed.map(session => ({
-            ...session,
-            disciplineName: session.title.split(' - ')[0] || '',
-          })));
+          
+          // Ordenar sessões completadas por data de conclusão (mais recentes primeiro)
+          const sortedCompleted = completed
+            .map(session => ({
+              ...session,
+              disciplineName: session.title.split(' - ')[0] || '',
+            }))
+            .sort((a, b) => {
+              // Usar updated_at (data de conclusão) ou created_at como fallback
+              const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
+              const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
+              return dateB - dateA; // Ordem decrescente (mais recentes primeiro)
+            });
+          
+          setCompletedSessions(sortedCompleted);
 
           // Calcular a sequência de dias de estudo (streak)
           let streakDays = 0;
@@ -710,8 +721,14 @@ export default function EstudosPage() {
   // Função para ordenar o histórico de sessões
   const sortHistorySessions = (sessions: StudySession[]) => {
     return [...sessions].sort((a, b) => {
-      const dateA = new Date(a.scheduled_date || a.created_at || '').getTime();
-      const dateB = new Date(b.scheduled_date || b.created_at || '').getTime();
+      // Para sessões completadas, usar updated_at (data de conclusão)
+      // Para sessões agendadas, usar scheduled_date
+      const dateA = a.completed 
+        ? new Date(a.updated_at || a.created_at || '').getTime()
+        : new Date(a.scheduled_date || a.created_at || '').getTime();
+      const dateB = b.completed 
+        ? new Date(b.updated_at || b.created_at || '').getTime()
+        : new Date(b.scheduled_date || b.created_at || '').getTime();
       
       return historySort === 'newest' ? dateB - dateA : dateA - dateB;
     });
