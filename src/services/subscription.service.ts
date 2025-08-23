@@ -161,6 +161,27 @@ export class SubscriptionService {
   }
 
   /**
+   * Obtém a assinatura do usuário
+   */
+  static async getUserSubscription(userId: string, supabaseClient?: SupabaseClient) {
+    const supabase = supabaseClient || createServerSupabaseClient();
+    
+    const { data: subscription, error } = await supabase
+      .from('user_subscriptions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .single();
+    
+    if (error) {
+      console.error('Erro ao buscar assinatura:', error);
+      return null;
+    }
+    
+    return subscription;
+  }
+
+  /**
    * Obtém os limites de assinatura do usuário
    */
   static async getUserSubscriptionLimits(userId: string, supabaseClient?: SupabaseClient) {
@@ -235,5 +256,59 @@ export class SubscriptionService {
       hasAdvancedAnalytics: features.advancedAnalytics,
       hasPrioritySupport: features.prioritySupport,
     };
+  }
+
+  /**
+   * Verifica se o usuário atingiu o limite de uma funcionalidade específica
+   */
+  static async hasReachedFeatureLimit(
+    userId: string, 
+    feature: 'disciplines' | 'flashcardDecks' | 'questionsPerDay',
+    supabaseClient?: SupabaseClient
+  ): Promise<boolean> {
+    const limits = await this.getUserSubscriptionLimits(userId, supabaseClient);
+    
+    switch (feature) {
+      case 'disciplines':
+        // Se o limite é -1, significa ilimitado (Pro+)
+        if (limits.disciplinesLimit === -1) return false;
+        return limits.disciplinesUsed >= limits.disciplinesLimit;
+      case 'flashcardDecks':
+        // Se o limite é -1, significa ilimitado (Pro+)
+        if (limits.flashcardDecksLimit === -1) return false;
+        return limits.flashcardDecksUsed >= limits.flashcardDecksLimit;
+      case 'questionsPerDay':
+        // Se o limite é -1, significa ilimitado (Pro+)
+        if (limits.questionsLimitPerDay === -1) return false;
+        return limits.questionsUsedToday >= limits.questionsLimitPerDay;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Verifica se o usuário tem acesso a uma funcionalidade específica
+   */
+  static async hasFeatureAccess(
+    userId: string,
+    feature: 'aiPlanning' | 'community' | 'faculty' | 'advancedAnalytics' | 'prioritySupport',
+    supabaseClient?: SupabaseClient
+  ): Promise<boolean> {
+    const limits = await this.getUserSubscriptionLimits(userId, supabaseClient);
+    
+    switch (feature) {
+      case 'aiPlanning':
+        return limits.hasAiPlanningAccess;
+      case 'community':
+        return limits.hasCommunityAccess;
+      case 'faculty':
+        return limits.hasFacultyAccess;
+      case 'advancedAnalytics':
+        return limits.hasAdvancedAnalytics;
+      case 'prioritySupport':
+        return limits.hasPrioritySupport;
+      default:
+        return false;
+    }
   }
 }

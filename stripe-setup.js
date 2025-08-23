@@ -57,14 +57,14 @@ const plans = [
       {
         name: 'Pro+ Mensal',
         period: 'monthly',
-        unit_amount: 4490,
+        unit_amount: 4990,
         currency: 'brl',
         interval: 'month'
       },
       {
         name: 'Pro+ Anual',
         period: 'annual',
-        unit_amount: 44900,
+        unit_amount: 49900,
         currency: 'brl',
         interval: 'year'
       }
