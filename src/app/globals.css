@@ -23,6 +23,31 @@ body {
   overflow-x: hidden; /* Prevenir scroll horizontal em toda a aplicação */
 }
 
+/* Permitir rotação de tela e responsividade */
+@media screen {
+  html, body {
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+}
+
+/* Suporte para orientação landscape */
+@media screen and (orientation: landscape) {
+  body {
+    min-height: 100vh;
+    width: 100vw;
+  }
+}
+
+/* Suporte para orientação portrait */
+@media screen and (orientation: portrait) {
+  body {
+    min-height: 100vh;
+    width: 100vw;
+  }
+}
+
 /* Estilos específicos para abas móveis */
 [data-radix-tabs-trigger] {
   cursor: pointer;
