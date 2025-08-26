@@ -53,6 +53,7 @@ import {
 } from 'lucide-react';
 import { usePWA } from './PWAProvider';
 import InstallPWAButton from './InstallPWAButton';
+import './banco-questoes/question-card-mobile.css';
 
 // Interface para dados de estudo por disciplina
 interface StudyByDiscipline {
