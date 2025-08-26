@@ -14,10 +14,13 @@ import {
   Wand2,
   FileSpreadsheet,
   X,
-  Menu
+  Menu,
+  ChevronUp
 } from 'lucide-react';
 import Link from 'next/link';
 import QuestionCard from './QuestionCard';
+import AIQuestionGeneratorModal from './AIQuestionGeneratorModal';
+import { ImportQuestionsFromExcel } from './ImportQuestionsFromExcel';
 
 interface MobileBancoQuestoesProps {
   questions: Question[];
@@ -45,9 +48,7 @@ interface MobileBancoQuestoesProps {
   handleDeleteQuestion: (id: number) => void;
   getDisciplineName: (id: number) => string;
   handleQuestionAccess: () => boolean;
-  setShowAIModal: (show: boolean) => void;
-  setShowImportModal: (show: boolean) => void;
-  handleDisciplineChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  handleQuestionCreated: () => void;
   currentPage: number;
   totalPages: number;
   changePage: (page: number) => void;
@@ -81,9 +82,7 @@ export default function MobileBancoQuestoes({
   handleDeleteQuestion,
   getDisciplineName,
   handleQuestionAccess,
-  setShowAIModal,
-  setShowImportModal,
-  handleDisciplineChange,
+  handleQuestionCreated,
   currentPage,
   totalPages,
   changePage,
@@ -91,7 +90,9 @@ export default function MobileBancoQuestoes({
   prevPage
 }: MobileBancoQuestoesProps) {
   const [showFilters, setShowFilters] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showBottomMenu, setShowBottomMenu] = useState(false);
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const MobilePagination = () => {
     if (totalPages <= 1) return null;
@@ -141,10 +142,10 @@ export default function MobileBancoQuestoes({
             <h1 className="text-xl font-bold">Banco de Questões</h1>
           </div>
           <button
-            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            onClick={() => setShowBottomMenu(!showBottomMenu)}
             className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
           >
-            <Menu className="h-5 w-5" />
+            <Plus className={`h-5 w-5 transition-transform duration-300 ${showBottomMenu ? 'rotate-45' : ''}`} />
           </button>
         </div>
         
@@ -179,57 +180,7 @@ export default function MobileBancoQuestoes({
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
-      {showMobileMenu && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50">
-          <div className="bg-white w-80 h-full shadow-xl">
-            <div className="p-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-800">Menu</h2>
-                <button
-                  onClick={() => setShowMobileMenu(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-4 space-y-3">
-              <button
-                onClick={() => {
-                  setShowAIModal(true);
-                  setShowMobileMenu(false);
-                }}
-                className="w-full flex items-center px-4 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors"
-              >
-                <Wand2 className="h-5 w-5 mr-3" />
-                <span className="font-medium">Criar com IA</span>
-              </button>
-              
-              <button
-                onClick={() => {
-                  setShowImportModal(true);
-                  setShowMobileMenu(false);
-                }}
-                className="w-full flex items-center px-4 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors"
-              >
-                <FileSpreadsheet className="h-5 w-5 mr-3" />
-                <span className="font-medium">Importar Excel</span>
-              </button>
-              
-              <Link 
-                href="/banco-questoes/nova-questao"
-                className="w-full flex items-center px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
-                onClick={() => setShowMobileMenu(false)}
-              >
-                <Plus className="h-5 w-5 mr-3" />
-                <span className="font-medium">Nova Questão</span>
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Filters Bar */}
       <div className="bg-white border-b border-gray-200 px-4 py-3">
@@ -387,6 +338,128 @@ export default function MobileBancoQuestoes({
 
       {/* Mobile Pagination */}
       <MobilePagination />
+      
+      {/* Floating Action Menu */}
+        <div className="fixed bottom-20 right-6 z-[60]">
+        {/* Menu Options */}
+        <div className={`absolute bottom-16 right-0 space-y-3 transition-all duration-300 transform ${
+          showBottomMenu ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
+        }`}>
+          {/* Criar com IA */}
+          <div className="flex items-center space-x-3">
+            <div className="bg-black bg-opacity-75 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap">
+              Criar com IA
+            </div>
+            <button
+              onClick={() => {
+                setShowAIModal(true);
+                setShowBottomMenu(false);
+              }}
+              className="w-12 h-12 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
+            >
+              <Wand2 className="h-6 w-6" />
+            </button>
+          </div>
+          
+          {/* Importar Excel */}
+          <div className="flex items-center space-x-3">
+            <div className="bg-black bg-opacity-75 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap">
+              Importar Excel
+            </div>
+            <button
+              onClick={() => {
+                setShowImportModal(true);
+                setShowBottomMenu(false);
+              }}
+              className="w-12 h-12 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
+            >
+              <FileSpreadsheet className="h-6 w-6" />
+            </button>
+          </div>
+          
+          {/* Nova Questão */}
+          <div className="flex items-center space-x-3">
+            <div className="bg-black bg-opacity-75 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap">
+              Nova Questão
+            </div>
+            <Link 
+              href="/banco-questoes/nova-questao"
+              className="w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
+              onClick={() => setShowBottomMenu(false)}
+            >
+              <FileText className="h-6 w-6" />
+            </Link>
+          </div>
+        </div>
+        
+        {/* Main FAB Button */}
+        <button
+          onClick={() => setShowBottomMenu(!showBottomMenu)}
+          className={`w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 ${
+            showBottomMenu ? 'rotate-45' : ''
+          }`}
+        >
+          <Plus className="h-7 w-7" />
+        </button>
+      </div>
+      
+      {/* Overlay when menu is open */}
+       {showBottomMenu && (
+         <div 
+           className="fixed inset-0 bg-black bg-opacity-25 z-[55]"
+           onClick={() => setShowBottomMenu(false)}
+         />
+       )}
+
+      {/* Modal de geração de questão com IA */}
+      <AIQuestionGeneratorModal
+        isOpen={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        onQuestionCreated={() => {
+          handleQuestionCreated();
+          setShowAIModal(false);
+        }}
+      />
+
+      {/* Modal de importação de Excel */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 pb-20 sm:pb-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[75vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-gray-200 flex-shrink-0">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-800 flex items-center">
+                  <FileSpreadsheet className="h-5 w-5 mr-2 text-green-600" />
+                  Importar Questões do Excel
+                </h2>
+                <button
+                  onClick={() => setShowImportModal(false)}
+                  className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 flex-1 min-h-0 overflow-y-auto">
+              <ImportQuestionsFromExcel
+                onImportComplete={() => {
+                  setShowImportModal(false);
+                  handleQuestionCreated();
+                }}
+              />
+            </div>
+            
+            <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end flex-shrink-0">
+              <button
+                onClick={() => setShowImportModal(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

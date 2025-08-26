@@ -1,0 +1,44 @@
+/* Estilos customizados para ReactQuill em dispositivos móveis */
+.mobile-quill .ql-toolbar {
+  border-top: 1px solid #ccc;
+  border-left: 1px solid #ccc;
+  border-right: 1px solid #ccc;
+  border-bottom: none;
+  padding: 8px;
+}
+
+.mobile-quill .ql-container {
+  border-bottom: 1px solid #ccc;
+  border-left: 1px solid #ccc;
+  border-right: 1px solid #ccc;
+  border-top: none;
+}
+
+@media (max-width: 640px) {
+  .mobile-quill .ql-toolbar {
+    padding: 6px;
+    flex-wrap: wrap;
+  }
+  
+  .mobile-quill .ql-toolbar .ql-formats {
+    margin-right: 8px;
+    margin-bottom: 4px;
+  }
+  
+  .mobile-quill .ql-toolbar button {
+    width: 32px;
+    height: 32px;
+    padding: 4px;
+  }
+  
+  .mobile-quill .ql-toolbar select {
+    min-height: 32px;
+    font-size: 14px;
+  }
+  
+  .mobile-quill .ql-editor {
+    font-size: 16px;
+    line-height: 1.5;
+    padding: 12px;
+  }
+}
