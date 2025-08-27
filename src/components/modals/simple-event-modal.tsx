@@ -35,13 +35,6 @@ export default function SimpleEventModal({ isOpen, onClose, onEventCreated, sele
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
   
-  // Função para converter formato Schedule-X (YYYY-MM-DD HH:mm) para datetime-local (YYYY-MM-DDTHH:mm)
-  const convertScheduleXToDatetimeLocal = (scheduleXDate: string): string => {
-    if (!scheduleXDate) return '';
-    // Converte 'YYYY-MM-DD HH:mm' para 'YYYY-MM-DDTHH:mm'
-    return scheduleXDate.replace(' ', 'T');
-  };
-  
   const [formData, setFormData] = useState<CreateEventData>({
     title: '',
     description: '',
@@ -53,14 +46,21 @@ export default function SimpleEventModal({ isOpen, onClose, onEventCreated, sele
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Função para converter data do Schedule-X (YYYY-MM-DD HH:mm) para datetime-local (YYYY-MM-DDTHH:mm)
+  const convertScheduleXToDatetimeLocal = (scheduleXDate: string): string => {
+    if (!scheduleXDate) return '';
+    // Schedule-X usa formato "YYYY-MM-DD HH:mm", datetime-local precisa "YYYY-MM-DDTHH:mm"
+    return scheduleXDate.replace(' ', 'T');
+  };
+
   // Inicializar formulário com dados do evento quando estiver editando
   useEffect(() => {
     if (editingEvent) {
       setFormData({
         title: editingEvent.title || '',
         description: editingEvent.description || '',
-        start_date: convertScheduleXToDatetimeLocal(editingEvent.start || ''),
-        end_date: convertScheduleXToDatetimeLocal(editingEvent.end || ''),
+        start_date: convertScheduleXToDatetimeLocal(editingEvent.start),
+        end_date: convertScheduleXToDatetimeLocal(editingEvent.end),
         location: '',
         color: editingEvent.color || '#3b82f6'
       });

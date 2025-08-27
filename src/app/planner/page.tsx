@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { createCalendar, createViewDay, createViewWeek, createViewMonthGrid, createViewList } from '@schedule-x/calendar';
 import { createCalendarControlsPlugin } from '@schedule-x/calendar-controls';
 import '@schedule-x/theme-default/dist/index.css';
-import '@/styles/calendar.css';
 import { Calendar, Clock, Target, BookOpen, Plus, CheckCircle, Circle, Star, TrendingUp, Edit, Trash2, X, Crown, Zap, CalendarDays, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -59,22 +58,8 @@ export default function PlannerPage() {
   const [upgradeModalType, setUpgradeModalType] = useState<'event' | 'goal'>('event');
   const [showUpdateProgressModal, setShowUpdateProgressModal] = useState(false);
   const [selectedGoalForUpdate, setSelectedGoalForUpdate] = useState<StudyGoal | null>(null);
+  const [contextMenu, setContextMenu] = useState<{visible: boolean, x: number, y: number, event: any}>({visible: false, x: 0, y: 0, event: null});
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
-  const [contextMenu, setContextMenu] = useState<{ event: CalendarEvent; x: number; y: number } | null>(null);
-
-  // Fechar menu de contexto com Escape
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setContextMenu(null);
-      }
-    };
-
-    if (contextMenu) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [contextMenu]);
 
   
   // Absence states
@@ -145,7 +130,6 @@ export default function PlannerPage() {
           description: event.description,
           start: formatDateForScheduleX(event.start_date),
           end: formatDateForScheduleX(event.end_date),
-          color: event.color || '#3b82f6',
           calendarId: getCalendarIdFromColor(event.color || '#3b82f6')
         };
       });
@@ -416,19 +400,28 @@ export default function PlannerPage() {
       calendars: generateCalendarsFromEvents(events),
       events: [], // Inicializar vazio, eventos serão adicionados via events.set()
       callbacks: {
-        onEventClick: (calendarEvent: any, jsEvent: MouseEvent) => {
+        onEventClick: (calendarEvent: any, domEvent: MouseEvent) => {
           console.log('Event clicked:', calendarEvent);
-          const event = events.find(e => e.id === calendarEvent.id);
-          if (event && jsEvent) {
-            setContextMenu({
-              event,
-              x: jsEvent.clientX,
-              y: jsEvent.clientY
-            });
-          }
+          // Mostrar menu de contexto
+          setContextMenu({
+            visible: true,
+            x: domEvent.clientX,
+            y: domEvent.clientY,
+            event: calendarEvent
+          });
+          // Prevenir propagação para não fechar o menu imediatamente
+          domEvent.stopPropagation();
         },
         onClickDate: (date: string) => {
           setSelectedDate(new Date(date));
+        },
+        onDoubleClickDateTime: (dateTime: string) => {
+          console.log('Double click on datetime:', dateTime);
+          // Definir a data/hora selecionada e abrir o modal de criação
+          const clickedDate = new Date(dateTime);
+          setSelectedDate(clickedDate);
+          setEditingEvent(null); // Garantir que não estamos editando
+          setShowEventModal(true);
         }
       }
     }, [calendarControlsPlugin]);
@@ -463,19 +456,28 @@ export default function PlannerPage() {
         calendars: newCalendars,
         events: events,
         callbacks: {
-          onEventClick: (calendarEvent: any, jsEvent: MouseEvent) => {
+          onEventClick: (calendarEvent: any, domEvent: MouseEvent) => {
             console.log('Event clicked:', calendarEvent);
-            const event = events.find(e => e.id === calendarEvent.id);
-            if (event && jsEvent) {
-              setContextMenu({
-                event,
-                x: jsEvent.clientX,
-                y: jsEvent.clientY
-              });
-            }
+            // Mostrar menu de contexto
+            setContextMenu({
+              visible: true,
+              x: domEvent.clientX,
+              y: domEvent.clientY,
+              event: calendarEvent
+            });
+            // Prevenir propagação para não fechar o menu imediatamente
+            domEvent.stopPropagation();
           },
           onClickDate: (date: string) => {
             setSelectedDate(new Date(date));
+          },
+          onDoubleClickDateTime: (dateTime: string) => {
+            console.log('Double click on datetime:', dateTime);
+            // Definir a data/hora selecionada e abrir o modal de criação
+            const clickedDate = new Date(dateTime);
+            setSelectedDate(clickedDate);
+            setEditingEvent(null); // Garantir que não estamos editando
+            setShowEventModal(true);
           }
         }
       }, [calendarControlsPlugin]);
@@ -529,6 +531,20 @@ export default function PlannerPage() {
       calendarControls.setDate(selectedDate.toISOString().split('T')[0]);
     }
   }, [calendar, calendarControls, activeView, selectedDate]);
+
+  // useEffect para fechar o menu de contexto quando clicar fora
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (contextMenu.visible) {
+        setContextMenu({visible: false, x: 0, y: 0, event: null});
+      }
+    };
+
+    if (contextMenu.visible) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [contextMenu.visible]);
 
 
 
@@ -613,26 +629,31 @@ export default function PlannerPage() {
   };
 
   // Função para editar evento
-  const handleEditEvent = (event: CalendarEvent) => {
-    setEditingEvent(event);
+  const handleEditEvent = (event: any) => {
+    setEditingEvent({
+      id: event.id,
+      title: event.title,
+      description: event.description || '',
+      start: event.start,
+      end: event.end,
+      color: event.color || '#3b82f6'
+    });
     setShowEventModal(true);
+    setContextMenu({visible: false, x: 0, y: 0, event: null});
   };
 
   // Função para excluir evento
-  const handleDeleteEvent = async (eventId: string) => {
-    try {
-      const success = await EventsClientService.deleteEvent(eventId);
-      if (success) {
+  const handleDeleteEvent = async (event: any) => {
+    if (confirm(`Tem certeza que deseja excluir o evento "${event.title}"?`)) {
+      try {
+        await EventsClientService.deleteEvent(event.id);
+        toast.success('Evento excluído com sucesso!');
         await loadEvents();
-        return true;
-      } else {
+        setContextMenu({visible: false, x: 0, y: 0, event: null});
+      } catch (error) {
+        console.error('Erro ao excluir evento:', error);
         toast.error('Erro ao excluir evento');
-        return false;
       }
-    } catch (error) {
-      console.error('Erro ao excluir evento:', error);
-      toast.error('Erro ao excluir evento');
-      return false;
     }
   };
 
@@ -668,8 +689,10 @@ export default function PlannerPage() {
             setEditingEvent(null);
           }}
           onEventCreated={async (event) => {
+            toast.success(editingEvent ? 'Evento atualizado com sucesso!' : 'Evento criado com sucesso!');
             await loadEvents();
           }}
+          selectedDate={selectedDate}
           editingEvent={editingEvent}
         />
 
@@ -889,6 +912,24 @@ export default function PlannerPage() {
 
               {/* Tasks Sidebar */}
               <div className="space-y-6">
+                {/* Dica sobre interações do calendário */}
+                <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 shadow-lg">
+                  <CardContent className="p-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Calendar className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-blue-900 mb-1">💡 Dicas do Calendário</h4>
+                        <div className="text-xs text-blue-700 leading-relaxed space-y-1">
+                          <p>• <strong>Clique</strong> em um evento para <strong>editar</strong> ou <strong>excluir</strong></p>
+                          <p>• <strong>Clique duplo</strong> em um horário vazio para <strong>criar</strong> um novo evento</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <Card className="bg-gradient-to-br from-white to-orange-50/50 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-lg bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
@@ -1120,6 +1161,34 @@ export default function PlannerPage() {
           </div>
         )}
 
+        {/* Menu de contexto para eventos */}
+        {contextMenu.visible && (
+          <div 
+            className="fixed bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50"
+            style={{ 
+              left: contextMenu.x, 
+              top: contextMenu.y,
+              transform: 'translate(-50%, -10px)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+              onClick={() => handleEditEvent(contextMenu.event)}
+            >
+              <Edit className="h-4 w-4" />
+              Editar
+            </button>
+            <button
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 text-red-600"
+              onClick={() => handleDeleteEvent(contextMenu.event)}
+            >
+              <Trash2 className="h-4 w-4" />
+              Excluir
+            </button>
+          </div>
+        )}
+
         {/* Modals */}
         <SimpleEventModal
           isOpen={showEventModal}
@@ -1128,7 +1197,7 @@ export default function PlannerPage() {
             setEditingEvent(null);
           }}
           onEventCreated={async (event) => {
-            toast.success('Evento criado com sucesso!');
+            toast.success(editingEvent ? 'Evento atualizado com sucesso!' : 'Evento criado com sucesso!');
             // Recarregar a lista de eventos após criação
             await loadEvents();
           }}
@@ -1210,44 +1279,8 @@ export default function PlannerPage() {
           />
         )}
 
-        {/* Menu de contexto para eventos */}
-        {contextMenu && (
-          <>
-            <div 
-              className="fixed inset-0 z-[9998]" 
-              onClick={() => setContextMenu(null)}
-            />
-            <div 
-              className="fixed z-[9999] bg-white border border-gray-200 rounded-lg shadow-lg py-2 min-w-[150px]"
-              style={{
-                left: contextMenu.x,
-                top: contextMenu.y,
-                transform: 'translate(-50%, -10px)'
-              }}
-            >
-              <button
-                onClick={() => {
-                  handleEditEvent(contextMenu.event);
-                  setContextMenu(null);
-                }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-              >
-                <Edit className="w-4 h-4" />
-                Editar
-              </button>
-              <button
-                onClick={() => {
-                  handleDeleteEvent(contextMenu.event.id);
-                  setContextMenu(null);
-                }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 text-red-600 flex items-center gap-2"
-              >
-                <Trash2 className="w-4 h-4" />
-                Excluir
-              </button>
-            </div>
-          </>
-        )}
+
+
 
     </div>
   );

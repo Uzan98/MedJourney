@@ -49,64 +49,6 @@
   transition: all 0.2s ease-in-out;
 }
 
-/* Estilos para hover nos eventos do Schedule-X */
-.sx__event {
-  position: relative;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  overflow: visible !important;
-}
-
-.sx__event:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 100 !important;
-}
-
-/* Container para os ícones de ação */
-.sx__event:hover::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 50px;
-  height: 18px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  z-index: 101;
-}
-
-/* Ícones de editar e excluir */
-.sx__event:hover::before {
-  content: '✏️ 🗑️';
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  font-size: 11px;
-  line-height: 1;
-  z-index: 102;
-  pointer-events: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-}
-
-/* Melhorar visibilidade em eventos pequenos */
-.sx__event.sx__event--small:hover::after {
-  width: 40px;
-  height: 16px;
-}
-
-.sx__event.sx__event--small:hover::before {
-  font-size: 9px;
-  top: 3px;
-  right: 3px;
-}
-
 .calendar-container .rbc-day-bg:hover {
   background-color: #f1f5f9;
   cursor: pointer;
@@ -289,4 +231,4 @@
   z-index: 60;
   background-color: white !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
+} 
