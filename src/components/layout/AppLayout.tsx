@@ -38,6 +38,7 @@ import SidebarMenu from './SidebarMenu';
 import MobileMenu from './MobileMenu';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationPermission from '../NotificationPermission';
+import GenomaMobileWarning from '../GenomaMobileWarning';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -666,6 +667,9 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
       {/* Componente de permissão de notificação */}
       <NotificationPermission />
+      
+      {/* Aviso sobre melhor experiência em telas maiores */}
+      <GenomaMobileWarning />
       
       {/* Menu Mobile */}
       <MobileMenu lockMobileSidebar={lockMobileSidebar} />
