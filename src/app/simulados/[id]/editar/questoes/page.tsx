@@ -17,6 +17,7 @@ import { Discipline } from '@/lib/supabase';
 import Loading from '@/components/Loading';
 import Pill from '@/components/Pill';
 import Modal from '@/components/Modal';
+import '@/components/banco-questoes/question-card-mobile.css';
 
 export default function EditarQuestoesPage({ params }: { params: { id: string } }) {
   const router = useRouter();

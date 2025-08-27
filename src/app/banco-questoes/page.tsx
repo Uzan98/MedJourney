@@ -476,9 +476,7 @@ export default function BancoQuestoesPage() {
         handleDeleteQuestion={handleDeleteQuestion}
         getDisciplineName={getDisciplineName}
         handleQuestionAccess={handleQuestionAccess}
-        setShowAIModal={setShowAIModal}
-        setShowImportModal={setShowImportModal}
-        handleDisciplineChange={handleDisciplineChange}
+        handleQuestionCreated={loadData}
         currentPage={currentPage}
         totalPages={totalPages}
         changePage={changePage}

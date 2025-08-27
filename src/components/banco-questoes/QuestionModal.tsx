@@ -10,6 +10,7 @@ import dynamic from 'next/dynamic';
 const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
 import 'react-quill/dist/quill.snow.css';
 import '@/styles/quill-custom.css';
+import '@/styles/quill-mobile.css';
 
 interface QuestionModalProps {
   isOpen: boolean;
@@ -427,25 +428,28 @@ export default function QuestionModal({
   if (!isOpen) return null;
   
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 pb-20 sm:pb-4">
+        <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[75vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex justify-between items-center border-b border-gray-200 px-6 py-4">
-          <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
+        <div className="flex justify-between items-center border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0">
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 truncate pr-2">
+            <span className="hidden sm:inline">{title}</span>
+            <span className="sm:hidden">Nova Questão</span>
+          </h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-500 transition-colors"
+            className="text-gray-400 hover:text-gray-500 transition-colors p-1 touch-manipulation"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
         </div>
         
         {/* Content with scroll */}
-        <div className="overflow-y-auto p-6 max-h-[calc(90vh-120px)]">
+        <div className="overflow-y-auto p-4 sm:p-6 flex-1 min-h-0">
           <form>
             {/* Conteúdo da Questão */}
-            <div className="mb-6">
-              <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="mb-4 sm:mb-6">
+              <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
                 Conteúdo da Questão <span className="text-red-500">*</span>
               </label>
               <div className="border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-blue-500">
@@ -454,47 +458,41 @@ export default function QuestionModal({
                   onChange={setContent}
                   placeholder="Digite o conteúdo da questão aqui..."
                   modules={{
-                    toolbar: [
-                      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                      [{ 'font': [] }],
-                      [{ 'size': ['small', false, 'large', 'huge'] }],
-                      ['bold', 'italic', 'underline', 'strike'],
-                      [{ 'color': [] }, { 'background': [] }],
-                      [{ 'script': 'sub'}, { 'script': 'super' }],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                      [{ 'indent': '-1'}, { 'indent': '+1' }],
-                      [{ 'direction': 'rtl' }],
-                      [{ 'align': [] }],
-                      ['blockquote', 'code-block'],
-                      ['link', 'image', 'video'],
-                      ['clean']
-                    ]
+                    toolbar: {
+                      container: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'align': [] }],
+                        ['link'],
+                        ['clean']
+                      ],
+                      handlers: {}
+                    }
                   }}
                   formats={[
-                    'header', 'font', 'size',
-                    'bold', 'italic', 'underline', 'strike',
-                    'color', 'background',
-                    'script',
-                    'list', 'bullet', 'indent',
-                    'direction', 'align',
-                    'blockquote', 'code-block',
-                    'link', 'image', 'video'
+                    'header',
+                    'bold', 'italic', 'underline',
+                    'list', 'bullet',
+                    'align',
+                    'link'
                   ]}
-                  style={{ minHeight: '120px' }}
+                  style={{ minHeight: '150px' }}
+                  className="mobile-quill"
                 />
               </div>
             </div>
             
             {/* Tipo de Questão */}
-            <div className="mb-6">
-              <label htmlFor="questionType" className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="mb-4 sm:mb-6">
+              <label htmlFor="questionType" className="block text-sm font-medium text-gray-700 mb-2">
                 Tipo de Questão
               </label>
               <select
                 id="questionType"
                 value={questionType}
                 onChange={(e) => setQuestionType(e.target.value as any)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm touch-manipulation"
               >
                 <option value="multiple_choice">Múltipla Escolha</option>
                 <option value="true_false">Verdadeiro/Falso</option>
@@ -504,56 +502,56 @@ export default function QuestionModal({
             
             {/* Opções para Múltipla Escolha */}
             {questionType === 'multiple_choice' && (
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-2">
+              <div className="mb-4 sm:mb-6">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 gap-2">
                   <label className="block text-sm font-medium text-gray-700">
                     Opções de Resposta <span className="text-red-500">*</span>
                   </label>
                   <button
                     type="button"
                     onClick={addAnswerOption}
-                    className="inline-flex items-center px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition-colors"
+                    className="inline-flex items-center justify-center px-4 py-2.5 sm:px-3 sm:py-1 text-sm bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition-colors touch-manipulation"
                   >
-                    <Plus className="h-4 w-4 mr-1" /> Adicionar Opção
+                    <Plus className="h-4 w-4 mr-2 sm:mr-1" /> Adicionar Opção
                   </button>
                 </div>
                 
                 <div className="space-y-3">
                   {answerOptions.length === 0 ? (
-                    <div className="text-center py-3 bg-gray-50 rounded-md text-gray-500">
+                    <div className="text-center py-4 bg-gray-50 rounded-lg text-gray-500">
                       Adicione opções de resposta para a questão
                     </div>
                   ) : (
                     answerOptions.map((option, index) => (
-                      <div key={String(option.id)} className="flex items-center">
-                        <div className="flex-1">
-                          <div className="flex items-center">
-                            <button
-                              type="button"
-                              onClick={() => setCorrectOption(option.id!)}
-                              className={`w-5 h-5 rounded-full mr-3 flex items-center justify-center ${
-                                option.is_correct
-                                  ? 'bg-green-500 text-white'
-                                  : 'border border-gray-300 text-transparent'
-                              }`}
-                            >
-                              {option.is_correct && <Check className="h-3 w-3" />}
-                            </button>
+                      <div key={String(option.id)} className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-start gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setCorrectOption(option.id!)}
+                            className={`w-6 h-6 sm:w-5 sm:h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 touch-manipulation ${
+                              option.is_correct
+                                ? 'bg-green-500 text-white'
+                                : 'border border-gray-300 text-transparent hover:border-gray-400'
+                            }`}
+                          >
+                            {option.is_correct && <Check className="h-3 w-3" />}
+                          </button>
+                          <div className="flex-1">
                             <input
                               value={option.text}
                               onChange={(e) => updateAnswerOption(option.id!, e.target.value)}
-                              placeholder={`Opção ${index + 1}`}
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder={`Opção ${String.fromCharCode(65 + index)}`}
+                              className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                             />
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => removeAnswerOption(option.id!)}
+                            className="text-red-500 hover:text-red-700 p-1 touch-manipulation flex-shrink-0"
+                          >
+                            <Trash2 className="h-5 w-5 sm:h-4 sm:w-4" />
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => removeAnswerOption(option.id!)}
-                          className="ml-2 text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
                       </div>
                     ))
                   )}
@@ -563,30 +561,30 @@ export default function QuestionModal({
             
             {/* Opções para Verdadeiro/Falso */}
             {questionType === 'true_false' && (
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="mb-4 sm:mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
                   Resposta Correta <span className="text-red-500">*</span>
                 </label>
-                <div className="flex space-x-4">
-                  <label className="inline-flex items-center">
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="flex items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
                     <input
                       type="radio"
                       value="true"
                       checked={correctAnswer === 'true'}
                       onChange={() => setCorrectAnswer('true')}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                      className="h-5 w-5 text-blue-600 focus:ring-blue-500 mr-3 touch-manipulation"
                     />
-                    <span className="ml-2 text-gray-700">Verdadeiro</span>
+                    <span className="text-base sm:text-sm font-medium text-gray-700">Verdadeiro</span>
                   </label>
-                  <label className="inline-flex items-center">
+                  <label className="flex items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
                     <input
                       type="radio"
                       value="false"
                       checked={correctAnswer === 'false'}
                       onChange={() => setCorrectAnswer('false')}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                      className="h-5 w-5 text-blue-600 focus:ring-blue-500 mr-3 touch-manipulation"
                     />
-                    <span className="ml-2 text-gray-700">Falso</span>
+                    <span className="text-base sm:text-sm font-medium text-gray-700">Falso</span>
                   </label>
                 </div>
               </div>
@@ -610,8 +608,8 @@ export default function QuestionModal({
             )}
             
             {/* Explicação */}
-            <div className="mb-6">
-              <label htmlFor="explanation" className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="mb-4 sm:mb-6">
+              <label htmlFor="explanation" className="block text-sm font-medium text-gray-700 mb-2">
                 Explicação
               </label>
               <div className="border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-blue-500">
@@ -620,49 +618,41 @@ export default function QuestionModal({
                   onChange={setExplanation}
                   placeholder="Explicação opcional sobre a resposta correta..."
                   modules={{
-                    toolbar: [
-                      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                      [{ 'font': [] }],
-                      [{ 'size': ['small', false, 'large', 'huge'] }],
-                      ['bold', 'italic', 'underline', 'strike'],
-                      [{ 'color': [] }, { 'background': [] }],
-                      [{ 'script': 'sub'}, { 'script': 'super' }],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                      [{ 'indent': '-1'}, { 'indent': '+1' }],
-                      [{ 'direction': 'rtl' }],
-                      [{ 'align': [] }],
-                      ['blockquote', 'code-block'],
-                      ['link', 'image', 'video'],
-                      ['clean']
-                    ]
+                    toolbar: {
+                      container: [
+                        [{ 'header': [1, 2, false] }],
+                        ['bold', 'italic'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['link'],
+                        ['clean']
+                      ],
+                      handlers: {}
+                    }
                   }}
                   formats={[
-                    'header', 'font', 'size',
-                    'bold', 'italic', 'underline', 'strike',
-                    'color', 'background',
-                    'script',
-                    'list', 'bullet', 'indent',
-                    'direction', 'align',
-                    'blockquote', 'code-block',
-                    'link', 'image', 'video'
+                    'header',
+                    'bold', 'italic',
+                    'list', 'bullet',
+                    'link'
                   ]}
-                  style={{ minHeight: '100px' }}
+                  style={{ minHeight: '120px' }}
+                  className="mobile-quill"
                 />
               </div>
             </div>
             
             {/* Grid de Seleções */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="space-y-4 sm:grid sm:grid-cols-1 md:grid-cols-3 sm:gap-4 sm:space-y-0 mb-4 sm:mb-6">
               {/* Disciplina */}
               <div>
-                <label htmlFor="discipline" className="block text-sm font-medium text-gray-700 mb-1">
-                  Disciplina
+                <label htmlFor="discipline" className="block text-sm font-medium text-gray-700 mb-2">
+                  Disciplina <span className="text-red-500">*</span>
                 </label>
                 <select
                   id="discipline"
                   value={disciplineId || ''}
                   onChange={handleDisciplineChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm touch-manipulation"
                 >
                   <option value="">Selecione uma disciplina</option>
                   {disciplines.map(discipline => (
@@ -675,17 +665,19 @@ export default function QuestionModal({
               
               {/* Assunto */}
               <div>
-                <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
-                  Assunto
+                <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
+                  Assunto <span className="text-red-500">*</span>
                 </label>
                 <select
                   id="subject"
                   value={subjectId || ''}
                   onChange={(e) => setSubjectId(e.target.value ? parseInt(e.target.value) : null)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm touch-manipulation disabled:bg-gray-100 disabled:text-gray-500"
                   disabled={!disciplineId || subjects.length === 0}
                 >
-                  <option value="">Selecione um assunto</option>
+                  <option value="">
+                    {!disciplineId ? 'Selecione uma disciplina primeiro' : 'Selecione um assunto'}
+                  </option>
                   {subjects.map(subject => (
                     <option key={subject.id} value={subject.id}>
                       {subject.title || subject.name}
@@ -696,14 +688,14 @@ export default function QuestionModal({
               
               {/* Dificuldade */}
               <div>
-                <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700 mb-1">
-                  Dificuldade
+                <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700 mb-2">
+                  Dificuldade <span className="text-red-500">*</span>
                 </label>
                 <select
                   id="difficulty"
                   value={difficulty}
                   onChange={(e) => setDifficulty(e.target.value as any)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm touch-manipulation"
                 >
                   <option value="baixa">Baixa</option>
                   <option value="média">Média</option>
@@ -713,62 +705,71 @@ export default function QuestionModal({
             </div>
             
             {/* Checkbox para tornar a questão pública */}
-            <div className="mb-6">
-              <label className="flex items-center">
+            <div className="mb-4 sm:mb-6">
+              <label className="flex items-start cursor-pointer p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
                 <input
                   type="checkbox"
                   checked={isPublic}
                   onChange={(e) => setIsPublic(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 rounded"
+                  className="h-5 w-5 text-blue-600 focus:ring-blue-500 rounded mt-0.5 touch-manipulation flex-shrink-0"
                 />
-                <span className="ml-2 flex items-center text-gray-700">
-                  <Globe className="h-4 w-4 mr-1.5 text-blue-500" />
-                  Adicionar ao Genoma Bank (compartilhar esta questão publicamente)
-                </span>
+                <div className="ml-3">
+                  <span className="flex items-center text-gray-700 font-medium">
+                    <Globe className="h-4 w-4 mr-2 text-blue-500" />
+                    <span className="text-base sm:text-sm">Adicionar ao Genoma Bank</span>
+                  </span>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Compartilhar esta questão publicamente para outros usuários
+                  </p>
+                </div>
               </label>
               {isPublic && (
-                <p className="mt-1 text-sm text-gray-500 pl-6">
-                  Esta questão será visível para todos os usuários no Genoma Bank.
-                </p>
+                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-700 flex items-center">
+                    <Globe className="h-4 w-4 mr-2 text-green-600" />
+                    Esta questão será visível para todos os usuários no Genoma Bank.
+                  </p>
+                </div>
               )}
             </div>
             
             {/* Tags */}
-            <div className="mb-6">
-              <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-1">
-                Tags
+            <div className="mb-4 sm:mb-6">
+              <label htmlFor="tags" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                Tags <span className="text-gray-500 text-sm">(opcional)</span>
               </label>
-              <div className="flex">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
                 <input
                   id="tags"
                   type="text"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyPress={handleTagKeyPress}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Adicione tags para categorizar a questão..."
+                  className="flex-1 px-3 py-3 sm:py-2 border border-gray-300 rounded-md sm:rounded-l-md sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm touch-manipulation"
+                  placeholder="Ex: anatomia, cardiologia..."
                 />
                 <button
                   type="button"
                   onClick={addTag}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full sm:w-auto px-4 py-3 sm:py-2 bg-blue-600 text-white rounded-md sm:rounded-l-none sm:rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium touch-manipulation transition-colors"
                 >
+                  <Plus className="h-4 w-4 inline mr-2" />
                   Adicionar
                 </button>
               </div>
               
               {tags.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap gap-2">
                   {tags.map((tag) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center px-2 py-1 rounded-md text-sm bg-blue-100 text-blue-800"
+                      className="inline-flex items-center px-3 py-2 rounded-full text-sm bg-blue-100 text-blue-800 border border-blue-200"
                     >
                       {tag}
                       <button
                         type="button"
                         onClick={() => removeTag(tag)}
-                        className="ml-1 text-blue-600 hover:text-blue-800"
+                        className="ml-2 text-blue-600 hover:text-blue-800 touch-manipulation p-1 rounded-full hover:bg-blue-200 transition-colors"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -781,27 +782,25 @@ export default function QuestionModal({
         </div>
         
         {/* Footer */}
-         <div className="border-t border-gray-200 px-6 py-4 flex justify-end">
-          <div className="flex space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              disabled={isSaving}
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              className={`px-4 py-2 rounded-md text-white ${
-                isSaving ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-              }`}
-              disabled={isSaving}
-            >
-              {isSaving ? 'Salvando...' : initialData ? 'Atualizar' : 'Salvar'}
-            </button>
-          </div>
+        <div className="border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row gap-3 sm:justify-end sm:space-x-3 flex-shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full sm:w-auto px-4 py-3 sm:py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium touch-manipulation"
+            disabled={isSaving}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            className={`w-full sm:w-auto px-4 py-3 sm:py-2 rounded-md text-white font-medium touch-manipulation ${
+              isSaving ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+            }`}
+            disabled={isSaving}
+          >
+            {isSaving ? 'Salvando...' : initialData ? 'Atualizar Questão' : 'Salvar Questão'}
+          </button>
         </div>
       </div>
     </div>

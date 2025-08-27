@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from 'react';
-import { ChevronLeft, Edit, Trash2, Globe, Lock, Plus, Menu, X } from 'lucide-react';
+import { ChevronLeft, Edit, Trash2, Globe, Lock, Plus, Menu, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { Question } from '@/services/questions-bank.service';
 import Link from 'next/link';
+import './question-card-mobile.css';
 
 interface MobileQuestionViewProps {
   question: Question;
@@ -41,6 +42,7 @@ export default function MobileQuestionView({
   formatDate
 }: MobileQuestionViewProps) {
   const [showActionsMenu, setShowActionsMenu] = useState(false);
+  const [isContentExpanded, setIsContentExpanded] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -228,8 +230,34 @@ export default function MobileQuestionView({
         <div className="bg-white rounded-lg p-4 shadow-sm">
           <h2 className="text-sm font-semibold text-gray-700 mb-3">Enunciado</h2>
           <div className="bg-gray-50 p-4 rounded-lg quill-content max-w-none">
-            <div dangerouslySetInnerHTML={{ __html: question?.content || 'Conteúdo não disponível' }} />
+            <div 
+              className={`quill-content ${isContentExpanded ? '' : 'line-clamp-4'}`}
+              style={{
+                wordBreak: 'break-word',
+                overflowWrap: 'break-word',
+                hyphens: 'auto'
+              }}
+              dangerouslySetInnerHTML={{ __html: question?.content || 'Conteúdo não disponível' }} 
+            />
           </div>
+          
+          {/* Botão expandir/recolher */}
+          <button
+            onClick={() => setIsContentExpanded(!isContentExpanded)}
+            className="mt-3 flex items-center text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors touch-manipulation"
+          >
+            {isContentExpanded ? (
+              <>
+                <ChevronUp className="h-4 w-4 mr-1" />
+                Mostrar menos
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4 mr-1" />
+                Mostrar mais
+              </>
+            )}
+          </button>
         </div>
         
         {/* Opções de resposta */}

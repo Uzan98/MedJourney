@@ -377,26 +377,26 @@ export const ImportQuestionsFromExcel: React.FC<ImportQuestionsFromExcelProps> =
   return (
     <div className={`flex flex-col gap-4 ${className}`}>
       <div className="flex flex-col gap-2">
-        <h3 className="text-lg font-medium">Importar Questões do Excel</h3>
+        <h3 className="text-lg sm:text-xl font-medium">Importar Questões do Excel</h3>
         <p className="text-sm text-gray-500">
           Faça upload de um arquivo Excel com suas questões para importação em massa.
         </p>
         
         <div className="bg-blue-50 p-3 rounded-md mt-2 flex gap-2">
           <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-blue-800">
+          <div className="text-xs sm:text-sm text-blue-800">
             <p className="font-medium">Formato simplificado:</p>
-            <ul className="list-disc pl-5 mt-1 space-y-1">
+            <ul className="list-disc pl-4 sm:pl-5 mt-1 space-y-1">
               <li>Apenas inclua o enunciado, alternativas e explicação no Excel</li>
               <li>Selecione a disciplina e outros detalhes aqui na interface</li>
-              <li>Para questões de múltipla escolha, defina option_1 até option_5</li>
-              <li>Defina correct_answer como "option_X" (ex: option_1)</li>
+              <li className="hidden sm:list-item">Para questões de múltipla escolha, defina option_1 até option_5</li>
+              <li className="hidden sm:list-item">Defina correct_answer como "option_X" (ex: option_1)</li>
             </ul>
           </div>
         </div>
         
         {/* Seleção de disciplina e assunto */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-2">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Disciplina <span className="text-red-500">*</span>
@@ -404,7 +404,7 @@ export const ImportQuestionsFromExcel: React.FC<ImportQuestionsFromExcelProps> =
             <select
               value={selectedDiscipline?.toString() || ''}
               onChange={(e) => setSelectedDiscipline(e.target.value ? Number(e.target.value) : null)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
               disabled={isLoadingDisciplines || isUploading}
               required
             >
@@ -424,7 +424,7 @@ export const ImportQuestionsFromExcel: React.FC<ImportQuestionsFromExcelProps> =
             <select
               value={selectedSubject?.toString() || ''}
               onChange={(e) => setSelectedSubject(e.target.value ? Number(e.target.value) : null)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
               disabled={!selectedDiscipline || subjects.length === 0 || isUploading}
             >
               <option value="">Selecione um assunto</option>
@@ -439,12 +439,12 @@ export const ImportQuestionsFromExcel: React.FC<ImportQuestionsFromExcelProps> =
         
         {/* Seleção de dificuldade */}
         <div className="mt-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Dificuldade
           </label>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-3 sm:gap-4">
             {['baixa', 'média', 'alta'].map((difficulty) => (
-              <label key={difficulty} className="flex items-center">
+              <label key={difficulty} className="flex items-center touch-manipulation">
                 <input
                   type="radio"
                   name="difficulty"
@@ -464,18 +464,24 @@ export const ImportQuestionsFromExcel: React.FC<ImportQuestionsFromExcelProps> =
         
         {/* Opção para tornar públicas */}
         {!defaultIsPublic && (
-          <div className="flex items-center gap-2 mt-3">
-            <input
-              type="checkbox"
-              id="isPublic"
-              checked={isPublic}
-              onChange={(e) => setIsPublic(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300"
-              disabled={isUploading}
-            />
-            <label htmlFor="isPublic" className="text-sm">
-              Adicionar todas as questões ao Genoma Bank (públicas)
+          <div className="mt-3">
+            <label className="flex items-start touch-manipulation">
+              <input
+                type="checkbox"
+                checked={isPublic}
+                onChange={(e) => setIsPublic(e.target.checked)}
+                className="h-4 w-4 mt-0.5 text-green-600 focus:ring-green-500 rounded"
+                disabled={isUploading}
+              />
+              <span className="ml-2 flex items-start text-xs sm:text-sm text-gray-700">
+                <span>Adicionar ao Genoma Bank (compartilhar estas questões publicamente)</span>
+              </span>
             </label>
+            {isPublic && (
+              <p className="mt-1 text-xs sm:text-sm text-gray-500 pl-6">
+                Estas questões serão visíveis para todos os usuários no Genoma Bank.
+              </p>
+            )}
           </div>
         )}
         
@@ -489,18 +495,19 @@ export const ImportQuestionsFromExcel: React.FC<ImportQuestionsFromExcelProps> =
         )}
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
         <Button 
           variant="outline" 
           onClick={downloadTemplate}
-          className="flex items-center gap-2"
+          className="flex items-center justify-center gap-2 w-full sm:w-auto py-2.5 sm:py-2 text-sm touch-manipulation"
           disabled={isUploading}
         >
           <Download className="h-4 w-4" />
-          Baixar Template
+          <span className="hidden sm:inline">Baixar Template</span>
+          <span className="sm:hidden">Template</span>
         </Button>
         
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <input
             type="file"
             id="excel-upload"
@@ -511,7 +518,7 @@ export const ImportQuestionsFromExcel: React.FC<ImportQuestionsFromExcelProps> =
           />
           <Button 
             variant="default" 
-            className="flex items-center gap-2"
+            className="flex items-center justify-center gap-2 w-full sm:w-auto py-2.5 sm:py-2 text-sm touch-manipulation"
             disabled={isUploading || isLoadingDisciplines}
           >
             {isUploading ? (
@@ -519,19 +526,29 @@ export const ImportQuestionsFromExcel: React.FC<ImportQuestionsFromExcelProps> =
             ) : (
               <Upload className="h-4 w-4" />
             )}
-            {isUploading ? 'Processando...' : isLoadingDisciplines ? 'Carregando...' : 'Selecionar Arquivo'}
+            {isUploading ? 'Processando...' : isLoadingDisciplines ? 'Carregando...' : (
+              <>
+                <span className="hidden sm:inline">Selecionar Arquivo</span>
+                <span className="sm:hidden">Arquivo</span>
+              </>
+            )}
           </Button>
         </div>
         
         {showPreview && parsedQuestions.length > 0 && (
           <Button
             variant="success"
-            className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 ml-auto"
+            className="flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700 w-full sm:w-auto sm:ml-auto py-2.5 sm:py-2 text-sm touch-manipulation"
             onClick={saveQuestions}
             disabled={isUploading || !selectedDiscipline}
           >
             {isUploading ? <Spinner className="h-4 w-4" /> : <Check className="h-4 w-4" />}
-            {isUploading ? 'Salvando...' : `Salvar ${parsedQuestions.length} questões`}
+            {isUploading ? 'Salvando...' : (
+              <>
+                <span className="hidden sm:inline">Salvar {parsedQuestions.length} questões</span>
+                <span className="sm:hidden">Salvar ({parsedQuestions.length})</span>
+              </>
+            )}
           </Button>
         )}
       </div>
@@ -539,18 +556,19 @@ export const ImportQuestionsFromExcel: React.FC<ImportQuestionsFromExcelProps> =
       {/* Prévia das questões */}
       {showPreview && parsedQuestions.length > 0 && (
         <div className="mt-4 border border-gray-200 rounded-lg overflow-hidden">
-          <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-            <h4 className="font-medium">Prévia das questões ({parsedQuestions.length})</h4>
+          <div className="bg-gray-50 px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-200 flex justify-between items-center">
+            <h4 className="text-sm sm:text-base font-medium">Prévia das questões ({parsedQuestions.length})</h4>
             <Button
               variant="outline"
               size="sm"
-              className="text-xs"
+              className="text-xs px-2 py-1"
               onClick={() => setParsedQuestions([])}
             >
-              Limpar todas
+              <span className="hidden sm:inline">Limpar todas</span>
+              <span className="sm:hidden">Limpar</span>
             </Button>
           </div>
-          <div className="max-h-80 overflow-y-auto">
+          <div className="max-h-64 sm:max-h-80 overflow-y-auto">
             {parsedQuestions.map((q, index) => (
               <PreviewQuestion 
                 key={index} 
@@ -642,15 +660,15 @@ const PreviewQuestion = ({
           className="flex-1 cursor-pointer" 
           onClick={() => setExpanded(!expanded)}
         >
-          <p className="font-medium text-sm flex items-center">
+          <p className="font-medium text-sm flex items-center flex-wrap">
             <span className="mr-2">{index + 1}.</span>
-            <span>
-              {question.question_text.length > 100 
-                ? question.question_text.substring(0, 100) + '...' 
+            <span className="flex-1 min-w-0">
+              {question.question_text.length > 80 
+                ? question.question_text.substring(0, 80) + '...' 
                 : question.question_text}
             </span>
             <button 
-              className="ml-2 text-blue-500 hover:text-blue-700 text-xs"
+              className="ml-2 text-blue-500 hover:text-blue-700 text-xs touch-manipulation px-2 py-1 rounded"
               onClick={(e) => {
                 e.stopPropagation();
                 setExpanded(!expanded);
@@ -671,7 +689,7 @@ const PreviewQuestion = ({
           </div>
         </div>
         <button 
-          className="text-red-500 hover:text-red-700 ml-2 p-1"
+          className="text-red-500 hover:text-red-700 ml-2 p-2 touch-manipulation rounded"
           onClick={onDelete}
           title="Remover questão"
         >
@@ -684,20 +702,20 @@ const PreviewQuestion = ({
       </div>
       
       {expanded && (
-        <div className="mt-3 pl-6 border-l-2 border-gray-200">
-          <p className="text-sm mb-2">{question.question_text}</p>
+        <div className="mt-3 pl-3 sm:pl-6 border-l-2 border-gray-200">
+          <p className="text-sm mb-2 break-words">{question.question_text}</p>
           
           {question.question_type === 'multiple_choice' && question.options && (
             <div className="space-y-1 mb-2">
               {question.options.map((option: any, i: number) => (
                 <div 
                   key={i} 
-                  className={`text-xs p-1.5 rounded ${option.is_correct 
+                  className={`text-xs p-2 rounded break-words ${option.is_correct 
                     ? 'bg-green-50 border border-green-200 text-green-800' 
                     : 'bg-gray-50 border border-gray-200'}`}
                 >
                   <span className="font-medium mr-1">{String.fromCharCode(65 + i)})</span>
-                  {option.text}
+                  <span className="break-words">{option.text}</span>
                   {option.is_correct && (
                     <span className="ml-1 text-green-700 font-medium">(Correta)</span>
                   )}
@@ -716,11 +734,11 @@ const PreviewQuestion = ({
           {question.explanation && (
             <div className="text-xs text-gray-700 bg-yellow-50 p-2 rounded border border-yellow-200">
               <span className="font-medium">Explicação: </span>
-              {question.explanation}
+              <span className="break-words">{question.explanation}</span>
             </div>
           )}
         </div>
       )}
     </div>
   );
-}; 
+};
