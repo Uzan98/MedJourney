@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createCalendar, createViewDay, createViewWeek, createViewMonthGrid, createViewList } from '@schedule-x/calendar';
 import { createCalendarControlsPlugin } from '@schedule-x/calendar-controls';
 import '@schedule-x/theme-default/dist/index.css';
+import '@/styles/calendar.css';
 import { Calendar, Clock, Target, BookOpen, Plus, CheckCircle, Circle, Star, TrendingUp, Edit, Trash2, X, Crown, Zap, CalendarDays, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -58,6 +59,22 @@ export default function PlannerPage() {
   const [upgradeModalType, setUpgradeModalType] = useState<'event' | 'goal'>('event');
   const [showUpdateProgressModal, setShowUpdateProgressModal] = useState(false);
   const [selectedGoalForUpdate, setSelectedGoalForUpdate] = useState<StudyGoal | null>(null);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ event: CalendarEvent; x: number; y: number } | null>(null);
+
+  // Fechar menu de contexto com Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setContextMenu(null);
+      }
+    };
+
+    if (contextMenu) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [contextMenu]);
 
   
   // Absence states
@@ -128,6 +145,7 @@ export default function PlannerPage() {
           description: event.description,
           start: formatDateForScheduleX(event.start_date),
           end: formatDateForScheduleX(event.end_date),
+          color: event.color || '#3b82f6',
           calendarId: getCalendarIdFromColor(event.color || '#3b82f6')
         };
       });
@@ -398,8 +416,16 @@ export default function PlannerPage() {
       calendars: generateCalendarsFromEvents(events),
       events: [], // Inicializar vazio, eventos serão adicionados via events.set()
       callbacks: {
-        onEventClick: (calendarEvent: any) => {
+        onEventClick: (calendarEvent: any, jsEvent: MouseEvent) => {
           console.log('Event clicked:', calendarEvent);
+          const event = events.find(e => e.id === calendarEvent.id);
+          if (event && jsEvent) {
+            setContextMenu({
+              event,
+              x: jsEvent.clientX,
+              y: jsEvent.clientY
+            });
+          }
         },
         onClickDate: (date: string) => {
           setSelectedDate(new Date(date));
@@ -437,8 +463,16 @@ export default function PlannerPage() {
         calendars: newCalendars,
         events: events,
         callbacks: {
-          onEventClick: (calendarEvent: any) => {
+          onEventClick: (calendarEvent: any, jsEvent: MouseEvent) => {
             console.log('Event clicked:', calendarEvent);
+            const event = events.find(e => e.id === calendarEvent.id);
+            if (event && jsEvent) {
+              setContextMenu({
+                event,
+                x: jsEvent.clientX,
+                y: jsEvent.clientY
+              });
+            }
           },
           onClickDate: (date: string) => {
             setSelectedDate(new Date(date));
@@ -578,6 +612,30 @@ export default function PlannerPage() {
     setEvents(events.filter(event => event.id !== eventId));
   };
 
+  // Função para editar evento
+  const handleEditEvent = (event: CalendarEvent) => {
+    setEditingEvent(event);
+    setShowEventModal(true);
+  };
+
+  // Função para excluir evento
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      const success = await EventsClientService.deleteEvent(eventId);
+      if (success) {
+        await loadEvents();
+        return true;
+      } else {
+        toast.error('Erro ao excluir evento');
+        return false;
+      }
+    } catch (error) {
+      console.error('Erro ao excluir evento:', error);
+      toast.error('Erro ao excluir evento');
+      return false;
+    }
+  };
+
   // Funções removidas: generateTimeSlots, getEventsForTimeSlot, getEventHeight, getEventTopOffset
   // Agora usando Schedule-X para renderização da agenda diária
 
@@ -597,16 +655,22 @@ export default function PlannerPage() {
           onDeleteGoal={handleDeleteGoal}
           onOpenUpdateProgressModal={handleOpenUpdateProgressModal}
           onLoadEvents={loadEvents}
+          onEditEvent={handleEditEvent}
+          onDeleteEvent={handleDeleteEvent}
           loading={loading}
         />
 
         {/* Modais para Mobile */}
         <SimpleEventModal
           isOpen={showEventModal}
-          onClose={() => setShowEventModal(false)}
+          onClose={() => {
+            setShowEventModal(false);
+            setEditingEvent(null);
+          }}
           onEventCreated={async (event) => {
             await loadEvents();
           }}
+          editingEvent={editingEvent}
         />
 
         <SimpleGoalModal
@@ -1059,13 +1123,17 @@ export default function PlannerPage() {
         {/* Modals */}
         <SimpleEventModal
           isOpen={showEventModal}
-          onClose={() => setShowEventModal(false)}
+          onClose={() => {
+            setShowEventModal(false);
+            setEditingEvent(null);
+          }}
           onEventCreated={async (event) => {
             toast.success('Evento criado com sucesso!');
             // Recarregar a lista de eventos após criação
             await loadEvents();
           }}
           selectedDate={selectedDate}
+          editingEvent={editingEvent}
         />
 
         <SimpleGoalModal
@@ -1142,8 +1210,44 @@ export default function PlannerPage() {
           />
         )}
 
-
-
+        {/* Menu de contexto para eventos */}
+        {contextMenu && (
+          <>
+            <div 
+              className="fixed inset-0 z-[9998]" 
+              onClick={() => setContextMenu(null)}
+            />
+            <div 
+              className="fixed z-[9999] bg-white border border-gray-200 rounded-lg shadow-lg py-2 min-w-[150px]"
+              style={{
+                left: contextMenu.x,
+                top: contextMenu.y,
+                transform: 'translate(-50%, -10px)'
+              }}
+            >
+              <button
+                onClick={() => {
+                  handleEditEvent(contextMenu.event);
+                  setContextMenu(null);
+                }}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+              >
+                <Edit className="w-4 h-4" />
+                Editar
+              </button>
+              <button
+                onClick={() => {
+                  handleDeleteEvent(contextMenu.event.id);
+                  setContextMenu(null);
+                }}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 text-red-600 flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Excluir
+              </button>
+            </div>
+          </>
+        )}
 
     </div>
   );

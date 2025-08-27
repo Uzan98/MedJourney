@@ -72,6 +72,8 @@ interface MobilePlannerPanelProps {
   onOpenUpdateProgressModal?: (goal: StudyGoal) => void;
   onOpenQuickIncrementModal?: (goal: StudyGoal) => void;
   onLoadEvents?: () => Promise<void>;
+  onEditEvent?: (event: CalendarEvent) => void;
+  onDeleteEvent?: (eventId: string) => Promise<void>;
 }
 
 const MobilePlannerPanel: React.FC<MobilePlannerPanelProps> = ({
@@ -88,7 +90,9 @@ const MobilePlannerPanel: React.FC<MobilePlannerPanelProps> = ({
   onQuickIncrementProgress,
   onOpenUpdateProgressModal,
   onOpenQuickIncrementModal,
-  onLoadEvents
+  onLoadEvents,
+  onEditEvent,
+  onDeleteEvent
 }) => {
   const [activeTab, setActiveTab] = useState('today');
   const [showEventModal, setShowEventModal] = useState(false);
@@ -261,6 +265,22 @@ const MobilePlannerPanel: React.FC<MobilePlannerPanelProps> = ({
     const startTime = format(startDate, 'HH:mm');
     const endTime = format(endDate, 'HH:mm');
 
+    const handleEdit = () => {
+      if (onEditEvent) {
+        onEditEvent(event);
+      }
+    };
+
+    const handleDelete = async () => {
+      if (onDeleteEvent) {
+        const confirmed = window.confirm('Tem certeza que deseja excluir este evento?');
+        if (confirmed) {
+          await onDeleteEvent(event.id);
+          toast.success('Evento excluído com sucesso!');
+        }
+      }
+    };
+
     return (
       <Card className="mb-3 shadow-sm hover:shadow-md transition-shadow">
         <CardContent className="p-4">
@@ -285,6 +305,23 @@ const MobilePlannerPanel: React.FC<MobilePlannerPanelProps> = ({
                 </Badge>
               </div>
             </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleEdit}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDelete} className="text-red-600">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </CardContent>
       </Card>
