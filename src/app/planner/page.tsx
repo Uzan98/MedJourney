@@ -58,6 +58,8 @@ export default function PlannerPage() {
   const [upgradeModalType, setUpgradeModalType] = useState<'event' | 'goal'>('event');
   const [showUpdateProgressModal, setShowUpdateProgressModal] = useState(false);
   const [selectedGoalForUpdate, setSelectedGoalForUpdate] = useState<StudyGoal | null>(null);
+  const [contextMenu, setContextMenu] = useState<{visible: boolean, x: number, y: number, event: any}>({visible: false, x: 0, y: 0, event: null});
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
 
   
   // Absence states
@@ -398,11 +400,28 @@ export default function PlannerPage() {
       calendars: generateCalendarsFromEvents(events),
       events: [], // Inicializar vazio, eventos serão adicionados via events.set()
       callbacks: {
-        onEventClick: (calendarEvent: any) => {
+        onEventClick: (calendarEvent: any, domEvent: MouseEvent) => {
           console.log('Event clicked:', calendarEvent);
+          // Mostrar menu de contexto
+          setContextMenu({
+            visible: true,
+            x: domEvent.clientX,
+            y: domEvent.clientY,
+            event: calendarEvent
+          });
+          // Prevenir propagação para não fechar o menu imediatamente
+          domEvent.stopPropagation();
         },
         onClickDate: (date: string) => {
           setSelectedDate(new Date(date));
+        },
+        onDoubleClickDateTime: (dateTime: string) => {
+          console.log('Double click on datetime:', dateTime);
+          // Definir a data/hora selecionada e abrir o modal de criação
+          const clickedDate = new Date(dateTime);
+          setSelectedDate(clickedDate);
+          setEditingEvent(null); // Garantir que não estamos editando
+          setShowEventModal(true);
         }
       }
     }, [calendarControlsPlugin]);
@@ -437,11 +456,28 @@ export default function PlannerPage() {
         calendars: newCalendars,
         events: events,
         callbacks: {
-          onEventClick: (calendarEvent: any) => {
+          onEventClick: (calendarEvent: any, domEvent: MouseEvent) => {
             console.log('Event clicked:', calendarEvent);
+            // Mostrar menu de contexto
+            setContextMenu({
+              visible: true,
+              x: domEvent.clientX,
+              y: domEvent.clientY,
+              event: calendarEvent
+            });
+            // Prevenir propagação para não fechar o menu imediatamente
+            domEvent.stopPropagation();
           },
           onClickDate: (date: string) => {
             setSelectedDate(new Date(date));
+          },
+          onDoubleClickDateTime: (dateTime: string) => {
+            console.log('Double click on datetime:', dateTime);
+            // Definir a data/hora selecionada e abrir o modal de criação
+            const clickedDate = new Date(dateTime);
+            setSelectedDate(clickedDate);
+            setEditingEvent(null); // Garantir que não estamos editando
+            setShowEventModal(true);
           }
         }
       }, [calendarControlsPlugin]);
@@ -495,6 +531,20 @@ export default function PlannerPage() {
       calendarControls.setDate(selectedDate.toISOString().split('T')[0]);
     }
   }, [calendar, calendarControls, activeView, selectedDate]);
+
+  // useEffect para fechar o menu de contexto quando clicar fora
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (contextMenu.visible) {
+        setContextMenu({visible: false, x: 0, y: 0, event: null});
+      }
+    };
+
+    if (contextMenu.visible) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [contextMenu.visible]);
 
 
 
@@ -578,6 +628,35 @@ export default function PlannerPage() {
     setEvents(events.filter(event => event.id !== eventId));
   };
 
+  // Função para editar evento
+  const handleEditEvent = (event: any) => {
+    setEditingEvent({
+      id: event.id,
+      title: event.title,
+      description: event.description || '',
+      start: event.start,
+      end: event.end,
+      color: event.color || '#3b82f6'
+    });
+    setShowEventModal(true);
+    setContextMenu({visible: false, x: 0, y: 0, event: null});
+  };
+
+  // Função para excluir evento
+  const handleDeleteEvent = async (event: any) => {
+    if (confirm(`Tem certeza que deseja excluir o evento "${event.title}"?`)) {
+      try {
+        await EventsClientService.deleteEvent(event.id);
+        toast.success('Evento excluído com sucesso!');
+        await loadEvents();
+        setContextMenu({visible: false, x: 0, y: 0, event: null});
+      } catch (error) {
+        console.error('Erro ao excluir evento:', error);
+        toast.error('Erro ao excluir evento');
+      }
+    }
+  };
+
   // Funções removidas: generateTimeSlots, getEventsForTimeSlot, getEventHeight, getEventTopOffset
   // Agora usando Schedule-X para renderização da agenda diária
 
@@ -597,16 +676,24 @@ export default function PlannerPage() {
           onDeleteGoal={handleDeleteGoal}
           onOpenUpdateProgressModal={handleOpenUpdateProgressModal}
           onLoadEvents={loadEvents}
+          onEditEvent={handleEditEvent}
+          onDeleteEvent={handleDeleteEvent}
           loading={loading}
         />
 
         {/* Modais para Mobile */}
         <SimpleEventModal
           isOpen={showEventModal}
-          onClose={() => setShowEventModal(false)}
+          onClose={() => {
+            setShowEventModal(false);
+            setEditingEvent(null);
+          }}
           onEventCreated={async (event) => {
+            toast.success(editingEvent ? 'Evento atualizado com sucesso!' : 'Evento criado com sucesso!');
             await loadEvents();
           }}
+          selectedDate={selectedDate}
+          editingEvent={editingEvent}
         />
 
         <SimpleGoalModal
@@ -825,6 +912,24 @@ export default function PlannerPage() {
 
               {/* Tasks Sidebar */}
               <div className="space-y-6">
+                {/* Dica sobre interações do calendário */}
+                <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 shadow-lg">
+                  <CardContent className="p-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Calendar className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-blue-900 mb-1">💡 Dicas do Calendário</h4>
+                        <div className="text-xs text-blue-700 leading-relaxed space-y-1">
+                          <p>• <strong>Clique</strong> em um evento para <strong>editar</strong> ou <strong>excluir</strong></p>
+                          <p>• <strong>Clique duplo</strong> em um horário vazio para <strong>criar</strong> um novo evento</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <Card className="bg-gradient-to-br from-white to-orange-50/50 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-lg bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
@@ -1056,16 +1161,48 @@ export default function PlannerPage() {
           </div>
         )}
 
+        {/* Menu de contexto para eventos */}
+        {contextMenu.visible && (
+          <div 
+            className="fixed bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50"
+            style={{ 
+              left: contextMenu.x, 
+              top: contextMenu.y,
+              transform: 'translate(-50%, -10px)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+              onClick={() => handleEditEvent(contextMenu.event)}
+            >
+              <Edit className="h-4 w-4" />
+              Editar
+            </button>
+            <button
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 text-red-600"
+              onClick={() => handleDeleteEvent(contextMenu.event)}
+            >
+              <Trash2 className="h-4 w-4" />
+              Excluir
+            </button>
+          </div>
+        )}
+
         {/* Modals */}
         <SimpleEventModal
           isOpen={showEventModal}
-          onClose={() => setShowEventModal(false)}
+          onClose={() => {
+            setShowEventModal(false);
+            setEditingEvent(null);
+          }}
           onEventCreated={async (event) => {
-            toast.success('Evento criado com sucesso!');
+            toast.success(editingEvent ? 'Evento atualizado com sucesso!' : 'Evento criado com sucesso!');
             // Recarregar a lista de eventos após criação
             await loadEvents();
           }}
           selectedDate={selectedDate}
+          editingEvent={editingEvent}
         />
 
         <SimpleGoalModal

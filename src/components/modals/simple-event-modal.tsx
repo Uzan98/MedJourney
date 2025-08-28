@@ -1,18 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, AlertCircle } from 'lucide-react';
 import { EventsClientService, CreateEventData } from '@/lib/services/events-client.service';
 import { useIsMobile } from '@/hooks/useIsMobile';
+
+interface CalendarEvent {
+  id: string;
+  title: string;
+  description?: string;
+  start: string;
+  end: string;
+  color?: string;
+}
 
 interface SimpleEventModalProps {
   isOpen: boolean;
   onClose: () => void;
   onEventCreated?: (event: any) => void;
   selectedDate?: Date;
+  editingEvent?: CalendarEvent | null;
 }
 
-export default function SimpleEventModal({ isOpen, onClose, onEventCreated, selectedDate }: SimpleEventModalProps) {
+export default function SimpleEventModal({ isOpen, onClose, onEventCreated, selectedDate, editingEvent }: SimpleEventModalProps) {
   const isMobile = useIsMobile();
   
   // Função para formatar data mantendo o horário local (Brasília)
@@ -35,6 +45,36 @@ export default function SimpleEventModal({ isOpen, onClose, onEventCreated, sele
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Função para converter data do Schedule-X (YYYY-MM-DD HH:mm) para datetime-local (YYYY-MM-DDTHH:mm)
+  const convertScheduleXToDatetimeLocal = (scheduleXDate: string): string => {
+    if (!scheduleXDate) return '';
+    // Schedule-X usa formato "YYYY-MM-DD HH:mm", datetime-local precisa "YYYY-MM-DDTHH:mm"
+    return scheduleXDate.replace(' ', 'T');
+  };
+
+  // Inicializar formulário com dados do evento quando estiver editando
+  useEffect(() => {
+    if (editingEvent) {
+      setFormData({
+        title: editingEvent.title || '',
+        description: editingEvent.description || '',
+        start_date: convertScheduleXToDatetimeLocal(editingEvent.start),
+        end_date: convertScheduleXToDatetimeLocal(editingEvent.end),
+        location: '',
+        color: editingEvent.color || '#3b82f6'
+      });
+    } else if (selectedDate) {
+      setFormData({
+        title: '',
+        description: '',
+        start_date: formatDateForInput(selectedDate),
+        end_date: '',
+        location: '',
+        color: '#3b82f6'
+      });
+    }
+  }, [editingEvent, selectedDate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +113,14 @@ export default function SimpleEventModal({ isOpen, onClose, onEventCreated, sele
         end_date: formData.end_date || undefined
       };
 
-      const event = await EventsClientService.createEvent(eventDataToSend);
+      let event;
+      if (editingEvent) {
+        // Atualizar evento existente
+        event = await EventsClientService.updateEvent(editingEvent.id, eventDataToSend);
+      } else {
+        // Criar novo evento
+        event = await EventsClientService.createEvent(eventDataToSend);
+      }
       
       if (event) {
         onEventCreated?.(event);
@@ -112,7 +159,7 @@ export default function SimpleEventModal({ isOpen, onClose, onEventCreated, sele
         }`}>
           <h2 className={`font-semibold text-gray-900 ${
             isMobile ? 'text-lg' : 'text-xl'
-          }`}>Criar Novo Evento</h2>
+          }`}>{editingEvent ? 'Editar Evento' : 'Criar Novo Evento'}</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -280,7 +327,7 @@ export default function SimpleEventModal({ isOpen, onClose, onEventCreated, sele
                 isMobile ? 'px-3 py-2 text-sm' : 'px-4 py-2'
               }`}
             >
-              {isLoading ? 'Criando...' : 'Criar Evento'}
+              {isLoading ? (editingEvent ? 'Atualizando...' : 'Criando...') : (editingEvent ? 'Atualizar Evento' : 'Criar Evento')}
             </button>
           </div>
         </form>
