@@ -3,21 +3,46 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { FacultyExam } from '@/types/faculty';
+import { FacultyService } from '@/services/faculty.service';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { FileText, Calendar, Clock, User, Tag, BookOpen, Award } from 'lucide-react';
+import { FileText, Calendar, Clock, User, Tag, BookOpen, Award, MoreVertical, Trash2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/components/ui/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface ExamsListProps {
   exams: FacultyExam[];
   isLoading: boolean;
-  onOpenExam?: (exam: FacultyExam) => void;
+  onOpenExam: (exam: FacultyExam) => void;
+  isAdmin?: boolean;
+  onExamDeleted?: () => void;
 }
 
-export function ExamsList({ exams, isLoading, onOpenExam }: ExamsListProps) {
+export function ExamsList({ exams, isLoading, onOpenExam, isAdmin = false, onExamDeleted }: ExamsListProps) {
+  const [selectedExam, setSelectedExam] = useState<FacultyExam | null>(null);
+  const [examToDelete, setExamToDelete] = useState<FacultyExam | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { user } = useAuth();
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center p-8">
@@ -31,6 +56,46 @@ export function ExamsList({ exams, isLoading, onOpenExam }: ExamsListProps) {
       </div>
     );
   }
+
+  const handleDeleteExam = async () => {
+    if (!examToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      const success = await FacultyService.deleteFacultyExam(examToDelete.id);
+      
+      if (success) {
+        toast({
+          title: "Simulado excluído",
+          description: "O simulado foi excluído com sucesso.",
+        });
+        
+        if (onExamDeleted) {
+          onExamDeleted();
+        }
+      } else {
+        toast({
+          title: "Erro ao excluir",
+          description: "Não foi possível excluir o simulado. Tente novamente.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao excluir simulado:', error);
+      toast({
+        title: "Erro ao excluir",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setExamToDelete(null);
+    }
+  };
+
+  const canDeleteExam = (exam: FacultyExam) => {
+    return isAdmin || (user && exam.created_by === user.id);
+  };
 
   if (exams.length === 0) {
     return (
@@ -53,26 +118,27 @@ export function ExamsList({ exams, isLoading, onOpenExam }: ExamsListProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 xl:grid-cols-3">
-      {exams.map((exam) => {
-        // Generate a color based on exam category or use default purple
-        const categoryColors: Record<string, { bg: string, border: string, text: string, accent: string }> = {
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 xl:grid-cols-3">
+        {exams.map((exam) => {
+          // Generate a color based on exam category or use default purple
+          const categoryColors: Record<string, { bg: string, border: string, text: string, accent: string }> = {
           'Prova': { bg: 'from-blue-500 to-blue-600', border: 'border-blue-500', text: 'text-blue-600', accent: 'bg-blue-50 border-blue-200' },
           'Exercício': { bg: 'from-green-500 to-green-600', border: 'border-green-500', text: 'text-green-600', accent: 'bg-green-50 border-green-200' },
           'Revisão': { bg: 'from-amber-500 to-amber-600', border: 'border-amber-500', text: 'text-amber-600', accent: 'bg-amber-50 border-amber-200' },
           'Concurso': { bg: 'from-red-500 to-red-600', border: 'border-red-500', text: 'text-red-600', accent: 'bg-red-50 border-red-200' },
           'OAB': { bg: 'from-indigo-500 to-indigo-600', border: 'border-indigo-500', text: 'text-indigo-600', accent: 'bg-indigo-50 border-indigo-200' },
-        };
-        
-        const colorKey = exam.category || 'default';
-        const colors = categoryColors[colorKey] || { 
-          bg: 'from-purple-500 to-purple-600', 
-          border: 'border-purple-500',
-          text: 'text-purple-600',
-          accent: 'bg-purple-50 border-purple-200'
-        };
-        
-        return (
+          };
+          
+          const colorKey = exam.category || 'default';
+          const colors = categoryColors[colorKey] || { 
+            bg: 'from-purple-500 to-purple-600', 
+            border: 'border-purple-500',
+            text: 'text-purple-600',
+            accent: 'bg-purple-50 border-purple-200'
+          };
+          
+          return (
           <Card 
             key={exam.id} 
             className="overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group flex flex-col bg-white rounded-2xl shadow-lg border border-gray-100"
@@ -98,6 +164,27 @@ export function ExamsList({ exams, isLoading, onOpenExam }: ExamsListProps) {
                     addSuffix: true,
                     locale: ptBR,
                   })}
+      
+      <AlertDialog open={!!examToDelete} onOpenChange={() => setExamToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir simulado</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o simulado "{examToDelete?.title}"? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteExam}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? 'Excluindo...' : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
                 </div>
               </div>
             </div>
@@ -147,6 +234,25 @@ export function ExamsList({ exams, isLoading, onOpenExam }: ExamsListProps) {
                     <span className="text-xs text-gray-500">Autor</span>
                   </div>
                 </div>
+                
+                {canDeleteExam(exam) && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-10 w-10 p-0">
+                        <MoreVertical className="h-5 w-5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => setExamToDelete(exam)}
+                        className="text-red-600 focus:text-red-600"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Excluir simulado
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
             </CardContent>
             
@@ -168,5 +274,27 @@ export function ExamsList({ exams, isLoading, onOpenExam }: ExamsListProps) {
         );
       })}
     </div>
+    
+    <AlertDialog open={!!examToDelete} onOpenChange={() => setExamToDelete(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Excluir simulado</AlertDialogTitle>
+          <AlertDialogDescription>
+            Tem certeza que deseja excluir o simulado "{examToDelete?.title}"? Esta ação não pode ser desfeita.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDeleteExam}
+            disabled={isDeleting}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            {isDeleting ? 'Excluindo...' : 'Excluir'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

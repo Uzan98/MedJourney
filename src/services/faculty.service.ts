@@ -1771,6 +1771,30 @@ export class FacultyService {
   }
 
   /**
+   * Exclui um simulado da faculdade
+   * @param examId ID do simulado
+   * @returns true se excluído com sucesso, false caso contrário
+   */
+  static async deleteFacultyExam(examId: number): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('faculty_exams')
+        .delete()
+        .eq('id', examId);
+      
+      if (error) {
+        console.error('Erro ao excluir simulado:', error);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erro ao excluir simulado:', error);
+      return false;
+    }
+  }
+
+  /**
    * Busca os eventos de uma faculdade
    * @param facultyId ID da faculdade
    * @param startDate Data de início (opcional)
@@ -2072,4 +2096,4 @@ export class FacultyService {
       return false;
     }
   }
-} 
+}
