@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FacultyEvent } from '@/types/community';
 import { FacultyService } from '@/services/faculty.service';
-import { Calendar, Clock, MapPin } from 'lucide-react';
+import { Calendar, Clock, MapPin, Edit2, Trash2, MoreVertical } from 'lucide-react';
 import { Spinner } from '@/components/Spinner';
 import { format, isToday, isTomorrow, isThisWeek, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -13,11 +13,15 @@ interface EventsListProps {
   limit?: number;
   showEmpty?: boolean;
   className?: string;
+  showActions?: boolean;
+  onEventUpdated?: () => void;
 }
 
-export function EventsList({ facultyId, limit = 5, showEmpty = true, className = '' }: EventsListProps) {
+export function EventsList({ facultyId, limit = 5, showEmpty = true, className = '', showActions = false, onEventUpdated }: EventsListProps) {
   const [events, setEvents] = useState<FacultyEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showDropdown, setShowDropdown] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState<number | null>(null);
 
   // Carregar eventos
   const loadEvents = async () => {
@@ -173,4 +177,4 @@ export function EventsList({ facultyId, limit = 5, showEmpty = true, className =
       })}
     </div>
   );
-} 
+}

@@ -108,7 +108,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     },
     {
       path: "/minha-faculdade",
-      label: "Minha Faculdade",
+      label: "Meu Curso",
       icon: <School className="h-5 w-5 flex-shrink-0" />
     },
     {

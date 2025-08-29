@@ -780,7 +780,7 @@ export default function FacultyDetailsPage() {
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Ambiente não encontrado</h2>
           <p className="text-gray-600 mb-6">O ambiente que você está procurando não existe ou você não tem permissão para acessá-lo.</p>
           <Button onClick={() => router.push('/minha-faculdade')}>
-            Voltar para Minha Faculdade
+            Voltar para Meu Curso
           </Button>
         </div>
       </div>

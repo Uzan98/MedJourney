@@ -26,7 +26,7 @@ export default function MobileFacultyView({ userFaculties, loading }: MobileFacu
           <div className="bg-emerald-100 p-2 rounded-full">
             <School className="h-5 w-5 text-emerald-600" />
           </div>
-          <h1 className="text-xl font-bold text-gray-800">Minha Faculdade</h1>
+          <h1 className="text-xl font-bold text-gray-800">Meu Curso</h1>
         </div>
         <p className="text-sm text-gray-600 leading-relaxed">
           Crie ou participe de um ambiente compartilhado com sua turma

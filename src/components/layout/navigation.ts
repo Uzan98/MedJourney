@@ -109,7 +109,7 @@ export const mainNavigation: NavigationItem[] = [
     featureKey: 'community_features',
   },
   {
-    name: 'Minha Faculdade',
+    name: 'Meu Curso',
     href: '/minha-faculdade',
     icon: Building2,
     requiresAuth: true,
