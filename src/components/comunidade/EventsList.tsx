@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { FacultyEvent } from '@/types/community';
 import { FacultyService } from '@/services/faculty.service';
 import { Calendar, Clock, MapPin, Edit2, Trash2, MoreVertical } from 'lucide-react';
+import { EditEventModal } from './EditEventModal';
 import { Spinner } from '@/components/Spinner';
 import { format, isToday, isTomorrow, isThisWeek, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -22,6 +23,7 @@ export function EventsList({ facultyId, limit = 5, showEmpty = true, className =
   const [isLoading, setIsLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
+  const [editingEvent, setEditingEvent] = useState<FacultyEvent | null>(null);
 
   // Carregar eventos
   const loadEvents = async () => {
@@ -42,6 +44,50 @@ export function EventsList({ facultyId, limit = 5, showEmpty = true, className =
       loadEvents();
     }
   }, [facultyId]);
+
+  // Função para excluir evento
+  const handleDeleteEvent = async (eventId: number) => {
+    if (!confirm('Tem certeza que deseja excluir este evento?')) {
+      return;
+    }
+
+    setIsDeleting(eventId);
+    try {
+      const success = await FacultyService.deleteFacultyEvent(eventId);
+      if (success) {
+        await loadEvents(); // Recarregar a lista
+        onEventUpdated?.(); // Notificar componente pai
+        setShowDropdown(null);
+      } else {
+        alert('Erro ao excluir evento. Tente novamente.');
+      }
+    } catch (error) {
+      console.error('Erro ao excluir evento:', error);
+      alert('Erro ao excluir evento. Tente novamente.');
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
+  // Função para editar evento
+  const handleEditEvent = (event: FacultyEvent) => {
+    setEditingEvent(event);
+    setShowDropdown(null);
+  };
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Não fechar se o clique foi dentro de um dropdown ou botão de ação
+      if (target.closest('.dropdown-menu') || target.closest('.action-button')) {
+        return;
+      }
+      setShowDropdown(null);
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   // Formatar a data do evento
   const formatEventDate = (dateStr: string) => {
@@ -129,7 +175,7 @@ export function EventsList({ facultyId, limit = 5, showEmpty = true, className =
         return (
           <div 
             key={event.id} 
-            className={`p-3 rounded-lg border ${typeColors.border} ${typeColors.bg} relative overflow-hidden`}
+            className={`p-3 rounded-lg border ${typeColors.border} ${typeColors.bg} relative`}
           >
             {/* Barra lateral colorida */}
             <div 
@@ -141,9 +187,56 @@ export function EventsList({ facultyId, limit = 5, showEmpty = true, className =
               {/* Título e tipo */}
               <div className="flex justify-between items-start mb-1">
                 <h3 className="font-medium text-gray-900">{event.title}</h3>
-                <span className={`text-xs px-2 py-0.5 rounded ${typeColors.bg} ${typeColors.text} border ${typeColors.border}`}>
-                  {getEventTypeName(event.type)}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs px-2 py-0.5 rounded ${typeColors.bg} ${typeColors.text} border ${typeColors.border}`}>
+                    {getEventTypeName(event.type)}
+                  </span>
+                  
+                  {/* Botões de ação */}
+                  {showActions && (
+                    <div className="relative">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowDropdown(showDropdown === event.id ? null : event.id);
+                        }}
+                        className="action-button p-1 hover:bg-gray-100 rounded transition-colors"
+                        disabled={isDeleting === event.id}
+                      >
+                        <MoreVertical className="h-4 w-4 text-gray-500" />
+                      </button>
+                      
+                      {/* Dropdown de ações */}
+                      {showDropdown === event.id && (
+                        <div className="dropdown-menu absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[120px]">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditEvent(event);
+                              setShowDropdown(null);
+                            }}
+                            className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                            Editar
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteEvent(event.id);
+                              setShowDropdown(null);
+                            }}
+                            disabled={isDeleting === event.id}
+                            className="w-full px-3 py-2 text-left text-sm hover:bg-red-50 flex items-center gap-2 text-red-600 disabled:opacity-50"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            {isDeleting === event.id ? 'Excluindo...' : 'Excluir'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
               
               {/* Data e hora */}
@@ -175,6 +268,20 @@ export function EventsList({ facultyId, limit = 5, showEmpty = true, className =
           </div>
         );
       })}
+      
+      {editingEvent && (
+        <EditEventModal
+          isOpen={true}
+          onClose={() => setEditingEvent(null)}
+          event={editingEvent}
+          isAdmin={showActions}
+          onEventUpdated={() => {
+            loadEvents();
+            onEventUpdated?.();
+            setEditingEvent(null);
+          }}
+        />
+      )}
     </div>
   );
 }

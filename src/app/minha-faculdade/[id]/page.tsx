@@ -134,6 +134,16 @@ export default function FacultyDetailsPage() {
     }
   }, [searchParams, faculty, forumTopics]);
   
+  // Estado para forçar re-render do EventsList
+  const [eventsKey, setEventsKey] = useState(0);
+
+  // Função para recarregar eventos (callback para EventsList)
+  const loadEvents = () => {
+    // Força o componente EventsList a recarregar incrementando a key
+    setEventsKey(prev => prev + 1);
+    console.log('Recarregando eventos...');
+  };
+
   // Função para carregar respostas de um tópico
   const loadTopicReplies = async (topicId: number) => {
     setIsLoadingTopicReplies(true);
@@ -1816,7 +1826,13 @@ export default function FacultyDetailsPage() {
             <CardContent className={isMobile ? 'px-3' : ''}>
               <div className={`${isMobile ? 'space-y-2' : 'space-y-3'}`}>
                 {faculty ? (
-                  <EventsList facultyId={faculty.id} limit={3} />
+                  <EventsList 
+                    key={eventsKey}
+                    facultyId={faculty.id} 
+                    limit={3} 
+                    showActions={isAdmin}
+                    onEventUpdated={loadEvents}
+                  />
                 ) : (
                   <div className="flex justify-center py-4">
                     <Spinner size="sm" />

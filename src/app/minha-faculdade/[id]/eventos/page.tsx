@@ -6,7 +6,7 @@ import { FacultyService } from '@/services/faculty.service';
 import { FacultyEvent } from '@/types/community';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Calendar, ChevronLeft, Plus } from 'lucide-react';
+import { Calendar, ChevronLeft, Plus, Edit2, Trash2, MoreVertical } from 'lucide-react';
 import { Spinner } from '@/components/Spinner';
 import { CreateEventModal } from '@/components/comunidade/CreateEventModal';
 import { format, parseISO, isSameDay, isSameMonth, isSameYear } from 'date-fns';
@@ -115,6 +115,13 @@ export default function FacultyEventsPage() {
         variant: "destructive"
       });
     }
+  };
+
+  // Função para editar um evento (placeholder)
+  const handleEditEvent = (event: FacultyEvent) => {
+    // TODO: Implementar modal de edição
+    console.log('Editar evento:', event);
+    alert('Funcionalidade de edição será implementada em breve!');
   };
 
   // Agrupar eventos por mês
@@ -259,24 +266,38 @@ export default function FacultyEventsPage() {
                         )}
                       </div>
                       <div className="flex flex-col items-end">
-                        <span 
-                          className="px-2 py-1 text-xs rounded-full"
-                          style={{ 
-                            backgroundColor: event.color ? `${event.color}20` : '#f3f4f6',
-                            color: event.color || '#4b5563',
-                            border: `1px solid ${event.color ? `${event.color}40` : '#e5e7eb'}`
-                          }}
-                        >
-                          {getEventTypeName(event.type)}
-                        </span>
-                        {(isAdmin || event.creator_id === user?.id) && (
-                          <button 
-                            onClick={() => handleDeleteEvent(event.id)}
-                            className="text-xs text-red-500 hover:text-red-700 mt-2"
+                        <div className="flex items-center gap-2">
+                          <span 
+                            className="px-2 py-1 text-xs rounded-full"
+                            style={{ 
+                              backgroundColor: event.color ? `${event.color}20` : '#f3f4f6',
+                              color: event.color || '#4b5563',
+                              border: `1px solid ${event.color ? `${event.color}40` : '#e5e7eb'}`
+                            }}
                           >
-                            Excluir
-                          </button>
-                        )}
+                            {getEventTypeName(event.type)}
+                          </span>
+                          
+                          {/* Botões de ação */}
+                          {(isAdmin || event.creator_id === user?.id) && (
+                            <div className="flex gap-1">
+                              <button 
+                                onClick={() => handleEditEvent(event)}
+                                className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                title="Editar evento"
+                              >
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteEvent(event.id)}
+                                className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                title="Excluir evento"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                     {event.description && (
@@ -304,4 +325,4 @@ export default function FacultyEventsPage() {
       )}
     </div>
   );
-} 
+}
