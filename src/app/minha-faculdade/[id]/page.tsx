@@ -1718,6 +1718,8 @@ export default function FacultyDetailsPage() {
                   exams={exams}
                   isLoading={isLoadingExams}
                   onOpenExam={handleOpenExam}
+                  isAdmin={isAdmin}
+                  onExamDeleted={() => faculty && loadExams(faculty.id)}
                 />
                     </div>
               </div>
