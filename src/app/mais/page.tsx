@@ -85,7 +85,7 @@ export default function MaisPage() {
     },
     {
       path: "/minha-faculdade",
-      label: "Minha Faculdade",
+      label: "Meu Curso",
       icon: <School className="h-6 w-6" />,
       description: "Informações da faculdade",
       bgColor: "bg-emerald-50",

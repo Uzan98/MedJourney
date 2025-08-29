@@ -4,7 +4,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 export const metadata: Metadata = {
-  title: 'Minha Faculdade | Genoma',
+  title: 'Meu Curso | Genoma',
   description: 'Crie ou participe de ambientes compartilhados com sua turma',
 };
 

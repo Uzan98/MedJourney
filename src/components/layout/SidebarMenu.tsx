@@ -173,7 +173,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
     },
     {
       path: "/minha-faculdade",
-      label: "Minha Faculdade",
+      label: "Meu Curso",
       icon: <School className="h-5 w-5 flex-shrink-0" />
     },
     {
@@ -360,7 +360,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
           {!collapsed && <span>Minha Assinatura</span>}
         </Link>
         
-        <Link href="/configuracoes" className={getNavLinkClasses("/configuracoes")}>
+        <Link href="/perfil/configuracoes" className={getNavLinkClasses("/perfil/configuracoes")}>
           <div className={`min-w-8 ${collapsed ? '' : 'pl-2'}`}>
             <Settings className="h-5 w-5 flex-shrink-0" />
           </div>

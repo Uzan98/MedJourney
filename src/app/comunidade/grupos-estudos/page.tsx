@@ -161,6 +161,7 @@ export default function GruposEstudosPage() {
           
           <Button 
               className="flex items-center justify-center gap-2 sm:gap-3 h-12 sm:h-14 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white rounded-xl shadow-sm hover:shadow-md transition-all"
+              onClick={() => setShowJoinModal(true)}
            >
              <div className="bg-green-400/30 p-1.5 sm:p-2 rounded-full">
                <Share2 className="h-4 w-4 sm:h-5 sm:w-5" />

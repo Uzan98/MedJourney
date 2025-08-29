@@ -17,7 +17,8 @@ import {
   FileQuestion,
   Users,
   LogOut,
-  CreditCard
+  CreditCard,
+  Settings
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
@@ -364,6 +365,16 @@ export default function ProfilePage() {
                 <Users className="h-5 w-5 text-indigo-600" />
               </div>
               <span className="text-gray-700">Grupos de Estudo</span>
+            </Link>
+            
+            <Link 
+              href="/perfil/configuracoes" 
+              className="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <div className="p-2 bg-gray-100 rounded-md mr-3">
+                <Settings className="h-5 w-5 text-gray-600" />
+              </div>
+              <span className="text-gray-700">Configurações</span>
             </Link>
           </div>
         </div>

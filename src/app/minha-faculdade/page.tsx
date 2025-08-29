@@ -76,7 +76,7 @@ export default function MinhaFaculdadePage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <School className="h-8 w-8 text-emerald-500" />
-            <h1 className="text-2xl font-bold text-gray-800">Minha Faculdade</h1>
+            <h1 className="text-2xl font-bold text-gray-800">Meu Curso</h1>
           </div>
         </div>
         <p className="mt-2 text-gray-600">
