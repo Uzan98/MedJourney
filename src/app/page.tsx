@@ -215,6 +215,187 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* Pricing Section */}
+      <div className="relative z-10 px-6 py-16">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="inline-block p-1 rounded-full bg-gradient-to-r from-cyan-500/20 to-purple-500/20 backdrop-blur-sm border border-white/20 mb-6">
+              <div className="bg-black/20 backdrop-blur-sm rounded-full px-4 py-1">
+                <span className="text-cyan-300 text-sm font-medium">💎 Planos e Preços</span>
+              </div>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Escolha o plano ideal para você</h2>
+            <p className="text-lg text-white/80 max-w-3xl mx-auto">Comece gratuitamente e evolua conforme suas necessidades</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {/* Plano Gratuito */}
+            <div className="group relative bg-white/10 backdrop-blur-xl rounded-2xl p-8 hover:bg-white/20 transition-all duration-500 border border-white/20 hover:border-cyan-400/50 hover:shadow-2xl hover:shadow-cyan-500/20">
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-white mb-2">Plano Gratuito</h3>
+                <div className="mb-6">
+                  <span className="text-4xl font-bold text-cyan-400">R$ 0</span>
+                  <span className="text-white/70">/mês</span>
+                </div>
+                <ul className="text-left space-y-3 mb-8">
+                  <li className="flex items-center text-white/80">
+                    <svg className="w-5 h-5 text-cyan-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Até 5 disciplinas
+                  </li>
+                  <li className="flex items-center text-white/80">
+                    <svg className="w-5 h-5 text-cyan-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Até 2 baralhos de flashcards
+                  </li>
+                  <li className="flex items-center text-white/80">
+                    <svg className="w-5 h-5 text-cyan-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Até 10 questões por dia
+                  </li>
+                  <li className="flex items-center text-white/80">
+                    <svg className="w-5 h-5 text-cyan-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Recursos da comunidade
+                  </li>
+                </ul>
+                <Link
+                  href="/subscription"
+                  className="w-full bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 px-6 py-3 rounded-xl font-semibold transition-all duration-300 block text-center"
+                >
+                  Começar Grátis
+                </Link>
+              </div>
+            </div>
+
+            {/* Plano Pro */}
+            <div className="group relative bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-xl rounded-2xl p-8 hover:from-purple-500/30 hover:to-pink-500/30 transition-all duration-500 border-2 border-purple-400/50 hover:border-purple-400/70 hover:shadow-2xl hover:shadow-purple-500/30 transform hover:scale-105">
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                  Mais Popular
+                </div>
+              </div>
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-white mb-2">Genoma Pro</h3>
+                <div className="mb-6">
+                  <span className="text-4xl font-bold text-purple-300">R$ 29,90</span>
+                  <span className="text-white/70">/mês</span>
+                </div>
+                <ul className="text-left space-y-3 mb-8">
+                  <li className="flex items-center text-white/80">
+                    <svg className="w-5 h-5 text-purple-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Até 15 disciplinas
+                  </li>
+                  <li className="flex items-center text-white/80">
+                    <svg className="w-5 h-5 text-purple-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Até 10 baralhos de flashcards
+                  </li>
+                  <li className="flex items-center text-white/80">
+                    <svg className="w-5 h-5 text-purple-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Até 100 questões por dia
+                  </li>
+                  <li className="flex items-center text-white/80">
+                    <svg className="w-5 h-5 text-purple-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Criação de questões com IA
+                  </li>
+                  <li className="flex items-center text-white/80">
+                    <svg className="w-5 h-5 text-purple-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Planejamento Inteligente com IA
+                  </li>
+                  <li className="flex items-center text-white/80">
+                    <svg className="w-5 h-5 text-purple-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Recursos da faculdade
+                  </li>
+                </ul>
+                <Link
+                  href="/subscription"
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-purple-500/25 block text-center"
+                >
+                  Assinar Pro
+                </Link>
+              </div>
+            </div>
+
+            {/* Plano Pro+ */}
+            <div className="group relative bg-white/10 backdrop-blur-xl rounded-2xl p-8 hover:bg-white/20 transition-all duration-500 border border-white/20 hover:border-yellow-400/50 hover:shadow-2xl hover:shadow-yellow-500/20">
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-white mb-2">Genoma Pro+</h3>
+                <div className="mb-6">
+                  <span className="text-4xl font-bold text-yellow-400">R$ 49,90</span>
+                  <span className="text-white/70">/mês</span>
+                </div>
+                <ul className="text-left space-y-3 mb-8">
+                  <li className="flex items-center text-white/80">
+                    <svg className="w-5 h-5 text-yellow-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Disciplinas ilimitadas
+                  </li>
+                  <li className="flex items-center text-white/80">
+                    <svg className="w-5 h-5 text-yellow-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Baralhos de flashcards ilimitados
+                  </li>
+                  <li className="flex items-center text-white/80">
+                    <svg className="w-5 h-5 text-yellow-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Questões ilimitadas por dia
+                  </li>
+                  <li className="flex items-center text-white/80">
+                    <svg className="w-5 h-5 text-yellow-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Criação de questões com IA
+                  </li>
+                  <li className="flex items-center text-white/80">
+                    <svg className="w-5 h-5 text-yellow-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Análises avançadas
+                  </li>
+                  <li className="flex items-center text-white/80">
+                    <svg className="w-5 h-5 text-yellow-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Suporte prioritário
+                  </li>
+                </ul>
+                <Link
+                  href="/subscription"
+                  className="w-full bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 px-6 py-3 rounded-xl font-semibold transition-all duration-300 block text-center"
+                >
+                  Assinar Pro+
+                </Link>
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-center mt-12">
+            <p className="text-white/70 mb-4">
+              Já tem uma conta? <Link href="/auth/login" className="text-cyan-400 hover:text-cyan-300 font-semibold">Faça login</Link> para ver todos os planos disponíveis.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* CTA Section */}
       <div className="relative z-10 px-6 py-24">
         <div className="max-w-4xl mx-auto text-center">
