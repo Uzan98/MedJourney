@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+
+# Bloquear páginas administrativas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /debug/
+
+# Bloquear páginas de autenticação sensíveis
+Disallow: /auth/reset-password
+Disallow: /auth/update-password
+Disallow: /auth/callback
+Disallow: /auth/auth-code-error
+
+# Bloquear páginas privadas do usuário
+Disallow: /perfil/assinatura
+
+# Sitemap
+Sitemap: https://genoma.vercel.app/sitemap.xml
