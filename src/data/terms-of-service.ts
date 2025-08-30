@@ -112,7 +112,7 @@ Estes termos são regidos pelas leis brasileiras. Qualquer disputa será resolvi
 
 Para dúvidas sobre estes termos, entre em contato:
 
-**E-mail:** suporte@genoma.com.br
+**E-mail:** genomastudy@gmail.com
 **Endereço:** [Endereço da empresa]
 **Telefone:** [Telefone de contato]
 
