@@ -425,7 +425,12 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               iconColor={LOGO_CONFIG.DEFAULT_COLORS.SIDEBAR}
             />
           </div>
-          {isSidebarOpen && <span className="text-xl font-bold">Genoma</span>}
+          {isSidebarOpen && (
+            <div className="flex items-center space-x-2">
+              <span className="text-xl font-bold">Genoma</span>
+              <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium">BETA</span>
+            </div>
+          )}
         </div>
         
         {/* Toggle button */}
@@ -499,7 +504,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                   size={LOGO_CONFIG.SIZES.SIDEBAR_MOBILE}
                   iconColor={LOGO_CONFIG.DEFAULT_COLORS.SIDEBAR}
                 />
-                <span className="text-xl font-bold">Genoma</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xl font-bold">Genoma</span>
+                  <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium">BETA</span>
+                </div>
               </div>
               <button 
                 onClick={(e) => {
@@ -560,7 +568,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                   iconColor={LOGO_CONFIG.DEFAULT_COLORS.HEADER}
                 />
               </div>
-              <h1 className="text-xl font-semibold text-blue-800">Genoma</h1>
+              <div className="flex items-center space-x-2">
+                <h1 className="text-xl font-semibold text-blue-800">Genoma</h1>
+                <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium">BETA</span>
+              </div>
             </div>
           </div>
           
