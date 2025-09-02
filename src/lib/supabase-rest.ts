@@ -133,9 +133,17 @@ export const DisciplinesRestService = {
       const headers = await getAuthHeaders();
       const url = `${getSupabaseRestUrl()}disciplines`;
       
-      // Adicionar parâmetros de consulta para filtrar apenas disciplinas do usuário
-      const queryParams = onlyUser ? 
-        `?user_id=eq.${(await supabase.auth.getUser()).data.user?.id}` : '';
+      let queryParams = '';
+      if (onlyUser) {
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        
+        if (userError || !userData.user) {
+          console.error('Usuário não autenticado:', userError);
+          return [];
+        }
+        
+        queryParams = `?user_id=eq.${userData.user.id}`;
+      }
       
       const response = await fetch(`${url}${queryParams}`, {
         method: 'GET',
@@ -334,7 +342,15 @@ export const DisciplinesRestService = {
   async getSubjects(disciplineId: number): Promise<Subject[]> {
     try {
       const headers = await getAuthHeaders();
-      const url = `${getSupabaseRestUrl()}subjects?discipline_id=eq.${disciplineId}`;
+      const user = await supabase.auth.getUser();
+      const userId = user.data.user?.id;
+      
+      if (!userId) {
+        console.log('Usuário não autenticado');
+        return [];
+      }
+      
+      const url = `${getSupabaseRestUrl()}subjects?discipline_id=eq.${disciplineId}&user_id=eq.${userId}`;
       
       const response = await fetch(url, {
         method: 'GET',

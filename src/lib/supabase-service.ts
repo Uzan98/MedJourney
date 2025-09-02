@@ -157,10 +157,18 @@ class SupabaseService {
    */
   async getSubjects(disciplineId: number): Promise<Subject[]> {
     try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !userData.user) {
+        console.error('Usuário não autenticado:', userError);
+        return [];
+      }
+      
       const { data, error } = await supabase
         .from('subjects')
         .select('*')
         .eq('discipline_id', disciplineId)
+        .eq('user_id', userData.user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -221,4 +229,4 @@ class SupabaseService {
 }
 
 // Criar uma instância do serviço e exportá-la
-export const supabaseService = new SupabaseService(); 
+export const supabaseService = new SupabaseService();

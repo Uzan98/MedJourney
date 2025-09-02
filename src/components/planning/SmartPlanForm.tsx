@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar as UiCalendar } from '@/components/ui/calendar';
 import { Discipline, Subject } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
+import { getCurrentUserId } from '@/lib/auth-utils';
 import ConfirmationModal from '../ConfirmationModal';
 
 interface SmartPlanFormProps {
@@ -136,30 +137,40 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
       try {
         setLoading(true);
         
-      // Usar Supabase diretamente para buscar disciplinas em vez da API HTTP
-      const { data: disciplines, error } = await supabase
-        .from('disciplines')
-        .select('id, name')
-        .order('name');
-      
-      if (error) {
-        throw new Error(`Erro do Supabase: ${error.message}`);
-      }
-      
-      if (disciplines && disciplines.length > 0) {
-        console.log('Disciplinas carregadas:', disciplines.length);
-        setDisciplines(disciplines);
+        // Obter o ID do usuário atual
+        const userId = await getCurrentUserId();
+        
+        if (!userId) {
+          console.log('Usuário não autenticado, usando dados mock');
+          setDisciplines(getMockDisciplines());
+          return;
+        }
+        
+        // Usar Supabase diretamente para buscar disciplinas do usuário
+        const { data: disciplines, error } = await supabase
+          .from('disciplines')
+          .select('id, name')
+          .eq('user_id', userId)
+          .order('name');
+        
+        if (error) {
+          throw new Error(`Erro do Supabase: ${error.message}`);
+        }
+        
+        if (disciplines && disciplines.length > 0) {
+          console.log('Disciplinas carregadas:', disciplines.length);
+          setDisciplines(disciplines);
         } else {
-        console.log('Nenhuma disciplina encontrada, usando dados mock');
+          console.log('Nenhuma disciplina encontrada, usando dados mock');
           // Fallback para disciplinas mockadas
-        setDisciplines(getMockDisciplines());
+          setDisciplines(getMockDisciplines());
         }
       } catch (error) {
-      console.error('Erro ao carregar disciplinas:', error);
-      toast.error('Não foi possível carregar as disciplinas');
-      
-      // Em caso de erro, usar disciplinas mockadas
-      setDisciplines(getMockDisciplines());
+        console.error('Erro ao carregar disciplinas:', error);
+        toast.error('Não foi possível carregar as disciplinas');
+        
+        // Em caso de erro, usar disciplinas mockadas
+        setDisciplines(getMockDisciplines());
       } finally {
         setLoading(false);
       }
@@ -174,11 +185,24 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
         return;
       }
       
-      // Buscar assuntos da disciplina usando Supabase
+      // Obter o ID do usuário atual
+      const userId = await getCurrentUserId();
+      
+      if (!userId) {
+        console.log('Usuário não autenticado, usando dados mock');
+        setSubjects(prev => ({
+          ...prev,
+          [disciplineId]: getMockSubjectsForDiscipline(disciplineId)
+        }));
+        return;
+      }
+      
+      // Buscar assuntos da disciplina do usuário usando Supabase
       const { data: subjectsData, error } = await supabase
         .from('subjects')
         .select('*')
         .eq('discipline_id', disciplineId)
+        .eq('user_id', userId)
         .order('title');
       
       if (error) {
@@ -1334,4 +1358,4 @@ export default function SmartPlanForm({ onSubmit, onCancel, isSubmitting = false
       />
     </div>
   );
-} 
+}
