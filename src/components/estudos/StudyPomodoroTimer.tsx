@@ -74,6 +74,9 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
   const [scheduledSessions, setScheduledSessions] = useState<PomodoroScheduledSession[]>([]);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [currentScheduledSession, setCurrentScheduledSession] = useState<PomodoroScheduledSession | null>(null);
+  const [currentCycle, setCurrentCycle] = useState(0);
+  const [totalCycles, setTotalCycles] = useState(0);
+  const [isScheduledSession, setIsScheduledSession] = useState(false);
 
   const [pipWindow, setPipWindow] = useState<Window | null>(null);
   
@@ -135,17 +138,23 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
       await PomodoroSchedulingService.startScheduledSession(session.id!);
       setCurrentScheduledSession(session);
       
-      // Configurar timer para a duração da sessão
-      const sessionDurationInSeconds = session.duration_minutes * 60;
-      setTimeLeft(sessionDurationInSeconds);
+      // Calcular número de ciclos baseado na duração
+      // Cada ciclo = 25min foco + 5min pausa (exceto o último que é só 25min foco)
+      const cycles = Math.ceil(session.duration_minutes / 30); // 30min por ciclo completo
+      setTotalCycles(cycles);
+      setCurrentCycle(1);
+      setIsScheduledSession(true);
+      
+      // Iniciar primeiro ciclo de foco
+      setTimeLeft(focusTime * 60); // 25 minutos
       setState('focus');
       setIsActive(true);
       setIsFullscreen(true);
       
       startTimeRef.current = Date.now();
-      endTimeRef.current = startTimeRef.current + (sessionDurationInSeconds * 1000);
+      endTimeRef.current = startTimeRef.current + (focusTime * 60 * 1000);
       
-      toast.success(`Sessão "${session.title}" iniciada! Timer configurado para ${session.duration_minutes} minutos.`);
+      toast.success(`Sessão "${session.title}" iniciada! Ciclo 1 de ${cycles} - Foco por 25 minutos.`);
       
       // Recarregar sessões
       loadScheduledSessions();
@@ -489,6 +498,79 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
       audioRef.current.play().catch(console.error);
     }
     
+    // Lógica especial para sessões agendadas com ciclos
+    if (isScheduledSession && currentScheduledSession) {
+      if (state === 'focus') {
+        // Salvar sessão de foco no banco de dados
+        console.log('💾 Salvando sessão de foco no banco de dados...');
+        PomodoroService.recordPomodoroSession(focusTime, 'focus')
+          .then(() => {
+            console.log('✅ Sessão de foco salva com sucesso no banco!');
+          })
+          .catch((error) => {
+            console.error('❌ Erro ao salvar sessão de foco:', error);
+            toast.error('Erro ao salvar sessão no banco de dados');
+          });
+        
+        // Verificar se é o último ciclo
+        if (currentCycle >= totalCycles) {
+          // Sessão completa!
+          toast.success(`Sessão "${currentScheduledSession.title}" concluída! 🎉 Todos os ${totalCycles} ciclos foram completados.`);
+          
+          // Marcar sessão agendada como concluída
+          PomodoroSchedulingService.completeScheduledSession(currentScheduledSession.id!)
+            .then(() => {
+              console.log('✅ Sessão agendada marcada como concluída');
+              loadScheduledSessions();
+            })
+            .catch((error) => {
+              console.error('❌ Erro ao marcar sessão agendada como concluída:', error);
+            });
+          
+          // Resetar estados da sessão agendada
+          setCurrentScheduledSession(null);
+          setIsScheduledSession(false);
+          setCurrentCycle(0);
+          setTotalCycles(0);
+          setIsFullscreen(false);
+          
+          return;
+        } else {
+          // Ir para pausa entre ciclos
+          setState('shortBreak');
+          setTimeLeft(shortBreakTime * 60);
+          toast.success(`Ciclo ${currentCycle} de ${totalCycles} concluído! Pausa de 5 minutos.`);
+          
+          // Reiniciar automaticamente após 3 segundos
+          setTimeout(() => {
+            setIsActive(true);
+            const now = Date.now();
+            startTimeRef.current = now;
+            endTimeRef.current = now + (shortBreakTime * 60 * 1000);
+          }, 3000);
+          
+          return;
+        }
+      } else if (state === 'shortBreak') {
+        // Pausa concluída, ir para próximo ciclo
+        setCurrentCycle(currentCycle + 1);
+        setState('focus');
+        setTimeLeft(focusTime * 60);
+        toast.success(`Pausa concluída! Iniciando ciclo ${currentCycle + 1} de ${totalCycles}.`);
+        
+        // Reiniciar automaticamente após 3 segundos
+        setTimeout(() => {
+          setIsActive(true);
+          const now = Date.now();
+          startTimeRef.current = now;
+          endTimeRef.current = now + (focusTime * 60 * 1000);
+        }, 3000);
+        
+        return;
+      }
+    }
+    
+    // Lógica original para sessões normais (não agendadas)
     let nextState: PomodoroState;
     let message = '';
     
@@ -499,20 +581,8 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
       // Salvar sessão de foco no banco de dados
       console.log('💾 Salvando sessão de foco no banco de dados...');
       PomodoroService.recordPomodoroSession(focusTime, 'focus')
-        .then(async () => {
+        .then(() => {
           console.log('✅ Sessão de foco salva com sucesso no banco!');
-          
-          // Se há uma sessão agendada ativa, marcar como concluída
-          if (currentScheduledSession) {
-            try {
-              await PomodoroSchedulingService.completeScheduledSession(currentScheduledSession.id!);
-              setCurrentScheduledSession(null);
-              loadScheduledSessions(); // Recarregar para atualizar o status
-              console.log('✅ Sessão agendada marcada como concluída');
-            } catch (error) {
-              console.error('❌ Erro ao marcar sessão agendada como concluída:', error);
-            }
-          }
         })
         .catch((error) => {
           console.error('❌ Erro ao salvar sessão de foco:', error);
@@ -822,6 +892,16 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
                state === 'shortBreak' ? 'Descanse um pouco' : 
                'Faça uma pausa mais longa'}
             </p>
+            {isScheduledSession && currentScheduledSession && (
+              <div className="mt-4">
+                <div className="text-xl font-semibold text-white">
+                  {currentScheduledSession.title}
+                </div>
+                <div className="text-lg text-white/80">
+                  Ciclo {currentCycle} de {totalCycles}
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Controls */}
@@ -1044,8 +1124,13 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
                     {session.status === 'agendada' && (
                       <button
                         onClick={() => startScheduledSession(session)}
-                        className="ml-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
-                        disabled={sessionDate > new Date(Date.now() + 5 * 60 * 1000)} // Só permite iniciar se estiver dentro de 5 minutos
+                        className={`ml-2 px-3 py-1 rounded text-xs font-medium transition-colors ${
+                          sessionDate <= new Date(Date.now() + 5 * 60 * 1000) 
+                            ? 'bg-blue-500 hover:bg-blue-600 text-white' 
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                        disabled={false}
+                         title="Iniciar sessão agendada"
                       >
                         Iniciar
                       </button>

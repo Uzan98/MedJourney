@@ -27,13 +27,33 @@ const PomodoroScheduleModal = ({ isOpen, onClose, onSessionCreated }: PomodoroSc
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
-  const [duration, setDuration] = useState(25); // Duração padrão do pomodoro
+  const [cycles, setCycles] = useState(1); // Número de ciclos pomodoro
   const [disciplineId, setDisciplineId] = useState<number | undefined>();
   const [subjectId, setSubjectId] = useState<number | undefined>();
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+
+  // Calcular duração total baseada nos ciclos
+  const calculateTotalDuration = (cycles: number): number => {
+    // Cada ciclo = 25 min foco + 5 min pausa (exceto último ciclo)
+    // Último ciclo = apenas 25 min foco
+    if (cycles === 1) return 25;
+    return (cycles - 1) * 30 + 25; // (ciclos-1) * 30min + 25min final
+  };
+
+  // Formatar tempo estimado para exibição
+  const formatEstimatedTime = (cycles: number): string => {
+    const totalMinutes = calculateTotalDuration(cycles);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}min`;
+    }
+    return `${minutes}min`;
+  };
 
   // Carregar disciplinas
   useEffect(() => {
@@ -81,7 +101,7 @@ const PomodoroScheduleModal = ({ isOpen, onClose, onSessionCreated }: PomodoroSc
       setTitle('');
       setDate(tomorrow.toISOString().split('T')[0]);
       setTime('09:00');
-      setDuration(25);
+      setCycles(1);
       setDisciplineId(undefined);
       setSubjectId(undefined);
       setNotes('');
@@ -109,7 +129,7 @@ const PomodoroScheduleModal = ({ isOpen, onClose, onSessionCreated }: PomodoroSc
       const sessionData = {
         title: title.trim(),
         scheduled_date: scheduledDate.toISOString(),
-        duration_minutes: duration,
+        duration_minutes: calculateTotalDuration(cycles),
         discipline_id: disciplineId,
         subject_id: subjectId,
         notes: notes.trim() || undefined
@@ -194,23 +214,30 @@ const PomodoroScheduleModal = ({ isOpen, onClose, onSessionCreated }: PomodoroSc
             </div>
           </div>
 
-          {/* Duração */}
+          {/* Ciclos Pomodoro */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Duração (minutos)
+              Número de Ciclos Pomodoro
             </label>
             <select
-              value={duration}
-              onChange={(e) => setDuration(Number(e.target.value))}
+              value={cycles}
+              onChange={(e) => setCycles(Number(e.target.value))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value={15}>15 minutos</option>
-              <option value={25}>25 minutos (Pomodoro)</option>
-              <option value={30}>30 minutos</option>
-              <option value={45}>45 minutos</option>
-              <option value={60}>60 minutos</option>
-              <option value={90}>90 minutos</option>
+              <option value={1}>1 ciclo</option>
+              <option value={2}>2 ciclos</option>
+              <option value={3}>3 ciclos</option>
+              <option value={4}>4 ciclos</option>
+              <option value={5}>5 ciclos</option>
+              <option value={6}>6 ciclos</option>
             </select>
+            <div className="mt-2 text-sm text-gray-600">
+              <Clock className="h-4 w-4 inline mr-1" />
+              Tempo estimado: <span className="font-medium text-blue-600">{formatEstimatedTime(cycles)}</span>
+            </div>
+            <div className="mt-1 text-xs text-gray-500">
+              Cada ciclo = 25min foco + 5min pausa (exceto último ciclo)
+            </div>
           </div>
 
           {/* Disciplina */}
