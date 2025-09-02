@@ -6,6 +6,7 @@ import { Play, Pause, RotateCcw, Coffee, BookOpen, Bell, SkipForward, Timer, X, 
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import { PomodoroService } from '@/services/pomodoro.service';
+import { PomodoroPiP } from './pomodoro-pip';
 
 interface StudyPomodoroTimerProps {
   onComplete?: () => void;
@@ -68,6 +69,7 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
   const [notificationMessage, setNotificationMessage] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [pipWindow, setPipWindow] = useState<Window | null>(null);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -78,164 +80,11 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
 
   // Função para abrir timer em Picture-in-Picture
   const openPiP = () => {
-    if (pipWindow && !pipWindow.closed) {
-      pipWindow.focus();
-      return;
+    if (pipController.isPipActive) {
+      pipController.stopPiP();
+    } else {
+      pipController.startPiP();
     }
-
-    const popup = window.open(
-      '',
-      'pomodoroTimer',
-      'width=400,height=300,top=100,left=100,resizable=no,scrollbars=no,toolbar=no,menubar=no,location=no,status=no,alwaysRaised=yes'
-    );
-
-    if (!popup) {
-      toast.error('Popup bloqueado! Permita popups para usar o Picture-in-Picture.');
-      return;
-    }
-
-    setPipWindow(popup);
-
-    // HTML da janela PiP
-    popup.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Timer Pomodoro</title>
-          <script src="https://cdn.tailwindcss.com"></script>
-          <style>
-            body { margin: 0; padding: 0; font-family: system-ui; }
-            .timer-container {
-              background: linear-gradient(135deg, #ef4444, #dc2626);
-              height: 100vh;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              color: white;
-              text-align: center;
-            }
-            .timer-display {
-              font-size: 3rem;
-              font-weight: bold;
-              font-family: monospace;
-              margin-bottom: 1rem;
-            }
-            .progress-bar {
-              width: 80%;
-              height: 8px;
-              background: rgba(255,255,255,0.2);
-              border-radius: 4px;
-              margin-bottom: 1rem;
-            }
-            .progress-fill {
-              height: 100%;
-              background: white;
-              border-radius: 4px;
-              transition: width 1s ease-linear;
-            }
-            .controls {
-              display: flex;
-              gap: 0.5rem;
-            }
-            .btn {
-              width: 40px;
-              height: 40px;
-              border: none;
-              border-radius: 50%;
-              background: rgba(255,255,255,0.2);
-              color: white;
-              cursor: pointer;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              transition: all 0.2s;
-            }
-            .btn:hover {
-              background: rgba(255,255,255,0.3);
-              transform: scale(1.1);
-            }
-            .state-text {
-              font-size: 0.9rem;
-              opacity: 0.8;
-              margin-bottom: 1rem;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="timer-container" id="timerContainer">
-            <div class="state-text" id="stateText">Foco</div>
-            <div class="progress-bar">
-              <div class="progress-fill" id="progressFill"></div>
-            </div>
-            <div class="timer-display" id="timerDisplay">25:00</div>
-            <div class="controls">
-              <button class="btn" id="playPauseBtn" onclick="toggleTimer()">▶</button>
-              <button class="btn" id="resetBtn" onclick="resetTimer()">↻</button>
-              <button class="btn" id="skipBtn" onclick="skipCycle()">⏭</button>
-              <button class="btn" onclick="window.close()">✕</button>
-            </div>
-          </div>
-          <script>
-            function formatTime(seconds) {
-              const mins = Math.floor(seconds / 60);
-              const secs = seconds % 60;
-              return mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
-            }
-
-            function updateDisplay() {
-              const data = JSON.parse(localStorage.getItem('pip-pomodoro-sync') || '{}');
-              if (data.timeLeft !== undefined) {
-                document.getElementById('timerDisplay').textContent = formatTime(data.timeLeft);
-                document.getElementById('playPauseBtn').textContent = data.isActive ? '⏸' : '▶';
-                document.getElementById('stateText').textContent = 
-                  data.state === 'focus' ? 'Foco' : 
-                  data.state === 'shortBreak' ? 'Pausa Curta' : 'Pausa Longa';
-                
-                const totalTime = data.state === 'focus' ? 1500 : 
-                                data.state === 'shortBreak' ? 300 : 900;
-                const progress = ((totalTime - data.timeLeft) / totalTime) * 100;
-                document.getElementById('progressFill').style.width = progress + '%';
-                
-                const container = document.getElementById('timerContainer');
-                if (data.state === 'focus') {
-                  container.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
-                } else if (data.state === 'shortBreak') {
-                  container.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
-                } else {
-                  container.style.background = 'linear-gradient(135deg, #3b82f6, #2563eb)';
-                }
-              }
-            }
-
-            function toggleTimer() {
-              window.opener.postMessage({ action: 'toggleTimer' }, '*');
-            }
-
-            function resetTimer() {
-              window.opener.postMessage({ action: 'resetTimer' }, '*');
-            }
-
-            function skipCycle() {
-              window.opener.postMessage({ action: 'skipCycle' }, '*');
-            }
-
-            // Atualizar display a cada segundo
-            setInterval(updateDisplay, 1000);
-            updateDisplay();
-
-            // Fechar quando a janela principal fechar
-            window.addEventListener('beforeunload', () => {
-              if (window.opener) {
-                window.opener.postMessage({ action: 'pipClosed' }, '*');
-              }
-            });
-          </script>
-        </body>
-      </html>
-    `);
-
-    popup.document.close();
   };
 
   // Sincronizar estado com PiP
@@ -430,9 +279,18 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
     }
   };
 
-  // Verificar se está montado no cliente
+  // Verificar se está montado no cliente e detectar dispositivo móvel
   useEffect(() => {
     setMounted(true);
+    
+    // Detectar dispositivo móvel
+    const checkMobile = () => {
+      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+      const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+      setIsMobile(isMobileDevice);
+    };
+    
+    checkMobile();
   }, []);
 
   // Persistir estado no localStorage
@@ -678,6 +536,17 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
     onStateChange?.(nextState);
   };
 
+  // Hook do Picture-in-Picture
+  const pipController = PomodoroPiP({
+    timeLeft,
+    isActive,
+    state,
+    completedSessions,
+    onToggle: () => isActive ? pauseTimer() : startTimer(),
+    onReset: resetTimer,
+    onSkip: skipCycle
+  });
+
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -816,13 +685,22 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-black/10 rounded-full -mb-48 -ml-48 blur-3xl animate-pulse"></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white/5 rounded-full blur-2xl animate-ping"></div>
         
-        {/* Botão de fechar */}
-        <button
-          onClick={() => setIsFullscreen(false)}
-          className="absolute top-8 right-8 w-12 h-12 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-all hover:scale-110 z-10"
-        >
-          <X className="h-6 w-6 text-white" />
-        </button>
+        {/* Botões do canto superior direito */}
+        <div className="absolute top-8 right-8 flex space-x-3 z-10">
+          <button
+            onClick={openPiP}
+            className="w-12 h-12 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-all hover:scale-110"
+            title="Abrir Picture-in-Picture"
+          >
+            <ExternalLink className="h-6 w-6 text-white" />
+          </button>
+          <button
+            onClick={() => setIsFullscreen(false)}
+            className="w-12 h-12 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-all hover:scale-110"
+          >
+            <X className="h-6 w-6 text-white" />
+          </button>
+        </div>
         
         <div className="text-center text-white relative z-10 max-w-2xl mx-auto px-8">
           {/* Header */}
@@ -984,6 +862,15 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
               <SkipForward className="h-5 w-5" />
             </button>
           </div>
+
+          {/* Aviso para dispositivos móveis */}
+          {isMobile && isActive && (
+            <div className="mt-3 p-2 bg-white/10 rounded-lg border border-white/20">
+              <p className="text-xs text-white/80 text-center leading-relaxed">
+                📱 <strong>Dica:</strong> Use o Picture-in-Picture antes de minimizar a tela para manter o cronômetro sincronizado e receber notificações em segundo plano. Use o movimento de pinça para ajustar o tamanho.
+              </p>
+            </div>
+          )}
 
           {/* Botão Finalizar */}
           {completedSessions > 0 && (
