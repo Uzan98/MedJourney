@@ -69,7 +69,7 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
   const [notificationMessage, setNotificationMessage] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+
   const [pipWindow, setPipWindow] = useState<Window | null>(null);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -279,18 +279,9 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
     }
   };
 
-  // Verificar se está montado no cliente e detectar dispositivo móvel
+  // Verificar se está montado no cliente
   useEffect(() => {
     setMounted(true);
-    
-    // Detectar dispositivo móvel
-    const checkMobile = () => {
-      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-      const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
-      setIsMobile(isMobileDevice);
-    };
-    
-    checkMobile();
   }, []);
 
   // Persistir estado no localStorage
@@ -838,6 +829,13 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
                'Faça uma pausa mais longa'}
             </p>
           </div>
+
+          {/* Aviso Picture-in-Picture */}
+          <div className="mb-4 p-2 bg-white/10 rounded-lg border border-white/20">
+            <p className="text-xs text-white/80 text-center leading-relaxed">
+              💡 <strong>Dica:</strong> Use o Picture-in-Picture para manter o cronômetro visível enquanto navega em outras abas ou aplicativos.
+            </p>
+          </div>
           
           {/* Controls */}
           <div className="flex justify-center space-x-3 mb-4">
@@ -863,14 +861,7 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
             </button>
           </div>
 
-          {/* Aviso para dispositivos móveis */}
-          {isMobile && isActive && (
-            <div className="mt-3 p-2 bg-white/10 rounded-lg border border-white/20">
-              <p className="text-xs text-white/80 text-center leading-relaxed">
-                📱 <strong>Dica:</strong> Use o Picture-in-Picture antes de minimizar a tela para manter o cronômetro sincronizado e receber notificações em segundo plano. Use o movimento de pinça para ajustar o tamanho.
-              </p>
-            </div>
-          )}
+
 
           {/* Botão Finalizar */}
           {completedSessions > 0 && (
