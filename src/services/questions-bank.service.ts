@@ -137,7 +137,7 @@ export class QuestionsBankService {
    */
   static async getUserQuestions(
     userId?: string,
-    limit: number = 20,
+    limit?: number,
     offset: number = 0,
     filters?: {
       disciplineId?: number;
@@ -168,8 +168,12 @@ export class QuestionsBankService {
         .from('questions')
         .select('*')
         .eq('user_id', userIdToUse)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
+        .order('created_at', { ascending: false });
+      
+      // Aplicar paginação apenas se limit for especificado
+      if (limit !== undefined) {
+        query = query.range(offset, offset + limit - 1);
+      }
       
       // Aplicar filtros se fornecidos
       if (filters) {
