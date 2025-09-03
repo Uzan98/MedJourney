@@ -49,18 +49,32 @@ export class StudySessionService {
         .gte('created_at', `${today}T00:00:00.000Z`)
         .lt('created_at', `${today}T23:59:59.999Z`);
 
-      // Buscar limites do usuário
-      const { data: subscriptionData } = await supabase
-        .from('user_subscription_usage')
-        .select('*')
-        .eq('user_id', session.user_id)
+      // Buscar informações da assinatura do usuário
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      const { data: subscription } = await supabase
+        .from('user_subscriptions')
+        .select('tier, status')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
         .single();
 
-      const maxSessionsPerDay = subscriptionData?.max_study_sessions_per_day || 3;
+      // Definir limites baseados no plano
+      let maxSessionsPerDay = 3; // Limite padrão para usuários free
       
-      if (sessionsToday !== null && sessionsToday >= maxSessionsPerDay) {
+      if (subscription?.tier === 'pro') {
+        maxSessionsPerDay = 10; // Limite para Pro
+      } else if (subscription?.tier === 'pro_plus') {
+        maxSessionsPerDay = -1; // Ilimitado para Pro+
+      }
+      
+      if (maxSessionsPerDay !== -1 && sessionsToday !== null && sessionsToday >= maxSessionsPerDay) {
         console.error('Limite diário de sessões de estudo atingido');
-        throw new Error(`UPGRADE_REQUIRED:Você atingiu o limite diário de ${maxSessionsPerDay} sessões de estudo. Faça upgrade do seu plano para criar mais sessões e continuar estudando sem limites!`);
+        const planName = subscription?.tier === 'pro' ? 'Pro+' : 'Pro ou Pro+';
+        throw new Error(`UPGRADE_REQUIRED:Você atingiu o limite diário de ${maxSessionsPerDay} sessões de estudo. Faça upgrade para o plano ${planName} para criar mais sessões e continuar estudando sem limites!`);
       }
 
       // Inserir a sessão no banco de dados

@@ -300,6 +300,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           subscription_plans:plan_id(*)
         `)
         .eq('user_id', session.user.id)
+        .eq('status', 'active')
         .single();
       
       // Get usage data

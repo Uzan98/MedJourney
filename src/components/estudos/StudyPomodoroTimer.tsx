@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Play, Pause, RotateCcw, Coffee, BookOpen, Bell, SkipForward, Timer, X, Maximize, CheckCircle, Calendar, ExternalLink } from 'lucide-react';
+import { Play, Pause, RotateCcw, Coffee, BookOpen, Bell, SkipForward, Timer, X, Maximize, CheckCircle, Calendar, ExternalLink, Plus, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-hot-toast';
-import { PomodoroService } from '@/services/pomodoro.service';
+import { PomodoroService, PomodoroSession } from '@/services/pomodoro.service';
+import { PomodoroSchedulingService, PomodoroScheduledSession } from '@/services/pomodoro-scheduling.service';
 import { PomodoroPiP } from './pomodoro-pip';
+import PomodoroScheduleModal from './pomodoro-schedule-modal';
 
 interface StudyPomodoroTimerProps {
   onComplete?: () => void;
@@ -69,7 +71,14 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
   const [notificationMessage, setNotificationMessage] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [scheduledSessions, setScheduledSessions] = useState<PomodoroScheduledSession[]>([]);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [currentScheduledSession, setCurrentScheduledSession] = useState<PomodoroScheduledSession | null>(null);
+  const [currentCycle, setCurrentCycle] = useState(0);
+  const [totalCycles, setTotalCycles] = useState(0);
+  const [isScheduledSession, setIsScheduledSession] = useState(false);
+  const [completedPomodoroSessions, setCompletedPomodoroSessions] = useState<PomodoroSession[]>([]);
+
   const [pipWindow, setPipWindow] = useState<Window | null>(null);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -84,6 +93,85 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
       pipController.stopPiP();
     } else {
       pipController.startPiP();
+    }
+  };
+
+  // Carregar sessões agendadas
+  const loadScheduledSessions = async () => {
+    try {
+      const sessions = await PomodoroSchedulingService.getTodaysSessions();
+      setScheduledSessions(sessions);
+    } catch (error) {
+      console.error('Erro ao carregar sessões agendadas:', error);
+    }
+  };
+
+  // Carregar sessões Pomodoro completadas
+  const loadCompletedPomodoroSessions = async () => {
+    try {
+      const sessions = await PomodoroService.getPomodoroSessions(10); // Últimas 10 sessões
+      setCompletedPomodoroSessions(sessions);
+    } catch (error) {
+      console.error('Erro ao carregar sessões Pomodoro completadas:', error);
+    }
+  };
+
+  // Verificar se há sessão agendada para agora
+  const checkForScheduledSession = () => {
+    const now = new Date();
+    const currentTime = now.getTime();
+    
+    const upcomingSession = scheduledSessions.find(session => {
+      if (session.status !== 'agendada') return false;
+      
+      const sessionTime = new Date(session.scheduled_date).getTime();
+      const timeDiff = sessionTime - currentTime;
+      
+      // Sessão está dentro de 5 minutos
+      return timeDiff >= 0 && timeDiff <= 5 * 60 * 1000;
+    });
+    
+    if (upcomingSession && !currentScheduledSession) {
+      setCurrentScheduledSession(upcomingSession);
+      toast.success(`Sessão agendada: ${upcomingSession.title} em breve!`);
+    }
+  };
+
+  // Iniciar sessão agendada
+  const startScheduledSession = async (session: PomodoroScheduledSession) => {
+    try {
+      // Parar timer atual se estiver rodando
+      if (isActive) {
+        pauseTimer();
+      }
+      
+      // Marcar sessão como em andamento
+      await PomodoroSchedulingService.startScheduledSession(session.id!);
+      setCurrentScheduledSession(session);
+      
+      // Calcular número de ciclos baseado na duração
+      // Cada ciclo = 25min foco + 5min pausa (exceto o último que é só 25min foco)
+      const cycles = Math.ceil(session.duration_minutes / 30); // 30min por ciclo completo
+      setTotalCycles(cycles);
+      setCurrentCycle(1);
+      setIsScheduledSession(true);
+      
+      // Iniciar primeiro ciclo de foco
+      setTimeLeft(focusTime * 60); // 25 minutos
+      setState('focus');
+      setIsActive(true);
+      setIsFullscreen(true);
+      
+      startTimeRef.current = Date.now();
+      endTimeRef.current = startTimeRef.current + (focusTime * 60 * 1000);
+      
+      toast.success(`Sessão "${session.title}" iniciada! Ciclo 1 de ${cycles} - Foco por 25 minutos.`);
+      
+      // Recarregar sessões
+      loadScheduledSessions();
+    } catch (error) {
+      console.error('Erro ao iniciar sessão agendada:', error);
+      toast.error('Erro ao iniciar sessão agendada');
     }
   };
 
@@ -279,19 +367,30 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
     }
   };
 
-  // Verificar se está montado no cliente e detectar dispositivo móvel
+  // Verificar se está montado no cliente
   useEffect(() => {
     setMounted(true);
     
-    // Detectar dispositivo móvel
-    const checkMobile = () => {
-      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-      const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
-      setIsMobile(isMobileDevice);
-    };
+    // Carregar sessões agendadas
+    loadScheduledSessions();
     
-    checkMobile();
+    // Carregar sessões Pomodoro completadas
+    loadCompletedPomodoroSessions();
+    
+    // Verificar sessões próximas a cada minuto
+    const checkInterval = setInterval(() => {
+      checkForScheduledSession();
+    }, 60000);
+    
+    return () => {
+      clearInterval(checkInterval);
+    };
   }, []);
+  
+  // Verificar sessões quando a lista de sessões agendadas mudar
+  useEffect(() => {
+    checkForScheduledSession();
+  }, [scheduledSessions]);
 
   // Persistir estado no localStorage
   useEffect(() => {
@@ -413,6 +512,81 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
       audioRef.current.play().catch(console.error);
     }
     
+    // Lógica especial para sessões agendadas com ciclos
+    if (isScheduledSession && currentScheduledSession) {
+      if (state === 'focus') {
+        // Salvar sessão de foco no banco de dados
+        console.log('💾 Salvando sessão de foco no banco de dados...');
+        PomodoroService.recordPomodoroSession(focusTime, 'focus')
+          .then(() => {
+            console.log('✅ Sessão de foco salva com sucesso no banco!');
+            // Recarregar sessões completadas
+            loadCompletedPomodoroSessions();
+          })
+          .catch((error) => {
+            console.error('❌ Erro ao salvar sessão de foco:', error);
+            toast.error('Erro ao salvar sessão no banco de dados');
+          });
+        
+        // Verificar se é o último ciclo
+        if (currentCycle >= totalCycles) {
+          // Sessão completa!
+          toast.success(`Sessão "${currentScheduledSession.title}" concluída! 🎉 Todos os ${totalCycles} ciclos foram completados.`);
+          
+          // Marcar sessão agendada como concluída
+          PomodoroSchedulingService.completeScheduledSession(currentScheduledSession.id!)
+            .then(() => {
+              console.log('✅ Sessão agendada marcada como concluída');
+              loadScheduledSessions();
+            })
+            .catch((error) => {
+              console.error('❌ Erro ao marcar sessão agendada como concluída:', error);
+            });
+          
+          // Resetar estados da sessão agendada
+          setCurrentScheduledSession(null);
+          setIsScheduledSession(false);
+          setCurrentCycle(0);
+          setTotalCycles(0);
+          setIsFullscreen(false);
+          
+          return;
+        } else {
+          // Ir para pausa entre ciclos
+          setState('shortBreak');
+          setTimeLeft(shortBreakTime * 60);
+          toast.success(`Ciclo ${currentCycle} de ${totalCycles} concluído! Pausa de 5 minutos.`);
+          
+          // Reiniciar automaticamente após 3 segundos
+          setTimeout(() => {
+            setIsActive(true);
+            const now = Date.now();
+            startTimeRef.current = now;
+            endTimeRef.current = now + (shortBreakTime * 60 * 1000);
+          }, 3000);
+          
+          return;
+        }
+      } else if (state === 'shortBreak') {
+        // Pausa concluída, ir para próximo ciclo
+        setCurrentCycle(currentCycle + 1);
+        setState('focus');
+        setTimeLeft(focusTime * 60);
+        toast.success(`Pausa concluída! Iniciando ciclo ${currentCycle + 1} de ${totalCycles}.`);
+        
+        // Reiniciar automaticamente após 3 segundos
+        setTimeout(() => {
+          setIsActive(true);
+          const now = Date.now();
+          startTimeRef.current = now;
+          endTimeRef.current = now + (focusTime * 60 * 1000);
+        }, 3000);
+        
+        return;
+      }
+    }
+    
+    // Lógica original para sessões normais (não agendadas)
     let nextState: PomodoroState;
     let message = '';
     
@@ -425,6 +599,8 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
       PomodoroService.recordPomodoroSession(focusTime, 'focus')
         .then(() => {
           console.log('✅ Sessão de foco salva com sucesso no banco!');
+          // Recarregar sessões completadas
+          loadCompletedPomodoroSessions();
         })
         .catch((error) => {
           console.error('❌ Erro ao salvar sessão de foco:', error);
@@ -734,6 +910,16 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
                state === 'shortBreak' ? 'Descanse um pouco' : 
                'Faça uma pausa mais longa'}
             </p>
+            {isScheduledSession && currentScheduledSession && (
+              <div className="mt-4">
+                <div className="text-xl font-semibold text-white">
+                  {currentScheduledSession.title}
+                </div>
+                <div className="text-lg text-white/80">
+                  Ciclo {currentCycle} de {totalCycles}
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Controls */}
@@ -838,6 +1024,13 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
                'Faça uma pausa mais longa'}
             </p>
           </div>
+
+          {/* Aviso Picture-in-Picture */}
+          <div className="mb-4 p-2 bg-white/10 rounded-lg border border-white/20">
+            <p className="text-xs text-white/80 text-center leading-relaxed">
+              💡 <strong>Dica:</strong> Use o Picture-in-Picture para manter o cronômetro visível enquanto navega em outras abas ou aplicativos.
+            </p>
+          </div>
           
           {/* Controls */}
           <div className="flex justify-center space-x-3 mb-4">
@@ -863,14 +1056,7 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
             </button>
           </div>
 
-          {/* Aviso para dispositivos móveis */}
-          {isMobile && isActive && (
-            <div className="mt-3 p-2 bg-white/10 rounded-lg border border-white/20">
-              <p className="text-xs text-white/80 text-center leading-relaxed">
-                📱 <strong>Dica:</strong> Use o Picture-in-Picture antes de minimizar a tela para manter o cronômetro sincronizado e receber notificações em segundo plano. Use o movimento de pinça para ajustar o tamanho.
-              </p>
-            </div>
-          )}
+
 
           {/* Botão Finalizar */}
           {completedSessions > 0 && (
@@ -886,6 +1072,105 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
 
         </div>
       </div>
+
+      {/* Sessões Agendadas */}
+      <div className="mt-4 bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+            <Clock className="h-5 w-5 mr-2 text-blue-500" />
+            Sessões Agendadas
+          </h3>
+          <button
+            onClick={() => setShowScheduleModal(true)}
+            className="flex items-center space-x-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Agendar</span>
+          </button>
+        </div>
+        
+        {scheduledSessions.length === 0 ? (
+          <div className="text-center py-6 text-gray-500">
+            <Clock className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+            <p className="text-sm">Nenhuma sessão agendada para hoje</p>
+            <p className="text-xs text-gray-400 mt-1">Clique em "Agendar" para criar uma nova sessão</p>
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-40 overflow-y-auto">
+            {scheduledSessions.map((session) => {
+              const sessionDate = new Date(session.scheduled_date);
+              const now = new Date();
+              const isUpcoming = sessionDate > now;
+              const isActive = session.status === 'em_andamento';
+              const isCompleted = session.status === 'concluida';
+              
+              return (
+                <div 
+                  key={session.id} 
+                  className={`p-3 rounded-lg border ${
+                    isActive ? 'bg-blue-50 border-blue-200' :
+                    isCompleted ? 'bg-green-50 border-green-200' :
+                    isUpcoming ? 'bg-gray-50 border-gray-200' :
+                    'bg-red-50 border-red-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <h4 className="font-medium text-gray-800 text-sm">{session.title}</h4>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          isActive ? 'bg-blue-100 text-blue-800' :
+                          isCompleted ? 'bg-green-100 text-green-800' :
+                          isUpcoming ? 'bg-gray-100 text-gray-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {session.status === 'agendada' ? 'Agendada' :
+                           session.status === 'em_andamento' ? 'Em andamento' :
+                           session.status === 'concluida' ? 'Concluída' :
+                           'Perdida'}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-4 mt-1 text-xs text-gray-600">
+                        <span>{sessionDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span>{session.duration_minutes} min</span>
+                        {session.description && (
+                          <span className="truncate max-w-32">{session.description}</span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {session.status === 'agendada' && (
+                      <button
+                        onClick={() => startScheduledSession(session)}
+                        className={`ml-2 px-3 py-1 rounded text-xs font-medium transition-colors ${
+                          sessionDate <= new Date(Date.now() + 5 * 60 * 1000) 
+                            ? 'bg-blue-500 hover:bg-blue-600 text-white' 
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                        disabled={false}
+                         title="Iniciar sessão agendada"
+                      >
+                        Iniciar
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Modal de Agendamento */}
+       {showScheduleModal && (
+         <PomodoroScheduleModal
+           isOpen={showScheduleModal}
+           onClose={() => setShowScheduleModal(false)}
+           onSessionCreated={() => {
+             loadScheduledSessions();
+           }}
+         />
+       )}
 
       {/* Histórico de Sessões */}
       {sessionHistory.length > 0 && (
@@ -918,6 +1203,58 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
             <div className="text-center mt-2">
               <span className="text-xs text-gray-500">
                 +{sessionHistory.length - 5} registros anteriores
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Sessões Pomodoro Completadas */}
+      {completedPomodoroSessions.length > 0 && (
+        <div className="mt-4 bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+            <CheckCircle className="h-5 w-5 mr-2 text-green-500" />
+            Sessões Completadas
+          </h3>
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {completedPomodoroSessions.map((session, index) => (
+              <div key={session.id} className="flex justify-between items-center py-3 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-3 h-3 rounded-full ${
+                    session.title?.includes('Foco') ? 'bg-red-500' :
+                    session.title?.includes('Pausa Curta') ? 'bg-yellow-500' :
+                    'bg-blue-500'
+                  }`}></div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-800">
+                      {session.title || 'Sessão Pomodoro'}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {new Date(session.created_at).toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-semibold text-gray-800">
+                    {session.actual_duration_minutes || session.duration_minutes} min
+                  </div>
+                  <div className="text-xs text-green-600 font-medium">
+                    Concluída
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          {completedPomodoroSessions.length === 10 && (
+            <div className="text-center mt-2">
+              <span className="text-xs text-gray-500">
+                Mostrando as 10 sessões mais recentes
               </span>
             </div>
           )}
