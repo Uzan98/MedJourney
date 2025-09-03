@@ -77,6 +77,7 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
   const [currentCycle, setCurrentCycle] = useState(0);
   const [totalCycles, setTotalCycles] = useState(0);
   const [isScheduledSession, setIsScheduledSession] = useState(false);
+  const [completedPomodoroSessions, setCompletedPomodoroSessions] = useState<any[]>([]);
 
   const [pipWindow, setPipWindow] = useState<Window | null>(null);
   
@@ -102,6 +103,16 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
       setScheduledSessions(sessions);
     } catch (error) {
       console.error('Erro ao carregar sessões agendadas:', error);
+    }
+  };
+
+  // Carregar sessões Pomodoro completadas
+  const loadCompletedPomodoroSessions = async () => {
+    try {
+      const sessions = await PomodoroService.getPomodoroSessions(10); // Últimas 10 sessões
+      setCompletedPomodoroSessions(sessions);
+    } catch (error) {
+      console.error('Erro ao carregar sessões Pomodoro completadas:', error);
     }
   };
 
@@ -363,6 +374,9 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
     // Carregar sessões agendadas
     loadScheduledSessions();
     
+    // Carregar sessões Pomodoro completadas
+    loadCompletedPomodoroSessions();
+    
     // Verificar sessões próximas a cada minuto
     const checkInterval = setInterval(() => {
       checkForScheduledSession();
@@ -506,6 +520,8 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
         PomodoroService.recordPomodoroSession(focusTime, 'focus')
           .then(() => {
             console.log('✅ Sessão de foco salva com sucesso no banco!');
+            // Recarregar sessões completadas
+            loadCompletedPomodoroSessions();
           })
           .catch((error) => {
             console.error('❌ Erro ao salvar sessão de foco:', error);
@@ -583,6 +599,8 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
       PomodoroService.recordPomodoroSession(focusTime, 'focus')
         .then(() => {
           console.log('✅ Sessão de foco salva com sucesso no banco!');
+          // Recarregar sessões completadas
+          loadCompletedPomodoroSessions();
         })
         .catch((error) => {
           console.error('❌ Erro ao salvar sessão de foco:', error);
@@ -1185,6 +1203,58 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
             <div className="text-center mt-2">
               <span className="text-xs text-gray-500">
                 +{sessionHistory.length - 5} registros anteriores
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Sessões Pomodoro Completadas */}
+      {completedPomodoroSessions.length > 0 && (
+        <div className="mt-4 bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+            <CheckCircle className="h-5 w-5 mr-2 text-green-500" />
+            Sessões Completadas
+          </h3>
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {completedPomodoroSessions.map((session, index) => (
+              <div key={session.id} className="flex justify-between items-center py-3 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-3 h-3 rounded-full ${
+                    session.title?.includes('Foco') ? 'bg-red-500' :
+                    session.title?.includes('Pausa Curta') ? 'bg-yellow-500' :
+                    'bg-blue-500'
+                  }`}></div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-800">
+                      {session.title || 'Sessão Pomodoro'}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {new Date(session.created_at).toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-semibold text-gray-800">
+                    {session.duration} min
+                  </div>
+                  <div className="text-xs text-green-600 font-medium">
+                    Concluída
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          {completedPomodoroSessions.length === 10 && (
+            <div className="text-center mt-2">
+              <span className="text-xs text-gray-500">
+                Mostrando as 10 sessões mais recentes
               </span>
             </div>
           )}

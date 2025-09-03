@@ -737,15 +737,17 @@ export default function EstudosPage() {
   // Função para filtrar sessões do histórico
   const filterHistorySessions = (searchTerm: string) => {
     const sessions = activeHistoryTab === 'completed' ? completedSessions : allScheduledSessions;
+    // Filtrar sessões pomodoro
+    const nonPomodoroSessions = sessions.filter(session => session.type !== 'pomodoro');
     
     if (!searchTerm || searchTerm.trim() === "") {
       // Se não houver termo de pesquisa, mostrar todas as sessões da aba ativa, ordenadas
-      setFilteredHistory(sortHistorySessions(sessions));
+      setFilteredHistory(sortHistorySessions(nonPomodoroSessions));
       return;
     }
 
     const term = searchTerm.toLowerCase();
-    const filtered = sessions.filter(session => 
+    const filtered = nonPomodoroSessions.filter(session => 
       session.title.toLowerCase().includes(term) || 
       session.disciplineName?.toLowerCase().includes(term) ||
       (session.notes && session.notes.toLowerCase().includes(term))
@@ -770,7 +772,7 @@ export default function EstudosPage() {
   const handleOpenHistoryModal = () => {
     // Inicializar com a aba de sessões completadas
     setActiveHistoryTab('completed');
-    setFilteredHistory(sortHistorySessions(completedSessions));
+    setFilteredHistory(sortHistorySessions(completedSessions.filter(session => session.type !== 'pomodoro')));
     setHistorySearchTerm("");
     setIsHistoryModalOpen(true);
   };
@@ -779,16 +781,18 @@ export default function EstudosPage() {
   const handleHistoryTabChange = (tab: 'completed' | 'scheduled') => {
     setActiveHistoryTab(tab);
     const sessions = tab === 'completed' ? completedSessions : allScheduledSessions;
+    // Filtrar sessões pomodoro
+    const nonPomodoroSessions = sessions.filter(session => session.type !== 'pomodoro');
     
     if (historySearchTerm) {
-      const filtered = sessions.filter(session => 
+      const filtered = nonPomodoroSessions.filter(session => 
         session.title.toLowerCase().includes(historySearchTerm.toLowerCase()) ||
         (session.disciplineName && session.disciplineName.toLowerCase().includes(historySearchTerm.toLowerCase())) ||
         (session.notes && session.notes.toLowerCase().includes(historySearchTerm.toLowerCase()))
       );
       setFilteredHistory(sortHistorySessions(filtered));
     } else {
-      setFilteredHistory(sortHistorySessions(sessions));
+      setFilteredHistory(sortHistorySessions(nonPomodoroSessions));
     }
   };
 
@@ -1011,11 +1015,19 @@ export default function EstudosPage() {
                 </button>
               </div>
               
-                {upcomingSessions.length > 0 ? (
+                {upcomingSessions.filter(session => session.type !== 'pomodoro').length > 0 ? (
                 <div className="space-y-4">
-                  {/* Sessões agendadas - mostrar todas as não completadas */}
+                  {/* Sessões agendadas - mostrar todas as não completadas, exceto pomodoro */}
                   <div className="bg-white rounded-lg p-6 space-y-1">
                   {groupDates.map(dateKey => {
+                    // Filtrar sessões pomodoro do grupo
+                    const nonPomodoroSessions = sessionGroups[dateKey].filter(session => session.type !== 'pomodoro');
+                    
+                    // Se não há sessões não-pomodoro nesta data, não renderizar o grupo
+                    if (nonPomodoroSessions.length === 0) {
+                      return null;
+                    }
+                    
                     // Corrigir exibição do título do grupo
                     const [year, month, day] = dateKey.split('-');
                     const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
@@ -1042,7 +1054,7 @@ export default function EstudosPage() {
                           </div>
                         
                           <div className="space-y-2">
-                          {sessionGroups[dateKey].map((session, index) => (
+                          {nonPomodoroSessions.map((session, index) => (
                             <div 
                               key={session.id} 
                                 className="bg-gray-50 hover:bg-gray-100 rounded-lg p-3 border border-gray-200 transition-colors flex justify-between items-center"
@@ -1075,7 +1087,7 @@ export default function EstudosPage() {
                         </div>
                       </div>
                     );
-                  })}
+                  }).filter(Boolean)}
                     </div>
                     </div>
               ) : (
@@ -1103,9 +1115,9 @@ export default function EstudosPage() {
                 <h2 className="text-xl font-semibold text-gray-900">Sessões Completadas</h2>
               </div>
               
-                {completedSessions.length > 0 ? (
+                {completedSessions.filter(session => session.type !== 'pomodoro').length > 0 ? (
                 <div className="divide-y divide-gray-100">
-                  {completedSessions.slice(0, 5).map((session, index) => (
+                  {completedSessions.filter(session => session.type !== 'pomodoro').slice(0, 5).map((session, index) => (
                     <div 
                       key={session.id} 
                       className="py-3 first:pt-0 last:pb-0 animate-fade-in-up" 
@@ -1137,7 +1149,7 @@ export default function EstudosPage() {
                 </div>
               )}
               
-              {completedSessions.length > 5 && (
+              {completedSessions.filter(session => session.type !== 'pomodoro').length > 5 && (
                 <div className="mt-4 text-center pt-2 border-t border-gray-100">
                         <button 
                     onClick={handleOpenHistoryModal}

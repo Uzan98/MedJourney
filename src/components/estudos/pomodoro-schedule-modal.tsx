@@ -95,11 +95,9 @@ const PomodoroScheduleModal = ({ isOpen, onClose, onSessionCreated }: PomodoroSc
   useEffect(() => {
     if (isOpen) {
       const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
       
       setTitle('');
-      setDate(tomorrow.toISOString().split('T')[0]);
+      setDate(now.toISOString().split('T')[0]); // Data atual como padrão
       setTime('09:00');
       setCycles(1);
       setDisciplineId(undefined);
