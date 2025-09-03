@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { Play, Pause, RotateCcw, Coffee, BookOpen, Bell, SkipForward, Timer, X, Maximize, CheckCircle, Calendar, ExternalLink, Plus, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-hot-toast';
-import { PomodoroService } from '@/services/pomodoro.service';
+import { PomodoroService, PomodoroSession } from '@/services/pomodoro.service';
 import { PomodoroSchedulingService, PomodoroScheduledSession } from '@/services/pomodoro-scheduling.service';
 import { PomodoroPiP } from './pomodoro-pip';
 import PomodoroScheduleModal from './pomodoro-schedule-modal';
@@ -77,7 +77,7 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
   const [currentCycle, setCurrentCycle] = useState(0);
   const [totalCycles, setTotalCycles] = useState(0);
   const [isScheduledSession, setIsScheduledSession] = useState(false);
-  const [completedPomodoroSessions, setCompletedPomodoroSessions] = useState<any[]>([]);
+  const [completedPomodoroSessions, setCompletedPomodoroSessions] = useState<PomodoroSession[]>([]);
 
   const [pipWindow, setPipWindow] = useState<Window | null>(null);
   
@@ -1242,7 +1242,7 @@ const StudyPomodoroTimer = ({ onComplete, onStateChange }: StudyPomodoroTimerPro
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-semibold text-gray-800">
-                    {session.duration} min
+                    {session.actual_duration_minutes || session.duration_minutes} min
                   </div>
                   <div className="text-xs text-green-600 font-medium">
                     Concluída
