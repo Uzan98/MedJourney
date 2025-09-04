@@ -433,6 +433,16 @@ export class ExamsService {
       if (error) {
         throw error;
       }
+
+      // Incrementar contadores de tentativas de simulados
+      try {
+        await supabase.rpc('increment_exam_attempts', {
+          user_id_param: user.user.id
+        });
+      } catch (incrementError) {
+        console.error('Erro ao incrementar contadores de tentativas:', incrementError);
+        // Não falha a operação se não conseguir incrementar
+      }
       
       return data.id;
     } catch (error) {
@@ -1270,4 +1280,4 @@ export class ExamsService {
       return [];
     }
   }
-} 
+}

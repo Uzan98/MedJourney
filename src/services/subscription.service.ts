@@ -205,8 +205,8 @@ export class SubscriptionService {
       .eq('user_id', userId)
       .single();
     
-    // Se não encontrar assinatura ou uso, retorna limites do plano gratuito
-    if (!userSubscription || !usage) {
+    // Se não encontrar assinatura, retorna limites do plano gratuito
+    if (!userSubscription) {
       const { data: freePlan } = await supabase
         .from('subscription_plans')
         .select('*')
@@ -226,17 +226,30 @@ export class SubscriptionService {
       
       return {
         tier: SubscriptionTier.FREE,
-        disciplinesUsed: 0,
+        disciplinesUsed: usage?.disciplines_count || 0,
         disciplinesLimit: defaultFeatures.maxDisciplines,
-        flashcardDecksUsed: 0,
+        flashcardDecksUsed: usage?.flashcard_decks_count || 0,
         flashcardDecksLimit: defaultFeatures.maxFlashcardDecks,
-        questionsUsedToday: 0,
+        questionsUsedToday: usage?.questions_used_today || 0,
         questionsLimitPerDay: defaultFeatures.maxQuestionsPerDay || 10,
         hasAiPlanningAccess: defaultFeatures.aiPlanningAccess,
         hasCommunityAccess: defaultFeatures.communityFeaturesAccess,
         hasFacultyAccess: defaultFeatures.facultyFeaturesAccess,
         hasAdvancedAnalytics: defaultFeatures.advancedAnalytics,
         hasPrioritySupport: defaultFeatures.prioritySupport,
+        maxSubjectsPerDiscipline: defaultFeatures.maxSubjectsPerDiscipline || 5,
+        maxStudySessionsPerDay: defaultFeatures.maxStudySessionsPerDay || 3,
+        studySessionsUsedToday: usage?.study_sessions_used_today || 0,
+        maxSimuladosPerWeek: defaultFeatures.maxSimuladosPerWeek || 1,
+        simuladosUsedThisWeek: usage?.simulados_used_this_week || 0,
+        maxSimuladosPerMonth: defaultFeatures.maxSimuladosPerMonth || 4,
+        simuladosUsedThisMonth: usage?.simulados_used_this_month || 0,
+        maxExamAttemptsPerWeek: defaultFeatures.maxExamAttemptsPerWeek || 1,
+        examAttemptsUsedThisWeek: usage?.exam_attempts_used_this_week || 0,
+        maxExamAttemptsPerMonth: defaultFeatures.maxExamAttemptsPerMonth || 4,
+        examAttemptsUsedThisMonth: usage?.exam_attempts_used_this_month || 0,
+        maxQuestionsPerSimulado: defaultFeatures.maxQuestionsPerSimulado || 30,
+        maxFlashcardsPerDeck: defaultFeatures.maxFlashcardsPerDeck || 30,
       };
     }
     
@@ -256,6 +269,19 @@ export class SubscriptionService {
       hasFacultyAccess: features.facultyFeaturesAccess,
       hasAdvancedAnalytics: features.advancedAnalytics,
       hasPrioritySupport: features.prioritySupport,
+      maxSubjectsPerDiscipline: features.maxSubjectsPerDiscipline || 5,
+      maxStudySessionsPerDay: features.maxStudySessionsPerDay || 3,
+      studySessionsUsedToday: usage.study_sessions_used_today || 0,
+      maxSimuladosPerWeek: features.maxSimuladosPerWeek || 1,
+      simuladosUsedThisWeek: usage.simulados_used_this_week || 0,
+      maxSimuladosPerMonth: features.maxSimuladosPerMonth || 4,
+      simuladosUsedThisMonth: usage.simulados_used_this_month || 0,
+      maxExamAttemptsPerWeek: features.maxExamAttemptsPerWeek || 1,
+      examAttemptsUsedThisWeek: usage.exam_attempts_used_this_week || 0,
+      maxExamAttemptsPerMonth: features.maxExamAttemptsPerMonth || 4,
+      examAttemptsUsedThisMonth: usage.exam_attempts_used_this_month || 0,
+      maxQuestionsPerSimulado: features.maxQuestionsPerSimulado || 30,
+      maxFlashcardsPerDeck: features.maxFlashcardsPerDeck || 30,
     };
   }
 
