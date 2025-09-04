@@ -164,6 +164,78 @@ export class QuestionsBankService {
         userIdToUse = userData.user.id;
       }
       
+      // Se há termo de busca, buscar com alternativas para filtrar
+      if (filters?.searchTerm) {
+        let query = supabase
+          .from('questions')
+          .select(`
+            *,
+            answer_options (
+              text
+            )
+          `)
+          .eq('user_id', userIdToUse)
+          .order('created_at', { ascending: false });
+        
+        // Aplicar filtros básicos
+        if (filters.disciplineId) {
+          query = query.eq('discipline_id', filters.disciplineId);
+        }
+        
+        if (filters.subjectId) {
+          query = query.eq('subject_id', filters.subjectId);
+        }
+        
+        if (filters.difficulty) {
+          query = query.eq('difficulty', filters.difficulty);
+        }
+        
+        if (filters.questionType) {
+          query = query.eq('question_type', filters.questionType);
+        }
+        
+        const { data: allQuestions, error } = await query;
+        
+        if (error) {
+          throw error;
+        }
+        
+        if (!allQuestions) {
+          return [];
+        }
+        
+        // Filtrar por termo de busca considerando conteúdo e alternativas
+        const searchTerm = filters.searchTerm.toLowerCase();
+        const filteredQuestions = allQuestions.filter(question => {
+          // Buscar no conteúdo da questão
+          const contentMatch = question.content.toLowerCase().includes(searchTerm);
+          
+          // Buscar nas tags se existirem
+          const tagsMatch = question.tags && question.tags.some(tag => 
+            tag.toLowerCase().includes(searchTerm)
+          );
+          
+          // Buscar no conteúdo das alternativas
+          const alternativesMatch = question.answer_options && question.answer_options.some(option => 
+            option.text.toLowerCase().includes(searchTerm)
+          );
+          
+          return contentMatch || tagsMatch || alternativesMatch;
+        });
+        
+        // Aplicar paginação após filtrar
+        const startIndex = offset;
+        const endIndex = limit !== undefined ? offset + limit : filteredQuestions.length;
+        
+        return filteredQuestions
+          .slice(startIndex, endIndex)
+          .map(question => ({
+            ...question,
+            answer_options: undefined // Remover alternativas do resultado final
+          }));
+      }
+      
+      // Se não há termo de busca, usar consulta simples
       let query = supabase
         .from('questions')
         .select('*')
@@ -191,10 +263,6 @@ export class QuestionsBankService {
         
         if (filters.questionType) {
           query = query.eq('question_type', filters.questionType);
-        }
-        
-        if (filters.searchTerm) {
-          query = query.ilike('content', `%${filters.searchTerm}%`);
         }
       }
       
@@ -715,18 +783,20 @@ export class QuestionsBankService {
         return [];
       }
       
-      // Usar uma consulta simples sem tentar usar relações complexas
+      // Buscar questões com suas alternativas para permitir busca no conteúdo das alternativas
       let query = supabase
         .from('questions')
         .select(`
           *,
           disciplines:discipline_id (
             name
+          ),
+          answer_options (
+            text
           )
         `)
         .eq('is_public', true)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
+        .order('created_at', { ascending: false });
       
       // Aplicar filtros se fornecidos
       if (filters) {
@@ -746,10 +816,6 @@ export class QuestionsBankService {
           query = query.eq('question_type', filters.questionType);
         }
         
-        if (filters.searchTerm) {
-          query = query.ilike('content', `%${filters.searchTerm}%`);
-        }
-        
         // Pesquisa por nome de disciplina
         if (filters.disciplineName) {
           query = query.filter('disciplines.name', 'ilike', `%${filters.disciplineName}%`);
@@ -766,18 +832,65 @@ export class QuestionsBankService {
       if (!questions || questions.length === 0) {
         return [];
       }
+      
+      // Filtrar questões por termo de busca considerando conteúdo e alternativas
+      let filteredQuestions = questions;
+      if (filters?.searchTerm) {
+        const searchTerm = filters.searchTerm.toLowerCase();
+        console.log('🔍 Termo de busca:', searchTerm);
+        console.log('📊 Total de questões antes do filtro:', questions.length);
+        
+        filteredQuestions = questions.filter(question => {
+          // Buscar no conteúdo da questão
+          const contentMatch = question.content.toLowerCase().includes(searchTerm);
+          
+          // Buscar nas tags se existirem
+          const tagsMatch = question.tags && question.tags.some(tag => 
+            tag.toLowerCase().includes(searchTerm)
+          );
+          
+          // Buscar no conteúdo das alternativas
+          const alternativesMatch = question.answer_options && question.answer_options.some(option => 
+            option.text.toLowerCase().includes(searchTerm)
+          );
+          
+          // Log para depuração
+          if (contentMatch || tagsMatch || alternativesMatch) {
+            console.log('✅ Questão encontrada:', {
+              id: question.id,
+              content: question.content.substring(0, 50) + '...',
+              contentMatch,
+              tagsMatch,
+              alternativesMatch,
+              alternativas: question.answer_options?.map(opt => opt.text.substring(0, 30) + '...') || []
+            });
+          }
+          
+          return contentMatch || tagsMatch || alternativesMatch;
+        });
+        
+        console.log('📊 Total de questões após filtro:', filteredQuestions.length);
+      }
+
+      // Aplicar paginação após a filtragem
+      const paginatedQuestions = filteredQuestions.slice(offset, offset + limit);
+      console.log('📄 Questões paginadas:', paginatedQuestions.length, 'de', filteredQuestions.length);
 
       // Buscar informações dos usuários da tabela profiles
-      const userIds = [...new Set(questions.map(q => q.user_id))];
+      const userIds = [...new Set(paginatedQuestions.map(q => q.user_id).filter(Boolean))];
+      let profiles = null;
       
-      // Buscar nomes dos usuários da tabela profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, username')
-        .in('id', userIds);
-      
-      if (profilesError) {
-        console.error('Erro ao buscar informações dos perfis:', profilesError);
+      if (userIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, username')
+          .in('id', userIds);
+        
+        profiles = profilesData;
+        
+        if (profilesError) {
+          console.error('Erro ao buscar informações dos perfis:', profilesError);
+        }
       }
       
       // Criar um mapa de ID do usuário para nome
@@ -791,13 +904,14 @@ export class QuestionsBankService {
         }, {}) : {};
       
       // Adicionar informações do criador a cada questão
-      return questions.map(question => {
+      return paginatedQuestions.map(question => {
         const userProfile = userMap[question.user_id];
         const discipline = question.disciplines;
         
         return {
           ...question,
           disciplines: undefined, // Remover o objeto aninhado
+          answer_options: undefined, // Remover as alternativas do resultado final para manter compatibilidade
           creator_name: userProfile ? (userProfile.full_name || userProfile.username || 'Usuário anônimo') : 'Usuário anônimo',
           discipline_name: discipline ? discipline.name : undefined
         };
@@ -887,6 +1001,75 @@ export class QuestionsBankService {
         userIdToUse = userData.user.id;
       }
       
+      // Se há termo de busca, precisamos buscar as questões com alternativas para filtrar
+      if (filters?.searchTerm) {
+        const { data: questions, error } = await supabase
+          .from('questions')
+          .select(`
+            id,
+            content,
+            tags,
+            discipline_id,
+            subject_id,
+            difficulty,
+            question_type,
+            answer_options (
+              text
+            )
+          `)
+          .eq('user_id', userIdToUse);
+          
+        if (error) {
+          console.error('Erro ao buscar questões para contagem:', error);
+          return 0;
+        }
+        
+        if (!questions) {
+          return 0;
+        }
+        
+        // Aplicar filtros básicos
+        let filteredQuestions = questions;
+        
+        if (filters.disciplineId) {
+          filteredQuestions = filteredQuestions.filter(q => q.discipline_id === filters.disciplineId);
+        }
+        
+        if (filters.subjectId) {
+          filteredQuestions = filteredQuestions.filter(q => q.subject_id === filters.subjectId);
+        }
+        
+        if (filters.difficulty) {
+          filteredQuestions = filteredQuestions.filter(q => q.difficulty === filters.difficulty);
+        }
+        
+        if (filters.questionType) {
+          filteredQuestions = filteredQuestions.filter(q => q.question_type === filters.questionType);
+        }
+        
+        // Filtrar por termo de busca considerando conteúdo e alternativas
+        const searchTerm = filters.searchTerm.toLowerCase();
+        filteredQuestions = filteredQuestions.filter(question => {
+          // Buscar no conteúdo da questão
+          const contentMatch = question.content.toLowerCase().includes(searchTerm);
+          
+          // Buscar nas tags se existirem
+          const tagsMatch = question.tags && question.tags.some(tag => 
+            tag.toLowerCase().includes(searchTerm)
+          );
+          
+          // Buscar no conteúdo das alternativas
+          const alternativesMatch = question.answer_options && question.answer_options.some(option => 
+            option.text.toLowerCase().includes(searchTerm)
+          );
+          
+          return contentMatch || tagsMatch || alternativesMatch;
+        });
+        
+        return filteredQuestions.length;
+      }
+      
+      // Se não há termo de busca, usar contagem simples
       let query = supabase
         .from('questions')
         .select('id', { count: 'exact' })
@@ -908,10 +1091,6 @@ export class QuestionsBankService {
         
         if (filters.questionType) {
           query = query.eq('question_type', filters.questionType);
-        }
-        
-        if (filters.searchTerm) {
-          query = query.ilike('content', `%${filters.searchTerm}%`);
         }
       }
       
@@ -945,6 +1124,84 @@ export class QuestionsBankService {
         return 0;
       }
       
+      // Se há termo de busca, precisamos buscar as questões com alternativas para filtrar
+      if (filters?.searchTerm) {
+        const { data: questions, error } = await supabase
+          .from('questions')
+          .select(`
+            id,
+            content,
+            tags,
+            discipline_id,
+            subject_id,
+            difficulty,
+            question_type,
+            answer_options (
+              text
+            ),
+            disciplines:discipline_id (
+              name
+            )
+          `)
+          .eq('is_public', true);
+          
+        if (error) {
+          console.error('Erro ao buscar questões para contagem:', error);
+          return 0;
+        }
+        
+        if (!questions) {
+          return 0;
+        }
+        
+        // Aplicar filtros básicos
+        let filteredQuestions = questions;
+        
+        if (filters.disciplineId) {
+          filteredQuestions = filteredQuestions.filter(q => q.discipline_id === filters.disciplineId);
+        }
+        
+        if (filters.subjectId) {
+          filteredQuestions = filteredQuestions.filter(q => q.subject_id === filters.subjectId);
+        }
+        
+        if (filters.difficulty) {
+          filteredQuestions = filteredQuestions.filter(q => q.difficulty === filters.difficulty);
+        }
+        
+        if (filters.questionType) {
+          filteredQuestions = filteredQuestions.filter(q => q.question_type === filters.questionType);
+        }
+        
+        if (filters.disciplineName) {
+          filteredQuestions = filteredQuestions.filter(q => 
+            q.disciplines?.name?.toLowerCase().includes(filters.disciplineName!.toLowerCase())
+          );
+        }
+        
+        // Filtrar por termo de busca considerando conteúdo e alternativas
+        const searchTerm = filters.searchTerm.toLowerCase();
+        filteredQuestions = filteredQuestions.filter(question => {
+          // Buscar no conteúdo da questão
+          const contentMatch = question.content.toLowerCase().includes(searchTerm);
+          
+          // Buscar nas tags se existirem
+          const tagsMatch = question.tags && question.tags.some(tag => 
+            tag.toLowerCase().includes(searchTerm)
+          );
+          
+          // Buscar no conteúdo das alternativas
+          const alternativesMatch = question.answer_options && question.answer_options.some(option => 
+            option.text.toLowerCase().includes(searchTerm)
+          );
+          
+          return contentMatch || tagsMatch || alternativesMatch;
+        });
+        
+        return filteredQuestions.length;
+      }
+      
+      // Se não há termo de busca, usar contagem simples
       let query = supabase
         .from('questions')
         .select('id', { count: 'exact' })
@@ -966,10 +1223,6 @@ export class QuestionsBankService {
         
         if (filters.questionType) {
           query = query.eq('question_type', filters.questionType);
-        }
-        
-        if (filters.searchTerm) {
-          query = query.ilike('content', `%${filters.searchTerm}%`);
         }
         
         // Pesquisa por nome de disciplina
