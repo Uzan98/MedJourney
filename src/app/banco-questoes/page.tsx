@@ -156,6 +156,7 @@ export default function BancoQuestoesPage() {
 
       // Buscar questões reais do banco de dados ou usar dados mockados para demonstração
       if (tablesExist) {
+        // Buscar todas as questões do usuário sem limite
         const questionsData = await QuestionsBankService.getUserQuestions();
         
         // Obter o total de questões do usuário (sem paginação)

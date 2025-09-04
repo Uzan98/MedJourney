@@ -51,16 +51,22 @@ export default function QuestaoDetalhePage() {
         
         // Carregar informações da disciplina e assunto
         if (questionData.discipline_id) {
-          // Buscar todas as disciplinas e encontrar a correspondente
-          const disciplines = await DisciplinesRestService.getDisciplines(true);
+          // Buscar todas as disciplinas (sem filtro de usuário) para encontrar a correspondente
+          const disciplines = await DisciplinesRestService.getDisciplines(false);
           const discipline = disciplines?.find(d => d.id === questionData.discipline_id);
           setDisciplineName(discipline?.name || 'Disciplina não encontrada');
           
-          if (questionData.subject_id) {
-            const subjects = await DisciplinesRestService.getSubjects(questionData.discipline_id);
-            const subject = subjects?.find(s => s.id === questionData.subject_id);
-            setSubjectName(subject?.title || subject?.name || 'Assunto não encontrado');
-          }
+          if (questionData.subject_id && discipline) {
+             // Buscar assuntos sem filtro de usuário para encontrar o assunto da questão
+             try {
+               const subjects = await DisciplinesRestService.getSubjects(questionData.discipline_id, false);
+               const subject = subjects?.find(s => s.id === questionData.subject_id);
+               setSubjectName(subject?.title || subject?.name || 'Assunto não encontrado');
+             } catch (error) {
+               console.error('Erro ao buscar assunto:', error);
+               setSubjectName('Assunto não encontrado');
+             }
+           }
         }
       } else {
         setError('Questão não encontrada');

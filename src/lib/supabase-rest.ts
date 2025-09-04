@@ -338,19 +338,24 @@ export const DisciplinesRestService = {
   /**
    * Obtém os assuntos de uma disciplina
    * @param disciplineId ID da disciplina
+   * @param onlyUser Se deve filtrar apenas assuntos do usuário atual
    */
-  async getSubjects(disciplineId: number): Promise<Subject[]> {
+  async getSubjects(disciplineId: number, onlyUser = true): Promise<Subject[]> {
     try {
       const headers = await getAuthHeaders();
-      const user = await supabase.auth.getUser();
-      const userId = user.data.user?.id;
+      let url = `${getSupabaseRestUrl()}subjects?discipline_id=eq.${disciplineId}`;
       
-      if (!userId) {
-        console.log('Usuário não autenticado');
-        return [];
+      if (onlyUser) {
+        const user = await supabase.auth.getUser();
+        const userId = user.data.user?.id;
+        
+        if (!userId) {
+          console.log('Usuário não autenticado');
+          return [];
+        }
+        
+        url += `&user_id=eq.${userId}`;
       }
-      
-      const url = `${getSupabaseRestUrl()}subjects?discipline_id=eq.${disciplineId}&user_id=eq.${userId}`;
       
       const response = await fetch(url, {
         method: 'GET',
