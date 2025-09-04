@@ -343,6 +343,76 @@ export class ExamsService {
   }
 
   /**
+   * Adicionar múltiplas questões a um simulado
+   */
+  static async addQuestionsToExam(examId: number, questionIds: number[]): Promise<boolean> {
+    try {
+      if (!questionIds.length) {
+        return true; // Nada para adicionar
+      }
+
+      // Buscar a última posição no simulado
+      const { data: lastPosition, error: posError } = await supabase
+        .from('exam_questions')
+        .select('position')
+        .eq('exam_id', examId)
+        .order('position', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (posError) {
+        throw posError;
+      }
+      
+      let nextPosition = lastPosition ? (lastPosition.position || 0) + 1 : 1;
+      
+      // Verificar quais questões já existem no simulado
+      const { data: existing, error: checkError } = await supabase
+        .from('exam_questions')
+        .select('question_id')
+        .eq('exam_id', examId)
+        .in('question_id', questionIds);
+      
+      if (checkError) {
+        throw checkError;
+      }
+      
+      // Filtrar apenas as questões que ainda não existem no simulado
+      const existingIds = existing ? existing.map(q => q.question_id) : [];
+      const newQuestionIds = questionIds.filter(id => !existingIds.includes(id));
+      
+      if (!newQuestionIds.length) {
+        return true; // Todas as questões já existem no simulado
+      }
+      
+      // Preparar os dados para inserção em massa
+      const questionsToInsert = newQuestionIds.map((questionId, index) => ({
+        exam_id: examId,
+        question_id: questionId,
+        position: nextPosition + index,
+        weight: 1.0,
+        created_at: new Date().toISOString()
+      }));
+      
+      // Inserir todas as questões de uma vez
+      const { error } = await supabase
+        .from('exam_questions')
+        .insert(questionsToInsert);
+
+      if (error) {
+        throw error;
+      }
+      
+      toast.success(`${newQuestionIds.length} questões adicionadas ao simulado`);
+      return true;
+    } catch (error) {
+      console.error(`Erro ao adicionar questões ao simulado ${examId}:`, error);
+      toast.error('Erro ao adicionar questões ao simulado');
+      return false;
+    }
+  }
+
+  /**
    * Remover uma questão de um simulado
    */
   static async removeQuestionFromExam(examId: number, questionId: number): Promise<boolean> {
