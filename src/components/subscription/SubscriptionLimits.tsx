@@ -297,6 +297,36 @@ export const SubscriptionLimits: React.FC = () => {
                 </div>
               )}
 
+              {/* Tentativas de simulados por semana */}
+              {subscriptionLimits.maxExamAttemptsPerWeek !== undefined && (
+                <div className="mb-4">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-gray-700 font-medium">Tentativas de simulados por semana</span>
+                    <span className="font-medium">{subscriptionLimits.examAttemptsUsedThisWeek || 0} / {formatLimit(subscriptionLimits.maxExamAttemptsPerWeek)}</span>
+                  </div>
+                  <ProgressBar 
+                    used={subscriptionLimits.examAttemptsUsedThisWeek || 0} 
+                    limit={subscriptionLimits.maxExamAttemptsPerWeek} 
+                    color={getTierColor(subscriptionLimits.tier)} 
+                  />
+                </div>
+              )}
+
+              {/* Tentativas de simulados por mês */}
+              {subscriptionLimits.maxExamAttemptsPerMonth !== undefined && (
+                <div className="mb-4">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-gray-700 font-medium">Tentativas de simulados por mês</span>
+                    <span className="font-medium">{subscriptionLimits.examAttemptsUsedThisMonth || 0} / {formatLimit(subscriptionLimits.maxExamAttemptsPerMonth)}</span>
+                  </div>
+                  <ProgressBar 
+                    used={subscriptionLimits.examAttemptsUsedThisMonth || 0} 
+                    limit={subscriptionLimits.maxExamAttemptsPerMonth} 
+                    color={getTierColor(subscriptionLimits.tier)} 
+                  />
+                </div>
+              )}
+
               {/* Questões por simulado */}
               {subscriptionLimits.maxQuestionsPerSimulado !== undefined && (
                 <div className="mb-4 pl-4 border-l-2 border-gray-100">
@@ -417,4 +447,4 @@ function FeatureItem({ icon, label, available }: FeatureItemProps) {
       </span>
     </li>
   );
-} 
+}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Question, QuestionsBankService } from '@/services/questions-bank.service';
-import { Trash2, Eye, Book, Lock, Globe, User, Plus, Loader2, Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, Eye, Book, Lock, Globe, User, Plus, Loader2, Download, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import './question-card-mobile.css';
 
@@ -12,9 +12,22 @@ interface QuestionCardProps {
   onAccess?: () => boolean;
   isGenomeBank?: boolean;
   onQuestionAdded?: (questionId: number) => void;
+  isSelected?: boolean;
+  onToggleSelection?: () => void;
+  selectionEnabled?: boolean;
 }
 
-export default function QuestionCard({ question, onDelete, disciplineName, onAccess, isGenomeBank = false, onQuestionAdded }: QuestionCardProps) {
+export default function QuestionCard({ 
+  question, 
+  onDelete, 
+  disciplineName, 
+  onAccess, 
+  isGenomeBank = false, 
+  onQuestionAdded,
+  isSelected = false,
+  onToggleSelection,
+  selectionEnabled = false
+}: QuestionCardProps) {
   const [isAddingToBank, setIsAddingToBank] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -105,6 +118,7 @@ export default function QuestionCard({ question, onDelete, disciplineName, onAcc
 
   return (
     <div className={`bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow border ${
+      isSelected ? 'border-blue-500 ring-2 ring-blue-200' :
       isGenomeBank 
         ? 'border-purple-100' 
         : question.from_genoma_bank 
@@ -143,6 +157,17 @@ export default function QuestionCard({ question, onDelete, disciplineName, onAcc
           </div>
           
           <div className="flex space-x-1 self-end sm:self-auto">
+            {selectionEnabled && (
+              <button
+                onClick={onToggleSelection}
+                className={`p-2 sm:p-1.5 ${isSelected ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-50'} rounded-lg transition-colors relative group touch-manipulation`}
+              >
+                <CheckCircle2 className="h-5 w-5 sm:h-4 sm:w-4" />
+                <span className="absolute hidden sm:group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 -bottom-8 left-1/2 transform -translate-x-1/2 w-max z-10">
+                  {isSelected ? 'Remover da seleção' : 'Adicionar à seleção'}
+                </span>
+              </button>
+            )}
             <Link
               href={`/banco-questoes/questao/${question.id}`}
               onClick={handleQuestionAccess}

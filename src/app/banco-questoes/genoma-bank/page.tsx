@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { QuestionsBankService, Question } from '@/services/questions-bank.service';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { 
   Search, 
   Filter, 
@@ -18,19 +19,27 @@ import {
   Globe,
   BookOpen,
   Check,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ListChecks
 } from 'lucide-react';
 import QuestionCard from '@/components/banco-questoes/QuestionCard';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { ImportQuestionsFromExcel } from '@/components/banco-questoes/ImportQuestionsFromExcel';
+import QuestionSelectionSidebar from '@/components/banco-questoes/QuestionSelectionSidebar';
+import { ExamsService } from '@/services/exams.service';
 
 export default function GenomaBankPage() {
   const { user } = useAuth();
+  const router = useRouter();
   
   // Estados para gerenciar questões e filtros
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  
+  // Estados para seleção de questões
+  const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
+  const [showSelectionSidebar, setShowSelectionSidebar] = useState(false);
   
   // Estados para filtros e pesquisa
   const [searchTerm, setSearchTerm] = useState('');
@@ -189,6 +198,76 @@ export default function GenomaBankPage() {
     // Não recarrega automaticamente, usuário precisa clicar em pesquisar
   };
   
+  // Funções para seleção de questões
+  const toggleQuestionSelection = (question: Question) => {
+    if (selectedQuestions.some(q => q.id === question.id)) {
+      setSelectedQuestions(selectedQuestions.filter(q => q.id !== question.id));
+    } else {
+      setSelectedQuestions([...selectedQuestions, question]);
+    }
+  };
+
+  const clearSelectedQuestions = () => {
+    setSelectedQuestions([]);
+  };
+
+  const handleCreateNewExam = async () => {
+    try {
+      if (!user) {
+        toast.error('Você precisa estar logado para criar um simulado');
+        return;
+      }
+
+      if (selectedQuestions.length === 0) {
+        toast.error('Selecione pelo menos uma questão para criar um simulado');
+        return;
+      }
+
+      // Criar novo simulado
+      const newExam = await ExamsService.addExam({
+        title: `Novo Simulado (${new Date().toLocaleDateString()})`,
+        description: `Simulado criado a partir de ${selectedQuestions.length} questões do Genoma Bank`,
+        is_public: false,
+        user_id: user.id
+      });
+
+      // Adicionar questões ao simulado
+      await ExamsService.addQuestionsToExam(newExam.id, selectedQuestions.map(q => q.id));
+
+      toast.success('Simulado criado com sucesso!');
+      clearSelectedQuestions();
+      setShowSelectionSidebar(false);
+
+      // Redirecionar para a página do simulado
+      router.push(`/simulados/${newExam.id}`);
+    } catch (error) {
+      console.error('Erro ao criar simulado:', error);
+      toast.error('Erro ao criar simulado');
+    }
+  };
+
+  const handleAddToExistingExam = async (examId: string) => {
+    try {
+      if (selectedQuestions.length === 0) {
+        toast.error('Selecione pelo menos uma questão para adicionar ao simulado');
+        return;
+      }
+
+      // Adicionar questões ao simulado existente
+      await ExamsService.addQuestionsToExam(examId, selectedQuestions.map(q => q.id));
+
+      toast.success('Questões adicionadas ao simulado com sucesso!');
+      clearSelectedQuestions();
+      setShowSelectionSidebar(false);
+
+      // Redirecionar para a página do simulado
+      router.push(`/simulados/${examId}`);
+    } catch (error) {
+      console.error('Erro ao adicionar questões ao simulado:', error);
+      toast.error('Erro ao adicionar questões ao simulado');
+    }
+  };
+
   // Função para mudar de página
   const changePage = (pageNumber: number) => {
     // Garantir que o número da página esteja dentro dos limites
@@ -350,10 +429,28 @@ export default function GenomaBankPage() {
                 <div className="h-2 w-2 bg-green-400 rounded-full mr-2"></div>
                 <span>{hasSearched ? `${totalQuestions} questões encontradas` : 'Pesquise para ver questões'}</span>
               </div>
+              {selectedQuestions.length > 0 && (
+                <div className="bg-blue-500/30 px-4 py-2 rounded-lg flex items-center text-sm backdrop-blur-sm cursor-pointer"
+                  onClick={() => setShowSelectionSidebar(true)}>
+                  <div className="h-2 w-2 bg-blue-400 rounded-full mr-2"></div>
+                  <span>{selectedQuestions.length} {selectedQuestions.length === 1 ? 'questão selecionada' : 'questões selecionadas'}</span>
+                </div>
+              )}
             </div>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3">
+            {selectedQuestions.length > 0 && (
+              <button
+                onClick={() => setShowSelectionSidebar(true)}
+                className="group flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-md hover:shadow-xl"
+              >
+                <div className="bg-blue-500 p-2 rounded-lg mr-3 group-hover:bg-blue-400 transition-colors">
+                  <ListChecks className="h-5 w-5" />
+                </div>
+                <span className="font-semibold">Ver selecionadas</span>
+              </button>
+            )}
             <button
               onClick={() => setShowImportModal(true)}
               className="group flex items-center px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all shadow-md hover:shadow-xl"
@@ -530,6 +627,22 @@ export default function GenomaBankPage() {
 
       {/* Lista de questões */}
       <div className="space-y-6">
+        {/* Botão para mostrar questões selecionadas */}
+        {selectedQuestions.length > 0 && (
+          <div className="bg-white p-4 rounded-xl shadow-sm mb-4 flex justify-between items-center">
+            <div className="flex items-center">
+              <ListChecks className="h-5 w-5 text-purple-600 mr-2" />
+              <span className="font-medium">{selectedQuestions.length} questões selecionadas</span>
+            </div>
+            <button
+              onClick={() => setShowSelectionSidebar(true)}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Ver selecionadas
+            </button>
+          </div>
+        )}
+        
         {loading ? (
           <div className="flex flex-col items-center justify-center h-64 bg-white rounded-xl shadow-md">
             <div className="animate-spin rounded-full h-14 w-14 border-4 border-purple-500 border-t-transparent mb-3"></div>
@@ -601,6 +714,9 @@ export default function GenomaBankPage() {
                   onAccess={handleQuestionAccess}
                   onQuestionAdded={handleQuestionAdded}
                   isGenomeBank={true}
+                  isSelected={selectedQuestions.some(q => q.id === question.id)}
+                  onToggleSelection={() => toggleQuestionSelection(question)}
+                  selectionEnabled={true}
                 />
               ))}
             </div>
@@ -610,6 +726,16 @@ export default function GenomaBankPage() {
           </div>
         )}
       </div>
+      
+      {/* Barra lateral de seleção de questões */}
+      <QuestionSelectionSidebar
+        isOpen={showSelectionSidebar}
+        onClose={() => setShowSelectionSidebar(false)}
+        selectedQuestions={selectedQuestions}
+        onClearSelection={clearSelectedQuestions}
+        onCreateNewExam={handleCreateNewExam}
+        onAddToExistingExam={handleAddToExistingExam}
+      />
 
       {/* Modal de importação de Excel */}
       {showImportModal && (
@@ -661,4 +787,4 @@ export default function GenomaBankPage() {
       )}
     </div>
   );
-} 
+}

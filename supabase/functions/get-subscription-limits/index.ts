@@ -164,6 +164,12 @@ serve(async (req: Request) => {
         studySessionsUsedToday: studySessionsToday || 0,
         maxSimuladosPerWeek: features.maxSimuladosPerWeek || 1,
         simuladosUsedThisWeek: simuladosThisWeek || 0,
+        maxSimuladosPerMonth: features.maxSimuladosPerMonth || 4,
+        simuladosUsedThisMonth: simuladosThisMonth || 0,
+        maxExamAttemptsPerWeek: features.maxExamAttemptsPerWeek || 1,
+        examAttemptsUsedThisWeek: usageData?.exam_attempts_used_this_week || 0,
+        maxExamAttemptsPerMonth: features.maxExamAttemptsPerMonth || 4,
+        examAttemptsUsedThisMonth: usageData?.exam_attempts_used_this_month || 0,
         maxQuestionsPerSimulado: features.maxQuestionsPerSimulado || 30,
         maxFlashcardsPerDeck: features.maxFlashcardsPerDeck || 30,
       };
@@ -203,6 +209,10 @@ serve(async (req: Request) => {
       maxSimuladosPerWeek: features.maxSimuladosPerWeek || 1,
       simuladosUsedThisMonth: simuladosThisMonth || 0,
       simuladosUsedThisWeek: simuladosThisWeek || 0,
+      maxExamAttemptsPerWeek: features.maxExamAttemptsPerWeek || 1,
+      examAttemptsUsedThisWeek: usageData?.exam_attempts_used_this_week || 0,
+      maxExamAttemptsPerMonth: features.maxExamAttemptsPerMonth || 4,
+      examAttemptsUsedThisMonth: usageData?.exam_attempts_used_this_month || 0,
       maxQuestionsPerSimulado: features.maxQuestionsPerSimulado || 30,
       maxFlashcardsPerDeck: features.maxFlashcardsPerDeck || 30,
     };

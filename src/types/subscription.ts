@@ -31,6 +31,10 @@ export interface SubscriptionFeatures {
   maxDisciplines: number;
   maxFlashcardDecks: number;
   maxQuestionsPerDay: number;
+  maxSimuladosPerWeek?: number;
+  maxSimuladosPerMonth?: number;
+  maxExamAttemptsPerWeek?: number;
+  maxExamAttemptsPerMonth?: number;
   aiPlanningAccess: boolean;
   communityFeaturesAccess: boolean;
   facultyFeaturesAccess: boolean;
@@ -86,6 +90,10 @@ export interface UserSubscriptionLimits {
   simuladosUsedThisWeek?: number;
   maxSimuladosPerMonth?: number;
   simuladosUsedThisMonth?: number;
+  maxExamAttemptsPerWeek?: number;
+  examAttemptsUsedThisWeek?: number;
+  maxExamAttemptsPerMonth?: number;
+  examAttemptsUsedThisMonth?: number;
   maxQuestionsPerSimulado?: number;
   // Subscription status information
   status?: SubscriptionStatus;
@@ -99,6 +107,9 @@ export const DEFAULT_SUBSCRIPTION_FEATURES: Record<SubscriptionTier, Subscriptio
     maxDisciplines: 5,
     maxFlashcardDecks: 2,
     maxQuestionsPerDay: 10,
+    maxSimuladosPerWeek: 1,
+    maxSimuladosPerMonth: 4,
+    maxExamAttemptsPerWeek: 1,
     aiPlanningAccess: false,
     communityFeaturesAccess: true,
     facultyFeaturesAccess: false,
@@ -109,6 +120,10 @@ export const DEFAULT_SUBSCRIPTION_FEATURES: Record<SubscriptionTier, Subscriptio
     maxDisciplines: 15,
     maxFlashcardDecks: 10,
     maxQuestionsPerDay: 100,
+    maxSimuladosPerWeek: 30,
+    maxSimuladosPerMonth: 30,
+    maxExamAttemptsPerWeek: 30,
+    maxExamAttemptsPerMonth: 30,
     aiPlanningAccess: true,
     communityFeaturesAccess: true,
     facultyFeaturesAccess: true,
@@ -119,6 +134,10 @@ export const DEFAULT_SUBSCRIPTION_FEATURES: Record<SubscriptionTier, Subscriptio
     maxDisciplines: -1, // unlimited
     maxFlashcardDecks: -1, // unlimited
     maxQuestionsPerDay: -1, // unlimited
+    maxSimuladosPerWeek: -1, // unlimited
+    maxSimuladosPerMonth: -1, // unlimited
+    maxExamAttemptsPerWeek: -1, // unlimited
+    maxExamAttemptsPerMonth: -1, // unlimited
     aiPlanningAccess: true,
     communityFeaturesAccess: true,
     facultyFeaturesAccess: true,

@@ -37,6 +37,12 @@ const defaultSubscriptionLimits: UserSubscriptionLimits = {
   studySessionsUsedToday: 0,
   maxSimuladosPerWeek: 1,
   simuladosUsedThisWeek: 0,
+  maxSimuladosPerMonth: 4,
+  simuladosUsedThisMonth: 0,
+  maxExamAttemptsPerWeek: 1,
+  examAttemptsUsedThisWeek: 0,
+  maxExamAttemptsPerMonth: 4,
+  examAttemptsUsedThisMonth: 0,
   maxQuestionsPerSimulado: 30,
   maxFlashcardsPerDeck: 30,
 };
@@ -263,6 +269,14 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return subscriptionLimits.maxSimuladosPerMonth !== undefined && 
                subscriptionLimits.maxSimuladosPerMonth !== -1 && 
                (subscriptionLimits.simuladosUsedThisMonth || 0) >= subscriptionLimits.maxSimuladosPerMonth;
+      case 'exam_attempts_per_week':
+        return subscriptionLimits.maxExamAttemptsPerWeek !== undefined && 
+               subscriptionLimits.maxExamAttemptsPerWeek !== -1 && 
+               (subscriptionLimits.examAttemptsUsedThisWeek || 0) >= subscriptionLimits.maxExamAttemptsPerWeek;
+      case 'exam_attempts_per_month':
+        return subscriptionLimits.maxExamAttemptsPerMonth !== undefined && 
+               subscriptionLimits.maxExamAttemptsPerMonth !== -1 && 
+               (subscriptionLimits.examAttemptsUsedThisMonth || 0) >= subscriptionLimits.maxExamAttemptsPerMonth;
       default:
         return false;
     }
@@ -353,6 +367,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         .select('*', { count: 'exact', head: true })
         .eq('user_id', session.user.id)
         .gte('created_at', firstDayOfMonth.toISOString());
+
+      // Get exam attempts from subscription_usage table
+      const examAttemptsThisWeek = usageData?.exam_attempts_used_this_week || 0;
+      const examAttemptsThisMonth = usageData?.exam_attempts_used_this_month || 0;
       
       // Debug logs
       console.log('Debug - userSubscription:', userSubscription);
@@ -369,6 +387,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           studySessionsUsedToday: studySessionsToday || 0,
           simuladosUsedThisWeek: simuladosThisWeek || 0,
           simuladosUsedThisMonth: simuladosThisMonth || 0,
+          examAttemptsUsedThisWeek: examAttemptsThisWeek || 0,
+          examAttemptsUsedThisMonth: examAttemptsThisMonth || 0,
           // Add subscription status information for canceled subscriptions
           status: userSubscription?.status as SubscriptionStatus || SubscriptionStatus.CANCELED,
           cancelAtPeriodEnd: userSubscription?.cancel_at_period_end || false,
@@ -400,6 +420,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           simuladosUsedThisWeek: simuladosThisWeek || 0,
           maxSimuladosPerMonth: features.maxSimuladosPerMonth,
           simuladosUsedThisMonth: simuladosThisMonth || 0,
+          maxExamAttemptsPerWeek: features.maxExamAttemptsPerWeek || 1,
+          examAttemptsUsedThisWeek: examAttemptsThisWeek || 0,
+          maxExamAttemptsPerMonth: features.maxExamAttemptsPerMonth,
+          examAttemptsUsedThisMonth: examAttemptsThisMonth || 0,
           maxQuestionsPerSimulado: features.maxQuestionsPerSimulado || 30,
           maxFlashcardsPerDeck: features.maxFlashcardsPerDeck || 30,
           // Add subscription status information

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { FaArrowLeft, FaArrowRight, FaFlag, FaClock, FaCheckCircle, FaCut } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Exam, ExamQuestion, ExamAttempt, ExamAnswer, ExamsService } from '@/services/exams.service';
 import { QuestionsBankService } from '@/services/questions-bank.service';
 import Loading from '@/components/Loading';
@@ -14,6 +15,7 @@ import ConfirmationModal from '@/components/ConfirmationModal';
 export default function IniciarSimuladoPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { user } = useAuth();
+  const { hasReachedLimit, showUpgradeModal, refreshLimits, subscriptionLimits } = useSubscription();
   const examId = parseInt(params.id);
   
   const [loading, setLoading] = useState(true);
@@ -116,6 +118,17 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
   const startExam = async () => {
     if (starting) return;
     
+    // Verificar limite de tentativas de simulados
+    if (hasReachedLimit('exam_attempts_per_week')) {
+      showUpgradeModal(undefined, 'Você atingiu o limite de tentativas de simulados por semana');
+      return;
+    }
+    
+    if (hasReachedLimit('exam_attempts_per_month')) {
+      showUpgradeModal(undefined, 'Você atingiu o limite de tentativas de simulados por mês');
+      return;
+    }
+    
     setStarting(true);
     try {
       // Criar uma nova tentativa no banco de dados
@@ -134,6 +147,10 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
       });
       
       setAnswers(updatedAnswers);
+      
+      // Atualizar limites de assinatura após iniciar o simulado
+      await refreshLimits();
+      
       toast.success('Simulado iniciado! Boa sorte!');
     } catch (error) {
       console.error('Erro ao iniciar simulado:', error);
