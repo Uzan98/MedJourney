@@ -25,7 +25,8 @@ import {
   CalendarDays,
   Clock,
   Timer,
-  Play
+  Play,
+  Bell
 } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -180,6 +181,11 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
       path: "/planner",
       label: "Planner",
       icon: <CalendarDays className="h-5 w-5 flex-shrink-0" />
+    },
+    {
+      path: "/notifications",
+      label: "Notificações",
+      icon: <Bell className="h-5 w-5 flex-shrink-0" />
     },
     {
       path: "/admin",

@@ -98,13 +98,14 @@ CREATE TRIGGER trigger_notify_new_faculty_exam
 -- TRIGGER: Notificação para novos posts no fórum
 -- =====================================================
 
--- Função para criar notificação de novo post no fórum
+-- Função para criar notificação de novo tópico no fórum
 CREATE OR REPLACE FUNCTION notify_new_forum_post()
 RETURNS TRIGGER AS $$
 DECLARE
-    notification_id INTEGER;
+    new_notification_id INTEGER;
+    user_record RECORD;
 BEGIN
-    -- Criar notificação para novo post no fórum
+    -- Criar notificação para novo tópico no fórum
     INSERT INTO notifications (
         title,
         message,
@@ -120,26 +121,46 @@ BEGIN
         'forum_post',
         'faculty',
         NEW.faculty_id,
-        NEW.author_id,
+        NEW.user_id,
         jsonb_build_object(
-            'post_id', NEW.id,
-            'post_title', NEW.title,
-            'faculty_id', NEW.faculty_id,
-            'post_type', NEW.type
+            'topic_id', NEW.id,
+            'topic_title', NEW.title,
+            'faculty_id', NEW.faculty_id
         ),
         NOW()
-    ) RETURNING id INTO notification_id;
+    ) RETURNING id INTO new_notification_id;
+    
+    -- Criar destinatários para todos os usuários da faculdade (exceto o autor)
+    FOR user_record IN 
+        SELECT u.user_id FROM faculty_members fm
+        JOIN users u ON fm.user_id::text = u.user_id
+        WHERE fm.faculty_id = NEW.faculty_id 
+        AND u.user_id != NEW.user_id::text
+        AND u.is_active = true
+    LOOP
+        INSERT INTO notification_recipients (
+            notification_id,
+            user_id,
+            read_at,
+            created_at
+        ) VALUES (
+            new_notification_id,
+            user_record.user_id::uuid,
+            NULL,
+            NOW()
+        ) ON CONFLICT (notification_id, user_id) DO NOTHING;
+    END LOOP;
     
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Criar o trigger para novos posts no fórum
+-- Criar o trigger para novos tópicos no fórum
 DROP TRIGGER IF EXISTS trigger_notify_new_forum_post ON faculty_posts;
+DROP TRIGGER IF EXISTS trigger_notify_new_forum_post ON faculty_forum_topics;
 CREATE TRIGGER trigger_notify_new_forum_post
-    AFTER INSERT ON faculty_posts
+    AFTER INSERT ON faculty_forum_topics
     FOR EACH ROW
-    WHEN (NEW.type = 'question') -- Apenas para dúvidas
     EXECUTE FUNCTION notify_new_forum_post();
 
 -- =====================================================
@@ -254,7 +275,8 @@ CREATE TRIGGER trigger_notify_exam_submission
 CREATE OR REPLACE FUNCTION notify_new_material()
 RETURNS TRIGGER AS $$
 DECLARE
-    notification_id INTEGER;
+    new_notification_id INTEGER;
+    user_record RECORD;
 BEGIN
     -- Criar notificação para novo material
     INSERT INTO notifications (
@@ -272,15 +294,36 @@ BEGIN
         'material',
         'faculty',
         NEW.faculty_id,
-        NEW.uploaded_by,
+        NEW.user_id,
         jsonb_build_object(
             'material_id', NEW.id,
             'material_title', NEW.title,
-            'material_type', NEW.type,
+            'material_type', NEW.file_type,
             'faculty_id', NEW.faculty_id
         ),
         NOW()
-    ) RETURNING id INTO notification_id;
+    ) RETURNING id INTO new_notification_id;
+    
+    -- Criar destinatários para todos os usuários da faculdade (exceto quem fez upload)
+    FOR user_record IN 
+        SELECT u.user_id FROM faculty_members fm
+        JOIN users u ON fm.user_id::text = u.user_id
+        WHERE fm.faculty_id = NEW.faculty_id 
+        AND u.user_id != NEW.user_id::text
+        AND u.is_active = true
+    LOOP
+        INSERT INTO notification_recipients (
+            notification_id,
+            user_id,
+            read_at,
+            created_at
+        ) VALUES (
+            new_notification_id,
+            user_record.user_id::uuid,
+            NULL,
+            NOW()
+        ) ON CONFLICT (notification_id, user_id) DO NOTHING;
+    END LOOP;
     
     RETURN NEW;
 END;

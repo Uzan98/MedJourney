@@ -32,7 +32,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
   };
 
   const requestBrowserPermission = async () => {
-    if ('Notification' in window) {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         toast.success('Permissão para notificações concedida!');
@@ -45,10 +45,14 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
   };
 
   const getBrowserPermissionStatus = () => {
-    if (!('Notification' in window)) {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
       return 'not-supported';
     }
-    return Notification.permission;
+    try {
+      return Notification.permission;
+    } catch (error) {
+      return 'not-supported';
+    }
   };
 
   const permissionStatus = getBrowserPermissionStatus();

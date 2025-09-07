@@ -118,6 +118,11 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       icon: <ListTodo className="h-5 w-5 flex-shrink-0" />
     },
     {
+      path: "/notifications",
+      label: "Notificações",
+      icon: <Bell className="h-5 w-5 flex-shrink-0" />
+    },
+    {
       path: "/comunidade",
       label: "Comunidade",
       icon: <Users className="h-5 w-5 flex-shrink-0" />
