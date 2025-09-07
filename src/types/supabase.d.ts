@@ -132,6 +132,100 @@ export interface Database {
           updated_at?: string;
         };
       };
+      notifications: {
+        Row: {
+          id: number;
+          title: string;
+          message: string;
+          type: 'simulado' | 'forum_post' | 'new_simulado' | 'event' | 'announcement' | 'material';
+          target_type: 'faculty' | 'course' | 'all_users' | 'specific_users';
+          target_id?: number;
+          data?: Record<string, any>;
+          expires_at?: string;
+          created_at: string;
+          updated_at?: string;
+        };
+        Insert: {
+          title: string;
+          message: string;
+          type: 'simulado' | 'forum_post' | 'new_simulado' | 'event' | 'announcement' | 'material';
+          target_type: 'faculty' | 'course' | 'all_users' | 'specific_users';
+          target_id?: number;
+          data?: Record<string, any>;
+          expires_at?: string;
+        };
+        Update: {
+          title?: string;
+          message?: string;
+          type?: 'simulado' | 'forum_post' | 'new_simulado' | 'event' | 'announcement' | 'material';
+          target_type?: 'faculty' | 'course' | 'all_users' | 'specific_users';
+          target_id?: number;
+          data?: Record<string, any>;
+          expires_at?: string;
+          updated_at?: string;
+        };
+      };
+      notification_recipients: {
+        Row: {
+          id: number;
+          notification_id: number;
+          user_id: string;
+          is_read: boolean;
+          read_at?: string;
+          created_at: string;
+        };
+        Insert: {
+          notification_id: number;
+          user_id: string;
+          is_read?: boolean;
+          read_at?: string;
+        };
+        Update: {
+          is_read?: boolean;
+          read_at?: string;
+        };
+      };
+      user_notification_settings: {
+        Row: {
+          id: number;
+          user_id: string;
+          enabled: boolean;
+          sound_enabled: boolean;
+          browser_enabled: boolean;
+          email_enabled: boolean;
+          simulado_enabled: boolean;
+          forum_enabled: boolean;
+          event_enabled: boolean;
+          material_enabled: boolean;
+          announcement_enabled: boolean;
+          created_at: string;
+          updated_at?: string;
+        };
+        Insert: {
+          user_id: string;
+          enabled?: boolean;
+          sound_enabled?: boolean;
+          browser_enabled?: boolean;
+          email_enabled?: boolean;
+          simulado_enabled?: boolean;
+          forum_enabled?: boolean;
+          event_enabled?: boolean;
+          material_enabled?: boolean;
+          announcement_enabled?: boolean;
+        };
+        Update: {
+          enabled?: boolean;
+          sound_enabled?: boolean;
+          browser_enabled?: boolean;
+          email_enabled?: boolean;
+          simulado_enabled?: boolean;
+          forum_enabled?: boolean;
+          event_enabled?: boolean;
+          material_enabled?: boolean;
+          announcement_enabled?: boolean;
+          updated_at?: string;
+        };
+      };
     };
     Views: {
       [view_name: string]: {

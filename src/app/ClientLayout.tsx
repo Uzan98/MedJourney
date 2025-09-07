@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { SupabaseProvider } from '@/contexts/SupabaseProvider';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
+import { NotificationProvider } from '@/contexts/NotificationContext';
 import { PWAProvider } from '@/components/PWAProvider';
 import { StartupProvider } from './providers';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
@@ -27,20 +28,22 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     <SupabaseProvider>
       <AuthProvider>
         <SubscriptionProvider>
-          <PWAProvider>
-            <StartupProvider>
-              {children}
-              
-              {/* Mobile Menu - Only visible on mobile devices */}
-              <MobileMenu />
-              
-              {/* PWA Components */}
-               <PWABanner />
-               <PWAInstallPrompt />
-               
-               {/* Update Notification - Removido: atualização automática silenciosa */}
-            </StartupProvider>
-          </PWAProvider>
+          <NotificationProvider>
+            <PWAProvider>
+              <StartupProvider>
+                {children}
+                
+                {/* Mobile Menu - Only visible on mobile devices */}
+                <MobileMenu />
+                
+                {/* PWA Components */}
+                 <PWABanner />
+                 <PWAInstallPrompt />
+                 
+                 {/* Update Notification - Removido: atualização automática silenciosa */}
+              </StartupProvider>
+            </PWAProvider>
+          </NotificationProvider>
         </SubscriptionProvider>
       </AuthProvider>
     </SupabaseProvider>
