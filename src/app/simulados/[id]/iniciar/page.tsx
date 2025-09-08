@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Exam, ExamQuestion, ExamAttempt, ExamAnswer, ExamsService } from '@/services/exams.service';
 import { QuestionsBankService } from '@/services/questions-bank.service';
+import { ImageUploadService, QuestionImage } from '@/services/image-upload.service';
 import Loading from '@/components/Loading';
 import ConfirmationModal from '@/components/ConfirmationModal';
 
@@ -29,6 +30,7 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
   const [answers, setAnswers] = useState<Record<number, ExamAnswer>>({});
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [attemptId, setAttemptId] = useState<number | null>(null);
+  const [questionImages, setQuestionImages] = useState<Record<number, QuestionImage[]>>({});
   
   // Inicialização
   useEffect(() => {
@@ -95,6 +97,24 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
       }
       
       setQuestions(questionsToShow);
+      
+      // Carregar imagens das questões
+      console.log('🔍 Iniciando carregamento de imagens para', questionsToShow.length, 'questões');
+      const imagesObj: Record<number, QuestionImage[]> = {};
+      for (const questionData of questionsToShow) {
+        if (questionData.question?.id) {
+          console.log('📸 Buscando imagens para questão ID:', questionData.question.id);
+          const images = await ImageUploadService.getQuestionImages(questionData.question.id.toString());
+          console.log('✅ Imagens encontradas para questão', questionData.question.id, ':', images.length, 'imagens');
+          if (images.length > 0) {
+            console.log('📋 Detalhes das imagens:', images);
+            imagesObj[questionData.question.id] = images;
+            console.log('💾 Adicionando', images.length, 'imagens para questão', questionData.question.id);
+          }
+        }
+      }
+      console.log('🎯 Mapa final de imagens:', imagesObj);
+      setQuestionImages(imagesObj);
       
       // Inicializar objeto de respostas
       const answersObj: Record<number, ExamAnswer> = {};
@@ -320,9 +340,32 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
           </div>
           
           <div 
-            className="quill-content text-gray-700 mb-8 text-lg" 
+            className="quill-content text-gray-700 mb-6 text-lg" 
             dangerouslySetInnerHTML={{ __html: question.content || '' }}
           />
+          
+          {/* Exibir imagens da questão, se houver */}
+          {questionImages[question.id as number] && questionImages[question.id as number].length > 0 && (
+            <div className="mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {questionImages[question.id as number].map((image, index) => (
+                  <div key={image.id} className="relative">
+                    <img 
+                      src={image.imageUrl} 
+                      alt={image.description || `Imagem da questão ${index + 1}`}
+                      className="w-full h-auto rounded-lg shadow-md border border-gray-200"
+                      style={{ maxHeight: '400px', objectFit: 'contain' }}
+                    />
+                    {image.description && (
+                      <p className="text-sm text-gray-600 mt-2 text-center italic">
+                        {image.description}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           
           {/* Renderizar opções baseadas no tipo de questão */}
           {question.question_type === 'multiple_choice' && (

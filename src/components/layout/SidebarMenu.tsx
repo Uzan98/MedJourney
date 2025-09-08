@@ -10,6 +10,7 @@ import {
   Settings, 
   BookText,
   FileQuestion,
+  FileText,
   Users,
   Home,
   ChevronDown,
@@ -143,7 +144,19 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
     {
       path: "/simulados",
       label: "Simulados",
-      icon: <ClipboardList className="h-5 w-5 flex-shrink-0" />
+      icon: <ClipboardList className="h-5 w-5 flex-shrink-0" />,
+      submenu: [
+        {
+          path: "/simulados",
+          label: "Meus Simulados",
+          icon: <ClipboardList className="h-5 w-5 flex-shrink-0" />
+        },
+        {
+          path: "/simulados/provas-integra",
+          label: "Provas na Íntegra",
+          icon: <FileText className="h-5 w-5 flex-shrink-0" />
+        }
+      ]
     },
     {
       path: "/flashcards",

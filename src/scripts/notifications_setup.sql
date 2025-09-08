@@ -72,28 +72,60 @@ CREATE INDEX IF NOT EXISTS idx_notification_groups_type ON public.notification_g
 -- Função para criar notificação automaticamente quando um simulado é enviado
 CREATE OR REPLACE FUNCTION create_simulado_notification()
 RETURNS TRIGGER AS $$
+DECLARE
+  faculty_exam_record RECORD;
 BEGIN
-  -- Inserir notificação para simulado enviado
-  INSERT INTO public.notifications (
-    title,
-    message,
-    type,
-    target_type,
-    target_id,
-    sender_id,
-    data
-  ) VALUES (
-    'Novo Simulado Disponível',
-    'Um novo simulado foi disponibilizado',
-    'new_simulado',
-    'all_users', -- Notificar todos os usuários já que exams não tem faculty_id
-    NULL,
-    NEW.user_id, -- Usar user_id em vez de created_by
-    jsonb_build_object(
-      'simulado_id', NEW.id,
-      'simulado_title', NEW.title
-    )
-  );
+  -- Verificar se existe um faculty_exam associado a este exam
+  SELECT fe.faculty_id INTO faculty_exam_record
+  FROM public.faculty_exams fe
+  WHERE fe.external_exam_id = NEW.id
+  LIMIT 1;
+  
+  -- Se encontrou uma faculdade associada, notificar apenas os membros da faculdade
+  IF FOUND THEN
+    INSERT INTO public.notifications (
+      title,
+      message,
+      type,
+      target_type,
+      target_id,
+      sender_id,
+      data
+    ) VALUES (
+      'Novo Simulado Disponível',
+      'Um novo simulado foi disponibilizado para sua turma',
+      'new_simulado',
+      'faculty',
+      faculty_exam_record.faculty_id,
+      NEW.user_id,
+      jsonb_build_object(
+        'simulado_id', NEW.id,
+        'simulado_title', NEW.title
+      )
+    );
+  ELSE
+    -- Se não há faculdade associada, é um simulado público - notificar todos
+    INSERT INTO public.notifications (
+      title,
+      message,
+      type,
+      target_type,
+      target_id,
+      sender_id,
+      data
+    ) VALUES (
+      'Novo Simulado Público Disponível',
+      'Um novo simulado público foi disponibilizado',
+      'new_simulado',
+      'all_users',
+      NULL,
+      NEW.user_id,
+      jsonb_build_object(
+        'simulado_id', NEW.id,
+        'simulado_title', NEW.title
+      )
+    );
+  END IF;
   
   RETURN NEW;
 END;

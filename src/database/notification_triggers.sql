@@ -11,28 +11,61 @@ CREATE OR REPLACE FUNCTION notify_new_exam()
 RETURNS TRIGGER AS $$
 DECLARE
     notification_id INTEGER;
+    faculty_exam_record RECORD;
 BEGIN
-    -- Criar notificação para novo simulado
-    INSERT INTO notifications (
-        title,
-        message,
-        type,
-        target_type,
-        sender_id,
-        data,
-        created_at
-    ) VALUES (
-        'Novo Simulado Disponível',
-        'O simulado "' || COALESCE(NEW.title, 'Sem título') || '" foi disponibilizado',
-        'new_simulado', -- Usar tipo válido
-        'all_users',
-        NEW.user_id, -- Usar user_id em vez de created_by
-        jsonb_build_object(
-            'exam_id', NEW.id,
-            'exam_title', NEW.title
-        ),
-        NOW()
-    ) RETURNING id INTO notification_id;
+    -- Verificar se existe um faculty_exam associado a este exam
+    SELECT fe.faculty_id INTO faculty_exam_record
+    FROM public.faculty_exams fe
+    WHERE fe.external_exam_id = NEW.id
+    LIMIT 1;
+    
+    -- Se encontrou uma faculdade associada, notificar apenas os membros da faculdade
+    IF FOUND THEN
+        INSERT INTO notifications (
+            title,
+            message,
+            type,
+            target_type,
+            target_id,
+            sender_id,
+            data,
+            created_at
+        ) VALUES (
+            'Novo Simulado Disponível',
+            'O simulado "' || COALESCE(NEW.title, 'Sem título') || '" foi disponibilizado para sua turma',
+            'new_simulado',
+            'faculty',
+            faculty_exam_record.faculty_id,
+            NEW.user_id,
+            jsonb_build_object(
+                'exam_id', NEW.id,
+                'exam_title', NEW.title
+            ),
+            NOW()
+        ) RETURNING id INTO notification_id;
+    ELSE
+        -- Se não há faculdade associada, é um simulado público - notificar todos
+        INSERT INTO notifications (
+            title,
+            message,
+            type,
+            target_type,
+            sender_id,
+            data,
+            created_at
+        ) VALUES (
+            'Novo Simulado Público Disponível',
+            'O simulado "' || COALESCE(NEW.title, 'Sem título') || '" foi disponibilizado publicamente',
+            'new_simulado',
+            'all_users',
+            NEW.user_id,
+            jsonb_build_object(
+                'exam_id', NEW.id,
+                'exam_title', NEW.title
+            ),
+            NOW()
+        ) RETURNING id INTO notification_id;
+    END IF;
     
     RETURN NEW;
 END;
@@ -62,6 +95,7 @@ BEGIN
             message,
             type,
             target_type,
+            target_id,
             sender_id,
             data,
             created_at
@@ -69,7 +103,8 @@ BEGIN
             'Novo Simulado FACUL Disponível',
             'O simulado "' || COALESCE(NEW.title, 'Sem título') || '" foi disponibilizado na faculdade',
             'new_simulado',
-            'all_users',
+            'faculty',
+            NEW.faculty_id,
             NEW.creator_id,
             jsonb_build_object(
                 'faculty_exam_id', NEW.id,
@@ -193,7 +228,7 @@ BEGIN
         'event',
         'faculty',
         NEW.faculty_id,
-        NEW.created_by,
+        NEW.creator_id,
         jsonb_build_object(
             'event_id', NEW.id,
             'event_title', NEW.title,
@@ -224,36 +259,48 @@ RETURNS TRIGGER AS $$
 DECLARE
     notification_id INTEGER;
     exam_title TEXT;
+    faculty_exam_record RECORD;
 BEGIN
     -- Obter informações do simulado
     SELECT title INTO exam_title
     FROM exams 
     WHERE id = NEW.exam_id;
     
-    -- Criar notificação para administradores
-    INSERT INTO notifications (
-        title,
-        message,
-        type,
-        target_type,
-        sender_id,
-        data,
-        created_at
-    ) VALUES (
-        'Simulado Concluído',
-        'Um aluno concluiu o simulado "' || COALESCE(exam_title, 'Sem título') || '" com ' || COALESCE(NEW.score::text, '0') || '% de acerto',
-        'exam_completed',
-        'all_users',
-        NEW.user_id,
-        jsonb_build_object(
-            'attempt_id', NEW.id,
-            'exam_id', NEW.exam_id,
-            'exam_title', exam_title,
-            'user_id', NEW.user_id,
-            'score', NEW.score
-        ),
-        NOW()
-    ) RETURNING id INTO notification_id;
+    -- Verificar se existe um faculty_exam associado a este exam
+    SELECT fe.faculty_id INTO faculty_exam_record
+    FROM public.faculty_exams fe
+    WHERE fe.external_exam_id = NEW.exam_id
+    LIMIT 1;
+    
+    -- Se encontrou uma faculdade associada, notificar apenas os membros da faculdade
+    IF FOUND THEN
+        INSERT INTO notifications (
+            title,
+            message,
+            type,
+            target_type,
+            target_id,
+            sender_id,
+            data,
+            created_at
+        ) VALUES (
+            'Simulado Concluído na Turma',
+            'Um aluno concluiu o simulado "' || COALESCE(exam_title, 'Sem título') || '" com ' || COALESCE(NEW.score::text, '0') || '% de acerto',
+            'exam_completed',
+            'faculty',
+            faculty_exam_record.faculty_id,
+            NEW.user_id,
+            jsonb_build_object(
+                'attempt_id', NEW.id,
+                'exam_id', NEW.exam_id,
+                'exam_title', exam_title,
+                'user_id', NEW.user_id,
+                'score', NEW.score
+            ),
+            NOW()
+        ) RETURNING id INTO notification_id;
+    -- Se não há faculdade, não notificar (simulados públicos não precisam notificar conclusão)
+    END IF;
     
     RETURN NEW;
 END;
