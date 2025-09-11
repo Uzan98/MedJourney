@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -22,10 +22,30 @@ export default function NovoSimuladoPage() {
   const [isPublic, setIsPublic] = useState(false);
   const [shuffleQuestions, setShuffleQuestions] = useState(true);
   const [showAnswers, setShowAnswers] = useState(true);
+  const [examTypeId, setExamTypeId] = useState<number | undefined>(undefined);
+  const [examTypes, setExamTypes] = useState<{ id: number; name: string; description: string }[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(true);
   
   // Verificar limites de simulados
   const reachedWeekLimit = hasReachedLimit('simulados_per_week');
   const reachedMonthLimit = hasReachedLimit('simulados_per_month');
+
+  useEffect(() => {
+    loadExamTypes();
+  }, []);
+
+  const loadExamTypes = async () => {
+    try {
+      setLoadingTypes(true);
+      const types = await ExamsService.getExamTypes();
+      setExamTypes(types);
+    } catch (error) {
+      console.error('Erro ao carregar tipos de exames:', error);
+      toast.error('Erro ao carregar categorias de provas');
+    } finally {
+      setLoadingTypes(false);
+    }
+  };
 
   if (reachedWeekLimit || reachedMonthLimit) {
     return (
@@ -75,6 +95,7 @@ export default function NovoSimuladoPage() {
         is_public: isPublic,
         shuffle_questions: shuffleQuestions,
         show_answers: showAnswers,
+        exam_type_id: examTypeId,
       };
       
       const examId = await ExamsService.addExam(newExam);
@@ -156,6 +177,35 @@ export default function NovoSimuladoPage() {
                     rows={3}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
+                </div>
+                
+                {/* Categoria/Tipo de Exame */}
+                <div>
+                  <label htmlFor="examType" className="block text-sm font-medium text-gray-700 mb-1">
+                    Categoria da Prova
+                  </label>
+                  {loadingTypes ? (
+                    <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
+                      <span className="text-gray-500">Carregando categorias...</span>
+                    </div>
+                  ) : (
+                    <select
+                      id="examType"
+                      value={examTypeId || ''}
+                      onChange={(e) => setExamTypeId(e.target.value ? parseInt(e.target.value) : undefined)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Selecione uma categoria (opcional)</option>
+                      {examTypes.map((type) => (
+                        <option key={type.id} value={type.id}>
+                          {type.description}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <p className="text-sm text-gray-500 mt-1">
+                    Escolha a categoria que melhor descreve sua prova (residência, ENEM, concursos, vestibulares)
+                  </p>
                 </div>
                 
                 {/* Time Limit */}
@@ -267,4 +317,4 @@ export default function NovoSimuladoPage() {
       </div>
     </div>
   );
-} 
+}

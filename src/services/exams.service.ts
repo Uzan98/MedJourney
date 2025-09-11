@@ -11,11 +11,13 @@ export interface Exam {
   is_public?: boolean;
   shuffle_questions?: boolean;
   show_answers?: boolean;
+  exam_type_id?: number; // Referência ao tipo de exame
   created_at?: string;
   updated_at?: string;
   creator_name?: string; // Nome do criador do simulado (para exibição)
   category?: string; // Categoria do simulado (opcional)
   isOwn?: boolean; // Indica se o simulado pertence ao usuário atual
+  exam_type?: { id: number; name: string; description: string }; // Dados do tipo de exame
 }
 
 export interface ExamQuestion {
@@ -58,7 +60,7 @@ export class ExamsService {
   /**
    * Obter todos os simulados do usuário atual
    */
-  static async getUserExams(): Promise<Exam[]> {
+  static async getUserExams(examTypeId?: number): Promise<Exam[]> {
     try {
       const { data: user } = await supabase.auth.getUser();
       
@@ -66,17 +68,30 @@ export class ExamsService {
         throw new Error('Usuário não autenticado');
       }
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('exams')
-        .select('*')
+        .select(`
+          *,
+          exam_types(id, name, description)
+        `)
         .eq('user_id', user.user.id)
         .order('created_at', { ascending: false });
+      
+      if (examTypeId) {
+        query = query.eq('exam_type_id', examTypeId);
+      }
+      
+      const { data, error } = await query;
 
       if (error) {
         throw error;
       }
 
-      return data || [];
+      return (data || []).map(exam => ({
+        ...exam,
+        isOwn: true,
+        exam_type: exam.exam_types
+      }));
     } catch (error) {
       console.error('Erro ao buscar simulados:', error);
       return [];
@@ -86,16 +101,25 @@ export class ExamsService {
   /**
    * Obter simulados públicos disponíveis para fazer
    */
-  static async getPublicExams(): Promise<Exam[]> {
+  static async getPublicExams(examTypeId?: number): Promise<Exam[]> {
     try {
       console.log('Buscando simulados públicos...');
       
       // Buscar simulados públicos
-      const { data: exams, error: examsError } = await supabase
+      let query = supabase
         .from('exams')
-        .select('*')
+        .select(`
+          *,
+          exam_types(id, name, description)
+        `)
         .eq('is_public', true)
         .order('created_at', { ascending: false });
+      
+      if (examTypeId) {
+        query = query.eq('exam_type_id', examTypeId);
+      }
+      
+      const { data: exams, error: examsError } = await query;
 
       if (examsError) {
         console.error('Erro ao buscar simulados públicos:', examsError);
@@ -213,6 +237,7 @@ export class ExamsService {
       const newExam = {
         ...exam,
         user_id: user.user.id,
+        exam_type_id: exam.exam_type_id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -243,7 +268,13 @@ export class ExamsService {
       const { error } = await supabase
         .from('exams')
         .update({
-          ...exam,
+          title: exam.title,
+          description: exam.description,
+          time_limit: exam.time_limit,
+          is_public: exam.is_public,
+          shuffle_questions: exam.shuffle_questions,
+          show_answers: exam.show_answers,
+          exam_type_id: exam.exam_type_id,
           updated_at: new Date().toISOString()
         })
         .eq('id', id);
@@ -1347,6 +1378,85 @@ export class ExamsService {
       
     } catch (error) {
       console.error('Erro ao obter dados de desempenho por assunto para o gráfico:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Buscar todos os tipos de exames disponíveis
+   */
+  static async getExamTypes(): Promise<{ id: number; name: string; description: string }[]> {
+    try {
+      const { data, error } = await supabase
+        .from('exam_types')
+        .select('*')
+        .order('name');
+
+      if (error) {
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Erro ao buscar tipos de exames:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Buscar provas por categoria específica
+   */
+  static async getExamsByCategory(categoryName: string): Promise<Exam[]> {
+    try {
+      const { data, error } = await supabase
+        .from('exams')
+        .select(`
+          *,
+          exam_types!inner(id, name, description)
+        `)
+        .eq('exam_types.name', categoryName)
+        .eq('is_public', true)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      return (data || []).map(exam => ({
+        ...exam,
+        exam_type: exam.exam_types,
+        isOwn: false
+      }));
+    } catch (error) {
+      console.error(`Erro ao buscar provas da categoria ${categoryName}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Buscar estatísticas de provas por categoria
+   */
+  static async getExamStatsByCategory(): Promise<{ category: string; count: number; description: string }[]> {
+    try {
+      const { data, error } = await supabase
+        .from('exam_types')
+        .select(`
+          name,
+          description,
+          exams(count)
+        `);
+
+      if (error) {
+        throw error;
+      }
+
+      return (data || []).map(item => ({
+        category: item.name,
+        description: item.description,
+        count: item.exams?.[0]?.count || 0
+      }));
+    } catch (error) {
+      console.error('Erro ao buscar estatísticas por categoria:', error);
       return [];
     }
   }

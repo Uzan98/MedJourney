@@ -27,6 +27,10 @@ export default function ResultadoSimulado({ params }: { params: { id: string } }
   const [subjectPerformance, setSubjectPerformance] = useState<DisciplinePerformance[]>([]);
   const [loadingPerformance, setLoadingPerformance] = useState(false);
   const [loadingSubjectPerformance, setLoadingSubjectPerformance] = useState(false);
+  const [wrongQuestions, setWrongQuestions] = useState<any[]>([]);
+  const [feedbackByDiscipline, setFeedbackByDiscipline] = useState<any[]>([]);
+  const [feedbackBySubject, setFeedbackBySubject] = useState<any[]>([]);
+  const [detailedAnalysis, setDetailedAnalysis] = useState<any>(null);
   
   useEffect(() => {
     loadResultData();

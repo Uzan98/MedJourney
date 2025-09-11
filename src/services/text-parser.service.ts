@@ -6,6 +6,8 @@ export interface ParsedQuestion {
   explanation?: string;
   hasImage?: boolean;
   imageUrl?: string;
+  disciplineId?: number;
+  subjectId?: number;
 }
 
 export interface ParsedExam {

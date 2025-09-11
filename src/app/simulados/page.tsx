@@ -208,18 +208,26 @@ export default function SimuladosPage() {
             Prepare-se para provas e avaliações com simulados personalizados. Crie seus próprios simulados 
             ou pratique com simulados compartilhados pela comunidade.
           </p>
-          <Link 
-            href="/simulados/novo" 
-            className="inline-flex items-center px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg shadow-md hover:bg-blue-50 transition duration-300 ease-in-out"
-          >
-            <FaPlus className="mr-2" /> Criar Novo Simulado
-          </Link>
-          <Link 
-            href="/simulados/meus-resultados" 
-            className="inline-flex items-center px-6 py-3 ml-4 bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:bg-blue-800 transition duration-300 ease-in-out"
-          >
-            <FaHistory className="mr-2" /> Meus Resultados
-          </Link>
+          <div className="flex flex-wrap gap-4">
+            <Link 
+              href="/simulados/novo" 
+              className="inline-flex items-center px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg shadow-md hover:bg-blue-50 transition duration-300 ease-in-out"
+            >
+              <FaPlus className="mr-2" /> Criar Novo Simulado
+            </Link>
+            <Link 
+              href="/provas" 
+              className="inline-flex items-center px-6 py-3 bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:bg-blue-800 transition duration-300 ease-in-out"
+            >
+              <FaClipboard className="mr-2" /> Explorar Provas
+            </Link>
+            <Link 
+              href="/simulados/meus-resultados" 
+              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300 ease-in-out"
+            >
+              <FaHistory className="mr-2" /> Meus Resultados
+            </Link>
+          </div>
         </div>
       </div>
       

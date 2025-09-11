@@ -27,6 +27,8 @@ export interface CompleteExamQuestion {
   correct_answer_key: string;
   image_url?: string;
   position: number;
+  discipline_id?: number;
+  subject_id?: number;
   created_at?: string;
 }
 
@@ -559,12 +561,13 @@ export class CompleteExamsService {
             description,
             exam_type_id,
             total_questions,
+            institution,
+            year,
             exam_types(name)
           )
         `)
         .eq('user_id', user.id)
-        .not('completed_at', 'is', null)
-        .order('completed_at', { ascending: false });
+        .order('started_at', { ascending: false });
 
       if (error) {
         throw error;
@@ -572,11 +575,110 @@ export class CompleteExamsService {
 
       return (data || []).map(attempt => ({
         ...attempt,
-        exam: attempt.complete_exams
+        exam: attempt.complete_exams as CompleteExam
       }));
     } catch (error) {
       console.error('Erro ao buscar todas as tentativas do usuário:', error);
       return [];
+    }
+  }
+
+  /**
+   * Buscar uma prova completa por ID
+   */
+  static async getCompleteExamById(examId: number): Promise<CompleteExam | null> {
+    try {
+      const { data, error } = await supabase
+        .from('complete_exams')
+        .select('*')
+        .eq('id', examId)
+        .single();
+
+      if (error) {
+        console.error('Erro ao buscar prova por ID:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erro ao buscar prova por ID:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Atualizar uma prova completa
+   */
+  static async updateCompleteExam(examId: number, examData: Partial<CompleteExam>): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('complete_exams')
+        .update({
+          ...examData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', examId);
+
+      if (error) {
+        console.error('Erro ao atualizar prova:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao atualizar prova:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Atualizar uma questão de prova completa
+   */
+  static async updateCompleteExamQuestion(questionId: number, questionData: Partial<CompleteExamQuestion>): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('complete_exam_questions')
+        .update({
+          ...questionData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', questionId);
+
+      if (error) {
+        console.error('Erro ao atualizar questão:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao atualizar questão:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Atualizar uma opção de questão
+   */
+  static async updateCompleteExamOption(questionId: number, optionKey: string, optionData: Partial<CompleteExamOption>): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('complete_exam_options')
+        .update({
+          ...optionData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('question_id', questionId)
+        .eq('option_key', optionKey);
+
+      if (error) {
+        console.error('Erro ao atualizar opção:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao atualizar opção:', error);
+      return false;
     }
   }
 

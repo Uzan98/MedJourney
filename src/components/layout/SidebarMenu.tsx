@@ -159,6 +159,11 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
       ]
     },
     {
+      path: "/provas",
+      label: "Provas",
+      icon: <GraduationCap className="h-5 w-5 flex-shrink-0" />
+    },
+    {
       path: "/flashcards",
       label: "Flashcards",
       icon: <Layers className="h-5 w-5 flex-shrink-0" />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,9 +17,38 @@ import {
   AlertCircle,
   Check,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  BookOpen,
+  Target
 } from 'lucide-react';
 import { ParsedQuestion } from '@/services/text-parser.service';
+import { DisciplinesRestService } from '@/lib/supabase-rest';
+import { toast } from 'sonner';
+
+// Interfaces para disciplinas e assuntos
+interface Discipline {
+  id: number;
+  name: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  description?: string;
+  is_system: boolean;
+  theme?: string;
+}
+
+interface Subject {
+  id: number;
+  name: string;
+  discipline_id: number;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  description?: string;
+  difficulty?: number;
+  importance?: number;
+  estimated_hours?: number;
+}
 
 interface QuestionEditorProps {
   question: ParsedQuestion;
@@ -41,6 +70,79 @@ export function QuestionEditor({
     options: [...question.options]
   });
   const [errors, setErrors] = useState<string[]>([]);
+  
+  // Estados para disciplinas e assuntos
+  const [disciplines, setDisciplines] = useState<Discipline[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [loadingDisciplines, setLoadingDisciplines] = useState(false);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
+  const [selectedDisciplineId, setSelectedDisciplineId] = useState<number | null>(question.disciplineId || null);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(question.subjectId || null);
+
+  // Carregar disciplinas quando o componente for montado
+  useEffect(() => {
+    loadDisciplines();
+  }, []);
+
+  // Carregar assuntos quando a disciplina for selecionada
+  useEffect(() => {
+    if (selectedDisciplineId) {
+      loadSubjects(selectedDisciplineId);
+    } else {
+      setSubjects([]);
+      setSelectedSubjectId(null);
+    }
+  }, [selectedDisciplineId]);
+
+  // Atualizar questão editada quando disciplina ou assunto mudarem
+  useEffect(() => {
+    setEditedQuestion(prev => ({
+      ...prev,
+      disciplineId: selectedDisciplineId || undefined,
+      subjectId: selectedSubjectId || undefined
+    }));
+  }, [selectedDisciplineId, selectedSubjectId]);
+
+  // Função para carregar disciplinas
+  const loadDisciplines = async () => {
+    try {
+      setLoadingDisciplines(true);
+      const disciplinesData = await DisciplinesRestService.getDisciplines(true);
+      setDisciplines(disciplinesData || []);
+    } catch (error) {
+      console.error('Erro ao carregar disciplinas:', error);
+      toast.error('Erro ao carregar disciplinas');
+    } finally {
+      setLoadingDisciplines(false);
+    }
+  };
+
+  // Função para carregar assuntos
+  const loadSubjects = async (disciplineId: number) => {
+    try {
+      setLoadingSubjects(true);
+      const subjectsData = await DisciplinesRestService.getSubjects(disciplineId, true);
+      setSubjects(subjectsData || []);
+    } catch (error) {
+      console.error('Erro ao carregar assuntos:', error);
+      toast.error('Erro ao carregar assuntos');
+    } finally {
+      setLoadingSubjects(false);
+    }
+  };
+
+  // Função para lidar com mudança de disciplina
+  const handleDisciplineChange = (disciplineId: string) => {
+    const id = disciplineId ? parseInt(disciplineId) : null;
+    setSelectedDisciplineId(id);
+    setSelectedSubjectId(null); // Reset subject when discipline changes
+  };
+
+  // Função para lidar com mudança de assunto
+  const handleSubjectChange = (subjectId: string) => {
+    const id = subjectId ? parseInt(subjectId) : null;
+    setSelectedSubjectId(id);
+  };
 
   const validateQuestion = (): boolean => {
     const newErrors: string[] = [];
@@ -260,6 +362,60 @@ export function QuestionEditor({
               className="w-32"
               min="1"
             />
+          </div>
+
+          {/* Seleção de Disciplina e Assunto */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Disciplina */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <BookOpen className="h-4 w-4 inline mr-1" />
+                Disciplina
+              </label>
+              <select
+                value={selectedDisciplineId || ''}
+                onChange={(e) => handleDisciplineChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={loadingDisciplines}
+              >
+                <option value="">Selecione uma disciplina</option>
+                {disciplines.map((discipline) => (
+                  <option key={discipline.id} value={discipline.id}>
+                    {discipline.name}
+                  </option>
+                ))}
+              </select>
+              {loadingDisciplines && (
+                <p className="text-xs text-gray-500 mt-1">Carregando disciplinas...</p>
+              )}
+            </div>
+
+            {/* Assunto */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Target className="h-4 w-4 inline mr-1" />
+                Assunto
+              </label>
+              <select
+                value={selectedSubjectId || ''}
+                onChange={(e) => handleSubjectChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={!selectedDisciplineId || loadingSubjects}
+              >
+                <option value="">Selecione um assunto</option>
+                {subjects.map((subject) => (
+                  <option key={subject.id} value={subject.id}>
+                    {subject.name}
+                  </option>
+                ))}
+              </select>
+              {loadingSubjects && (
+                <p className="text-xs text-gray-500 mt-1">Carregando assuntos...</p>
+              )}
+              {!selectedDisciplineId && (
+                <p className="text-xs text-gray-500 mt-1">Selecione uma disciplina primeiro</p>
+              )}
+            </div>
           </div>
           
           {/* Enunciado */}

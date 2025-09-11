@@ -16,7 +16,8 @@ import {
   CreditCard,
   BookMarked,
   Trello,
-  CalendarDays
+  CalendarDays,
+  GraduationCap
 } from 'lucide-react';
 import { SubscriptionTier } from '@/types/subscription';
 
@@ -89,6 +90,12 @@ export const mainNavigation: NavigationItem[] = [
     name: 'Simulados',
     href: '/simulados',
     icon: BookMarked,
+    requiresAuth: true,
+  },
+  {
+    name: 'Provas',
+    href: '/provas',
+    icon: GraduationCap,
     requiresAuth: true,
   },
   {
