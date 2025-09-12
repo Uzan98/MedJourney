@@ -683,7 +683,7 @@ export default function UploadProvaPage() {
 
       // Upload do arquivo
       const { data, error } = await supabase.storage
-        .from('questions')
+        .from('question-images')
         .upload(filePath, file);
 
       if (error) {
@@ -693,7 +693,7 @@ export default function UploadProvaPage() {
 
       // Obter URL pública
       const { data: { publicUrl } } = supabase.storage
-        .from('questions')
+        .from('question-images')
         .getPublicUrl(filePath);
 
       return publicUrl;
@@ -795,9 +795,9 @@ export default function UploadProvaPage() {
           questionData.image_url = imageUrl;
         }
         
-        // Adicionar tag se existir
+        // Adicionar tags se existir
         if (question.tag && question.tag.trim()) {
-          questionData.tag = question.tag.trim();
+          questionData.tags = [question.tag.trim()];
         }
         
         // Só adicionar discipline_id se for um número válido e existir na lista de disciplines carregadas
