@@ -83,13 +83,15 @@ export default function GroupExamsSection({ groupId, userId, isAdmin = false }: 
           <h4 className="text-lg font-semibold text-gray-800">
             Simulados Disponíveis
           </h4>
-          <Button 
-            onClick={() => setShowAddExamModal(true)}
-            className="bg-green-600 hover:bg-green-700 text-white rounded-lg"
-          >
-            <Plus className="h-4 w-4 mr-1.5" />
-            Adicionar Simulado
-          </Button>
+          {isAdmin && (
+            <Button 
+              onClick={() => setShowAddExamModal(true)}
+              className="bg-green-600 hover:bg-green-700 text-white rounded-lg"
+            >
+              <Plus className="h-4 w-4 mr-1.5" />
+              Adicionar Simulado
+            </Button>
+          )}
         </div>
         
         {loadingExams ? (
@@ -105,13 +107,15 @@ export default function GroupExamsSection({ groupId, userId, isAdmin = false }: 
             <p className="text-gray-600 mb-6 max-w-md mx-auto">
               Compartilhe seus simulados com o grupo para que todos possam praticar juntos.
             </p>
-            <Button 
-              onClick={() => setShowAddExamModal(true)}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              <Plus className="h-4 w-4 mr-1.5" />
-              Adicionar Simulado
-            </Button>
+            {isAdmin && (
+              <Button 
+                onClick={() => setShowAddExamModal(true)}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <Plus className="h-4 w-4 mr-1.5" />
+                Adicionar Simulado
+              </Button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4">

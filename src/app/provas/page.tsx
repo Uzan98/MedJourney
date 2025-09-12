@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Plus, BookOpen, Users, Clock, Filter } from 'lucide-react';
+import { Search, Plus, BookOpen, Users, Clock, Filter, Stethoscope, FileText, GraduationCap, Building2 } from 'lucide-react';
 import { ExamsService, Exam } from '@/services/exams.service';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ExamType {
   id: number;
@@ -25,21 +26,35 @@ interface CategoryStats {
 }
 
 const CATEGORY_ICONS = {
-  residencia: '🏥',
-  concursos: '📋',
-  enem: '🎓',
-  vestibulares: '🏛️'
+  residencia: Stethoscope,
+  concursos: FileText,
+  enem: GraduationCap,
+  vestibulares: Building2
 };
 
 const CATEGORY_COLORS = {
-  residencia: 'bg-red-50 border-red-200 text-red-800',
-  concursos: 'bg-blue-50 border-blue-200 text-blue-800',
-  enem: 'bg-green-50 border-green-200 text-green-800',
-  vestibulares: 'bg-purple-50 border-purple-200 text-purple-800'
+  residencia: 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 text-blue-800',
+  concursos: 'bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 text-purple-800',
+  enem: 'bg-gradient-to-br from-green-50 to-green-100 border-green-200 text-green-800',
+  vestibulares: 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 text-orange-800'
 };
+
+const CATEGORY_GRADIENTS = {
+  residencia: 'from-blue-500 to-blue-600',
+  concursos: 'from-purple-500 to-purple-600',
+  enem: 'from-green-500 to-green-600',
+  vestibulares: 'from-orange-500 to-orange-600'
+};
+
+// IDs dos usuários administradores
+const ADMIN_USER_IDS = [
+  '9e959500-f290-4457-a5d7-2a81c496d123',
+  'e6c41b94-f25c-4ef4-b723-c4a2d480cf43'
+];
 
 export default function ProvasPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [examTypes, setExamTypes] = useState<ExamType[]>([]);
   const [categoryStats, setCategoryStats] = useState<CategoryStats[]>([]);
@@ -47,6 +62,9 @@ export default function ProvasPage() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loadingExams, setLoadingExams] = useState(false);
+
+  // Verificar se o usuário é administrador
+  const isAdmin = user && ADMIN_USER_IDS.includes(user.id);
 
   useEffect(() => {
     loadInitialData();
@@ -113,11 +131,16 @@ export default function ProvasPage() {
   );
 
   const getCategoryIcon = (categoryName: string) => {
-    return CATEGORY_ICONS[categoryName as keyof typeof CATEGORY_ICONS] || '📚';
+    const IconComponent = CATEGORY_ICONS[categoryName as keyof typeof CATEGORY_ICONS] || BookOpen;
+    return IconComponent;
   };
 
   const getCategoryColor = (categoryName: string) => {
     return CATEGORY_COLORS[categoryName as keyof typeof CATEGORY_COLORS] || 'bg-gray-50 border-gray-200 text-gray-800';
+  };
+
+  const getCategoryGradient = (categoryName: string) => {
+    return CATEGORY_GRADIENTS[categoryName as keyof typeof CATEGORY_GRADIENTS] || 'from-gray-500 to-gray-600';
   };
 
   if (loading) {
@@ -153,13 +176,15 @@ export default function ProvasPage() {
               </p>
             </div>
             
-            <Link
-              href="/provas/upload"
-              className="group inline-flex items-center px-8 py-4 bg-white text-blue-600 font-bold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-out"
-            >
-              <Plus className="mr-3 h-5 w-5 group-hover:rotate-90 transition-transform duration-300" /> 
-              Adicionar Prova
-            </Link>
+            {isAdmin && (
+              <Link 
+                href="/provas/upload"
+                className="group inline-flex items-center px-8 py-4 bg-white text-blue-600 font-bold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-out"
+              >
+                <Plus className="mr-3 h-5 w-5 group-hover:rotate-90 transition-transform duration-300" /> 
+                Adicionar Prova
+              </Link>
+            )}
           </div>
           
           {/* Decorative elements */}
@@ -181,12 +206,15 @@ export default function ProvasPage() {
               onClick={() => setSelectedCategory(stat.category)}
             >
               <CardContent className="p-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full -translate-y-10 translate-x-10 opacity-50 group-hover:opacity-70 transition-opacity"></div>
+                <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${stat.category === 'residencia' ? 'from-blue-100 to-blue-200' : stat.category === 'concursos' ? 'from-purple-100 to-purple-200' : stat.category === 'enem' ? 'from-green-100 to-green-200' : 'from-orange-100 to-orange-200'} rounded-full -translate-y-10 translate-x-10 opacity-50 group-hover:opacity-70 transition-opacity`}></div>
                 
                 <div className="relative z-10">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
-                      {getCategoryIcon(stat.category)}
+                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${CATEGORY_GRADIENTS[stat.category] || 'from-gray-500 to-gray-600'} flex items-center justify-center text-white text-xl font-bold shadow-lg`}>
+                      {(() => {
+                        const IconComponent = getCategoryIcon(stat.category);
+                        return <IconComponent className="h-6 w-6" />;
+                      })()}
                     </div>
                     <h3 className="font-bold text-gray-900 text-lg">
                       {stat.category === 'residencia' ? 'Residência' : 
@@ -198,7 +226,7 @@ export default function ProvasPage() {
                   <p className="text-sm text-gray-600 mb-4 leading-relaxed">{stat.description}</p>
                   
                   <div className="flex items-center justify-between">
-                    <Badge className="px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 font-semibold">
+                    <Badge className={`px-3 py-1 bg-gradient-to-r ${getCategoryGradient(stat.category)} text-white border-0 font-semibold shadow-md`}>
                       {stat.count} provas
                     </Badge>
                     <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
@@ -238,12 +266,14 @@ export default function ProvasPage() {
                 <Filter className="h-4 w-4 mr-2" />
                 Todas
               </Button>
-              <Link href="/simulados/novo">
-                <Button className="whitespace-nowrap h-12 px-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nova Prova
-                </Button>
-              </Link>
+              {isAdmin && (
+                <Link href="/simulados/novo">
+                  <Button className="whitespace-nowrap h-12 px-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nova Prova
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -273,12 +303,14 @@ export default function ProvasPage() {
                   : `Não há provas disponíveis para a categoria ${selectedCategory}. Seja o primeiro a contribuir!`
                 }
               </p>
-              <Link href="/simulados/novo">
-                <Button className="h-12 px-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
-                  <Plus className="h-5 w-5 mr-3" />
-                  Criar Nova Prova
-                </Button>
-              </Link>
+              {isAdmin && (
+                <Link href="/simulados/novo">
+                  <Button className="h-12 px-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+                    <Plus className="h-5 w-5 mr-3" />
+                    Criar Nova Prova
+                  </Button>
+                </Link>
+              )}
             </CardContent>
           </Card>
         ) : (
@@ -289,7 +321,7 @@ export default function ProvasPage() {
                 className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 border-0 bg-white/90 backdrop-blur-sm overflow-hidden"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className={`absolute inset-0 bg-gradient-to-br ${exam.exam_type ? (exam.exam_type.name === 'residencia' ? 'from-blue-50 via-white to-blue-100' : exam.exam_type.name === 'concursos' ? 'from-purple-50 via-white to-purple-100' : exam.exam_type.name === 'enem' ? 'from-green-50 via-white to-green-100' : 'from-orange-50 via-white to-orange-100') : 'from-gray-50 via-white to-gray-100'} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
                 
                 <CardHeader className="relative z-10 pb-4">
                   <div className="flex items-start justify-between mb-3">
@@ -298,8 +330,11 @@ export default function ProvasPage() {
                         {exam.title}
                       </CardTitle>
                       {exam.exam_type && (
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold shadow-md">
-                          <span className="text-base">{getCategoryIcon(exam.exam_type.name)}</span>
+                        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r ${CATEGORY_GRADIENTS[exam.exam_type.name] || 'from-gray-500 to-gray-600'} text-white text-sm font-semibold shadow-md`}>
+                          {(() => {
+                            const IconComponent = getCategoryIcon(exam.exam_type.name);
+                            return <IconComponent className="h-4 w-4" />;
+                          })()}
                           {exam.exam_type.description}
                         </div>
                       )}
@@ -344,7 +379,7 @@ export default function ProvasPage() {
                 </CardContent>
                 
                 {/* Decorative gradient overlay */}
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full -translate-y-12 translate-x-12 opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
+                <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${exam.exam_type ? (exam.exam_type.name === 'residencia' ? 'from-blue-100 to-blue-200' : exam.exam_type.name === 'concursos' ? 'from-purple-100 to-purple-200' : exam.exam_type.name === 'enem' ? 'from-green-100 to-green-200' : 'from-orange-100 to-orange-200') : 'from-gray-100 to-gray-200'} rounded-full -translate-y-12 translate-x-12 opacity-20 group-hover:opacity-40 transition-opacity duration-500`}></div>
               </Card>
             ))}
           </div>

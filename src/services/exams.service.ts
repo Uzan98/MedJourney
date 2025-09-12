@@ -100,19 +100,24 @@ export class ExamsService {
 
   /**
    * Obter simulados públicos disponíveis para fazer
+   * Filtra apenas as categorias: residência, enem, concursos, vestibulares
    */
   static async getPublicExams(examTypeId?: number): Promise<Exam[]> {
     try {
       console.log('Buscando simulados públicos...');
       
-      // Buscar simulados públicos
+      // Categorias permitidas
+      const allowedCategories = ['residencia', 'enem', 'concursos', 'vestibulares'];
+      
+      // Buscar simulados públicos apenas das categorias específicas
       let query = supabase
         .from('exams')
         .select(`
           *,
-          exam_types(id, name, description)
+          exam_types!inner(id, name, description)
         `)
         .eq('is_public', true)
+        .in('exam_types.name', allowedCategories)
         .order('created_at', { ascending: false });
       
       if (examTypeId) {
@@ -1384,12 +1389,17 @@ export class ExamsService {
 
   /**
    * Buscar todos os tipos de exames disponíveis
+   * Filtra apenas as categorias: residência, enem, concursos, vestibulares
    */
   static async getExamTypes(): Promise<{ id: number; name: string; description: string }[]> {
     try {
+      // Categorias permitidas
+      const allowedCategories = ['residencia', 'enem', 'concursos', 'vestibulares'];
+      
       const { data, error } = await supabase
         .from('exam_types')
         .select('*')
+        .in('name', allowedCategories)
         .order('name');
 
       if (error) {
@@ -1435,16 +1445,21 @@ export class ExamsService {
 
   /**
    * Buscar estatísticas de provas por categoria
+   * Filtra apenas as categorias: residência, enem, concursos, vestibulares
    */
   static async getExamStatsByCategory(): Promise<{ category: string; count: number; description: string }[]> {
     try {
+      // Categorias permitidas
+      const allowedCategories = ['residencia', 'enem', 'concursos', 'vestibulares'];
+      
       const { data, error } = await supabase
         .from('exam_types')
         .select(`
           name,
           description,
           exams(count)
-        `);
+        `)
+        .in('name', allowedCategories);
 
       if (error) {
         throw error;

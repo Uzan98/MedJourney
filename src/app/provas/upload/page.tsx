@@ -8,6 +8,7 @@ import { FaArrowLeft, FaCheck, FaFileExport, FaListOl, FaEye, FaEdit } from 'rea
 import { useAuth } from '@/contexts/AuthContext';
 import { ExamsService } from '@/services/exams.service';
 import { QuestionsBankService } from '@/services/questions-bank.service';
+import { DisciplinesRestService } from '@/lib/supabase-rest';
 
 interface ExamType {
   id: number;
@@ -21,7 +22,26 @@ interface ParsedQuestion {
   alternatives: string[];
   correctAnswer: number;
   explanation?: string;
+  disciplineId?: number;
+  subjectId?: number;
 }
+
+interface Discipline {
+  id: number;
+  name: string;
+  subjects?: Subject[];
+}
+
+interface Subject {
+  id: number;
+  name?: string;
+  title?: string;
+}
+
+const ADMIN_USER_IDS = [
+  '9e959500-f290-4457-a5d7-2a81c496d123',
+  'e6c41b94-f25c-4ef4-b723-c4a2d480cf43'
+];
 
 const Loading = ({ message = "Carregando..." }) => (
   <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -33,6 +53,9 @@ const Loading = ({ message = "Carregando..." }) => (
 export default function UploadProvaPage() {
   const router = useRouter();
   const { user } = useAuth();
+  
+  // Verificar se o usuário é admin
+  const isAdmin = user && ADMIN_USER_IDS.includes(user.id);
   
   const [loading, setLoading] = useState(false);
   const [examTypes, setExamTypes] = useState<ExamType[]>([]);
@@ -49,13 +72,33 @@ export default function UploadProvaPage() {
   const [parsedQuestions, setParsedQuestions] = useState<ParsedQuestion[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   
+  // Discipline and subject states
+  const [disciplines, setDisciplines] = useState<Discipline[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [selectedDisciplineId, setSelectedDisciplineId] = useState<number | null>(null);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null);
+  const [loadingDisciplines, setLoadingDisciplines] = useState(true);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
+  
+  // Cache de assuntos por disciplina para questões individuais
+  const [questionSubjects, setQuestionSubjects] = useState<{[disciplineId: number]: Subject[]}>({});
+  const [loadingQuestionSubjects, setLoadingQuestionSubjects] = useState<{[disciplineId: number]: boolean}>({});
+  
   useEffect(() => {
     if (!user) {
       router.push('/auth/login');
       return;
     }
+    
+    if (!isAdmin) {
+      toast.error('Acesso negado. Apenas administradores podem criar provas.');
+      router.push('/provas');
+      return;
+    }
+    
     loadExamTypes();
-  }, [user, router]);
+    loadDisciplines();
+  }, [user, router, isAdmin]);
   
   const loadExamTypes = async () => {
     try {
@@ -67,6 +110,59 @@ export default function UploadProvaPage() {
       toast.error('Erro ao carregar categorias de provas');
     } finally {
       setLoadingTypes(false);
+    }
+  };
+
+  const loadDisciplines = async () => {
+    try {
+      setLoadingDisciplines(true);
+      console.log('🔍 Carregando disciplinas do usuário...');
+      const disciplinesData = await DisciplinesRestService.getDisciplines(true);
+      console.log('📚 Disciplinas carregadas:', disciplinesData);
+      console.log('📊 Número de disciplinas:', disciplinesData?.length || 0);
+      setDisciplines(disciplinesData || []);
+      
+      if (!disciplinesData || disciplinesData.length === 0) {
+        console.warn('⚠️ Nenhuma disciplina encontrada para o usuário');
+        toast.warning('Nenhuma disciplina encontrada. Crie disciplinas primeiro.');
+      } else {
+        console.log('✅ Disciplinas carregadas com sucesso');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar disciplinas:', error);
+      toast.error('Erro ao carregar disciplinas');
+    } finally {
+      setLoadingDisciplines(false);
+    }
+  };
+
+  const loadSubjects = async (disciplineId: number) => {
+    try {
+      setLoadingSubjects(true);
+      console.log('Carregando assuntos da disciplina:', disciplineId);
+      const data = await DisciplinesRestService.getSubjects(disciplineId, true);
+      console.log('Assuntos carregados:', data?.length || 0);
+      setSubjects(data || []);
+      if (!data || data.length === 0) {
+        console.warn('Nenhum assunto encontrado para esta disciplina');
+        toast.warning('Nenhum assunto encontrado para esta disciplina');
+      }
+    } catch (error) {
+      console.error('Erro ao carregar assuntos:', error);
+      toast.error('Erro ao carregar assuntos');
+      setSubjects([]);
+    } finally {
+      setLoadingSubjects(false);
+    }
+  };
+
+  const handleDisciplineChange = (disciplineId: number | null) => {
+    setSelectedDisciplineId(disciplineId);
+    setSelectedSubjectId(null);
+    setSubjects([]);
+    
+    if (disciplineId) {
+      loadSubjects(disciplineId);
     }
   };
   
@@ -264,7 +360,9 @@ export default function UploadProvaPage() {
             id: `q${questionNum}`,
             text: normalizeText(questionText),
             alternatives: alternatives.slice(0, 5), // Máximo 5 alternativas
-            correctAnswer: answers[questionNum] ?? 0
+            correctAnswer: answers[questionNum] ?? 0,
+            disciplineId: selectedDisciplineId,
+            subjectId: selectedSubjectId
           });
         }
       });
@@ -284,10 +382,40 @@ export default function UploadProvaPage() {
     }
   };
   
+  const loadQuestionSubjects = async (disciplineId: number) => {
+    if (questionSubjects[disciplineId] || loadingQuestionSubjects[disciplineId]) {
+      return; // Já carregado ou carregando
+    }
+    
+    try {
+      setLoadingQuestionSubjects(prev => ({ ...prev, [disciplineId]: true }));
+      console.log('Carregando assuntos para questão individual - disciplina:', disciplineId);
+      const data = await DisciplinesRestService.getSubjects(disciplineId, true);
+      console.log('Assuntos carregados para questão:', data?.length || 0);
+      setQuestionSubjects(prev => ({ ...prev, [disciplineId]: data || [] }));
+    } catch (error) {
+      console.error('Erro ao carregar assuntos para questão:', error);
+      setQuestionSubjects(prev => ({ ...prev, [disciplineId]: [] }));
+    } finally {
+      setLoadingQuestionSubjects(prev => ({ ...prev, [disciplineId]: false }));
+    }
+  };
+
   const editQuestion = (index: number, field: keyof ParsedQuestion, value: any) => {
-    setParsedQuestions(prev => prev.map((q, i) => 
-      i === index ? { ...q, [field]: value } : q
-    ));
+    setParsedQuestions(prev => prev.map((q, i) => {
+      if (i === index) {
+        const updatedQuestion = { ...q, [field]: value };
+        
+        // Se mudou a disciplina, carregar assuntos e resetar assunto
+        if (field === 'disciplineId' && value && typeof value === 'number') {
+          loadQuestionSubjects(value);
+          updatedQuestion.subjectId = null;
+        }
+        
+        return updatedQuestion;
+      }
+      return q;
+    }));
   };
 
   const removeQuestion = (index: number) => {
@@ -317,6 +445,25 @@ export default function UploadProvaPage() {
       return;
     }
     
+    // Verificar se há questões com IDs inválidos
+    const questionsWithInvalidIds = parsedQuestions.filter(question => {
+      const disciplineValid = !question.disciplineId || disciplines.some(d => d.id === question.disciplineId);
+      
+      // Para validar assuntos, verificar no cache específico da disciplina
+      let subjectValid = true;
+      if (question.subjectId && question.disciplineId) {
+        const disciplineSubjects = questionSubjects[question.disciplineId] || [];
+        subjectValid = disciplineSubjects.some(s => s.id === question.subjectId);
+      }
+      
+      return !disciplineValid || !subjectValid;
+    });
+    
+    if (questionsWithInvalidIds.length > 0) {
+      toast.error(`${questionsWithInvalidIds.length} questão(ões) possuem disciplina ou assunto inválidos. Verifique as seleções.`);
+      return;
+    }
+    
     try {
       setLoading(true);
       
@@ -336,16 +483,43 @@ export default function UploadProvaPage() {
       const questionIds: number[] = [];
       
       for (const question of parsedQuestions) {
-        const questionId = await QuestionsBankService.addQuestion({
+        // Validar se os IDs existem antes de enviar
+        const questionData: any = {
           content: question.text,
           question_type: 'multiple_choice',
           correct_answer: question.correctAnswer.toString(),
           difficulty: 'média',
           is_public: false
-        }, question.alternatives.map((alt, index) => ({
-          text: alt,
-          is_correct: index === question.correctAnswer
-        })));
+        };
+        
+        // Só adicionar discipline_id se for um número válido e existir na lista de disciplines carregadas
+        if (question.disciplineId && typeof question.disciplineId === 'number') {
+          const disciplineExists = disciplines.some(discipline => discipline.id === question.disciplineId);
+          if (disciplineExists) {
+            questionData.discipline_id = question.disciplineId;
+          } else {
+            console.warn(`Discipline ID ${question.disciplineId} não encontrado na lista de disciplines carregadas`);
+          }
+        }
+        
+        // Só adicionar subject_id se for um número válido e existir na lista de subjects carregados
+        if (question.subjectId && typeof question.subjectId === 'number' && question.disciplineId) {
+          const disciplineSubjects = questionSubjects[question.disciplineId] || [];
+          const subjectExists = disciplineSubjects.some(subject => subject.id === question.subjectId);
+          if (subjectExists) {
+            questionData.subject_id = question.subjectId;
+          } else {
+            console.warn(`Subject ID ${question.subjectId} não encontrado na lista de subjects da disciplina ${question.disciplineId}`);
+          }
+        }
+        
+        const questionId = await QuestionsBankService.addQuestion(
+          questionData,
+          question.alternatives.map((alt, index) => ({
+            text: alt,
+            is_correct: index === question.correctAnswer
+          }))
+        );
         
         if (questionId) {
           questionIds.push(questionId);
@@ -460,6 +634,55 @@ export default function UploadProvaPage() {
             </div>
             
             <div>
+              <label htmlFor="discipline" className="block text-sm font-medium text-gray-700 mb-2">
+                Disciplina
+              </label>
+              <select
+                id="discipline"
+                value={selectedDisciplineId || ''}
+                onChange={(e) => handleDisciplineChange(Number(e.target.value) || null)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={loadingDisciplines}
+              >
+                <option value="">Selecione uma disciplina</option>
+                {disciplines.map(discipline => (
+                  <option key={discipline.id} value={discipline.id}>
+                    {discipline.name}
+                  </option>
+                ))}
+              </select>
+              {loadingDisciplines && (
+                <p className="text-sm text-gray-500 mt-1">Carregando disciplinas...</p>
+              )}
+            </div>
+            
+            <div>
+              <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
+                Assunto
+              </label>
+              <select
+                id="subject"
+                value={selectedSubjectId || ''}
+                onChange={(e) => setSelectedSubjectId(Number(e.target.value) || null)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={!selectedDisciplineId || loadingSubjects}
+              >
+                <option value="">Selecione um assunto</option>
+                {subjects.map(subject => (
+                  <option key={subject.id} value={subject.id}>
+                    {subject.title || subject.name}
+                  </option>
+                ))}
+              </select>
+              {loadingSubjects && (
+                <p className="text-sm text-gray-500 mt-1">Carregando assuntos...</p>
+              )}
+              {!selectedDisciplineId && (
+                <p className="text-sm text-gray-500 mt-1">Selecione uma disciplina primeiro</p>
+              )}
+            </div>
+            
+            <div>
               <label htmlFor="timeLimit" className="block text-sm font-medium text-gray-700 mb-2">
                 Tempo Limite (minutos)
               </label>
@@ -562,6 +785,74 @@ E) 7`}
           </div>
         </div>
         
+        {/* Aplicar Disciplina e Assunto em Lote */}
+        {parsedQuestions.length > 0 && (
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              <FaEdit className="inline mr-2" />
+              Aplicar Disciplina e Assunto em Lote
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Disciplina para todas as questões:
+                </label>
+                <select
+                  value={selectedDisciplineId || ''}
+                  onChange={(e) => handleDisciplineChange(Number(e.target.value) || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={loadingDisciplines}
+                >
+                  <option value="">Selecione uma disciplina</option>
+                  {disciplines.map(discipline => (
+                    <option key={discipline.id} value={discipline.id}>
+                      {discipline.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Assunto para todas as questões:
+                </label>
+                <select
+                value={selectedSubjectId || ''}
+                onChange={(e) => setSelectedSubjectId(Number(e.target.value) || null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={!selectedDisciplineId || loadingSubjects}
+              >
+                  <option value="">Selecione um assunto</option>
+                  {subjects.map(subject => (
+                    <option key={subject.id} value={subject.id}>
+                      {subject.title || subject.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="flex items-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setParsedQuestions(prev => prev.map(q => ({
+                      ...q,
+                      disciplineId: selectedDisciplineId,
+                      subjectId: selectedSubjectId
+                    })));
+                    toast.success('Disciplina e assunto aplicados a todas as questões!');
+                  }}
+                  disabled={!selectedDisciplineId}
+                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Aplicar a Todas
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Preview das Questões Parseadas */}
         {parsedQuestions.length > 0 && (
           <div className="bg-white rounded-xl shadow-lg p-6">
@@ -645,6 +936,61 @@ E) 7`}
                             </button>
                           </div>
                         ))}
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Disciplina:
+                          </label>
+                          <select
+                            value={question.disciplineId || ''}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              const disciplineId = value ? Number(value) : null;
+                              editQuestion(index, 'disciplineId', disciplineId);
+                            }}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                          >
+                            <option value="">Selecione uma disciplina</option>
+                            {disciplines.map(discipline => (
+                              <option key={discipline.id} value={discipline.id}>
+                                {discipline.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Assunto:
+                          </label>
+                          <select
+                            value={question.subjectId || ''}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              const subjectId = value ? Number(value) : null;
+                              editQuestion(index, 'subjectId', subjectId);
+                            }}
+                            disabled={!question.disciplineId}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          >
+                            <option value="">
+                              {!question.disciplineId 
+                                ? 'Selecione uma disciplina primeiro' 
+                                : loadingQuestionSubjects[question.disciplineId]
+                                  ? 'Carregando assuntos...'
+                                  : 'Selecione um assunto'
+                              }
+                            </option>
+                            {question.disciplineId && questionSubjects[question.disciplineId]?.map(subject => (
+                              <option key={subject.id} value={subject.id}>
+                                {subject.title || subject.name}
+                              </option>
+                            ))}
+                          </select>
+
+                        </div>
                       </div>
                     </div>
                   </div>
