@@ -58,20 +58,25 @@ export default function EntrarFaculdadePage() {
         return;
       }
       
-      // Adicionar o usuário como membro do ambiente
-      const success = await FacultyService.addMember(faculty.id, user.id, 'member');
+      // Criar solicitação de entrada (o método já verifica duplicatas)
+      const requestId = await FacultyService.createJoinRequest(faculty.id, `Solicitação de entrada no ambiente ${faculty.name}`);
       
-      if (!success) {
-        throw new Error('Não foi possível entrar no ambiente');
+      if (!requestId) {
+        throw new Error('Não foi possível criar a solicitação de entrada');
       }
       
-      toast.success(`Você entrou em "${faculty.name}"!`);
-      router.push(`/minha-faculdade/${faculty.id}`);
+      toast.success(`Solicitação enviada para "${faculty.name}"! Aguarde a aprovação do administrador.`);
+      router.push('/minha-faculdade');
     } catch (error: any) {
       console.error('Erro ao entrar no ambiente:', error);
       
-      // Tratamento específico para o erro de recursão infinita
-      if (error.message && error.message.includes('infinite recursion')) {
+      // Tratamento específico para mensagens de erro do createJoinRequest
+      if (error.message === 'Você já tem uma solicitação pendente para esta faculdade') {
+        toast.info('Você já tem uma solicitação pendente para este ambiente. Aguarde a aprovação do administrador.');
+      } else if (error.message === 'Você já é membro desta faculdade') {
+        toast.info('Você já é membro desta faculdade.');
+        router.push('/minha-faculdade');
+      } else if (error.message && error.message.includes('infinite recursion')) {
         toast.error('Erro de permissão no banco de dados. Por favor, contate o suporte.');
         console.error('Erro de recursão infinita na política RLS. Execute o script fix_faculty_policies.sql.');
       } else if (error.code === '42P01') {
@@ -151,4 +156,4 @@ export default function EntrarFaculdadePage() {
       </div>
     </div>
   );
-} 
+}

@@ -73,6 +73,8 @@ export default function FacultyEventsPage() {
 
   // Função para lidar com a criação de eventos
   const handleEventCreated = async () => {
+    console.log('handleEventCreated chamado');
+    
     toast({
       title: "Evento criado",
       description: "O evento foi adicionado ao calendário.",
@@ -81,11 +83,15 @@ export default function FacultyEventsPage() {
     // Recarregar eventos
     if (faculty) {
       try {
+        console.log('Recarregando eventos para faculdade:', faculty.id);
         const eventsData = await FacultyService.getFacultyEvents(faculty.id, undefined, undefined, 100);
+        console.log('Novos eventos carregados:', eventsData.length);
         setEvents(eventsData);
       } catch (error) {
         console.error('Erro ao recarregar eventos:', error);
       }
+    } else {
+      console.log('Faculty não encontrada para recarregar eventos');
     }
   };
 

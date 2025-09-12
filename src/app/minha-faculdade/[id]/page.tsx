@@ -1738,14 +1738,24 @@ export default function FacultyDetailsPage() {
                     </h2>
                     
                 {isAdmin && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={openManageMembersModal}
-                        className={`bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-none ${isMobile ? 'text-xs self-start' : ''}`}
-                      >
-                    Gerenciar
-                  </Button>
+                      <div className={`flex gap-2 ${isMobile ? 'flex-col' : ''}`}>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={openManageMembersModal}
+                          className={`bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-none ${isMobile ? 'text-xs' : ''}`}
+                        >
+                          Gerenciar
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => router.push(`/minha-faculdade/${faculty?.id}/solicitacoes`)}
+                          className={`bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-none ${isMobile ? 'text-xs' : ''}`}
+                        >
+                          Solicitações
+                        </Button>
+                      </div>
                 )}
               </div>
                   

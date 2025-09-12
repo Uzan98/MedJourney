@@ -4,9 +4,14 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-// Log para depuração
-console.log('Supabase URL configurado:', supabaseUrl);
-console.log('Supabase Anon Key existe:', !!supabaseAnonKey);
+// Verificar se estamos em ambiente de build
+const isBuild = process.env.NEXT_PHASE === 'phase-production-build' || typeof window === 'undefined';
+
+// Log para depuração apenas se não estivermos em build
+if (!isBuild) {
+  console.log('Supabase URL configurado:', supabaseUrl);
+  console.log('Supabase Anon Key existe:', !!supabaseAnonKey);
+}
 
 // Verificação adicional para garantir que a URL é válida antes de criar o cliente
 let supabaseClient: SupabaseClient;
@@ -15,19 +20,19 @@ let supabaseClient: SupabaseClient;
 let isReconnecting = false;
 let wasConnected = false;
 
-const isBuild = process.env.NEXT_PHASE === 'phase-production-build';
-
 let supabase: SupabaseClient | null = null;
 
-if (!isBuild && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-  supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
+// Só criar o cliente se não estivermos em build e as variáveis existirem
+if (!isBuild && supabaseUrl && supabaseAnonKey) {
+  try {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+  } catch (error) {
+    console.error('Erro ao criar cliente Supabase:', error);
+  }
 }
 
 try {
-  if (supabaseUrl && supabaseAnonKey) {
+  if (!isBuild && supabaseUrl && supabaseAnonKey) {
     // Criar e exportar o cliente com configuração para autenticação por cookies
     // De acordo com a documentação mais recente do Supabase:
     // https://supabase.com/docs/guides/auth/quickstarts/nextjs
@@ -165,15 +170,17 @@ try {
         if (reconnectTimeout) clearTimeout(reconnectTimeout);
       });
     }
-  } else {
+  } else if (!isBuild) {
     console.error('Não foi possível criar o cliente Supabase: URL ou chave anônima ausentes');
     // Criar um cliente mock para evitar erros de runtime
     supabaseClient = createMockClient();
   }
 } catch (error) {
-  console.error('Erro ao criar cliente Supabase:', error);
-  // Criar um cliente mock para evitar erros de runtime
-  supabaseClient = createMockClient();
+  if (!isBuild) {
+    console.error('Erro ao criar cliente Supabase:', error);
+    // Criar um cliente mock para evitar erros de runtime
+    supabaseClient = createMockClient();
+  }
 }
 
 export { supabase };

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Question, QuestionsBankService } from '@/services/questions-bank.service';
-import { Trash2, Eye, Book, Lock, Globe, User, Plus, Loader2, Download, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
+import { Trash2, Eye, Book, Lock, Globe, User, Plus, Loader2, Download, ChevronDown, ChevronUp, CheckCircle2, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import './question-card-mobile.css';
 
@@ -243,6 +243,44 @@ export default function QuestionCard({
             )}
           </button>
         </div>
+        
+        {/* Seção de imagens */}
+        {question.images && question.images.length > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center mb-2">
+              <ImageIcon className="h-4 w-4 mr-1.5 text-gray-500" />
+              <span className="text-sm text-gray-600 font-medium">
+                {question.images.length === 1 ? 'Imagem' : `${question.images.length} Imagens`}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {question.images.slice(0, 6).map((image, index) => (
+                <div key={image.id || index} className="relative group">
+                  <img
+                    src={image.image_url}
+                    alt={image.description || `Imagem ${index + 1}`}
+                    className="w-full h-20 sm:h-24 object-cover rounded-lg border border-gray-200 hover:border-gray-300 transition-colors cursor-pointer"
+                    onClick={() => window.open(image.image_url, '_blank')}
+                  />
+                  {image.description && (
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
+                      <span className="text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity text-center px-2">
+                        {image.description}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {question.images.length > 6 && (
+                <div className="w-full h-20 sm:h-24 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
+                  <span className="text-gray-500 text-xs font-medium">
+                    +{question.images.length - 6} mais
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mt-4">
           <div className="flex items-center text-gray-500 text-sm">

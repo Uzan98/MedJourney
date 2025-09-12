@@ -34,17 +34,17 @@ export default function UpdatePasswordPage() {
     switch (strength) {
       case 0:
       case 1:
-        return { text: 'Muito fraca', color: 'text-red-600' };
+        return 'Muito fraca';
       case 2:
-        return { text: 'Fraca', color: 'text-orange-600' };
+        return 'Fraca';
       case 3:
-        return { text: 'Média', color: 'text-yellow-600' };
+        return 'Média';
       case 4:
-        return { text: 'Forte', color: 'text-green-600' };
+        return 'Forte';
       case 5:
-        return { text: 'Muito forte', color: 'text-green-700' };
+        return 'Muito forte';
       default:
-        return { text: '', color: '' };
+        return '';
     }
   };
 

@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Exam, ExamQuestion, ExamAttempt, ExamAnswer, ExamsService } from '@/services/exams.service';
 import { QuestionsBankService } from '@/services/questions-bank.service';
+import { ImageUploadService, QuestionImage } from '@/services/image-upload.service';
 import Loading from '@/components/Loading';
 import ConfirmationModal from '@/components/ConfirmationModal';
 
@@ -29,6 +30,8 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
   const [answers, setAnswers] = useState<Record<number, ExamAnswer>>({});
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [attemptId, setAttemptId] = useState<number | null>(null);
+  const [questionImages, setQuestionImages] = useState<Record<number, QuestionImage[]>>({});
+  const [fullscreenImage, setFullscreenImage] = useState<{ url: string; description?: string } | null>(null);
   
   // Inicialização
   useEffect(() => {
@@ -95,6 +98,38 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
       }
       
       setQuestions(questionsToShow);
+      
+      // Carregar imagens das questões do banco de questões
+      console.log('🔍 Iniciando carregamento de imagens para', questionsToShow.length, 'questões');
+      const imagesObj: Record<number, QuestionImage[]> = {};
+      for (const questionData of questionsToShow) {
+        console.log('🔍 Dados da questão:', questionData.question);
+        if (questionData.question?.id && questionData.question.images) {
+          console.log('📸 Processando imagens para questão ID:', questionData.question.id);
+          console.log('📸 Estrutura das imagens:', questionData.question.images);
+          const questionImages = questionData.question.images;
+          if (Array.isArray(questionImages) && questionImages.length > 0) {
+            console.log('✅ Imagens encontradas para questão', questionData.question.id, ':', questionImages.length, 'imagens');
+            // Converter formato das imagens para o formato esperado
+            const formattedImages: QuestionImage[] = questionImages.map((img, index) => {
+              console.log('🖼️ Processando imagem:', img);
+              return {
+                id: img.id ? img.id.toString() : `${questionData.question.id}-${index}`,
+                questionId: questionData.question.id.toString(),
+                imageUrl: img.url || img.image_url,
+                position: img.position || index,
+                description: img.description,
+                createdAt: img.created_at || new Date().toISOString()
+              };
+            });
+            imagesObj[questionData.question.id] = formattedImages;
+            console.log('💾 Adicionando', formattedImages.length, 'imagens para questão', questionData.question.id);
+            console.log('💾 Imagens formatadas:', formattedImages);
+          }
+        }
+      }
+      console.log('🎯 Mapa final de imagens:', imagesObj);
+      setQuestionImages(imagesObj);
       
       // Inicializar objeto de respostas
       const answersObj: Record<number, ExamAnswer> = {};
@@ -320,9 +355,33 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
           </div>
           
           <div 
-            className="quill-content text-gray-700 mb-8 text-lg" 
+            className="quill-content text-gray-700 mb-6 text-lg" 
             dangerouslySetInnerHTML={{ __html: question.content || '' }}
           />
+          
+          {/* Exibir imagens da questão, se houver */}
+          {questionImages[question.id as number] && questionImages[question.id as number].length > 0 && (
+            <div className="mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {questionImages[question.id as number].map((image, index) => (
+                  <div key={image.id} className="relative">
+                    <img 
+                      src={image.imageUrl} 
+                      alt={image.description || `Imagem da questão ${index + 1}`}
+                      className="w-full h-auto rounded-lg shadow-md border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                      style={{ maxHeight: '400px', objectFit: 'contain' }}
+                      onClick={() => setFullscreenImage({ url: image.imageUrl, description: image.description })}
+                    />
+                    {image.description && (
+                      <p className="text-sm text-gray-600 mt-2 text-center italic">
+                        {image.description}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           
           {/* Renderizar opções baseadas no tipo de questão */}
           {question.question_type === 'multiple_choice' && (
@@ -538,6 +597,36 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
           onClose={() => setShowConfirmFinish(false)}
           isOpen={showConfirmFinish}
         />
+      )}
+
+      {/* Modal de imagem em tela cheia */}
+      {fullscreenImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
+          onClick={() => setFullscreenImage(null)}
+        >
+          <div className="relative max-w-full max-h-full">
+            <img 
+              src={fullscreenImage.url}
+              alt={fullscreenImage.description || 'Imagem em tela cheia'}
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button
+              onClick={() => setFullscreenImage(null)}
+              className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70 transition-all"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            {fullscreenImage.description && (
+              <div className="absolute bottom-4 left-4 right-4 text-white bg-black bg-opacity-50 rounded p-2 text-center">
+                {fullscreenImage.description}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

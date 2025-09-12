@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
-import { ChevronLeft, Edit, Trash2, AlertTriangle, Globe, Lock, Plus } from 'lucide-react';
+import { ChevronLeft, Edit, Trash2, AlertTriangle, Globe, Lock, Plus, Image as ImageIcon } from 'lucide-react';
 import { Question, QuestionsBankService, AnswerOption } from '@/services/questions-bank.service';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 import QuestionModal from '@/components/banco-questoes/QuestionModal';
@@ -28,6 +28,7 @@ export default function QuestaoDetalhePage() {
   const [subjectName, setSubjectName] = useState('');
   const [isUpdatingPublicStatus, setIsUpdatingPublicStatus] = useState(false);
   const [isAddingToBank, setIsAddingToBank] = useState(false);
+  const [fullscreenImage, setFullscreenImage] = useState<{ url: string; description?: string } | null>(null);
   
   // Verificar se o usuário atual é o criador da questão
   const isQuestionOwner = user && question && user.id === question.user_id;
@@ -501,6 +502,45 @@ export default function QuestaoDetalhePage() {
           </div>
         </div>
         
+        {/* Seção de imagens */}
+        {question?.images && question.images.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+              <ImageIcon className="h-5 w-5 mr-2" />
+              {question.images.length === 1 ? 'Imagem' : `Imagens (${question.images.length})`}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {question.images.map((image, index) => (
+                <div key={image.id || index} className="relative group">
+                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <img
+                      src={image.image_url}
+                      alt={image.description || `Imagem ${index + 1}`}
+                      className="w-full h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => setFullscreenImage({ url: image.image_url, description: image.description || image.image_name })}
+                    />
+                    {(image.description || image.image_name) && (
+                      <div className="p-3">
+                        {image.description && (
+                          <p className="text-sm text-gray-700 mb-1">{image.description}</p>
+                        )}
+                        {image.image_name && (
+                          <p className="text-xs text-gray-500">{image.image_name}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 rounded-lg flex items-center justify-center">
+                    <span className="text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 px-2 py-1 rounded">
+                      Clique para ver em tela cheia
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
         {/* Opções de resposta (para questões de múltipla escolha ou V/F) */}
         {question?.question_type !== 'essay' && question?.answer_options && question.answer_options.length > 0 && (
           <div className="mb-8">
@@ -569,6 +609,36 @@ export default function QuestaoDetalhePage() {
           </div>
         )}
       </div>
+
+      {/* Modal de imagem em tela cheia */}
+      {fullscreenImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
+          onClick={() => setFullscreenImage(null)}
+        >
+          <div className="relative max-w-full max-h-full">
+            <img 
+              src={fullscreenImage.url}
+              alt={fullscreenImage.description || 'Imagem em tela cheia'}
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button
+              onClick={() => setFullscreenImage(null)}
+              className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70 transition-all"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            {fullscreenImage.description && (
+              <div className="absolute bottom-4 left-4 right-4 text-white bg-black bg-opacity-50 rounded p-2 text-center">
+                {fullscreenImage.description}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

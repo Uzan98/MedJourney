@@ -10,10 +10,25 @@ export default {
   	extend: {
   		fontFamily: {
   			sans: [
-  				'var(--font-inter)'
+  				'var(--font-inter)',
+  				'system-ui',
+  				'-apple-system',
+  				'BlinkMacSystemFont',
+  				'"Segoe UI"',
+  				'Roboto',
+  				'"Helvetica Neue"',
+  				'Arial',
+  				'sans-serif'
   			],
   			mono: [
-  				'var(--font-inter)'
+  				'var(--font-inter)',
+  				'"SF Mono"',
+  				'Monaco',
+  				'"Cascadia Code"',
+  				'"Roboto Mono"',
+  				'Consolas',
+  				'"Courier New"',
+  				'monospace'
   			]
   		},
   		colors: {

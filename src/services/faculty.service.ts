@@ -2064,6 +2064,234 @@ export class FacultyService {
   }
 
   /**
+   * Cria uma solicitação de entrada em uma faculdade
+   * @param facultyId ID da faculdade
+   * @param message Mensagem opcional do usuário
+   * @returns ID da solicitação criada ou null em caso de erro
+   */
+  static async createJoinRequest(facultyId: number, message?: string): Promise<string | null> {
+    try {
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (!userId) {
+        console.error('Usuário não autenticado');
+        return null;
+      }
+
+      // Verificar se já existe uma solicitação para esta combinação user_id + faculty_id
+      const { data: existingRequest, error: checkError } = await supabase
+        .from('faculty_join_requests')
+        .select('id, status')
+        .eq('faculty_id', facultyId)
+        .eq('user_id', userId)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Erro ao verificar solicitação existente:', checkError);
+        return null;
+      }
+
+      // Se já existe uma solicitação, retornar erro específico
+      if (existingRequest) {
+        if (existingRequest.status === 'pending') {
+          throw new Error('Você já tem uma solicitação pendente para esta faculdade');
+        } else if (existingRequest.status === 'approved') {
+          throw new Error('Você já é membro desta faculdade');
+        } else if (existingRequest.status === 'rejected') {
+          // Permitir nova solicitação se a anterior foi rejeitada
+          // Atualizar a solicitação existente ao invés de criar nova
+          const { data: updatedRequest, error: updateError } = await supabase
+            .from('faculty_join_requests')
+            .update({
+              message: message || null,
+              status: 'pending',
+              requested_at: new Date().toISOString(),
+              reviewed_at: null,
+              reviewed_by: null
+            })
+            .eq('id', existingRequest.id)
+            .select('id')
+            .single();
+
+          if (updateError) {
+            console.error('Erro ao atualizar solicitação:', updateError);
+            return null;
+          }
+
+          return updatedRequest.id;
+        }
+      }
+
+      // Criar nova solicitação
+      const { data, error } = await supabase
+        .from('faculty_join_requests')
+        .insert({
+          faculty_id: facultyId,
+          user_id: userId,
+          message: message || null,
+          status: 'pending'
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error('Erro ao criar solicitação:', error);
+        return null;
+      }
+
+      return data.id;
+    } catch (error) {
+      console.error('Erro ao criar solicitação:', error);
+      throw error; // Re-throw para que a UI possa capturar a mensagem específica
+    }
+  }
+
+
+
+  /**
+   * Obtém as solicitações de entrada de uma faculdade
+   * @param facultyId ID da faculdade
+   * @param status Status das solicitações (opcional)
+   * @returns Lista de solicitações
+   */
+  static async getFacultyJoinRequests(facultyId: number, status?: 'pending' | 'approved' | 'rejected'): Promise<any[]> {
+    try {
+      let query = supabase
+        .from('faculty_join_requests')
+        .select('*')
+        .eq('faculty_id', facultyId)
+        .order('requested_at', { ascending: false });
+
+      if (status) {
+        query = query.eq('status', status);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Erro ao buscar solicitações:', error);
+        return [];
+      }
+
+      if (!data || data.length === 0) {
+        return [];
+      }
+
+      // Buscar informações dos usuários da tabela users
+      const userIds = [...new Set([...data.map(r => r.user_id), ...data.filter(r => r.reviewed_by).map(r => r.reviewed_by)])];
+      
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('user_id, name, email')
+        .in('user_id', userIds);
+      
+      if (usersError) {
+        console.error('Erro ao buscar usuários:', usersError);
+      }
+
+      // Criar mapa de usuários
+      const usersMap = new Map();
+      usersData?.forEach(user => {
+        usersMap.set(user.user_id, {
+          email: user.email,
+          name: user.name || user.email?.split('@')[0] || 'Usuário'
+        });
+      });
+
+      // Mapear dados das solicitações com informações dos usuários
+      return data.map(request => ({
+        ...request,
+        user: usersMap.get(request.user_id) || {
+          email: 'Email não disponível',
+          name: 'Usuário'
+        },
+        reviewer: request.reviewed_by ? usersMap.get(request.reviewed_by) : null
+      }));
+    } catch (error) {
+      console.error('Erro ao buscar solicitações:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Aprova ou rejeita uma solicitação de entrada
+   * @param requestId ID da solicitação
+   * @param action 'approve' ou 'reject'
+   * @returns true se a ação foi bem-sucedida, false caso contrário
+   */
+  static async reviewJoinRequest(requestId: string, action: 'approve' | 'reject'): Promise<boolean> {
+    try {
+      const reviewerId = (await supabase.auth.getUser()).data.user?.id;
+      
+      // Primeiro, buscar os dados da solicitação
+      const { data: request, error: fetchError } = await supabase
+        .from('faculty_join_requests')
+        .select('user_id, faculty_id')
+        .eq('id', requestId)
+        .single();
+
+      if (fetchError || !request) {
+        console.error('Erro ao buscar solicitação:', fetchError);
+        return false;
+      }
+
+      // Atualizar o status da solicitação
+      const { error: updateError } = await supabase
+        .from('faculty_join_requests')
+        .update({
+          status: action === 'approve' ? 'approved' : 'rejected',
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: reviewerId
+        })
+        .eq('id', requestId);
+
+      if (updateError) {
+        console.error('Erro ao atualizar solicitação:', updateError);
+        return false;
+      }
+
+      // Se aprovado, adicionar o usuário como membro
+      if (action === 'approve') {
+        const success = await this.addMember(request.faculty_id, request.user_id, 'member');
+        if (!success) {
+          console.error('Erro ao adicionar membro após aprovação');
+          return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao revisar solicitação:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Cancela uma solicitação de entrada pendente
+   * @param facultyId ID da faculdade
+   * @returns true se cancelou com sucesso, false caso contrário
+   */
+  static async cancelJoinRequest(facultyId: number): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('faculty_join_requests')
+        .delete()
+        .eq('faculty_id', facultyId)
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .eq('status', 'pending');
+
+      if (error) {
+        console.error('Erro ao cancelar solicitação:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao cancelar solicitação:', error);
+      return false;
+    }
+  }
+
+  /**
    * Deleta um ambiente de faculdade
    * @param facultyId ID do ambiente a ser deletado
    * @returns true se foi deletado com sucesso, false caso contrário

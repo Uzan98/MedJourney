@@ -10,12 +10,14 @@ import {
   Settings, 
   BookText,
   FileQuestion,
+  FileText,
   Users,
   Home,
   ChevronDown,
   ChevronRight,
   Brain,
   Trophy,
+  FileCheck,
   Shield,
   MessageCircle,
   Layers,
@@ -25,7 +27,8 @@ import {
   CalendarDays,
   Clock,
   Timer,
-  Play
+  Play,
+  Bell
 } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -142,7 +145,24 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
     {
       path: "/simulados",
       label: "Simulados",
-      icon: <ClipboardList className="h-5 w-5 flex-shrink-0" />
+      icon: <ClipboardList className="h-5 w-5 flex-shrink-0" />,
+      submenu: [
+        {
+          path: "/simulados",
+          label: "Meus Simulados",
+          icon: <ClipboardList className="h-5 w-5 flex-shrink-0" />
+        },
+        {
+          path: "/simulados/provas-integra",
+          label: "Provas na Íntegra",
+          icon: <FileText className="h-5 w-5 flex-shrink-0" />
+        }
+      ]
+    },
+    {
+      path: "/provas",
+      label: "Provas",
+      icon: <FileCheck className="h-5 w-5 flex-shrink-0" />
     },
     {
       path: "/flashcards",
@@ -180,6 +200,11 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
       path: "/planner",
       label: "Planner",
       icon: <CalendarDays className="h-5 w-5 flex-shrink-0" />
+    },
+    {
+      path: "/notifications",
+      label: "Notificações",
+      icon: <Bell className="h-5 w-5 flex-shrink-0" />
     },
     {
       path: "/admin",

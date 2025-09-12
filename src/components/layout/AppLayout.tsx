@@ -13,6 +13,7 @@ import {
   Bell, 
   Search,
   FileText,
+  FileCheck,
   Menu,
   X,
   ChevronLeft,
@@ -22,7 +23,6 @@ import {
   ChevronDown,
   ChevronUp,
   ListTodo,
-  GraduationCap,
   FileQuestion,
   Users,
   Clock,
@@ -39,6 +39,11 @@ import MobileMenu from './MobileMenu';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationPermission from '../NotificationPermission';
 import GenomaMobileWarning from '../GenomaMobileWarning';
+import { NotificationProvider } from '@/contexts/NotificationContext';
+import { NotificationDropdown } from '@/components/notifications/notification-dropdown';
+import { useSetupRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { Database } from '@/types/supabase';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -68,6 +73,17 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   
   // Obtém dados do usuário do contexto de autenticação
   const { user, signOut } = useAuth();
+  const supabase = createClientComponentClient<Database>();
+
+  // Configurar notificações em tempo real
+  const { requestNotificationPermission } = useSetupRealtimeNotifications(user?.id);
+
+  // Solicitar permissão para notificações quando o usuário fizer login
+  useEffect(() => {
+    if (user?.id) {
+      requestNotificationPermission();
+    }
+  }, [user?.id, requestNotificationPermission]);
 
   // Definição dos menus e submenus
   const menuItems: MenuItem[] = [
@@ -97,9 +113,19 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       icon: <ClipboardList className="h-5 w-5 flex-shrink-0" />
     },
     {
+      path: "/provas",
+      label: "Provas",
+      icon: <FileCheck className="h-5 w-5 flex-shrink-0" />
+    },
+    {
       path: "/tarefas",
       label: "Painel de Tarefas",
       icon: <ListTodo className="h-5 w-5 flex-shrink-0" />
+    },
+    {
+      path: "/notifications",
+      label: "Notificações",
+      icon: <Bell className="h-5 w-5 flex-shrink-0" />
     },
     {
       path: "/comunidade",
@@ -409,7 +435,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   }, [isProfileOpen]);
 
   return (
-    <div className="flex h-screen">
+    <NotificationProvider>
+      <div className="flex h-screen">
       {/* Sidebar - Desktop */}
       <div 
         className={`bg-blue-600 text-white flex flex-col transition-all duration-300 ease-in-out relative ${
@@ -587,10 +614,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             </div>
             
             {/* Notifications */}
-            <button className="relative p-1 rounded-full bg-gray-100 hover:bg-gray-200">
-              <Bell className="h-5 w-5 text-gray-600" />
-              <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
-            </button>
+            <NotificationDropdown />
             
             {/* User Profile Dropdown */}
             <div className="relative">
@@ -684,7 +708,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       
       {/* Menu Mobile */}
       <MobileMenu lockMobileSidebar={lockMobileSidebar} />
-    </div>
+      </div>
+    </NotificationProvider>
   );
 };
 

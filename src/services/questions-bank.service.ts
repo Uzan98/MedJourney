@@ -11,6 +11,21 @@ export interface AnswerOption {
   updated_at?: string;
 }
 
+export interface QuestionImage {
+  id?: number;
+  question_id?: number;
+  image_url: string;
+  image_name?: string;
+  image_size?: number;
+  mime_type?: string;
+  position?: number;
+  description?: string;
+  uploaded_by?: string;
+  created_at?: string;
+  updated_at?: string;
+  _tempFile?: File; // Arquivo temporário para questões novas
+}
+
 export interface Question {
   id?: number;
   user_id?: string;
@@ -25,6 +40,7 @@ export interface Question {
   created_at?: string;
   updated_at?: string;
   answer_options?: AnswerOption[]; // Referência às opções de resposta
+  images?: QuestionImage[]; // Referência às imagens da questão
   is_public?: boolean; // Indica se a questão está disponível no Genoma Bank
   creator_name?: string; // Nome do criador (para questões públicas)
   discipline_name?: string; // Nome da disciplina (para questões públicas)
@@ -172,7 +188,8 @@ export class QuestionsBankService {
             *,
             answer_options (
               text
-            )
+            ),
+            question_images(*)
           `)
           .eq('user_id', userIdToUse)
           .order('created_at', { ascending: false });
@@ -238,7 +255,10 @@ export class QuestionsBankService {
       // Se não há termo de busca, usar consulta simples
       let query = supabase
         .from('questions')
-        .select('*')
+        .select(`
+          *,
+          question_images(*)
+        `)
         .eq('user_id', userIdToUse)
         .order('created_at', { ascending: false });
       
@@ -272,7 +292,16 @@ export class QuestionsBankService {
         throw error;
       }
       
-      return data || [];
+      // Mapear question_images para images para manter compatibilidade
+      const questions = (data || []).map(question => {
+        if (question.question_images) {
+          question.images = question.question_images;
+          delete question.question_images;
+        }
+        return question;
+      });
+      
+      return questions;
     } catch (error) {
       console.error('Erro ao buscar questões do usuário:', error);
       return [];
@@ -293,13 +322,20 @@ export class QuestionsBankService {
         .from('questions')
         .select(`
           *,
-          answer_options(*)
+          answer_options(*),
+          question_images(*)
         `)
         .eq('id', id)
         .single();
       
       if (error) {
         throw error;
+      }
+      
+      // Mapear question_images para images para manter compatibilidade
+      if (data && data.question_images) {
+        data.images = data.question_images;
+        delete data.question_images;
       }
       
       return data;
@@ -407,6 +443,32 @@ export class QuestionsBankService {
         if (optionsError) {
           console.error('Erro ao inserir opções de resposta:', optionsError);
           throw optionsError;
+        }
+      }
+
+      // Se houver imagens, insere na tabela question_images
+      if (question.images && question.images.length > 0) {
+        const imagesWithQuestionId = question.images.map(image => {
+          // Remove o campo id e _tempFile para que o Supabase gere um novo ID
+          const { id, _tempFile, ...imageWithoutId } = image;
+          
+          return {
+            ...imageWithoutId,
+            question_id: questionId,
+            uploaded_by: user.user.id,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+        });
+
+        // Insere as imagens
+        const { error: imagesError } = await supabase
+          .from('question_images')
+          .insert(imagesWithQuestionId);
+
+        if (imagesError) {
+          console.error('Erro ao inserir imagens da questão:', imagesError);
+          throw imagesError;
         }
       }
       
@@ -539,6 +601,46 @@ export class QuestionsBankService {
           throw optionsError;
         }
       }
+
+      // Atualiza as imagens da questão
+      if (question.images !== undefined) {
+        // Primeiro, exclui as imagens existentes
+        const { error: deleteImagesError } = await supabase
+          .from('question_images')
+          .delete()
+          .eq('question_id', id);
+
+        if (deleteImagesError) {
+          console.error('Erro ao excluir imagens existentes:', deleteImagesError);
+          throw deleteImagesError;
+        }
+
+        // Se houver novas imagens, insere na tabela question_images
+        if (question.images && question.images.length > 0) {
+          const imagesWithQuestionId = question.images.map(image => {
+            // Remove o campo id e _tempFile para que o Supabase gere um novo ID
+            const { id: imageId, _tempFile, ...imageWithoutId } = image;
+            
+            return {
+              ...imageWithoutId,
+              question_id: id,
+              uploaded_by: user.user.id,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+          });
+
+          // Insere as novas imagens
+          const { error: imagesError } = await supabase
+            .from('question_images')
+            .insert(imagesWithQuestionId);
+
+          if (imagesError) {
+            console.error('Erro ao inserir imagens da questão:', imagesError);
+            throw imagesError;
+          }
+        }
+      }
       
       return true;
     } catch (error) {
@@ -588,6 +690,17 @@ export class QuestionsBankService {
 
       if (optionsError) {
         throw optionsError;
+      }
+
+      // Exclui as imagens associadas
+      const { error: imagesError } = await supabase
+        .from('question_images')
+        .delete()
+        .eq('question_id', id);
+
+      if (imagesError) {
+        console.error('Erro ao excluir imagens da questão:', imagesError);
+        throw imagesError;
       }
 
       // Em seguida, exclui a questão
@@ -793,7 +906,8 @@ export class QuestionsBankService {
           ),
           answer_options (
             text
-          )
+          ),
+          question_images(*)
         `)
         .eq('is_public', true)
         .order('created_at', { ascending: false });
@@ -908,10 +1022,16 @@ export class QuestionsBankService {
         const userProfile = userMap[question.user_id];
         const discipline = question.disciplines;
         
+        // Mapear question_images para images para manter compatibilidade
+        if (question.question_images) {
+          question.images = question.question_images;
+        }
+        
         return {
           ...question,
           disciplines: undefined, // Remover o objeto aninhado
           answer_options: undefined, // Remover as alternativas do resultado final para manter compatibilidade
+          question_images: undefined, // Remover question_images após mapeamento
           creator_name: userProfile ? (userProfile.full_name || userProfile.username || 'Usuário anônimo') : 'Usuário anônimo',
           discipline_name: discipline ? discipline.name : undefined
         };

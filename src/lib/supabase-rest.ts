@@ -375,6 +375,42 @@ export const DisciplinesRestService = {
       return [];
     }
   },
+
+  async getAllSubjects(onlyUser = true): Promise<Subject[]> {
+    try {
+      const headers = await getAuthHeaders();
+      let url = `${getSupabaseRestUrl()}subjects`;
+      
+      if (onlyUser) {
+        const user = await supabase.auth.getUser();
+        const userId = user.data.user?.id;
+        
+        if (!userId) {
+          console.log('Usuário não autenticado');
+          return [];
+        }
+        
+        url += `?user_id=eq.${userId}`;
+      }
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Erro ao buscar todos os assuntos:', error);
+        return [];
+      }
+      
+      const data = await response.json();
+      return data as Subject[];
+    } catch (error) {
+      console.error('Erro ao buscar todos os assuntos:', error);
+      return [];
+    }
+  },
   
   /**
    * Cria um novo assunto para uma disciplina
