@@ -417,7 +417,7 @@ export default function UploadProvaPage() {
   };
 
   // Função para parsear metadados das questões
-  const parseMetadata = () => {
+  const parseMetadata = async () => {
     if (!metadataText.trim()) {
       toast.error('Cole o texto dos metadados das questões');
       return;
@@ -472,7 +472,7 @@ export default function UploadProvaPage() {
       }
 
       setParsedMetadata(metadata);
-      validateMetadata(metadata);
+      await validateMetadata(metadata);
       toast.success(`${metadata.length} metadados de questões processados`);
     } catch (error) {
       console.error('Erro ao parsear metadados:', error);
@@ -481,10 +481,10 @@ export default function UploadProvaPage() {
   };
 
   // Função para validar metadados contra disciplinas e assuntos cadastrados
-  const validateMetadata = (metadata: QuestionMetadata[]) => {
+  const validateMetadata = async (metadata: QuestionMetadata[]) => {
     const results: {[questionNumber: number]: ValidationResult} = {};
 
-    metadata.forEach(meta => {
+    for (const meta of metadata) {
       const result: ValidationResult = {
         disciplineMatch: null,
         subjectMatch: null,
@@ -493,20 +493,52 @@ export default function UploadProvaPage() {
       };
 
       // Buscar disciplina (Grande Área)
-      const disciplineMatch = disciplines.find(d => 
-        d.name.toLowerCase().includes(meta.grandeArea.toLowerCase()) ||
-        meta.grandeArea.toLowerCase().includes(d.name.toLowerCase())
+      // Primeiro, tentar correspondência exata (ignorando case)
+      let disciplineMatch = disciplines.find(d => 
+        d.name.toLowerCase() === meta.grandeArea.toLowerCase()
       );
+      
+      // Se não encontrar correspondência exata, usar busca por inclusão
+      if (!disciplineMatch) {
+        disciplineMatch = disciplines.find(d => 
+          d.name.toLowerCase().includes(meta.grandeArea.toLowerCase()) ||
+          meta.grandeArea.toLowerCase().includes(d.name.toLowerCase())
+        );
+      }
+      
+      console.log(`Buscando disciplina para: "${meta.grandeArea}"`); 
+      console.log('Disciplinas disponíveis:', disciplines.map(d => d.name));
+      console.log('Disciplina encontrada:', disciplineMatch?.name || 'Nenhuma');
 
       if (disciplineMatch) {
         result.disciplineMatch = disciplineMatch;
         
-        // Buscar assunto (Categoria) dentro da disciplina
-        const disciplineSubjects = disciplineMatch.subjects || questionSubjects[disciplineMatch.id] || [];
+        // Carregar assuntos da disciplina se ainda não foram carregados
+        let disciplineSubjects = disciplineMatch.subjects || questionSubjects[disciplineMatch.id] || [];
+        
+        if (disciplineSubjects.length === 0 && !loadingQuestionSubjects[disciplineMatch.id]) {
+          console.log(`Carregando assuntos para disciplina ${disciplineMatch.name} (ID: ${disciplineMatch.id})`);
+          try {
+            const data = await DisciplinesRestService.getSubjects(disciplineMatch.id, true);
+            console.log('Assuntos carregados diretamente:', data?.length || 0, data);
+            disciplineSubjects = data || [];
+            // Atualizar o estado também
+            setQuestionSubjects(prev => ({ ...prev, [disciplineMatch.id]: data || [] }));
+          } catch (error) {
+            console.error('Erro ao carregar assuntos:', error);
+            disciplineSubjects = [];
+          }
+        }
+        
+        console.log(`Disciplina: ${disciplineMatch.name}, Assuntos disponíveis:`, disciplineSubjects.map(s => s.title || s.name));
+        console.log(`Procurando por categoria: "${meta.categoria}"`);
+        
         const subjectMatch = disciplineSubjects.find(s => {
           const subjectName = s.title || s.name || '';
-          return subjectName.toLowerCase().includes(meta.categoria.toLowerCase()) ||
-                 meta.categoria.toLowerCase().includes(subjectName.toLowerCase());
+          const matches = subjectName.toLowerCase().includes(meta.categoria.toLowerCase()) ||
+                         meta.categoria.toLowerCase().includes(subjectName.toLowerCase());
+          console.log(`Comparando "${subjectName}" com "${meta.categoria}": ${matches}`);
+          return matches;
         });
 
         if (subjectMatch) {
@@ -520,7 +552,7 @@ export default function UploadProvaPage() {
       }
 
       results[meta.questionNumber] = result;
-    });
+    }
 
     setValidationResults(results);
   };
