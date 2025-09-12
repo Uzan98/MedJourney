@@ -44,27 +44,9 @@ BEGIN
             NOW()
         ) RETURNING id INTO notification_id;
     ELSE
-        -- Se não há faculdade associada, é um simulado público - notificar todos
-        INSERT INTO notifications (
-            title,
-            message,
-            type,
-            target_type,
-            sender_id,
-            data,
-            created_at
-        ) VALUES (
-            'Novo Simulado Público Disponível',
-            'O simulado "' || COALESCE(NEW.title, 'Sem título') || '" foi disponibilizado publicamente',
-            'new_simulado',
-            'all_users',
-            NEW.user_id,
-            jsonb_build_object(
-                'exam_id', NEW.id,
-                'exam_title', NEW.title
-            ),
-            NOW()
-        ) RETURNING id INTO notification_id;
+        -- Se não há faculdade associada, é um simulado público - não enviar notificações
+        -- Comentário: Simulados públicos não devem gerar notificações para todos os usuários
+        NULL; -- Não fazer nada para simulados públicos
     END IF;
     
     RETURN NEW;
@@ -210,7 +192,7 @@ DECLARE
     event_date_formatted TEXT;
 BEGIN
     -- Formatar a data do evento
-    event_date_formatted := TO_CHAR(NEW.event_date, 'DD/MM/YYYY');
+    event_date_formatted := TO_CHAR(NEW.start_date, 'DD/MM/YYYY');
     
     -- Criar notificação para novo evento
     INSERT INTO notifications (
@@ -232,7 +214,7 @@ BEGIN
         jsonb_build_object(
             'event_id', NEW.id,
             'event_title', NEW.title,
-            'event_date', NEW.event_date,
+            'event_date', NEW.start_date,
             'faculty_id', NEW.faculty_id
         ),
         NOW()

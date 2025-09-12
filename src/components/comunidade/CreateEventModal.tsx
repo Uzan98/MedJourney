@@ -105,13 +105,9 @@ export function CreateEventModal({ isOpen, onClose, facultyId, onEventCreated, i
       });
 
       if (eventId) {
-        toast({
-          title: "Evento criado",
-          description: "O evento foi criado com sucesso!",
-        });
         resetForm();
-        onEventCreated();
         onClose();
+        onEventCreated();
       } else {
         throw new Error('Erro ao criar evento');
       }

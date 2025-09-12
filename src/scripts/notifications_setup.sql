@@ -104,27 +104,9 @@ BEGIN
       )
     );
   ELSE
-    -- Se não há faculdade associada, é um simulado público - notificar todos
-    INSERT INTO public.notifications (
-      title,
-      message,
-      type,
-      target_type,
-      target_id,
-      sender_id,
-      data
-    ) VALUES (
-      'Novo Simulado Público Disponível',
-      'Um novo simulado público foi disponibilizado',
-      'new_simulado',
-      'all_users',
-      NULL,
-      NEW.user_id,
-      jsonb_build_object(
-        'simulado_id', NEW.id,
-        'simulado_title', NEW.title
-      )
-    );
+    -- Se não há faculdade associada, é um simulado público - não enviar notificações
+    -- Comentário: Simulados públicos não devem gerar notificações para todos os usuários
+    NULL; -- Não fazer nada para simulados públicos
   END IF;
   
   RETURN NEW;

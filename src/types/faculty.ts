@@ -123,6 +123,27 @@ export interface FacultyBannedUser {
   };
 }
 
+export interface FacultyJoinRequest {
+  id: number;
+  faculty_id: number;
+  user_id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  requested_at: string;
+  reviewed_at?: string;
+  reviewed_by?: string;
+  user?: {
+    id: string;
+    name?: string;
+    email?: string;
+    avatar_url?: string;
+  };
+  reviewed_by_user?: {
+    id: string;
+    name?: string;
+    email?: string;
+  };
+}
+
 // Interfaces para o Fórum de Dúvidas
 export interface ForumTag {
   id: number;
@@ -162,4 +183,4 @@ export interface ForumReply {
   user?: FacultyUser;
   votes_count: number;
   user_vote?: number; // 1 para upvote, -1 para downvote, undefined se não votou
-} 
+}
