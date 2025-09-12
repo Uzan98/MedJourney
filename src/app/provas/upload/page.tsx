@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { FaArrowLeft, FaCheck, FaFileExport, FaListOl, FaEye, FaEdit } from 'react-icons/fa';
+import { FaArrowLeft, FaCheck, FaFileExport, FaListOl, FaEye, FaEdit, FaImage, FaTrash, FaUpload } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { ExamsService } from '@/services/exams.service';
 import { QuestionsBankService } from '@/services/questions-bank.service';
@@ -24,6 +24,23 @@ interface ParsedQuestion {
   explanation?: string;
   disciplineId?: number;
   subjectId?: number;
+  tag?: string;
+  image?: File | null;
+  imageUrl?: string;
+}
+
+interface QuestionMetadata {
+  questionNumber: number;
+  grandeArea: string;
+  categoria: string;
+  subAssunto: string;
+}
+
+interface ValidationResult {
+  disciplineMatch: Discipline | null;
+  subjectMatch: Subject | null;
+  isValid: boolean;
+  errors: string[];
 }
 
 interface Discipline {
@@ -84,6 +101,12 @@ export default function UploadProvaPage() {
   const [questionSubjects, setQuestionSubjects] = useState<{[disciplineId: number]: Subject[]}>({});
   const [loadingQuestionSubjects, setLoadingQuestionSubjects] = useState<{[disciplineId: number]: boolean}>({});
   
+  // Estados para parser automático de metadados
+  const [metadataText, setMetadataText] = useState('');
+  const [parsedMetadata, setParsedMetadata] = useState<QuestionMetadata[]>([]);
+  const [validationResults, setValidationResults] = useState<{[questionNumber: number]: ValidationResult}>({});
+  const [showMetadataParser, setShowMetadataParser] = useState(false);
+  
   useEffect(() => {
     if (!user) {
       router.push('/auth/login');
@@ -99,6 +122,17 @@ export default function UploadProvaPage() {
     loadExamTypes();
     loadDisciplines();
   }, [user, router, isAdmin]);
+
+  // Cleanup das URLs de objeto quando o componente for desmontado
+  useEffect(() => {
+    return () => {
+      parsedQuestions.forEach(question => {
+        if (question.imageUrl) {
+          URL.revokeObjectURL(question.imageUrl);
+        }
+      });
+    };
+  }, [parsedQuestions]);
   
   const loadExamTypes = async () => {
     try {
@@ -381,6 +415,150 @@ export default function UploadProvaPage() {
       toast.error('Erro ao processar as questões. Verifique o formato.');
     }
   };
+
+  // Função para parsear metadados das questões
+  const parseMetadata = () => {
+    if (!metadataText.trim()) {
+      toast.error('Cole o texto dos metadados das questões');
+      return;
+    }
+
+    try {
+      const lines = metadataText.split('\n').map(line => line.trim()).filter(line => line);
+      const metadata: QuestionMetadata[] = [];
+      let currentQuestion: Partial<QuestionMetadata> = {};
+
+      for (const line of lines) {
+        // Detectar início de nova questão
+        const questionMatch = line.match(/^Questão\s+(\d+):/i);
+        if (questionMatch) {
+          // Salvar questão anterior se completa
+          if (currentQuestion.questionNumber && currentQuestion.grandeArea && currentQuestion.categoria && currentQuestion.subAssunto) {
+            metadata.push(currentQuestion as QuestionMetadata);
+          }
+          // Iniciar nova questão
+          currentQuestion = { questionNumber: parseInt(questionMatch[1]) };
+          continue;
+        }
+
+        // Parsear campos
+        const grandeAreaMatch = line.match(/^Grande\s+Área:\s*(.+?)(?:\s*\(.*\))?$/i);
+        if (grandeAreaMatch) {
+          currentQuestion.grandeArea = grandeAreaMatch[1].trim();
+          continue;
+        }
+
+        const categoriaMatch = line.match(/^Categoria:\s*(.+?)(?:\s*\(.*\))?$/i);
+        if (categoriaMatch) {
+          currentQuestion.categoria = categoriaMatch[1].trim();
+          continue;
+        }
+
+        const subAssuntoMatch = line.match(/^Sub-assunto:\s*(.+?)(?:\s*\(.*\))?$/i);
+        if (subAssuntoMatch) {
+          currentQuestion.subAssunto = subAssuntoMatch[1].trim();
+          continue;
+        }
+      }
+
+      // Adicionar última questão se completa
+      if (currentQuestion.questionNumber && currentQuestion.grandeArea && currentQuestion.categoria && currentQuestion.subAssunto) {
+        metadata.push(currentQuestion as QuestionMetadata);
+      }
+
+      if (metadata.length === 0) {
+        toast.error('Nenhum metadado válido encontrado. Verifique o formato.');
+        return;
+      }
+
+      setParsedMetadata(metadata);
+      validateMetadata(metadata);
+      toast.success(`${metadata.length} metadados de questões processados`);
+    } catch (error) {
+      console.error('Erro ao parsear metadados:', error);
+      toast.error('Erro ao processar metadados. Verifique o formato.');
+    }
+  };
+
+  // Função para validar metadados contra disciplinas e assuntos cadastrados
+  const validateMetadata = (metadata: QuestionMetadata[]) => {
+    const results: {[questionNumber: number]: ValidationResult} = {};
+
+    metadata.forEach(meta => {
+      const result: ValidationResult = {
+        disciplineMatch: null,
+        subjectMatch: null,
+        isValid: false,
+        errors: []
+      };
+
+      // Buscar disciplina (Grande Área)
+      const disciplineMatch = disciplines.find(d => 
+        d.name.toLowerCase().includes(meta.grandeArea.toLowerCase()) ||
+        meta.grandeArea.toLowerCase().includes(d.name.toLowerCase())
+      );
+
+      if (disciplineMatch) {
+        result.disciplineMatch = disciplineMatch;
+        
+        // Buscar assunto (Categoria) dentro da disciplina
+        const disciplineSubjects = disciplineMatch.subjects || questionSubjects[disciplineMatch.id] || [];
+        const subjectMatch = disciplineSubjects.find(s => {
+          const subjectName = s.title || s.name || '';
+          return subjectName.toLowerCase().includes(meta.categoria.toLowerCase()) ||
+                 meta.categoria.toLowerCase().includes(subjectName.toLowerCase());
+        });
+
+        if (subjectMatch) {
+          result.subjectMatch = subjectMatch;
+          result.isValid = true;
+        } else {
+          result.errors.push(`Assunto "${meta.categoria}" não encontrado na disciplina "${disciplineMatch.name}"`);
+        }
+      } else {
+        result.errors.push(`Disciplina "${meta.grandeArea}" não encontrada`);
+      }
+
+      results[meta.questionNumber] = result;
+    });
+
+    setValidationResults(results);
+  };
+
+  // Função para aplicar metadados validados às questões
+  const applyMetadataToQuestions = () => {
+    if (parsedQuestions.length === 0) {
+      toast.error('Parse as questões primeiro');
+      return;
+    }
+
+    if (parsedMetadata.length === 0) {
+      toast.error('Parse os metadados primeiro');
+      return;
+    }
+
+    const updatedQuestions = parsedQuestions.map((question, index) => {
+      const questionNumber = index + 1;
+      const metadata = parsedMetadata.find(m => m.questionNumber === questionNumber);
+      const validation = validationResults[questionNumber];
+
+      if (metadata && validation && validation.isValid) {
+        return {
+          ...question,
+          disciplineId: validation.disciplineMatch?.id,
+          subjectId: validation.subjectMatch?.id,
+          tag: metadata.subAssunto
+        };
+      }
+
+      return question;
+    });
+
+    setParsedQuestions(updatedQuestions);
+    
+    const appliedCount = updatedQuestions.filter(q => q.disciplineId && q.subjectId).length;
+    toast.success(`Metadados aplicados a ${appliedCount} questões`);
+  };
   
   const loadQuestionSubjects = async (disciplineId: number) => {
     if (questionSubjects[disciplineId] || loadingQuestionSubjects[disciplineId]) {
@@ -420,6 +598,77 @@ export default function UploadProvaPage() {
 
   const removeQuestion = (index: number) => {
     setParsedQuestions(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleImageUpload = (index: number, file: File | null) => {
+    if (file) {
+      // Validar tipo de arquivo
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error('Tipo de arquivo não suportado. Use JPG, PNG, GIF ou WebP.');
+        return;
+      }
+
+      // Validar tamanho (máximo 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        toast.error('Arquivo muito grande. Tamanho máximo: 5MB.');
+        return;
+      }
+
+      // Criar URL para preview
+      const imageUrl = URL.createObjectURL(file);
+      
+      editQuestion(index, 'image', file);
+      editQuestion(index, 'imageUrl', imageUrl);
+      
+      toast.success('Imagem adicionada com sucesso!');
+    }
+  };
+
+  const removeImage = (index: number) => {
+    const question = parsedQuestions[index];
+    if (question.imageUrl) {
+      URL.revokeObjectURL(question.imageUrl);
+    }
+    editQuestion(index, 'image', null);
+    editQuestion(index, 'imageUrl', '');
+    toast.success('Imagem removida!');
+  };
+
+  const uploadImageToSupabase = async (file: File, questionIndex: number): Promise<string | null> => {
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      // Gerar nome único para o arquivo
+      const fileExt = file.name.split('.').pop();
+      const fileName = `question-${Date.now()}-${questionIndex}.${fileExt}`;
+      const filePath = `question-images/${fileName}`;
+
+      // Upload do arquivo
+      const { data, error } = await supabase.storage
+        .from('questions')
+        .upload(filePath, file);
+
+      if (error) {
+        console.error('Erro no upload:', error);
+        return null;
+      }
+
+      // Obter URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('questions')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Erro ao fazer upload da imagem:', error);
+      return null;
+    }
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -486,7 +735,20 @@ export default function UploadProvaPage() {
       // Criar questões no banco e adicionar à prova
       const questionIds: number[] = [];
       
-      for (const question of parsedQuestions) {
+      for (let i = 0; i < parsedQuestions.length; i++) {
+        const question = parsedQuestions[i];
+        
+        // Upload da imagem se existir
+        let imageUrl = null;
+        if (question.image) {
+          toast.loading(`Fazendo upload da imagem da questão ${i + 1}...`);
+          imageUrl = await uploadImageToSupabase(question.image, i);
+          toast.dismiss();
+          
+          if (!imageUrl) {
+            toast.error(`Falha no upload da imagem da questão ${i + 1}. Continuando sem a imagem.`);
+          }
+        }
         // Validar se os IDs existem antes de enviar
         const questionData: any = {
           content: question.text,
@@ -495,6 +757,16 @@ export default function UploadProvaPage() {
           difficulty: 'média',
           is_public: false
         };
+        
+        // Adicionar URL da imagem se existir
+        if (imageUrl) {
+          questionData.image_url = imageUrl;
+        }
+        
+        // Adicionar tag se existir
+        if (question.tag && question.tag.trim()) {
+          questionData.tag = question.tag.trim();
+        }
         
         // Só adicionar discipline_id se for um número válido e existir na lista de disciplines carregadas
         if (question.disciplineId && typeof question.disciplineId === 'number') {
@@ -778,7 +1050,7 @@ E) 7`}
               />
             </div>
             
-            <div className="flex justify-center">
+            <div className="flex justify-center space-x-4">
               <button
                 type="button"
                 onClick={parseQuestions}
@@ -788,9 +1060,169 @@ E) 7`}
                 <FaListOl className="mr-2" />
                 Processar Questões
               </button>
+              
+              <button
+                type="button"
+                onClick={() => setShowMetadataParser(!showMetadataParser)}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+              >
+                <FaEdit className="mr-2" />
+                {showMetadataParser ? 'Ocultar' : 'Mostrar'} Parser de Metadados
+              </button>
             </div>
           </div>
         </div>
+        
+        {/* Parser Automático de Metadados */}
+        {showMetadataParser && (
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              <FaEdit className="inline mr-2" />
+              Parser Automático de Metadados
+            </h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="metadataText" className="block text-sm font-medium text-gray-700 mb-2">
+                  Cole os metadados das questões *
+                </label>
+                <textarea
+                  id="metadataText"
+                  value={metadataText}
+                  onChange={(e) => setMetadataText(e.target.value)}
+                  rows={12}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                  placeholder={`Exemplo de formato:
+
+Questão 1:
+Grande Área: Clínica Médica
+Categoria: Infectologia
+Sub-assunto: Hepatite C
+
+Questão 2:
+Grande Área: Clínica Médica
+Categoria: Hepatologia
+Sub-assunto: Porfiria`}
+                />
+              </div>
+              
+              <div className="flex justify-center space-x-4">
+                <button
+                  type="button"
+                  onClick={parseMetadata}
+                  disabled={!metadataText.trim()}
+                  className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+                >
+                  <FaListOl className="mr-2" />
+                  Processar Metadados
+                </button>
+                
+                {parsedMetadata.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={applyMetadataToQuestions}
+                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center"
+                  >
+                    <FaCheck className="mr-2" />
+                    Aplicar às Questões
+                  </button>
+                )}
+              </div>
+              
+              {/* Resultados da Validação */}
+              {parsedMetadata.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Resultados da Validação</h3>
+                  <div className="space-y-3">
+                    {parsedMetadata.map((meta) => {
+                      const validation = validationResults[meta.questionNumber];
+                      const isValid = validation?.isValid;
+                      
+                      return (
+                        <div
+                          key={meta.questionNumber}
+                          className={`p-4 rounded-lg border-2 ${
+                            isValid
+                              ? 'border-green-200 bg-green-50'
+                              : 'border-red-200 bg-red-50'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-gray-900">
+                                Questão {meta.questionNumber}
+                              </h4>
+                              <div className="mt-2 space-y-1 text-sm">
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-medium text-gray-700">Grande Área:</span>
+                                  <span className={isValid ? 'text-green-700' : 'text-red-700'}>
+                                    {meta.grandeArea}
+                                  </span>
+                                  {validation?.disciplineMatch && (
+                                    <span className="text-green-600 text-xs">
+                                      → {validation.disciplineMatch.name}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-medium text-gray-700">Categoria:</span>
+                                  <span className={isValid ? 'text-green-700' : 'text-red-700'}>
+                                    {meta.categoria}
+                                  </span>
+                                  {validation?.subjectMatch && (
+                                    <span className="text-green-600 text-xs">
+                                      → {validation.subjectMatch.title || validation.subjectMatch.name}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-medium text-gray-700">Sub-assunto:</span>
+                                  <span className="text-gray-700">{meta.subAssunto}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="ml-4">
+                              {isValid ? (
+                                <div className="flex items-center text-green-600">
+                                  <FaCheck className="mr-1" />
+                                  <span className="text-sm font-medium">Válido</span>
+                                </div>
+                              ) : (
+                                <div className="text-red-600">
+                                  <span className="text-sm font-medium">Inválido</span>
+                                  {validation?.errors && (
+                                    <div className="mt-1 text-xs">
+                                      {validation.errors.map((error, idx) => (
+                                        <div key={idx} className="text-red-500">
+                                          • {error}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-blue-700">
+                        <strong>Resumo:</strong> {parsedMetadata.filter(m => validationResults[m.questionNumber]?.isValid).length} de {parsedMetadata.length} metadados válidos
+                      </span>
+                      <span className="text-blue-600">
+                        Mapeamento: Grande Área → Disciplina | Categoria → Assunto | Sub-assunto → Tag
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         
         {/* Aplicar Disciplina e Assunto em Lote */}
         {parsedQuestions.length > 0 && (
@@ -945,7 +1377,7 @@ E) 7`}
                         ))}
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Disciplina:
@@ -998,6 +1430,83 @@ E) 7`}
                           </select>
 
                         </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Tag:
+                          </label>
+                          <input
+                            type="text"
+                            value={question.tag || ''}
+                            onChange={(e) => editQuestion(index, 'tag', e.target.value)}
+                            placeholder="Digite uma tag (opcional)"
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Seção de Upload de Imagem */}
+                      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <FaImage className="inline mr-1" />
+                          Imagem da Questão (opcional):
+                        </label>
+                        
+                        {question.imageUrl ? (
+                          <div className="space-y-2">
+                            <div className="relative inline-block">
+                              <img 
+                                src={question.imageUrl} 
+                                alt={`Imagem da questão ${index + 1}`}
+                                className="max-w-full max-h-48 rounded border shadow-sm"
+                              />
+                            </div>
+                            <div className="flex space-x-2">
+                              <button
+                                type="button"
+                                onClick={() => removeImage(index)}
+                                className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors flex items-center"
+                              >
+                                <FaTrash className="mr-1" />
+                                Remover Imagem
+                              </button>
+                              <label className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors cursor-pointer flex items-center">
+                                <FaUpload className="mr-1" />
+                                Trocar Imagem
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0] || null;
+                                    handleImageUpload(index, file);
+                                    e.target.value = ''; // Reset input
+                                  }}
+                                  className="hidden"
+                                />
+                              </label>
+                            </div>
+                          </div>
+                        ) : (
+                          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                              <FaUpload className="w-8 h-8 mb-2 text-gray-400" />
+                              <p className="mb-2 text-sm text-gray-500">
+                                <span className="font-semibold">Clique para fazer upload</span> ou arraste uma imagem
+                              </p>
+                              <p className="text-xs text-gray-500">PNG, JPG, GIF ou WebP (máx. 5MB)</p>
+                            </div>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0] || null;
+                                handleImageUpload(index, file);
+                                e.target.value = ''; // Reset input
+                              }}
+                              className="hidden"
+                            />
+                          </label>
+                        )}
                       </div>
                     </div>
                   </div>
