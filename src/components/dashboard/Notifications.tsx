@@ -7,7 +7,7 @@ import { playNotificationSound } from '@/utils/sound';
 
 interface Notification {
   id: string;
-  type: 'task' | 'session' | 'revision';
+  type: 'task' | 'session' | 'revision' | 'faculty_join_request' | 'faculty_join_request_status' | 'simulado' | 'forum_post' | 'new_simulado' | 'event' | 'announcement' | 'material';
   title: string;
   message: string;
   date: Date;
@@ -40,6 +40,21 @@ const Notifications = ({ notifications }: NotificationsProps) => {
         return <BookOpen className="h-5 w-5 text-blue-500" />;
       case 'revision':
         return <FileText className="h-5 w-5 text-green-500" />;
+      case 'faculty_join_request':
+        return <BellRing className="h-5 w-5 text-purple-500" />;
+      case 'faculty_join_request_status':
+        return <Bell className="h-5 w-5 text-indigo-500" />;
+      case 'simulado':
+      case 'new_simulado':
+        return <FileText className="h-5 w-5 text-blue-500" />;
+      case 'forum_post':
+        return <BookOpen className="h-5 w-5 text-green-500" />;
+      case 'event':
+        return <Clock className="h-5 w-5 text-red-500" />;
+      case 'announcement':
+        return <BellRing className="h-5 w-5 text-yellow-500" />;
+      case 'material':
+        return <FileText className="h-5 w-5 text-gray-500" />;
       default:
         return <BellRing className="h-5 w-5 text-gray-500" />;
     }
@@ -53,6 +68,21 @@ const Notifications = ({ notifications }: NotificationsProps) => {
         return 'bg-blue-50';
       case 'revision':
         return 'bg-green-50';
+      case 'faculty_join_request':
+        return 'bg-purple-50';
+      case 'faculty_join_request_status':
+        return 'bg-indigo-50';
+      case 'simulado':
+      case 'new_simulado':
+        return 'bg-blue-50';
+      case 'forum_post':
+        return 'bg-green-50';
+      case 'event':
+        return 'bg-red-50';
+      case 'announcement':
+        return 'bg-yellow-50';
+      case 'material':
+        return 'bg-gray-50';
       default:
         return 'bg-gray-50';
     }
@@ -103,4 +133,4 @@ const Notifications = ({ notifications }: NotificationsProps) => {
   );
 };
 
-export default Notifications; 
+export default Notifications;
