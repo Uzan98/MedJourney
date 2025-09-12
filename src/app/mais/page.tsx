@@ -19,7 +19,8 @@ import {
   Layers,
   School,
   CalendarDays,
-  UserX
+  UserX,
+  FileCheck
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -42,6 +43,14 @@ export default function MaisPage() {
       description: "Teste seus conhecimentos",
       bgColor: "bg-green-50",
       iconColor: "text-green-600"
+    },
+    {
+      path: "/provas",
+      label: "Provas",
+      icon: <FileCheck className="h-6 w-6" />,
+      description: "Gerencie suas provas",
+      bgColor: "bg-violet-50",
+      iconColor: "text-violet-600"
     },
     {
       path: "/flashcards",

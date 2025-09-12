@@ -210,7 +210,7 @@ export class ExamsService {
     try {
       let query = supabase
         .from('exam_questions')
-        .select(includeQuestionDetails ? 'id, exam_id, question_id, position, weight, question:questions(*)' : '*')
+        .select(includeQuestionDetails ? 'id, exam_id, question_id, position, weight, question:questions(*, question_images(*))' : '*')
         .eq('exam_id', examId)
         .order('position', { ascending: true });
       
@@ -218,6 +218,16 @@ export class ExamsService {
       
       if (error) {
         throw error;
+      }
+      
+      // Se incluir detalhes da questão, mapear question_images para images
+      if (includeQuestionDetails && data) {
+        data.forEach((examQuestion: any) => {
+          if (examQuestion.question && examQuestion.question.question_images) {
+            examQuestion.question.images = examQuestion.question.question_images;
+            delete examQuestion.question.question_images;
+          }
+        });
       }
       
       return data as ExamQuestion[];

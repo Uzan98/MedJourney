@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Plus, Trash2, Check, Globe } from 'lucide-react';
-import { Question, AnswerOption } from '@/services/questions-bank.service';
+import { X, Plus, Trash2, Check, Globe, Upload, Image as ImageIcon } from 'lucide-react';
+import { Question, AnswerOption, QuestionImage } from '@/services/questions-bank.service';
+import { QuestionImageUploadService } from '@/services/question-image-upload.service';
 import { toast } from 'react-hot-toast';
 import { Discipline, Subject } from '@/lib/supabase';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
@@ -39,6 +40,11 @@ export default function QuestionModal({
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [isPublic, setIsPublic] = useState(false);
+  
+  // Estados para imagens
+  const [images, setImages] = useState<QuestionImage[]>([]);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [fullscreenImage, setFullscreenImage] = useState<{ url: string; description?: string } | null>(null);
   
   // Estados para disciplinas e assuntos
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
@@ -111,6 +117,7 @@ export default function QuestionModal({
       setQuestionType(initialData.question_type || 'multiple_choice');
       setTags(initialData.tags || []);
       setIsPublic(initialData.is_public || false);
+      setImages(initialData.images || []);
       
       // Para questões de V/F e dissertativa
       setCorrectAnswer(initialData.correct_answer || '');
@@ -140,6 +147,7 @@ export default function QuestionModal({
         setCorrectAnswer(savedData.correctAnswer || '');
         setTags(savedData.tags || []);
         setIsPublic(savedData.isPublic || false);
+        setImages(savedData.images || []);
         
         // Carregar assuntos se uma disciplina estiver selecionada
         if (savedData.disciplineId) {
@@ -167,7 +175,8 @@ export default function QuestionModal({
         answerOptions,
         correctAnswer,
         tags,
-        isPublic
+        isPublic,
+        images
       };
       
       // Sempre salvar os dados, mesmo se estiverem vazios
@@ -178,7 +187,7 @@ export default function QuestionModal({
       });
       saveToStorage(formData);
     }
-  }, [content, explanation, disciplineId, subjectId, difficulty, questionType, answerOptions, correctAnswer, tags, isPublic, isOpen, initialData, saveToStorage]);
+  }, [content, explanation, disciplineId, subjectId, difficulty, questionType, answerOptions, correctAnswer, tags, isPublic, images, isOpen, initialData, saveToStorage]);
    
    // Detectar mudança de visibilidade da página para recuperar dados perdidos
    useEffect(() => {
@@ -246,6 +255,7 @@ export default function QuestionModal({
     setTagInput('');
     setTags([]);
     setIsPublic(false);
+    setImages([]);
     clearStorage();
   };
 
@@ -329,6 +339,101 @@ export default function QuestionModal({
     setTags(tags.filter(t => t !== tag));
   };
   
+  // Funções para gerenciar imagens
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    
+    setIsUploadingImage(true);
+    
+    try {
+      const uploadPromises = Array.from(files).map(async (file, index) => {
+        const validation = QuestionImageUploadService.validateImage(file);
+        if (!validation.isValid) {
+          toast.error(`Erro no arquivo ${file.name}: ${validation.errors.join(', ')}`);
+          return null;
+        }
+        
+        // Para questões novas, usar um ID temporário
+        const questionId = initialData?.id || 0;
+        const position = images.length + index + 1;
+        
+        if (questionId > 0) {
+          // Questão existente - fazer upload completo
+          const result = await QuestionImageUploadService.uploadAndSaveImage(
+            file,
+            questionId,
+            position
+          );
+          
+          if (result.success && result.imageData) {
+            return result.imageData;
+          } else {
+            toast.error(`Erro ao fazer upload de ${file.name}: ${result.error}`);
+            return null;
+          }
+        } else {
+          // Questão nova - apenas preparar dados temporários
+          const tempImage: QuestionImage = {
+            id: Date.now() + index, // ID temporário
+            question_id: 0,
+            image_url: URL.createObjectURL(file), // URL temporária para preview
+            image_name: file.name,
+            image_size: file.size,
+            mime_type: file.type,
+            position,
+            description: '',
+            uploaded_by: '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            _tempFile: file // Guardar arquivo para upload posterior
+          };
+          return tempImage;
+        }
+      });
+      
+      const results = await Promise.all(uploadPromises);
+      const validImages = results.filter(img => img !== null) as QuestionImage[];
+      
+      if (validImages.length > 0) {
+        setImages(prev => [...prev, ...validImages]);
+        toast.success(`${validImages.length} imagem(ns) adicionada(s) com sucesso!`);
+      }
+    } catch (error) {
+      console.error('Erro no upload:', error);
+      toast.error('Erro interno no upload de imagens');
+    } finally {
+      setIsUploadingImage(false);
+      // Limpar input
+      event.target.value = '';
+    }
+  };
+  
+  const removeImage = async (imageId: number) => {
+    const imageToRemove = images.find(img => img.id === imageId);
+    if (!imageToRemove) return;
+    
+    try {
+      // Se a imagem já foi salva no servidor, remover do Supabase
+      if (imageToRemove.question_id > 0 && !imageToRemove._tempFile) {
+        const result = await QuestionImageUploadService.deleteImage(imageId);
+        if (!result.success) {
+          toast.error(`Erro ao remover imagem: ${result.error}`);
+          return;
+        }
+      } else if (imageToRemove._tempFile) {
+        // Revogar URL temporária para liberar memória
+        URL.revokeObjectURL(imageToRemove.image_url);
+      }
+      
+      setImages(prev => prev.filter(img => img.id !== imageId));
+      toast.success('Imagem removida com sucesso!');
+    } catch (error) {
+      console.error('Erro ao remover imagem:', error);
+      toast.error('Erro interno ao remover imagem');
+    }
+  };
+  
   // Função para lidar com a tecla Enter no campo de tag
   const handleTagKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -392,6 +497,7 @@ export default function QuestionModal({
         question_type: questionType,
         tags: tags.length > 0 ? tags : undefined,
         is_public: isPublic,
+        images: images.filter(img => !img._tempFile) // Apenas imagens já salvas
       };
       
       // Adicionar resposta correta para V/F e dissertativa
@@ -411,6 +517,23 @@ export default function QuestionModal({
       const success = await onSave(questionData, optionsToSave);
       
       if (success) {
+        // Se for uma questão nova e houver imagens temporárias, fazer upload
+        if (!initialData?.id && images.some(img => img._tempFile)) {
+          const tempImages = images.filter(img => img._tempFile);
+          for (const tempImage of tempImages) {
+            try {
+              await QuestionImageUploadService.uploadAndSaveImage(
+                tempImage._tempFile!,
+                questionData.id!, // ID da questão recém-criada
+                tempImage.position
+              );
+            } catch (error) {
+              console.error('Erro ao fazer upload de imagem temporária:', error);
+              toast.error(`Erro ao fazer upload da imagem ${tempImage.image_name}`);
+            }
+          }
+        }
+        
         toast.success(initialData ? 'Questão atualizada com sucesso' : 'Questão criada com sucesso');
         clearStorage(); // Limpar dados salvos após sucesso
         resetForm();
@@ -641,6 +764,81 @@ export default function QuestionModal({
               </div>
             </div>
             
+            {/* Seção de Upload de Imagens */}
+            <div className="mb-4 sm:mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Imagens <span className="text-gray-500 text-sm">(opcional)</span>
+              </label>
+              
+              {/* Área de Upload */}
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-gray-400 transition-colors">
+                <div className="text-center">
+                  <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
+                  <div className="mt-2">
+                    <label htmlFor="image-upload" className="cursor-pointer">
+                      <span className="mt-2 block text-sm font-medium text-gray-900">
+                        Clique para adicionar imagens
+                      </span>
+                      <span className="mt-1 block text-xs text-gray-500">
+                        PNG, JPG, WEBP até 5MB cada
+                      </span>
+                    </label>
+                    <input
+                      id="image-upload"
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      disabled={isUploadingImage}
+                    />
+                  </div>
+                  {isUploadingImage && (
+                    <div className="mt-2">
+                      <div className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                        <Upload className="animate-spin h-3 w-3 mr-1" />
+                        Fazendo upload...
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Preview das Imagens */}
+              {images.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">
+                    Imagens adicionadas ({images.length})
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {images.map((image) => (
+                      <div key={image.id} className="relative group">
+                        <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                          <img
+                            src={image.image_url}
+                            alt={image.image_name || 'Imagem da questão'}
+                            className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => setFullscreenImage({ url: image.image_url, description: image.image_name })}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeImage(image.id)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                          title="Remover imagem"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                        <div className="mt-1 text-xs text-gray-500 truncate">
+                          {image.image_name}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
             {/* Grid de Seleções */}
             <div className="space-y-4 sm:grid sm:grid-cols-1 md:grid-cols-3 sm:gap-4 sm:space-y-0 mb-4 sm:mb-6">
               {/* Disciplina */}
@@ -803,6 +1001,36 @@ export default function QuestionModal({
           </button>
         </div>
       </div>
+
+      {/* Modal de imagem em tela cheia */}
+      {fullscreenImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
+          onClick={() => setFullscreenImage(null)}
+        >
+          <div className="relative max-w-full max-h-full">
+            <img 
+              src={fullscreenImage.url}
+              alt={fullscreenImage.description || 'Imagem em tela cheia'}
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button
+              onClick={() => setFullscreenImage(null)}
+              className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70 transition-all"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            {fullscreenImage.description && (
+              <div className="absolute bottom-4 left-4 right-4 text-white bg-black bg-opacity-50 rounded p-2 text-center">
+                {fullscreenImage.description}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

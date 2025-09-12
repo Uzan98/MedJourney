@@ -17,7 +17,7 @@ import {
   BookMarked,
   Trello,
   CalendarDays,
-  GraduationCap
+  FileCheck
 } from 'lucide-react';
 import { SubscriptionTier } from '@/types/subscription';
 
@@ -95,7 +95,7 @@ export const mainNavigation: NavigationItem[] = [
   {
     name: 'Provas',
     href: '/provas',
-    icon: GraduationCap,
+    icon: FileCheck,
     requiresAuth: true,
   },
   {

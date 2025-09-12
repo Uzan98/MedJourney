@@ -435,7 +435,7 @@ export default function UploadProvaPage() {
       return;
     }
     
-    if (!examTypeId) {
+    if (isAdmin && !examTypeId) {
       toast.error('Selecione uma categoria');
       return;
     }
@@ -468,14 +468,18 @@ export default function UploadProvaPage() {
       setLoading(true);
       
       // Criar a prova
-      const newExam = {
+      const newExam: any = {
         title: title.trim(),
         description: description.trim(),
         time_limit: timeLimit,
         is_public: isPublic,
-        exam_type_id: examTypeId,
         user_id: user.id
       };
+      
+      // Só incluir exam_type_id se o usuário for admin
+      if (isAdmin && examTypeId) {
+        newExam.exam_type_id = examTypeId;
+      }
       
       const createdExam = await ExamsService.addExam(newExam);
       
@@ -613,25 +617,28 @@ export default function UploadProvaPage() {
               />
             </div>
             
-            <div>
-              <label htmlFor="examType" className="block text-sm font-medium text-gray-700 mb-2">
-                Categoria da Prova *
-              </label>
-              <select
-                id="examType"
-                value={examTypeId || ''}
-                onChange={(e) => setExamTypeId(Number(e.target.value) || null)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              >
-                <option value="">Selecione uma categoria</option>
-                {examTypes.map(type => (
-                  <option key={type.id} value={type.id}>
-                    {type.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Categoria da Prova - Apenas para Admins Específicos */}
+            {isAdmin && (
+              <div>
+                <label htmlFor="examType" className="block text-sm font-medium text-gray-700 mb-2">
+                  Categoria da Prova *
+                </label>
+                <select
+                  id="examType"
+                  value={examTypeId || ''}
+                  onChange={(e) => setExamTypeId(Number(e.target.value) || null)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="">Selecione uma categoria</option>
+                  {examTypes.map(type => (
+                    <option key={type.id} value={type.id}>
+                      {type.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             
             <div>
               <label htmlFor="discipline" className="block text-sm font-medium text-gray-700 mb-2">

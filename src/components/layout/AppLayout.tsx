@@ -13,6 +13,7 @@ import {
   Bell, 
   Search,
   FileText,
+  FileCheck,
   Menu,
   X,
   ChevronLeft,
@@ -22,7 +23,6 @@ import {
   ChevronDown,
   ChevronUp,
   ListTodo,
-  GraduationCap,
   FileQuestion,
   Users,
   Clock,
@@ -115,7 +115,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     {
       path: "/provas",
       label: "Provas",
-      icon: <GraduationCap className="h-5 w-5 flex-shrink-0" />
+      icon: <FileCheck className="h-5 w-5 flex-shrink-0" />
     },
     {
       path: "/tarefas",

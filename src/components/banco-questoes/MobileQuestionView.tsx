@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { ChevronLeft, Edit, Trash2, Globe, Lock, Plus, Menu, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronLeft, Edit, Trash2, Globe, Lock, Plus, Menu, X, ChevronDown, ChevronUp, Image } from 'lucide-react';
 import { Question } from '@/services/questions-bank.service';
 import Link from 'next/link';
 import './question-card-mobile.css';
@@ -43,6 +43,7 @@ export default function MobileQuestionView({
 }: MobileQuestionViewProps) {
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [isContentExpanded, setIsContentExpanded] = useState(false);
+  const [fullscreenImage, setFullscreenImage] = useState<{ url: string; description?: string } | null>(null);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -260,6 +261,35 @@ export default function MobileQuestionView({
           </button>
         </div>
         
+        {/* Imagens da questão */}
+        {question?.images && question.images.length > 0 && (
+          <div className="bg-white rounded-lg p-4 shadow-sm">
+            <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+              <Image className="h-4 w-4 mr-2" />
+              Imagens ({question.images.length})
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              {question.images.map((image, index) => (
+                <div key={index} className="relative group">
+                  <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                    <img
+                      src={image.image_url || image.url}
+                      alt={image.description || `Imagem ${index + 1}`}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-200 cursor-pointer"
+                      onClick={() => setFullscreenImage({ url: image.image_url || image.url, description: image.description })}
+                    />
+                  </div>
+                  {image.description && (
+                    <p className="mt-2 text-xs text-gray-600 text-center">
+                      {image.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
         {/* Opções de resposta */}
         {question?.question_type !== 'essay' && question?.answer_options && question.answer_options.length > 0 && (
           <div className="bg-white rounded-lg p-4 shadow-sm">
@@ -328,6 +358,36 @@ export default function MobileQuestionView({
           </div>
         )}
       </div>
+
+      {/* Modal de imagem em tela cheia */}
+      {fullscreenImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
+          onClick={() => setFullscreenImage(null)}
+        >
+          <div className="relative max-w-full max-h-full">
+            <img 
+              src={fullscreenImage.url}
+              alt={fullscreenImage.description || 'Imagem em tela cheia'}
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button
+              onClick={() => setFullscreenImage(null)}
+              className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70 transition-all"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            {fullscreenImage.description && (
+              <div className="absolute bottom-4 left-4 right-4 text-white bg-black bg-opacity-50 rounded p-2 text-center">
+                {fullscreenImage.description}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

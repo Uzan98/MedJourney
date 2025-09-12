@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Exam } from '@/services/exams.service';
 import { FacultyService } from '@/services/faculty.service';
+import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,7 @@ interface ShareExamModalProps {
 }
 
 export function ShareExamModal({ open, onOpenChange, exam, facultyId, onSuccess }: ShareExamModalProps) {
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [disciplines, setDisciplines] = useState<string[]>([]);
   const [isLoadingDisciplines, setIsLoadingDisciplines] = useState(false);
@@ -88,16 +90,22 @@ export function ShareExamModal({ open, onOpenChange, exam, facultyId, onSuccess 
     
     setIsSubmitting(true);
     try {
+      const shareData: any = {
+        title: data.title,
+        description: data.description,
+        disciplina: finalDisciplina,
+        periodo: periodo ? parseInt(periodo) : undefined
+      };
+      
+      // Só incluir categoria se o usuário for admin específico
+      if (user?.id === '9e959500-f290-4457-a5d7-2a81c496d123' || user?.id === 'e6c41b94-f25c-4ef4-b723-c4a2d480cf43') {
+        shareData.category = data.category;
+      }
+      
       const examId = await FacultyService.shareFacultyExam(
         facultyId,
         exam.id!,
-        {
-          title: data.title,
-          description: data.description,
-          category: data.category,
-          disciplina: finalDisciplina,
-          periodo: periodo ? parseInt(periodo) : undefined
-        }
+        shareData
       );
       
       if (examId) {
@@ -180,15 +188,18 @@ export function ShareExamModal({ open, onOpenChange, exam, facultyId, onSuccess 
             />
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="category">Categoria</Label>
-            <Input
-              id="category"
-              {...register('category')}
-              placeholder="Ex: Prova, Revisão, Residência"
-              disabled={!isExamPublic}
-            />
-          </div>
+          {/* Campo Categoria - Apenas para Admins Específicos */}
+          {(user?.id === '9e959500-f290-4457-a5d7-2a81c496d123' || user?.id === 'e6c41b94-f25c-4ef4-b723-c4a2d480cf43') && (
+            <div className="space-y-2">
+              <Label htmlFor="category">Categoria</Label>
+              <Input
+                id="category"
+                {...register('category')}
+                placeholder="Ex: Prova, Revisão, Residência"
+                disabled={!isExamPublic}
+              />
+            </div>
+          )}
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -310,4 +321,4 @@ export function ShareExamModal({ open, onOpenChange, exam, facultyId, onSuccess 
       </DialogContent>
     </Dialog>
   );
-} 
+}

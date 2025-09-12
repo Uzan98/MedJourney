@@ -11,7 +11,7 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 
 export default function NovoSimuladoPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { hasReachedLimit, subscriptionLimits } = useSubscription();
   
   const [saving, setSaving] = useState(false);
@@ -179,34 +179,36 @@ export default function NovoSimuladoPage() {
                   />
                 </div>
                 
-                {/* Categoria/Tipo de Exame */}
-                <div>
-                  <label htmlFor="examType" className="block text-sm font-medium text-gray-700 mb-1">
-                    Categoria da Prova
-                  </label>
-                  {loadingTypes ? (
-                    <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
-                      <span className="text-gray-500">Carregando categorias...</span>
-                    </div>
-                  ) : (
-                    <select
-                      id="examType"
-                      value={examTypeId || ''}
-                      onChange={(e) => setExamTypeId(e.target.value ? parseInt(e.target.value) : undefined)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Selecione uma categoria (opcional)</option>
-                      {examTypes.map((type) => (
-                        <option key={type.id} value={type.id}>
-                          {type.description}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                  <p className="text-sm text-gray-500 mt-1">
-                    Escolha a categoria que melhor descreve sua prova (residência, ENEM, concursos, vestibulares)
-                  </p>
-                </div>
+                {/* Categoria/Tipo de Exame - Apenas para Admins Específicos */}
+                {(user?.id === '9e959500-f290-4457-a5d7-2a81c496d123' || user?.id === 'e6c41b94-f25c-4ef4-b723-c4a2d480cf43') && (
+                  <div>
+                    <label htmlFor="examType" className="block text-sm font-medium text-gray-700 mb-1">
+                      Categoria da Prova
+                    </label>
+                    {loadingTypes ? (
+                      <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
+                        <span className="text-gray-500">Carregando categorias...</span>
+                      </div>
+                    ) : (
+                      <select
+                        id="examType"
+                        value={examTypeId || ''}
+                        onChange={(e) => setExamTypeId(e.target.value ? parseInt(e.target.value) : undefined)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Selecione uma categoria (opcional)</option>
+                        {examTypes.map((type) => (
+                          <option key={type.id} value={type.id}>
+                            {type.description}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <p className="text-sm text-gray-500 mt-1">
+                      Escolha a categoria que melhor descreve sua prova (residência, ENEM, concursos, vestibulares)
+                    </p>
+                  </div>
+                )}
                 
                 {/* Time Limit */}
                 <div>

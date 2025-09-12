@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Brain,
   Trophy,
+  FileCheck,
   Shield,
   MessageCircle,
   Layers,
@@ -161,7 +162,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
     {
       path: "/provas",
       label: "Provas",
-      icon: <GraduationCap className="h-5 w-5 flex-shrink-0" />
+      icon: <FileCheck className="h-5 w-5 flex-shrink-0" />
     },
     {
       path: "/flashcards",

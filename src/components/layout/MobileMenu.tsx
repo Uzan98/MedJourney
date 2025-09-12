@@ -14,7 +14,6 @@ import {
   Calendar,
   ClipboardList,
   Settings,
-  GraduationCap,
   MoreHorizontal,
   School
 } from 'lucide-react';
