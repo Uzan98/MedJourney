@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ExamsService } from '@/services/exams.service';
 import { QuestionsBankService } from '@/services/questions-bank.service';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
+import { QuestionImageUploadService } from '@/services/question-image-upload.service';
 
 interface ExamType {
   id: number;
@@ -84,6 +85,7 @@ export default function UploadProvaPage() {
   const [examTypeId, setExamTypeId] = useState<number | null>(null);
   const [timeLimit, setTimeLimit] = useState(60);
   const [isPublic, setIsPublic] = useState(false);
+  const [addToGenomaBank, setAddToGenomaBank] = useState(false);
   const [questionsText, setQuestionsText] = useState('');
   const [answerKey, setAnswerKey] = useState('');
   const [parsedQuestions, setParsedQuestions] = useState<ParsedQuestion[]>([]);
@@ -668,40 +670,7 @@ export default function UploadProvaPage() {
     toast.success('Imagem removida!');
   };
 
-  const uploadImageToSupabase = async (file: File, questionIndex: number): Promise<string | null> => {
-    try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
 
-      // Gerar nome único para o arquivo
-      const fileExt = file.name.split('.').pop();
-      const fileName = `question-${Date.now()}-${questionIndex}.${fileExt}`;
-      const filePath = `question-images/${fileName}`;
-
-      // Upload do arquivo
-      const { data, error } = await supabase.storage
-        .from('question-images')
-        .upload(filePath, file);
-
-      if (error) {
-        console.error('Erro no upload:', error);
-        return null;
-      }
-
-      // Obter URL pública
-      const { data: { publicUrl } } = supabase.storage
-        .from('question-images')
-        .getPublicUrl(filePath);
-
-      return publicUrl;
-    } catch (error) {
-      console.error('Erro ao fazer upload da imagem:', error);
-      return null;
-    }
-  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -723,6 +692,12 @@ export default function UploadProvaPage() {
     
     if (parsedQuestions.length === 0) {
       toast.error('Parse pelo menos uma questão');
+      return;
+    }
+    
+    // Validar se apenas admins podem enviar questões ao Genoma Bank
+    if (addToGenomaBank && !isAdmin) {
+      toast.error('Apenas administradores podem enviar questões diretamente ao Genoma Bank');
       return;
     }
     
@@ -770,30 +745,14 @@ export default function UploadProvaPage() {
       for (let i = 0; i < parsedQuestions.length; i++) {
         const question = parsedQuestions[i];
         
-        // Upload da imagem se existir
-        let imageUrl = null;
-        if (question.image) {
-          toast.loading(`Fazendo upload da imagem da questão ${i + 1}...`);
-          imageUrl = await uploadImageToSupabase(question.image, i);
-          toast.dismiss();
-          
-          if (!imageUrl) {
-            toast.error(`Falha no upload da imagem da questão ${i + 1}. Continuando sem a imagem.`);
-          }
-        }
         // Validar se os IDs existem antes de enviar
         const questionData: any = {
           content: question.text,
           question_type: 'multiple_choice',
           correct_answer: question.correctAnswer.toString(),
           difficulty: 'média',
-          is_public: false
+          is_public: addToGenomaBank && isAdmin // Marcar como pública se for para o Genoma Bank e usuário for admin
         };
-        
-        // Adicionar URL da imagem se existir
-        if (imageUrl) {
-          questionData.image_url = imageUrl;
-        }
         
         // Adicionar tags se existir
         if (question.tag && question.tag.trim()) {
@@ -831,6 +790,23 @@ export default function UploadProvaPage() {
         
         if (questionId) {
           questionIds.push(questionId);
+          
+          // Upload da imagem se existir
+          if (question.image) {
+            toast.loading(`Fazendo upload da imagem da questão ${i + 1}...`);
+            const imageResult = await QuestionImageUploadService.uploadAndSaveImage(
+              question.image,
+              questionId,
+              1
+            );
+            toast.dismiss();
+            
+            if (!imageResult.success) {
+              toast.error(`Falha no upload da imagem da questão ${i + 1}: ${imageResult.error}`);
+            } else {
+              toast.success(`Imagem da questão ${i + 1} salva com sucesso!`);
+            }
+          }
         }
       }
 
@@ -843,7 +819,10 @@ export default function UploadProvaPage() {
           await ExamsService.addQuestionsToExam(createdExam, questionIds);
         }
         
-        toast.success(`Prova criada com ${parsedQuestions.length} questões!`);
+        const successMessage = addToGenomaBank && isAdmin 
+          ? `Prova criada com ${parsedQuestions.length} questões e enviadas ao Genoma Bank!`
+          : `Prova criada com ${parsedQuestions.length} questões!`;
+        toast.success(successMessage);
         
         // Redirecionar para a página da prova criada
         router.push(`/provas/${createdExam}`);
@@ -1008,7 +987,7 @@ export default function UploadProvaPage() {
               />
             </div>
             
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 space-y-3">
               <label className="flex items-center">
                 <input
                   type="checkbox"
@@ -1020,6 +999,20 @@ export default function UploadProvaPage() {
                   Tornar esta prova pública (outros usuários poderão acessar)
                 </span>
               </label>
+              
+              {isAdmin && (
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={addToGenomaBank}
+                    onChange={(e) => setAddToGenomaBank(e.target.checked)}
+                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">
+                    Adicionar questões ao Genoma Bank (questões ficam públicas para todos os usuários)
+                  </span>
+                </label>
+              )}
             </div>
           </div>
         </div>
