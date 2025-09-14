@@ -10,6 +10,7 @@ import { ExamsService } from '@/services/exams.service';
 import { QuestionsBankService } from '@/services/questions-bank.service';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 import { QuestionImageUploadService } from '@/services/question-image-upload.service';
+import { supabase } from '@/lib/supabase';
 
 interface ExamType {
   id: number;
@@ -25,6 +26,7 @@ interface ParsedQuestion {
   explanation?: string;
   disciplineId?: number;
   subjectId?: number;
+  topicId?: number;
   tag?: string;
   image?: File | null;
   imageUrl?: string;
@@ -54,6 +56,13 @@ interface Subject {
   id: number;
   name?: string;
   title?: string;
+}
+
+interface Topic {
+  id: number;
+  name: string;
+  subject_id: number;
+  discipline_id?: number;
 }
 
 const ADMIN_USER_IDS = [
@@ -94,14 +103,21 @@ export default function UploadProvaPage() {
   // Discipline and subject states
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [topics, setTopics] = useState<Topic[]>([]);
   const [selectedDisciplineId, setSelectedDisciplineId] = useState<number | null>(null);
   const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null);
+  const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
   const [loadingDisciplines, setLoadingDisciplines] = useState(true);
   const [loadingSubjects, setLoadingSubjects] = useState(false);
+  const [loadingTopics, setLoadingTopics] = useState(false);
   
   // Cache de assuntos por disciplina para questões individuais
   const [questionSubjects, setQuestionSubjects] = useState<{[disciplineId: number]: Subject[]}>({});
   const [loadingQuestionSubjects, setLoadingQuestionSubjects] = useState<{[disciplineId: number]: boolean}>({});
+  
+  // Cache de tópicos por assunto para questões individuais
+  const [questionTopics, setQuestionTopics] = useState<{[subjectId: number]: Topic[]}>({});
+  const [loadingQuestionTopics, setLoadingQuestionTopics] = useState<{[subjectId: number]: boolean}>({});
   
   // Estados para parser automático de metadados
   const [metadataText, setMetadataText] = useState('');
@@ -192,13 +208,45 @@ export default function UploadProvaPage() {
     }
   };
 
+  const loadTopics = async (subjectId: number) => {
+    try {
+      setLoadingTopics(true);
+      const { data, error } = await supabase
+        .from('topics')
+        .select('*')
+        .eq('subject_id', subjectId)
+        .order('name');
+      
+      if (error) throw error;
+      setTopics(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar tópicos:', error);
+      toast.error('Erro ao carregar tópicos');
+      setTopics([]);
+    } finally {
+      setLoadingTopics(false);
+    }
+  };
+
   const handleDisciplineChange = (disciplineId: number | null) => {
     setSelectedDisciplineId(disciplineId);
     setSelectedSubjectId(null);
+    setSelectedTopicId(null);
     setSubjects([]);
+    setTopics([]);
     
     if (disciplineId) {
       loadSubjects(disciplineId);
+    }
+  };
+
+  const handleSubjectChange = (subjectId: number | null) => {
+    setSelectedSubjectId(subjectId);
+    setSelectedTopicId(null);
+    setTopics([]);
+    
+    if (subjectId) {
+      loadTopics(subjectId);
     }
   };
   
@@ -596,34 +644,82 @@ export default function UploadProvaPage() {
   
   const loadQuestionSubjects = async (disciplineId: number) => {
     if (questionSubjects[disciplineId] || loadingQuestionSubjects[disciplineId]) {
+      console.log('🔄 Assuntos já carregados ou carregando para disciplina:', disciplineId);
       return; // Já carregado ou carregando
     }
     
     try {
       setLoadingQuestionSubjects(prev => ({ ...prev, [disciplineId]: true }));
-      console.log('Carregando assuntos para questão individual - disciplina:', disciplineId);
+      console.log('🔍 Carregando assuntos para questão individual - disciplina:', disciplineId);
       const data = await DisciplinesRestService.getSubjects(disciplineId, true);
-      console.log('Assuntos carregados para questão:', data?.length || 0);
+      console.log('📚 Assuntos carregados para questão:', data?.length || 0, data);
       setQuestionSubjects(prev => ({ ...prev, [disciplineId]: data || [] }));
+      
+      if (!data || data.length === 0) {
+        console.warn('⚠️ Nenhum assunto encontrado para disciplina:', disciplineId);
+      }
     } catch (error) {
-      console.error('Erro ao carregar assuntos para questão:', error);
+      console.error('❌ Erro ao carregar assuntos para questão:', error);
       setQuestionSubjects(prev => ({ ...prev, [disciplineId]: [] }));
     } finally {
       setLoadingQuestionSubjects(prev => ({ ...prev, [disciplineId]: false }));
     }
   };
 
+  const loadQuestionTopics = async (subjectId: number) => {
+    if (questionTopics[subjectId] || loadingQuestionTopics[subjectId]) {
+      console.log('🔄 Tópicos já carregados ou carregando para assunto:', subjectId);
+      return; // Já carregado ou carregando
+    }
+    
+    try {
+      setLoadingQuestionTopics(prev => ({ ...prev, [subjectId]: true }));
+      console.log('🔍 Carregando tópicos para questão individual - assunto:', subjectId);
+      const { data, error } = await supabase
+        .from('topics')
+        .select('id, name, subject_id, discipline_id')
+        .eq('subject_id', subjectId)
+        .order('name');
+      
+      if (error) throw error;
+      
+      console.log('🏷️ Tópicos carregados para questão:', data?.length || 0, data);
+      setQuestionTopics(prev => ({ ...prev, [subjectId]: data || [] }));
+      
+      if (!data || data.length === 0) {
+        console.warn('⚠️ Nenhum tópico encontrado para assunto:', subjectId);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar tópicos para questão:', error);
+      setQuestionTopics(prev => ({ ...prev, [subjectId]: [] }));
+    } finally {
+      setLoadingQuestionTopics(prev => ({ ...prev, [subjectId]: false }));
+    }
+  };
+
   const editQuestion = (index: number, field: keyof ParsedQuestion, value: any) => {
+    console.log('🔧 Editando questão:', { index, field, value, type: typeof value });
+    
     setParsedQuestions(prev => prev.map((q, i) => {
       if (i === index) {
         const updatedQuestion = { ...q, [field]: value };
         
-        // Se mudou a disciplina, carregar assuntos e resetar assunto
+        // Se mudou a disciplina, carregar assuntos e resetar assunto e tópico
         if (field === 'disciplineId' && value && typeof value === 'number') {
+          console.log('🏫 Disciplina alterada, carregando assuntos para disciplina:', value);
           loadQuestionSubjects(value);
           updatedQuestion.subjectId = null;
+          updatedQuestion.topicId = null;
         }
         
+        // Se mudou o assunto, carregar tópicos e resetar tópico
+        if (field === 'subjectId' && value && typeof value === 'number') {
+          console.log('📖 Assunto alterado, carregando tópicos para assunto:', value);
+          loadQuestionTopics(value);
+          updatedQuestion.topicId = null;
+        }
+        
+        console.log('✅ Questão atualizada:', updatedQuestion);
         return updatedQuestion;
       }
       return q;
@@ -778,6 +874,11 @@ export default function UploadProvaPage() {
           } else {
             console.warn(`Subject ID ${question.subjectId} não encontrado na lista de subjects da disciplina ${question.disciplineId}`);
           }
+        }
+        
+        // Adicionar topic_id se fornecido
+        if (question.topicId && typeof question.topicId === 'number') {
+          questionData.topic_id = question.topicId;
         }
         
         const questionId = await QuestionsBankService.addQuestion(
@@ -1257,7 +1358,7 @@ Sub-assunto: Porfiria`}
               Aplicar Disciplina e Assunto em Lote
             </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Disciplina para todas as questões:
@@ -1282,15 +1383,34 @@ Sub-assunto: Porfiria`}
                   Assunto para todas as questões:
                 </label>
                 <select
-                value={selectedSubjectId || ''}
-                onChange={(e) => setSelectedSubjectId(Number(e.target.value) || null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                disabled={!selectedDisciplineId || loadingSubjects}
-              >
+                  value={selectedSubjectId || ''}
+                  onChange={(e) => handleSubjectChange(Number(e.target.value) || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={!selectedDisciplineId || loadingSubjects}
+                >
                   <option value="">Selecione um assunto</option>
                   {subjects.map(subject => (
                     <option key={subject.id} value={subject.id}>
                       {subject.title || subject.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tópico para todas as questões:
+                </label>
+                <select
+                  value={selectedTopicId || ''}
+                  onChange={(e) => setSelectedTopicId(Number(e.target.value) || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={!selectedSubjectId || loadingTopics}
+                >
+                  <option value="">Selecione um tópico (opcional)</option>
+                  {topics.map(topic => (
+                    <option key={topic.id} value={topic.id}>
+                      {topic.name}
                     </option>
                   ))}
                 </select>
@@ -1303,9 +1423,10 @@ Sub-assunto: Porfiria`}
                     setParsedQuestions(prev => prev.map(q => ({
                       ...q,
                       disciplineId: selectedDisciplineId,
-                      subjectId: selectedSubjectId
+                      subjectId: selectedSubjectId,
+                      topicId: selectedTopicId
                     })));
-                    toast.success('Disciplina e assunto aplicados a todas as questões!');
+                    toast.success('Disciplina, assunto e tópico aplicados a todas as questões!');
                   }}
                   disabled={!selectedDisciplineId}
                   className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -1458,15 +1579,32 @@ Sub-assunto: Porfiria`}
                         
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Tag:
+                            Tópico:
                           </label>
-                          <input
-                            type="text"
-                            value={question.tag || ''}
-                            onChange={(e) => editQuestion(index, 'tag', e.target.value)}
-                            placeholder="Digite uma tag (opcional)"
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                          />
+                          <select
+                            value={question.topicId || ''}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              const topicId = value ? Number(value) : null;
+                              editQuestion(index, 'topicId', topicId);
+                            }}
+                            disabled={!question.subjectId}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          >
+                            <option value="">
+                              {!question.subjectId 
+                                ? 'Selecione um assunto primeiro' 
+                                : loadingQuestionTopics[question.subjectId]
+                                  ? 'Carregando tópicos...'
+                                  : 'Selecione um tópico (opcional)'
+                              }
+                            </option>
+                            {question.subjectId && questionTopics[question.subjectId]?.map(topic => (
+                              <option key={topic.id} value={topic.id}>
+                                {topic.name}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       </div>
                       
