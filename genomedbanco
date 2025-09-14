@@ -1,0 +1,5472 @@
+[
+  {},
+  {
+    "topic": "ACLS",
+    "": 109,
+    "subjetc": "ACLS",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "AVCH",
+    "": 139,
+    "subjetc": "AVCH",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Abdome Agudo Perfurativo",
+    "": 103,
+    "subjetc": "Abdome agudo perfurativo",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Abdome agudo hemorrágico",
+    "": 101,
+    "subjetc": "Abdome agudo hemorrágico",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Abdome agudo obstrutivo - Diagnóstico e Etiologias",
+    "": 102,
+    "subjetc": "Abdome agudo obstrutivo",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Abdome agudo obstrutivo - tratamento",
+    "": 102,
+    "subjetc": "Abdome agudo obstrutivo",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Abdome agudo vascular",
+    "": 104,
+    "subjetc": "Abdome agudo vascular",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Abscesso cervical",
+    "": 105,
+    "subjetc": "Abscesso cervical",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Abscesso pulmonar",
+    "": 106,
+    "subjetc": "Abscesso pulmonar",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Abuso de substâncias",
+    "": 107,
+    "subjetc": "Abuso de substâncias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Acidente vascular cerebral isquêmico",
+    "": 140,
+    "subjetc": "AVCI",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Acidentes com animais peçonhentos - Outros",
+    "": 108,
+    "subjetc": "Acidentes com animais peçonhentos",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Acidentes com animais peçonhentos - ofídicos",
+    "": 108,
+    "subjetc": "Acidentes com animais peçonhentos",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Acromegalia",
+    "": 110,
+    "subjetc": "Acromegalia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Alcoolismo e abstinência alcoólica",
+    "": 111,
+    "subjetc": "Alcoolismo",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Aleitamento materno - Orientações, pega e contraindicações",
+    "": 112,
+    "subjetc": "Aleitamento materno",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Aleitamento materno - Propriedades do leite e benefícios",
+    "": 112,
+    "subjetc": "Aleitamento materno",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Alergia à proteína do leite de vaca",
+    "": 113,
+    "subjetc": "Alergia à proteína do leite de vaca",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Aloimunização Rh",
+    "": 347,
+    "subjetc": "Outros temas - Ginecologia e Obstetrícia",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Alterações genitais",
+    "": 114,
+    "subjetc": "Alterações genitais",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Amenorreia - Amenorreia primária",
+    "": 115,
+    "subjetc": "Amenorreia",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Amenorreia - Amenorreia secundária",
+    "": 115,
+    "subjetc": "Amenorreia",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Amiloidose",
+    "": 116,
+    "subjetc": "Amiloidose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Anafilaxia",
+    "": 117,
+    "subjetc": "Anafilaxia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Anatomia - Aparelho Digestivo",
+    "": 118,
+    "subjetc": "Anatomia e Fisiologia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Anemia de doença crônica",
+    "": 120,
+    "subjetc": "Anemias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Anemia falciforme - Complicações crônicas",
+    "": 119,
+    "subjetc": "Anemia falciforme",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Anemia falciforme - Complicações e tratamento",
+    "": 119,
+    "subjetc": "Anemia falciforme",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Anemia falciforme - Crise aguda",
+    "": 119,
+    "subjetc": "Anemia falciforme",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Anemia falciforme - Manifestações clínicas e diagnóstico.",
+    "": 119,
+    "subjetc": "Anemia falciforme",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Anemia falciforme - Manifestações e diagnóstico",
+    "": 119,
+    "subjetc": "Anemia falciforme",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Anemia falciforme - Tratamento",
+    "": 119,
+    "subjetc": "Anemia falciforme",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Anemia ferropriva",
+    "": 120,
+    "subjetc": "Anemias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Anemia megaloblástica",
+    "": 120,
+    "subjetc": "Anemias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Anemias - Deficiência de G6PD",
+    "": 120,
+    "subjetc": "Anemias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Anemias - Investigação inicial",
+    "": 120,
+    "subjetc": "Anemias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Anemias - Talassemia",
+    "": 120,
+    "subjetc": "Anemias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Anemias ferropriva e de doença crônica",
+    "": 120,
+    "subjetc": "Anemias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Anemias hemolíticas",
+    "": 120,
+    "subjetc": "Anemias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {},
+  {
+    "topic": "Anestesia - Anestésicos locais",
+    "": 121,
+    "subjetc": "Anestesia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Anestesia - Dor, Medicações e Hipertermia maligna",
+    "": 121,
+    "subjetc": "Anestesia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Anestesia - Intubação orotraqueal e via aérea difícil",
+    "": 121,
+    "subjetc": "Anestesia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Anestesia - Peridural e raquianestesia",
+    "": 121,
+    "subjetc": "Anestesia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Aneurisma - Aneurisma de aorta abdominal",
+    "": 122,
+    "subjetc": "Aneurisma",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Aneurisma - Aneurismas periféricos",
+    "": 122,
+    "subjetc": "Aneurisma",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Angioedema hereditário",
+    "": 123,
+    "subjetc": "Angioedema hereditário",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Antibióticos - Classes e mecanismos de ação",
+    "": 344,
+    "subjetc": "Outras infecções e antibióticos",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Anticoagulantes",
+    "": 200,
+    "subjetc": "Distúrbios da hemostasia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Apendicite aguda - Diagnóstico",
+    "": 124,
+    "subjetc": "Apendicite aguda",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Apendicite aguda - Tratamento e Complicações",
+    "": 124,
+    "subjetc": "Apendicite aguda",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Apneia obstrutiva do sono",
+    "": 125,
+    "subjetc": "Apneia do sono",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Arterite de Takayasu",
+    "": 448,
+    "subjetc": "Vasculites",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Arterite de células gigantes",
+    "": 448,
+    "subjetc": "Vasculites",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Artrite idiopática juvenil",
+    "": 127,
+    "subjetc": "Artrite idiopática juvenil",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Artrite reumatoide",
+    "": 128,
+    "subjetc": "Artrite reumatoide",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Artrites infecciosas",
+    "": 129,
+    "subjetc": "Artrites infecciosas",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Artrites soronegativas - Artrite reativa",
+    "": 130,
+    "subjetc": "Artrites soronegativas",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Artrites soronegativas - Espondilite anquilosante",
+    "": 130,
+    "subjetc": "Artrites soronegativas",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Artrites soronegativas - Psoriásica",
+    "": 130,
+    "subjetc": "Artrites soronegativas",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Asma - Diagnóstico",
+    "": 131,
+    "subjetc": "Asma",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Asma - Tratamento ambulatorial e classificação de controle",
+    "": 131,
+    "subjetc": "Asma",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Asma - crise de asma",
+    "": 131,
+    "subjetc": "Asma",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Asma - situações especiais",
+    "": 131,
+    "subjetc": "Asma",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Aspergilus e pulmão",
+    "": 132,
+    "subjetc": "Aspergilus e pulmão",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Assistência pré-natal - Alto risco",
+    "": 133,
+    "subjetc": "Assistência pré-natal",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Assistência pré-natal - Exame físico",
+    "": 133,
+    "subjetc": "Assistência pré-natal",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Assistência pré-natal - Exames complementares",
+    "": 133,
+    "subjetc": "Assistência pré-natal",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Assistência pré-natal - Suplementação",
+    "": 133,
+    "subjetc": "Assistência pré-natal",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Assistência pré-natal - Vacinação",
+    "": 133,
+    "subjetc": "Assistência pré-natal",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Atenção básica - Atributos da APS",
+    "": 134,
+    "subjetc": "Atenção básica",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Atenção básica - Comunicação, Clínica Ampliada e Método Clínico Centrado na Pessoa",
+    "": 134,
+    "subjetc": "Atenção básica",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Atenção básica - Equipe de Saúde da Família e Política Nacional de Atenção Básica",
+    "": 134,
+    "subjetc": "Atenção básica",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Atenção básica - Ferramentas de abordagem familiar",
+    "": 134,
+    "subjetc": "Atenção básica",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Atresia de Vias Biliares",
+    "": 136,
+    "subjetc": "Atresia de Vias Biliares",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Atresias do Tubo digestivo",
+    "": 137,
+    "subjetc": "Atresias do Tubo digestivo",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Avaliação neonatal e exame do recém-nascido",
+    "": 138,
+    "subjetc": "Avaliação neonatal",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "BCG",
+    "": 445,
+    "subjetc": "Vacinação",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Baixa estatura",
+    "": 201,
+    "subjetc": "Distúrbios do Crescimento e Desenvolvimento",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Bioestatística - Amostragem",
+    "": 141,
+    "subjetc": "Bioestatística",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Bioestatística - Classificação de variáveis",
+    "": 141,
+    "subjetc": "Bioestatística",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Bioestatística - Medidas de tendência central e dispersão",
+    "": 141,
+    "subjetc": "Bioestatística",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Bioestatística - Testes estatísticos e tipos de gráficos",
+    "": 141,
+    "subjetc": "Bioestatística",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Bradiarritmias",
+    "": 142,
+    "subjetc": "Bradiarritmias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Bronquiectasias",
+    "": 143,
+    "subjetc": "Bronquiectasias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Bronquiolite e lactente sibilante",
+    "": 144,
+    "subjetc": "Bronquiolite e lactente sibilante",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "CIrrose - Causas",
+    "": 168,
+    "subjetc": "Cirrose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "COVID-19 - Diagnóstico e Tratamento",
+    "": 181,
+    "subjetc": "COVID-19",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "COVID-19 - Prevenção e Controle de Infecção",
+    "": 181,
+    "subjetc": "COVID-19",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "COVID-19 - SIM-P",
+    "": 181,
+    "subjetc": "COVID-19",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Cabeça e Pescoço",
+    "": 118,
+    "subjetc": "Anatomia e Fisiologia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Calendário vacinal da criança, adolescente e adulto",
+    "": 445,
+    "subjetc": "Vacinação",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Cardiopatias congênitas - Cianogênicas",
+    "": 161,
+    "subjetc": "Cardiopatias congênitas",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Cardiopatias congênitas - Não cianogênicas",
+    "": 161,
+    "subjetc": "Cardiopatias congênitas",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Cefaleia secundária, tensional e migrânea",
+    "": 163,
+    "subjetc": "Cefaleias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Cefaleias trigeminais",
+    "": 163,
+    "subjetc": "Cefaleias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Celulite e Erisipela",
+    "": 164,
+    "subjetc": "Infecções de partes moles",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Cervicite",
+    "": 456,
+    "subjetc": "Cervicite e vulvovaginite",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Choque",
+    "": 165,
+    "subjetc": "Choque",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Cianose",
+    "": 374,
+    "subjetc": "Propedêutica",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Cicatrização - Fases da cicatrização",
+    "": 166,
+    "subjetc": "Cicatrização",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Cicatrização patológica e Úlceras de Pressão",
+    "": 166,
+    "subjetc": "Cicatrização",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Ciclo e fisiologia menstrual",
+    "": 167,
+    "subjetc": "Ciclo e fisiologia menstrual",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Cirrose - Ascite",
+    "": 168,
+    "subjetc": "Cirrose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Cirrose - Complicações",
+    "": 168,
+    "subjetc": "Cirrose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Cirrose - Encefalopatia hepática",
+    "": 168,
+    "subjetc": "Cirrose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Cirrose - Peritonite Bacteriana Espontânea",
+    "": 168,
+    "subjetc": "Cirrose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Cirrose - Síndrome Hepatorrenal",
+    "": 168,
+    "subjetc": "Cirrose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Cirrose - Varizes esofágicas",
+    "": 168,
+    "subjetc": "Cirrose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Cirurgia cardíaca",
+    "": 169,
+    "subjetc": "Cirurgia cardíaca",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Cirurgia de obesidade - Complicações",
+    "": 170,
+    "subjetc": "Cirurgia de obesidade",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Cirurgia de obesidade - Indicações e técnicas cirúrgicas",
+    "": 170,
+    "subjetc": "Cirurgia de obesidade",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Cirurgia de obesidade - Indicações, técnicas e complicações",
+    "": 170,
+    "subjetc": "Cirurgia de obesidade",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Cirurgia pediátrica",
+    "": 171,
+    "subjetc": "Cirurgia pediátrica",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Climatério - Quadro clínico e diagnóstico",
+    "": 172,
+    "subjetc": "Climatério",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Climatério - Terapia de reposição hormonal e alternativas",
+    "": 172,
+    "subjetc": "Climatério",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Colangite esclerosante primária",
+    "": 270,
+    "subjetc": "Hepatites",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Colestase gravídica",
+    "": 133,
+    "subjetc": "Assistência pré-natal",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Colite pseudomembranosa",
+    "": 173,
+    "subjetc": "Colite pseudomembranosa",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Comorbidades e gestação",
+    "": 133,
+    "subjetc": "Assistência pré-natal",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Compreender os critérios diagnósticos da Síndrome Metabólica.",
+    "": 411,
+    "subjetc": "Síndrome metabólica",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Comunicação de notícias difíceis",
+    "": 346,
+    "subjetc": "Outros temas - Clínica médica",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Conceitos gerais e contraindicações",
+    "": 445,
+    "subjetc": "Vacinação",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Conhecimentos gerais",
+    "": 461,
+    "subjetc": "ENADE",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Constipação na infância",
+    "": 175,
+    "subjetc": "Constipação",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Constipação no adulto",
+    "": 175,
+    "subjetc": "Constipação",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Controle de danos",
+    "": 176,
+    "subjetc": "Controle de Danos",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Convulsão febril",
+    "": 177,
+    "subjetc": "Convulsão febril",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Coqueluche - Diagnóstico e tratamento",
+    "": 178,
+    "subjetc": "Coqueluche",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Corpo estranho",
+    "": 179,
+    "subjetc": "Corpo estranho",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Corrimento uretral",
+    "": 180,
+    "subjetc": "Corrimento uretral",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Criptorquidia",
+    "": 182,
+    "subjetc": "Criptorquidia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Crise hipertensiva",
+    "": 460,
+    "subjetc": "Crise hipertensiva",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Cuidados paliativos",
+    "": 183,
+    "subjetc": "Cuidados paliativos",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Câncer colorretal - Diagnóstico e rastreamento",
+    "": 145,
+    "subjetc": "Câncer colorretal",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Câncer colorretal - Estadiamento e Tratamento",
+    "": 145,
+    "subjetc": "Câncer colorretal",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Câncer colorretal - Polipose e síndromes familiares",
+    "": 145,
+    "subjetc": "Câncer colorretal",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Câncer colorretal - neoplasia de apêndice",
+    "": 145,
+    "subjetc": "Câncer colorretal",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Câncer de Tireoide - Diagnóstico",
+    "": 158,
+    "subjetc": "Câncer de tireoide",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Câncer de Tireoide - Tratamento Cirúrgico",
+    "": 158,
+    "subjetc": "Câncer de tireoide",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Câncer de bexiga",
+    "": 146,
+    "subjetc": "Câncer de bexiga",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Câncer de canal anal",
+    "": 147,
+    "subjetc": "Câncer de canal anal",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Câncer de colo de útero - Colpocitologia oncótica, colposcopia e rastreamento",
+    "": 148,
+    "subjetc": "Câncer de colo de útero e HPV",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Câncer de colo de útero - Estadiamento e tratamento",
+    "": 148,
+    "subjetc": "Câncer de colo de útero e HPV",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Câncer de colo de útero - Fatores de risco e epidemiologia",
+    "": 148,
+    "subjetc": "Câncer de colo de útero e HPV",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Câncer de endométrio - Diagnóstico e fatores de risco",
+    "": 150,
+    "subjetc": "Câncer de endométrio",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Câncer de endométrio - Tratamento",
+    "": 150,
+    "subjetc": "Câncer de endométrio",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Câncer de estômago - Diagnóstico e Classificações",
+    "": 152,
+    "subjetc": "Câncer de estômago",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Câncer de estômago - Estadiamento e Tratamento",
+    "": 152,
+    "subjetc": "Câncer de estômago",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Câncer de estômago - GIST",
+    "": 152,
+    "subjetc": "Câncer de estômago",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Câncer de esôfago",
+    "": 151,
+    "subjetc": "Câncer de esôfago",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Câncer de esôfago - Diagnóstico e Classificação",
+    "": 151,
+    "subjetc": "Câncer de esôfago",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Câncer de esôfago - Estadiamento e Tratamento",
+    "": 151,
+    "subjetc": "Câncer de esôfago",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Câncer de mama - Diagnóstico e rastreamento",
+    "": 153,
+    "subjetc": "Câncer de mama",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Câncer de mama - Estadiamento e tratamento",
+    "": 153,
+    "subjetc": "Câncer de mama",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Câncer de mama - fatores de risco",
+    "": 153,
+    "subjetc": "Câncer de mama",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Câncer de ovário",
+    "": 229,
+    "subjetc": "Doenças ovarianas",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Câncer de pele não melanoma",
+    "": 154,
+    "subjetc": "Câncer de pele não melanoma",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Câncer de próstata",
+    "": 155,
+    "subjetc": "Câncer de Próstata",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Câncer de pulmão - Diagnóstico e rastreamento",
+    "": 156,
+    "subjetc": "Câncer de pulmão",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Câncer de pulmão - Manifestações clínicas",
+    "": 156,
+    "subjetc": "Câncer de pulmão",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Câncer de pulmão - Tratamento",
+    "": 156,
+    "subjetc": "Câncer de pulmão",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Câncer de pênis",
+    "": 345,
+    "subjetc": "Outros temas - Cirurgia geral",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Câncer de testículo",
+    "": 157,
+    "subjetc": "Câncer de testículo",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Câncer de vulva",
+    "": 159,
+    "subjetc": "Câncer de vulva",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Câncer renal",
+    "": 160,
+    "subjetc": "Câncer renal",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "DHEG - Diagnóstico e classificação",
+    "": 212,
+    "subjetc": "Doença hipertensiva específica da gravidez",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "DHEG - Fatores de risco e prevenção",
+    "": 212,
+    "subjetc": "Doença hipertensiva específica da gravidez",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "DHEG - Iminência de eclâmpsia / eclâmpsia",
+    "": 212,
+    "subjetc": "Doença hipertensiva específica da gravidez",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "DHEG - Tratamento",
+    "": 212,
+    "subjetc": "Doença hipertensiva específica da gravidez",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "DII - Complicações",
+    "": 213,
+    "subjetc": "Doença Inflamatória Intestinal",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "DII - Doença de Crohn",
+    "": 213,
+    "subjetc": "Doença Inflamatória Intestinal",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "DII - Retocolite Ulcerativa",
+    "": 213,
+    "subjetc": "Doença Inflamatória Intestinal",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "DPOC - Classificação e tratamento",
+    "": 230,
+    "subjetc": "DPOC",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "DPOC - Diagnóstico e quadro clínico",
+    "": 230,
+    "subjetc": "DPOC",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "DPOC - Exacerbação",
+    "": 230,
+    "subjetc": "DPOC",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "DRGE - Clínica e Diagnóstico",
+    "": 210,
+    "subjetc": "Doença do refluxo gastroesofágico",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "DRGE - Esôfago de Barrett",
+    "": 210,
+    "subjetc": "Doença do refluxo gastroesofágico",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "DRGE - Tratamento",
+    "": 210,
+    "subjetc": "Doença do refluxo gastroesofágico",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Declaração de óbito - Preenchimento",
+    "": 184,
+    "subjetc": "Declaração de óbito",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Declaração de óbito - Responsabilidade de preenchimento",
+    "": 184,
+    "subjetc": "Declaração de óbito",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Deformidades congênitas da parede torácica",
+    "": 345,
+    "subjetc": "Outros temas - Cirurgia geral",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Delirium",
+    "": 185,
+    "subjetc": "Delirium",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Demência",
+    "": 186,
+    "subjetc": "Demência",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Dengue",
+    "": 187,
+    "subjetc": "Dengue e outras arboviroses",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Dermatologia - Dermatites",
+    "": 188,
+    "subjetc": "Dermatologia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Dermatologia - Doenças infecciosas",
+    "": 188,
+    "subjetc": "Dermatologia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Dermatologia - Doenças inflamatórias",
+    "": 188,
+    "subjetc": "Dermatologia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Dermatologia - farmacodermia",
+    "": 188,
+    "subjetc": "Dermatologia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Derrame parapneumônico",
+    "": 359,
+    "subjetc": "Pneumonia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Derrame pleural - Diagnóstico",
+    "": 458,
+    "subjetc": "Derrame pleural",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Derrame pleural - Diagnóstico",
+    "": 189,
+    "subjetc": "Derrame pleural",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Desconforto respiratório do recém-nascido - Taquip…ória, aspiração meconial, apneia da prematuridade",
+    "": 190,
+    "subjetc": "Desconforto respiratório do recém-nascido",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Desnutrição - Classificação e formas clínicas",
+    "": 191,
+    "subjetc": "Desnutrição",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Desnutrição - Hipovitaminoses e deficiência de micronutrientes",
+    "": 191,
+    "subjetc": "Desnutrição",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Diabetes - Complicações agudas",
+    "": 192,
+    "subjetc": "Diabetes",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Diabetes - Fisiopatologia e classificação",
+    "": 192,
+    "subjetc": "Diabetes",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Diabetes - Nefropatia diabética",
+    "": 192,
+    "subjetc": "Diabetes",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Diabetes - Neuropatia diabética",
+    "": 192,
+    "subjetc": "Diabetes",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Diabetes - Quadro clínico e diagnóstico",
+    "": 192,
+    "subjetc": "Diabetes",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Diabetes - Retinopatia diabética",
+    "": 192,
+    "subjetc": "Diabetes",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Diabetes - Tratamento - Insulina",
+    "": 192,
+    "subjetc": "Diabetes",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Diabetes - Tratamento não-insulina",
+    "": 192,
+    "subjetc": "Diabetes",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Diabetes na gestação - Diagnóstico e fisiopatologia",
+    "": 193,
+    "subjetc": "Diabetes na gestação",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Diabetes na gestação - Tratamento e seguimento",
+    "": 193,
+    "subjetc": "Diabetes na gestação",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Diagnóstico de gestação",
+    "": 194,
+    "subjetc": "Diagnóstico de gestação",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Diarreia e desidratação - Diarreia crônica e persistente",
+    "": 195,
+    "subjetc": "Diarreia e desidratação",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Diarreia e desidratação - Mecanismo e agentes etiológicos",
+    "": 195,
+    "subjetc": "Diarreia e desidratação",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Diarreia e desidratação - Tratamento",
+    "": 195,
+    "subjetc": "Diarreia e desidratação",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Dislipidemia - Risco cardiovascular e metas terapêuticas",
+    "": 196,
+    "subjetc": "Dislipidemia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Dismenorreia e síndrome pré-menstrual",
+    "": 167,
+    "subjetc": "Ciclo e fisiologia menstrual",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Dispepsia",
+    "": 197,
+    "subjetc": "Dispepsia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Dissecção de aorta - Diagnóstico e tratamento",
+    "": 198,
+    "subjetc": "Dissecção de aorta",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Distúrbios da hemostasia secundária",
+    "": 200,
+    "subjetc": "Distúrbios da hemostasia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Distúrbios hidroeletrolíticos - Hipo e hipermagnesemia",
+    "": 202,
+    "subjetc": "Distúrbios hidroeletrolíticos",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Distúrbios ácido-básicos",
+    "": 199,
+    "subjetc": "Distúrbios ácido-básicos",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Distúrbios ácido-básicos - Acidose metabólica",
+    "": 199,
+    "subjetc": "Distúrbios ácido-básicos",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Diverticulite aguda - Diagnóstico e classificação",
+    "": 203,
+    "subjetc": "Diverticulite aguda",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Diverticulite aguda - Tratamento e complicações",
+    "": 203,
+    "subjetc": "Diverticulite aguda",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Divertículo de Meckel",
+    "": 204,
+    "subjetc": "Divertículo de Meckel",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Doença celíaca",
+    "": 205,
+    "subjetc": "Doença celíaca",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Doença coronária crônica",
+    "": 400,
+    "subjetc": "Síndrome coronariana",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Doença de Behçet",
+    "": 448,
+    "subjetc": "Vasculites",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Doença de Chagas",
+    "": 206,
+    "subjetc": "Doença de Chagas",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Doença de Hirschsprung",
+    "": 207,
+    "subjetc": "Doença de Hirschsprung",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Doença de Lyme",
+    "": 389,
+    "subjetc": "Ricketsioses",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Doença de Parkinson - Diagnóstico",
+    "": 208,
+    "subjetc": "Doença de Parkinson",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Doença de Still",
+    "": 209,
+    "subjetc": "Doença de Still",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Doença de Von Willebrand",
+    "": 200,
+    "subjetc": "Distúrbios da hemostasia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Doença do refluxo gastroesofágico na infância",
+    "": 211,
+    "subjetc": "Doença do refluxo gastroesofágico na infância",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Doença gordurosa hepática não alcoólica",
+    "": 270,
+    "subjetc": "Hepatites",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Doença inflamatória pélvica - Quadro clínico e diagnóstico",
+    "": 214,
+    "subjetc": "Doença inflamatória pélvica",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Doença inflamatória pélvica - Tratamento",
+    "": 214,
+    "subjetc": "Doença inflamatória pélvica",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Doença policística renal",
+    "": 215,
+    "subjetc": "Doença policística renal",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Doença relacionada a IgG4",
+    "": 217,
+    "subjetc": "Doença relacionada a IgG4",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Doença renal crônica - Complicações",
+    "": 218,
+    "subjetc": "Doença Renal Crônica",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Doença renal crônica - Diagnóstico e estadiamento",
+    "": 218,
+    "subjetc": "Doença Renal Crônica",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Doença renal crônica - Tratamento",
+    "": 218,
+    "subjetc": "Doença Renal Crônica",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Doença renal no lúpus",
+    "": 315,
+    "subjetc": "Lúpus eritematoso sistêmico",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Doenças benignas do esôfago - Acalásia e Megaesôfago",
+    "": 220,
+    "subjetc": "Doenças benignas do esôfago",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Doenças benignas do esôfago - Outras",
+    "": 220,
+    "subjetc": "Doenças benignas do esôfago",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Doenças benignas do ovário",
+    "": 229,
+    "subjetc": "Doenças ovarianas",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Doenças congênitas - Síndrome Alcoólica Fetal",
+    "": 221,
+    "subjetc": "Doenças Congênitas",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Doenças congênitas - Síndrome de Down e Turner",
+    "": 221,
+    "subjetc": "Doenças Congênitas",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Doenças da mama - Derrame papilar",
+    "": 222,
+    "subjetc": "Doenças da Mama",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Doenças da mama - Mastalgia e processos inflamatórios da mama",
+    "": 222,
+    "subjetc": "Doenças da Mama",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Doenças da mama - Nódulos e cistos",
+    "": 222,
+    "subjetc": "Doenças da Mama",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Doenças das vias biliares - Cistos de colédoco",
+    "": 223,
+    "subjetc": "Doenças das vias biliares",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Doenças das vias biliares - Colangiocarcinoma",
+    "": 223,
+    "subjetc": "Doenças das vias biliares",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Doenças das vias biliares - Colangite",
+    "": 223,
+    "subjetc": "Doenças das vias biliares",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Doenças das vias biliares - Colecistite",
+    "": 223,
+    "subjetc": "Doenças das vias biliares",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Doenças das vias biliares - Coledocolitíase",
+    "": 223,
+    "subjetc": "Doenças das vias biliares",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Doenças das vias biliares - Colelitiase",
+    "": 223,
+    "subjetc": "Doenças das vias biliares",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Doenças das vias biliares - Exames",
+    "": 223,
+    "subjetc": "Doenças das vias biliares",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Doenças das vias biliares - Pólipos e câncer de vesícula",
+    "": 223,
+    "subjetc": "Doenças das vias biliares",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Doenças de Parkinson - Tratamento",
+    "": 208,
+    "subjetc": "Doença de Parkinson",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Doenças do pericárdio",
+    "": 224,
+    "subjetc": "Doenças do pericárdio",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Doenças exantemáticas - Doença de Kawasaki",
+    "": 225,
+    "subjetc": "Doenças exantemáticas",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Doenças exantemáticas - Eritema infeccioso, Escarlatina, Exantema Súbito e Rubéola",
+    "": 225,
+    "subjetc": "Doenças exantemáticas",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Doenças exantemáticas - Sarampo",
+    "": 225,
+    "subjetc": "Doenças exantemáticas",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Doenças exantemáticas - Varicela",
+    "": 225,
+    "subjetc": "Doenças exantemáticas",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Doenças orificiais - Fissura",
+    "": 228,
+    "subjetc": "Doenças orificiais",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Doenças orificiais - Fístula perianal",
+    "": 228,
+    "subjetc": "Doenças orificiais",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Doenças orificiais - Hemorroidas",
+    "": 228,
+    "subjetc": "Doenças orificiais",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Doenças orificiais - abscesso anorretal e cisto pilonidal",
+    "": 228,
+    "subjetc": "Doenças orificiais",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Doenças pulmonares fibrosantes",
+    "": 216,
+    "subjetc": "Doença pulmonar parenquimatosa difusa",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Dor Pélvica Crônica",
+    "": 347,
+    "subjetc": "Outros temas - Ginecologia e Obstetrícia",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Drogas - Efeitos adversos",
+    "": 231,
+    "subjetc": "Drogas - Efeitos adversos",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "ELA",
+    "": 227,
+    "subjetc": "Doenças neuromusculares",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "ESF - interprofissionalidade e matriciamento",
+    "": 459,
+    "subjetc": "Estratégia de saúde da família",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Ebola",
+    "": 232,
+    "subjetc": "Ebola",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Emergências Urológicas - Orquiepididimite",
+    "": 233,
+    "subjetc": "Emergências Urológicas",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Emergências Urológicas - Torção testicular",
+    "": 233,
+    "subjetc": "Emergências Urológicas",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Emergências Urológicas- Priapismo",
+    "": 233,
+    "subjetc": "Emergências Urológicas",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Endocardite - Diagnóstico",
+    "": 234,
+    "subjetc": "Endocardite",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Endocardite - Tratamento e profilaxia",
+    "": 234,
+    "subjetc": "Endocardite",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Endometriose - Diagnóstico e classificação",
+    "": 235,
+    "subjetc": "Endometriose",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Endometriose - tratamento",
+    "": 235,
+    "subjetc": "Endometriose",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Enterocolite Necrosante",
+    "": 236,
+    "subjetc": "Enterocolite Necrosante",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Enxerto e Retalho",
+    "": 237,
+    "subjetc": "Enxerto e Retalho",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Epidemias",
+    "": 238,
+    "subjetc": "Epidemias",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Epilepsia - Diagnóstico e manejo",
+    "": 239,
+    "subjetc": "Epilepsia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Esclerose múltipla",
+    "": 240,
+    "subjetc": "Esclerose múltipla",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Esclerose sistêmica",
+    "": 241,
+    "subjetc": "Esclerose sistêmica",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Esquistossomose",
+    "": 242,
+    "subjetc": "Esquistossomose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Esquizofrenia",
+    "": 375,
+    "subjetc": "Psiquiatria",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Estenose Hipertrófica de Piloro",
+    "": 243,
+    "subjetc": "Estenose Hipertrófica de Piloro",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Estudos de intervenção - Ensaio clínico (delineamento)",
+    "": 244,
+    "subjetc": "Estudos epidemiológicos",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Estudos de intervenção - Ensaio clínico (medidas de efeito)",
+    "": 244,
+    "subjetc": "Estudos epidemiológicos",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Estudos de intervenção - Outros ensaios (de comunidade, de equivalência e de não-inferioridade)",
+    "": 244,
+    "subjetc": "Estudos epidemiológicos",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Estudos epidemiológicos - Ensaio clínico (delineamento e medidas de efeito)",
+    "": 244,
+    "subjetc": "Estudos epidemiológicos",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Estudos observacionais - Caso-controle",
+    "": 244,
+    "subjetc": "Estudos epidemiológicos",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Estudos observacionais - Coorte",
+    "": 244,
+    "subjetc": "Estudos epidemiológicos",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Estudos observacionais - Ecológico e Transversal",
+    "": 244,
+    "subjetc": "Estudos epidemiológicos",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Estudos observacionais - Medidas em estudos observacionais",
+    "": 244,
+    "subjetc": "Estudos epidemiológicos",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Estudos observacionais - Relato de caso e série de casos",
+    "": 244,
+    "subjetc": "Estudos epidemiológicos",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Exame cardiovascular",
+    "": 374,
+    "subjetc": "Propedêutica",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Exame neurológico - diagnóstico topográfico",
+    "": 374,
+    "subjetc": "Propedêutica",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Exame neurológico - pares cranianos",
+    "": 374,
+    "subjetc": "Propedêutica",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Fasceíte Necrosante e Gangrena de Fournier",
+    "": 246,
+    "subjetc": "Fasceíte Necrosante e Gangrena de Fournier",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Febre Reumática - Manifestações clínicas e diagnóstico",
+    "": 248,
+    "subjetc": "Febre reumática",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Febre Reumática - Tratamento e profilaxia",
+    "": 248,
+    "subjetc": "Febre reumática",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Febre maculosa",
+    "": 389,
+    "subjetc": "Ricketsioses",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Febre sem sinais localizatórios",
+    "": 249,
+    "subjetc": "Febre sem sinais localizatórios",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Febre tifóide",
+    "": 250,
+    "subjetc": "Febre tifóide",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Feocromocitoma",
+    "": 251,
+    "subjetc": "Feocromocitoma",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Fibrilação atrial/Flutter atrial",
+    "": 126,
+    "subjetc": "Arritmias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Fibromialgia",
+    "": 252,
+    "subjetc": "Fibromialgia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Fibrose Cística",
+    "": 253,
+    "subjetc": "Fibrose cística",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Função Placentária",
+    "": 347,
+    "subjetc": "Outros temas - Ginecologia e Obstetrícia",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Fármacos e Gestação",
+    "": 133,
+    "subjetc": "Assistência pré-natal",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Fístula arteriovenosa",
+    "": 254,
+    "subjetc": "Fístula arteriovenosa",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "GNPE",
+    "": 226,
+    "subjetc": "Doenças glomerulares",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "GNRP",
+    "": 226,
+    "subjetc": "Doenças glomerulares",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Gamopatias monoclonais",
+    "": 326,
+    "subjetc": "Mieloma múltiplo",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Gastrosquise e Onfalocele",
+    "": 255,
+    "subjetc": "Gastrosquise e Onfalocele",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Gemelaridade",
+    "": 256,
+    "subjetc": "Gemelaridade",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Geriatria",
+    "": 257,
+    "subjetc": "Geriatria",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Gestão em Saúde",
+    "": 258,
+    "subjetc": "Gestão em Saúde",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Gota - Diagnóstico",
+    "": 259,
+    "subjetc": "Gota",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Gota - Tratamento",
+    "": 259,
+    "subjetc": "Gota",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Granulomatose com poliangeíte",
+    "": 448,
+    "subjetc": "Vasculites",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Granulomatose com poliangeíte e eosinofilia",
+    "": 448,
+    "subjetc": "Vasculites",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Gripe - SRAG",
+    "": 260,
+    "subjetc": "Gripe",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Guillain-Barré",
+    "": 227,
+    "subjetc": "Doenças neuromusculares",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "HAS - Classificação e escolha inicial de fármacos",
+    "": 281,
+    "subjetc": "Hipertensão arterial sistêmica",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "HAS - Definições e diagnóstico",
+    "": 281,
+    "subjetc": "Hipertensão arterial sistêmica",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "HAS - Hipertensão na criança",
+    "": 281,
+    "subjetc": "Hipertensão arterial sistêmica",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "HDA Varicosa - Etiologias",
+    "": 265,
+    "subjetc": "Hemorragia Digestiva Alta Varicosa",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "HDA Varicosa - Tratamento",
+    "": 265,
+    "subjetc": "Hemorragia Digestiva Alta Varicosa",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "HDA não varicosa - Outras Etiologias",
+    "": 264,
+    "subjetc": "Hemorragia Digestiva Alta Não Varicosa",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "HDA não varicosa - Úlcera péptica",
+    "": 264,
+    "subjetc": "Hemorragia Digestiva Alta Não Varicosa",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "HIV - Diagnóstico e tratamento",
+    "": 288,
+    "subjetc": "HIV",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "HIV - Doenças oportunistas",
+    "": 288,
+    "subjetc": "HIV",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "HIV - Doenças oportunistas neurológicas",
+    "": 288,
+    "subjetc": "HIV",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "HIV - Doenças oportunistas respiratórias",
+    "": 288,
+    "subjetc": "HIV",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "HIV - HIV na criança",
+    "": 288,
+    "subjetc": "HIV",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "HIV - profilaxias pré e pós-exposição",
+    "": 288,
+    "subjetc": "HIV",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "HIV e gestação",
+    "": 297,
+    "subjetc": "Infecções e gestação",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "HPV - Conceitos gerais e história natural",
+    "": 148,
+    "subjetc": "Câncer de colo de útero e HPV",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Hanseníase - Tratamento",
+    "": 261,
+    "subjetc": "Hanseníase",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hanseníase - diagnóstico",
+    "": 261,
+    "subjetc": "Hanseníase",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hanseníase - estados reacionais",
+    "": 261,
+    "subjetc": "Hanseníase",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hantavirose",
+    "": 262,
+    "subjetc": "Hantavirose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hematoma de reto abdominal",
+    "": 345,
+    "subjetc": "Outros temas - Cirurgia geral",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Hemoptise",
+    "": 263,
+    "subjetc": "Hemoptise",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Hemorragia Digestiva Baixa",
+    "": 266,
+    "subjetc": "Hemorragia Digestiva Baixa",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Hemorragia neonatal",
+    "": 267,
+    "subjetc": "Hemorragia neonatal",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Hemorragia puerperal",
+    "": 320,
+    "subjetc": "Mecanismo de parto e assistência clínica",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Hemorragias da primeira metade da gestação - Aborto",
+    "": 268,
+    "subjetc": "Hemorragias da primeira metade da gestação",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Hemorragias da primeira metade da gestação - Doença trofoblástica e Mola",
+    "": 268,
+    "subjetc": "Hemorragias da primeira metade da gestação",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Hemorragias da primeira metade da gestação - Gestação ectópica",
+    "": 268,
+    "subjetc": "Hemorragias da primeira metade da gestação",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Hemorragias da segunda metade da gestação - Descolamento prematuro de placenta",
+    "": 269,
+    "subjetc": "Hemorragias da segunda metade da gestação",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Hemorragias da segunda metade da gestação - Placenta prévia e acretismo placentário",
+    "": 269,
+    "subjetc": "Hemorragias da segunda metade da gestação",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Hemorragias da segunda metade da gestação - Rotura uterina e rotura de vasa prévia",
+    "": 269,
+    "subjetc": "Hemorragias da segunda metade da gestação",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Hepatite alcóolica aguda",
+    "": 270,
+    "subjetc": "Hepatites",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hepatite autoimune",
+    "": 270,
+    "subjetc": "Hepatites",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hepatite fulminante",
+    "": 270,
+    "subjetc": "Hepatites",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hepatites virais - Hepatite A",
+    "": 271,
+    "subjetc": "Hepatites virais",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hepatites virais - Hepatite B",
+    "": 271,
+    "subjetc": "Hepatites virais",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hepatites virais - Hepatite C",
+    "": 271,
+    "subjetc": "Hepatites virais",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hepatites virais - Hepatite Delta",
+    "": 271,
+    "subjetc": "Hepatites virais",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Herpes Zóster",
+    "": 274,
+    "subjetc": "Herpes Zóster",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Herpes e hepatites virais em gestantes",
+    "": 297,
+    "subjetc": "Infecções e gestação",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Hidrocefalia - DVP",
+    "": 275,
+    "subjetc": "Hidrocefalia",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Hidrocele",
+    "": 345,
+    "subjetc": "Outros temas - Cirurgia geral",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Hiperaldosteronismo Primário",
+    "": 276,
+    "subjetc": "Hiperaldosteronismo Primário",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hipercalcemia",
+    "": 202,
+    "subjetc": "Distúrbios hidroeletrolíticos",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hipercalemia",
+    "": 202,
+    "subjetc": "Distúrbios hidroeletrolíticos",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hipernatremia",
+    "": 202,
+    "subjetc": "Distúrbios hidroeletrolíticos",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hiperparatireoidismo primário",
+    "": 277,
+    "subjetc": "Hiperparatireoidismo primário",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hiperplasia adrenal congênita",
+    "": 278,
+    "subjetc": "Hiperplasia adrenal congênita",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hiperplasia prostática benigna",
+    "": 279,
+    "subjetc": "Hiperplasia prostática benigna",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Hiperprolactinemia",
+    "": 280,
+    "subjetc": "Hiperprolactinemia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hipertensão Renovascular",
+    "": 284,
+    "subjetc": "Hipertensão Renovascular",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hipertensão intracraniana - complicações",
+    "": 282,
+    "subjetc": "Hipertensão intracraniana",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hipertensão pulmonar",
+    "": 283,
+    "subjetc": "Hipertensão pulmonar",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hipertensão pulmonar neonatal",
+    "": 190,
+    "subjetc": "Desconforto respiratório do recém-nascido",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Hipocalcemia",
+    "": 202,
+    "subjetc": "Distúrbios hidroeletrolíticos",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hipocalemia",
+    "": 202,
+    "subjetc": "Distúrbios hidroeletrolíticos",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hipoglicemia neonatal",
+    "": 285,
+    "subjetc": "Hipoglicemia neonatal",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Hiponatremia",
+    "": 202,
+    "subjetc": "Distúrbios hidroeletrolíticos",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Hipotireoidismo",
+    "": 286,
+    "subjetc": "Hipotireoidismo",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {},
+  {
+    "topic": "Histoplasmose",
+    "": 287,
+    "subjetc": "Histoplasmose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "História da medicina",
+    "": 345,
+    "subjetc": "Outros temas - Cirurgia geral",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Hérnias - Outras hérnias",
+    "": 272,
+    "subjetc": "Hérnias",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Hérnias inguinocrurais - Anatomia e classificação",
+    "": 272,
+    "subjetc": "Hérnias",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Hérnias inguinocrurais - Tratamento",
+    "": 272,
+    "subjetc": "Hérnias",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Hérnias na Infância",
+    "": 273,
+    "subjetc": "Hérnias na Infância",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "IRpA - Diagnóstico diferencial",
+    "": 302,
+    "subjetc": "Insuficiência respiratória aguda",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "ITU PED - Diagnóstico",
+    "": 306,
+    "subjetc": "Infecção urinária na infância",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "ITU PED - Epidemiologia e agentes etiológicos",
+    "": 306,
+    "subjetc": "Infecção urinária na infância",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "ITU PED - Manejo",
+    "": 306,
+    "subjetc": "Infecção urinária na infância",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "ITU PED - Manifestações clínicas e diagnóstico",
+    "": 306,
+    "subjetc": "Infecção urinária na infância",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "IVAS - Crupe e epiglotite",
+    "": 307,
+    "subjetc": "IVAS",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "IVAS - Faringoamigdalites e mononucleose",
+    "": 307,
+    "subjetc": "IVAS",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "IVAS - Otite média aguda e otite externa",
+    "": 307,
+    "subjetc": "IVAS",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "IVAS - Resfriado e rinossinusite aguda",
+    "": 307,
+    "subjetc": "IVAS",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Icterícia neonatal - Colestase neonatal",
+    "": 289,
+    "subjetc": "Icterícia neonatal",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Icterícia neonatal - Fisiológica vs Patológica",
+    "": 289,
+    "subjetc": "Icterícia neonatal",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Imunodeficiência - ICV",
+    "": 290,
+    "subjetc": "Imunodeficiência",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Imunodeficiência adquirida",
+    "": 290,
+    "subjetc": "Imunodeficiência",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Imunodeficiência na infância - Primária",
+    "": 290,
+    "subjetc": "Imunodeficiência",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Incidentaloma Adrenal",
+    "": 291,
+    "subjetc": "Incidentaloma Adrenal",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Incontinência Urinária - Diagnóstico",
+    "": 292,
+    "subjetc": "Incontinência Urinária e Prolapso Genital",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Incontinência Urinária - Tratamento",
+    "": 292,
+    "subjetc": "Incontinência Urinária e Prolapso Genital",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Indicadores em Saúde - Avaliação da atenção básica",
+    "": 293,
+    "subjetc": "Indicadores em Saúde",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Indicadores em Saúde - Causas de mortalidade",
+    "": 293,
+    "subjetc": "Indicadores em Saúde",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Indicadores em Saúde - DALY",
+    "": 293,
+    "subjetc": "Indicadores em Saúde",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Indicadores em Saúde - Doenças crônicas não transmissíveis",
+    "": 293,
+    "subjetc": "Indicadores em Saúde",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Indicadores em Saúde - Medidas de frequência elementares",
+    "": 293,
+    "subjetc": "Indicadores em Saúde",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Indicadores em Saúde - Nelson Moraes e Swaroop-Uemura",
+    "": 293,
+    "subjetc": "Indicadores em Saúde",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Indicadores em Saúde - Paradoxo preventivo",
+    "": 293,
+    "subjetc": "Indicadores em Saúde",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Indicadores em Saúde - Transição demográfica e epidemiológica",
+    "": 293,
+    "subjetc": "Indicadores em Saúde",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Indicadores em Saúde - Vulnerabilidade e desigualdade social",
+    "": 293,
+    "subjetc": "Indicadores em Saúde",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Indicadores em saúde - Mortalidade infantil e materna",
+    "": 293,
+    "subjetc": "Indicadores em Saúde",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Indicações de vias de parto",
+    "": 320,
+    "subjetc": "Mecanismo de parto e assistência clínica",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Infecção de partes moles",
+    "": 296,
+    "subjetc": "Infecções de pele e partes moles",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Infecção de trato urinário na gestante",
+    "": 294,
+    "subjetc": "Infecção de trato urinário na gestante",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Infecção do trato urinário",
+    "": 347,
+    "subjetc": "Outros temas - Ginecologia e Obstetrícia",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Infecção do trato urinário no adulto",
+    "": 295,
+    "subjetc": "Infecção do trato urinário",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Infecção fúngica",
+    "": 344,
+    "subjetc": "Outras infecções e antibióticos",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Infecções respiratórias",
+    "": 325,
+    "subjetc": "Micoses profundas",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Infertilidade - Investigação e etiologia",
+    "": 298,
+    "subjetc": "Infertilidade",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Infertilidade - Tratamento e questões legais",
+    "": 298,
+    "subjetc": "Infertilidade",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Injúria Renal Aguda",
+    "": 299,
+    "subjetc": "Injúria Renal Aguda",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Injúria Renal Aguda - IRA intrínseca",
+    "": 299,
+    "subjetc": "Injúria Renal Aguda",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Insuficiência Adrenal",
+    "": 300,
+    "subjetc": "Insuficiência Adrenal",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Insuficiência arterial aguda",
+    "": 219,
+    "subjetc": "Doença vascular periférica",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Insuficiência arterial crônica",
+    "": 219,
+    "subjetc": "Doença vascular periférica",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Insuficiência cardíaca - Diagnóstico e manifestações clínicas",
+    "": 301,
+    "subjetc": "Insuficiência Cardíaca",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Insuficiência cardíaca - Exames diagnósticos",
+    "": 301,
+    "subjetc": "Insuficiência Cardíaca",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Insuficiência cardíaca - IC descompensada",
+    "": 301,
+    "subjetc": "Insuficiência Cardíaca",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Insuficiência cardíaca - Tratamento ambulatorial",
+    "": 301,
+    "subjetc": "Insuficiência Cardíaca",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Insuficiência cardíaca -Manifestações Clínicas",
+    "": 301,
+    "subjetc": "Insuficiência Cardíaca",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Insuficiência venosa crônica",
+    "": 219,
+    "subjetc": "Doença vascular periférica",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Intestino Curto",
+    "": 345,
+    "subjetc": "Outros temas - Cirurgia geral",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Intoxicação por Nafazolina",
+    "": 303,
+    "subjetc": "Intoxicações exógenas",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Intoxicações exógenas - Medidas gerais",
+    "": 303,
+    "subjetc": "Intoxicações exógenas",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Intoxicações exógenas - Monóxido de carbono",
+    "": 303,
+    "subjetc": "Intoxicações exógenas",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Intoxicações exógenas - Opioides e benzodiazepínicos",
+    "": 303,
+    "subjetc": "Intoxicações exógenas",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Intoxicações exógenas - Organofosforados/carbamato",
+    "": 303,
+    "subjetc": "Intoxicações exógenas",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Intoxicações exógenas - Paracetamol",
+    "": 303,
+    "subjetc": "Intoxicações exógenas",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Intoxicações exógenas - ecstasy e cocaína",
+    "": 303,
+    "subjetc": "Intoxicações exógenas",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Intoxicações exógenas- antidepressivos tricíclicos",
+    "": 303,
+    "subjetc": "Intoxicações exógenas",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Intussuscepção e Volvo de Intestino",
+    "": 304,
+    "subjetc": "Intussuscepção e Volvo de Intestino",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Investigação de cefaleia secundária",
+    "": 163,
+    "subjetc": "Cefaleias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Investigação do nódulo tireoidiano",
+    "": 334,
+    "subjetc": "Nódulo de tireoide",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Isoimunização RH",
+    "": 305,
+    "subjetc": "Isoimunização RH",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Leishmaniose - tegumentar",
+    "": 308,
+    "subjetc": "Leishmaniose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Leishmaniose - visceral",
+    "": 308,
+    "subjetc": "Leishmaniose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Leptospirose",
+    "": 309,
+    "subjetc": "Leptospirose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Lesões iatrogências das vias biliares",
+    "": 223,
+    "subjetc": "Doenças das vias biliares",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Leucemia linfocítica crônica",
+    "": 311,
+    "subjetc": "Leucemias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Leucemia linfóide aguda",
+    "": 311,
+    "subjetc": "Leucemias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Leucemia mieloide aguda",
+    "": 311,
+    "subjetc": "Leucemias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Leucemia mieloide crônica",
+    "": 311,
+    "subjetc": "Leucemias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Leucemias - Complicações",
+    "": 311,
+    "subjetc": "Leucemias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Licença Maternidade",
+    "": 347,
+    "subjetc": "Outros temas - Ginecologia e Obstetrícia",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Linfoma",
+    "": 312,
+    "subjetc": "Linfoma",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Linfonodomegalias",
+    "": 313,
+    "subjetc": "Linfonodomegalias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Lombalgia",
+    "": 314,
+    "subjetc": "Lombalgia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Lúpus - induzido por droga",
+    "": 315,
+    "subjetc": "Lúpus eritematoso sistêmico",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Lúpus - laboratório",
+    "": 315,
+    "subjetc": "Lúpus eritematoso sistêmico",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Lúpus - manifestações clínicas",
+    "": 315,
+    "subjetc": "Lúpus eritematoso sistêmico",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Malformações anorretais",
+    "": 317,
+    "subjetc": "Malformações anorretais",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Malária",
+    "": 316,
+    "subjetc": "Malária",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Massas cervicais benignas",
+    "": 318,
+    "subjetc": "Massas cervicais benignas",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Maus tratos",
+    "": 319,
+    "subjetc": "Maus tratos",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Mecanismo de Parto - Assistência clínica",
+    "": 320,
+    "subjetc": "Mecanismo de parto e assistência clínica",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Mecanismo de parto",
+    "": 320,
+    "subjetc": "Mecanismo de parto e assistência clínica",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Medicina Fetal",
+    "": 133,
+    "subjetc": "Assistência pré-natal",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Medicina do trabalho - Acidente de trabalho; CAT e benefícios",
+    "": 321,
+    "subjetc": "Medicina do trabalho",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Medicina do trabalho - Doenças ocupacionais e classificação de Schilling",
+    "": 321,
+    "subjetc": "Medicina do trabalho",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Medicina do trabalho - Doenças osteomusculares relacionadas ao trabalho",
+    "": 321,
+    "subjetc": "Medicina do trabalho",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Medicina do trabalho - Doenças psiquiátricas relacionadas ao trabalho",
+    "": 321,
+    "subjetc": "Medicina do trabalho",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Medicina do trabalho - Intoxicação por metais e benzeno",
+    "": 321,
+    "subjetc": "Medicina do trabalho",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Medicina do trabalho - Normas regulamentadoras e classificação de riscos ocupacionais",
+    "": 321,
+    "subjetc": "Medicina do trabalho",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Medicina do trabalho - Perda auditiva induzida por ruído",
+    "": 321,
+    "subjetc": "Medicina do trabalho",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Medicina do trabalho - Pneumoconioses e doenças respiratórias ocupacionais",
+    "": 321,
+    "subjetc": "Medicina do trabalho",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Melanoma",
+    "": 322,
+    "subjetc": "Melanoma",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Meningite - Meningite aguda - Diagnóstico",
+    "": 323,
+    "subjetc": "Meningite",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Meningite - Meningite aguda - Tratamento e profilaxia",
+    "": 323,
+    "subjetc": "Meningite",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Meningite - Meningite crônica",
+    "": 323,
+    "subjetc": "Meningite",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Metodologia de Pesquisa - Critérios de causalidade",
+    "": 244,
+    "subjetc": "Estudos epidemiológicos",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Metodologia de Pesquisa - Metodologia científica e ética em pesquisa",
+    "": 244,
+    "subjetc": "Estudos epidemiológicos",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Metodologia de Pesquisa - Nível de evidência científica",
+    "": 244,
+    "subjetc": "Estudos epidemiológicos",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Metodologia de Pesquisa - Revisão sistemática e metanálise",
+    "": 244,
+    "subjetc": "Estudos epidemiológicos",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Metodologia de Pesquisa - Teste de hipóteses",
+    "": 244,
+    "subjetc": "Estudos epidemiológicos",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Miastenia gravis",
+    "": 227,
+    "subjetc": "Doenças neuromusculares",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Microangiopatia trombótica",
+    "": 200,
+    "subjetc": "Distúrbios da hemostasia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Mieloma múltiplo",
+    "": 326,
+    "subjetc": "Mieloma múltiplo",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Mielomeningocele",
+    "": 345,
+    "subjetc": "Outros temas - Cirurgia geral",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Migrânea e cefaleia tensional",
+    "": 163,
+    "subjetc": "Cefaleias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Modificações do organismo materno",
+    "": 194,
+    "subjetc": "Diagnóstico de gestação",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Monitorização da Anestesia e Recuperação pós Anestésica",
+    "": 121,
+    "subjetc": "Anestesia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Morte encefálica - Protocolo de ME",
+    "": 328,
+    "subjetc": "Morte encefálica",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Morte encefálica - doação de órgãos",
+    "": 328,
+    "subjetc": "Morte encefálica",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Morte encefálica, transplantes e doação de órgãos",
+    "": 425,
+    "subjetc": "Transplante de fígado",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Mucormicose",
+    "": 329,
+    "subjetc": "Mucormicose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Métodos contraceptivos - Contracepção de emergência",
+    "": 324,
+    "subjetc": "Métodos contraceptivos",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Métodos contraceptivos - Esterilização cirúrgica",
+    "": 324,
+    "subjetc": "Métodos contraceptivos",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Métodos contraceptivos - Hormonais",
+    "": 324,
+    "subjetc": "Métodos contraceptivos",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Métodos contraceptivos - Não hormonais",
+    "": 324,
+    "subjetc": "Métodos contraceptivos",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Nefrolitíase - Diagnóstico",
+    "": 330,
+    "subjetc": "Nefrolitíase",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Nefrolitíase - Tratamento",
+    "": 330,
+    "subjetc": "Nefrolitíase",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Nefropatia por IgA",
+    "": 226,
+    "subjetc": "Doenças glomerulares",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Neutropenia febril",
+    "": 333,
+    "subjetc": "Neutropenia febril",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Nódulos de pulmão",
+    "": 335,
+    "subjetc": "Nódulos de pulmão",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Nódulos hepáticos - Abscesso Hepático",
+    "": 336,
+    "subjetc": "Nódulos hepáticos",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Nódulos hepáticos Benignos",
+    "": 336,
+    "subjetc": "Nódulos hepáticos",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Nódulos hepáticos Malignos",
+    "": 336,
+    "subjetc": "Nódulos hepáticos",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Obesidade na infância",
+    "": 337,
+    "subjetc": "Obesidade na infância",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Oftalmologia - Erros refrativos, catarata e estrabismo",
+    "": 338,
+    "subjetc": "Oftalmologia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Oftalmologia - Retinoblastoma",
+    "": 338,
+    "subjetc": "Oftalmologia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Oftalmologia - Trauma ocular",
+    "": 338,
+    "subjetc": "Oftalmologia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Oftalmologia - síndrome do olho vermelho",
+    "": 338,
+    "subjetc": "Oftalmologia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Oncologia - Tumores malignos",
+    "": 339,
+    "subjetc": "Oncologia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Ortopedia - Doenças do quadril",
+    "": 340,
+    "subjetc": "Ortopedia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Ortopedia - Fraturas, Luxações e Entorses",
+    "": 340,
+    "subjetc": "Ortopedia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Ortopedia - outros temas",
+    "": 340,
+    "subjetc": "Ortopedia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Osteoartrite",
+    "": 341,
+    "subjetc": "Osteoartrite",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Osteoporose - Abordagem geral",
+    "": 342,
+    "subjetc": "Osteoporose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Osteoporose - Diagnóstico",
+    "": 342,
+    "subjetc": "Osteoporose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Osteoporose - Manejo",
+    "": 342,
+    "subjetc": "Osteoporose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Otorrino - Cerúmen",
+    "": 343,
+    "subjetc": "Otorrinolaringologia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Otorrino - Disfonia",
+    "": 343,
+    "subjetc": "Otorrinolaringologia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Otorrino - epistaxe",
+    "": 343,
+    "subjetc": "Otorrinolaringologia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Outras arboviroses",
+    "": 187,
+    "subjetc": "Dengue e outras arboviroses",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Outras infecções - ESBL",
+    "": 344,
+    "subjetc": "Outras infecções e antibióticos",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Outras infecções - Infecção de corrente sanguínea",
+    "": 344,
+    "subjetc": "Outras infecções e antibióticos",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Outros temas - Cirurgia geral",
+    "": 345,
+    "subjetc": "Outros temas - Cirurgia geral",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Outros temas - Clínica médica",
+    "": 346,
+    "subjetc": "Outros temas - Clínica médica",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Outros temas - Dismenorréia primária",
+    "": 347,
+    "subjetc": "Outros temas - Ginecologia e Obstetrícia",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Outros temas - Medicina preventiva",
+    "": 348,
+    "subjetc": "Outros temas - Medicina preventiva",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Outros temas - Pediatria",
+    "": 349,
+    "subjetc": "Outros temas - Pediatria",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Outros temas - anatomia",
+    "": 347,
+    "subjetc": "Outros temas - Ginecologia e Obstetrícia",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "PBLS e PALS - Aspiração de Corpo estranho",
+    "": 357,
+    "subjetc": "PBLS e PALS",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "PBLS e PALS - Avaliação inicial e critérios de gravidade",
+    "": 357,
+    "subjetc": "PBLS e PALS",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "PBLS e PALS - PCR",
+    "": 357,
+    "subjetc": "PBLS e PALS",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "PBLS e PALS - Taquicardia supraventricular",
+    "": 357,
+    "subjetc": "PBLS e PALS",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "POCUS - Cardio",
+    "": 165,
+    "subjetc": "Choque",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "POCUS - Pulmonar",
+    "": 165,
+    "subjetc": "Choque",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Pancreatite Aguda - Classificações e Escores de Gravidade",
+    "": 350,
+    "subjetc": "Pancreatite aguda",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Pancreatite Aguda - Tratamento e complicações",
+    "": 350,
+    "subjetc": "Pancreatite aguda",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Pancreatite aguda - Diagnóstico e Etiologias",
+    "": 350,
+    "subjetc": "Pancreatite aguda",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Pancreatite crônica",
+    "": 351,
+    "subjetc": "Pancreatite Crônica",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Paracoccidioidomicose - diagnóstico",
+    "": 352,
+    "subjetc": "Paracoccidioidomicose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Paralisia facial",
+    "": 353,
+    "subjetc": "Paralisia facial",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Parasitoses - Escabiose, pediculose e larva migrans cutânea",
+    "": 354,
+    "subjetc": "Parasitoses",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Parasitoses - Helmintos e toxocaríase",
+    "": 354,
+    "subjetc": "Parasitoses",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Parasitoses - Protozoários",
+    "": 354,
+    "subjetc": "Parasitoses",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Parto - Distócia de ombro",
+    "": 320,
+    "subjetc": "Mecanismo de parto e assistência clínica",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Parto pélvico",
+    "": 320,
+    "subjetc": "Mecanismo de parto e assistência clínica",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Patologias Traqueais",
+    "": 356,
+    "subjetc": "Patologias Traqueais",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Perioperatório - Antibiótico e Infecção de Sítio Cirúrgico",
+    "": 358,
+    "subjetc": "Perioperatório",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Perioperatório - Complicações Pós operatórias + Profilaxia de TEV",
+    "": 358,
+    "subjetc": "Perioperatório",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Perioperatório - Exames e Risco Cirúrgico",
+    "": 358,
+    "subjetc": "Perioperatório",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Perioperatório - Medicações",
+    "": 358,
+    "subjetc": "Perioperatório",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Perioperatório - Nutrição e Projeto ACERTO",
+    "": 358,
+    "subjetc": "Perioperatório",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Pneumonia Adquirida na Comunidade",
+    "": 359,
+    "subjetc": "Pneumonia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Pneumonia hospitalar",
+    "": 359,
+    "subjetc": "Pneumonia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Pneumonias na infância",
+    "": 360,
+    "subjetc": "Pneumonia na infância",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Pneumotórax Espontâneo",
+    "": 361,
+    "subjetc": "Pneumotórax Espontâneo",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Poliangeíte microscópica",
+    "": 448,
+    "subjetc": "Vasculites",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Poliarterite nodosa",
+    "": 448,
+    "subjetc": "Vasculites",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Policondrite recidivante",
+    "": 362,
+    "subjetc": "Policondrite recidivante",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Polimialgia reumática",
+    "": 363,
+    "subjetc": "Polimialgia reumática",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Polimiosite e Dermatomiosite",
+    "": 364,
+    "subjetc": "Polimiosite e Dermatomiosite",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Polineuropatias - Propedêutica",
+    "": 332,
+    "subjetc": "Neuropatias periféricas",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Porfirias",
+    "": 365,
+    "subjetc": "Porfirias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Precaução e Isolamento",
+    "": 366,
+    "subjetc": "Precauções e Isolamento",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Prematuridade - Incompetência istmocervical",
+    "": 367,
+    "subjetc": "Prematuridade",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Prematuridade - TPP, tocólise, corticoterapia e profilaxia",
+    "": 367,
+    "subjetc": "Prematuridade",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Prevenção de acidentes",
+    "": 368,
+    "subjetc": "Prevenção de acidentes",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Processo Saúde-Doença - Determinantes sociais e conceito de saúde",
+    "": 369,
+    "subjetc": "Processo Saúde-Doença",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Processo Saúde-Doença - Níveis de prevenção e história natural da doença",
+    "": 369,
+    "subjetc": "Processo Saúde-Doença",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Profilaxia de raiva",
+    "": 370,
+    "subjetc": "Profilaxia de raiva",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Profilaxia de tétano",
+    "": 371,
+    "subjetc": "Profilaxia de tétano",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Profilaxia pós-exposição",
+    "": 372,
+    "subjetc": "Profilaxia pós-exposição",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Programa Mais Médicos",
+    "": 373,
+    "subjetc": "Programa Mais Médicos",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Prolapso genital - Manifestações clínicas e POP-Q",
+    "": 292,
+    "subjetc": "Incontinência Urinária e Prolapso Genital",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Prolapso genital - Tratamento",
+    "": 292,
+    "subjetc": "Incontinência Urinária e Prolapso Genital",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Proteína c reativa",
+    "": 344,
+    "subjetc": "Outras infecções e antibióticos",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Pseudoaneurisma",
+    "": 345,
+    "subjetc": "Outros temas - Cirurgia geral",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Psiquiatria - Agitação psicomotora",
+    "": 375,
+    "subjetc": "Psiquiatria",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Psiquiatria - Sono - tratamento",
+    "": 375,
+    "subjetc": "Psiquiatria",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Psiquiatria - abuso de substâncias",
+    "": 375,
+    "subjetc": "Psiquiatria",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Psiquiatria da infância",
+    "": 375,
+    "subjetc": "Psiquiatria",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Puberdade precoce e tardia",
+    "": 376,
+    "subjetc": "Puberdade precoce e tardia",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Puericultura - Alimentação, suplementação e higiene oral",
+    "": 377,
+    "subjetc": "Puericultura",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Puericultura - Crescimento",
+    "": 377,
+    "subjetc": "Puericultura",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Puericultura - Desenvolvimento neuropsicomotor",
+    "": 377,
+    "subjetc": "Puericultura",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Puericultura - Puberdade e adolescência",
+    "": 377,
+    "subjetc": "Puericultura",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Puerpério - Contracepção",
+    "": 378,
+    "subjetc": "Puerpério",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Puerpério - Infecção puerperal",
+    "": 378,
+    "subjetc": "Puerpério",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Puerpério - Mastite e amamentação",
+    "": 378,
+    "subjetc": "Puerpério",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Pé Diabético",
+    "": 192,
+    "subjetc": "Diabetes",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Púrpura de Henoch-Schonlein",
+    "": 200,
+    "subjetc": "Distúrbios da hemostasia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Púrpura trombocitopênica imune",
+    "": 200,
+    "subjetc": "Distúrbios da hemostasia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Queimados - Cuidados e Complicações",
+    "": 379,
+    "subjetc": "Queimados",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Queimados - atendimento inicial",
+    "": 379,
+    "subjetc": "Queimados",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Questões de gênero e sexualidade",
+    "": 380,
+    "subjetc": "Questões de gênero e sexualidade",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Quilotórax",
+    "": 345,
+    "subjetc": "Outros temas - Cirurgia geral",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Rabdomiólise",
+    "": 381,
+    "subjetc": "Rabdomiólise",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Rastreamento - Critérios para implementação",
+    "": 382,
+    "subjetc": "Rastreamento",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Rastreamento - Recomendações por idade e fatores de risco",
+    "": 382,
+    "subjetc": "Rastreamento",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Reanimação neonatal",
+    "": 384,
+    "subjetc": "Reanimação Neonatal",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Reações transfusionais",
+    "": 383,
+    "subjetc": "Reações transfusionais",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Refluxo Vesico Ureteral e Estenose de JUP",
+    "": 385,
+    "subjetc": "Refluxo Vesico Ureteral e Estenose de JUP",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Relações uterofetais",
+    "": 386,
+    "subjetc": "Relações uterofetais",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Resposta metabólica ao trauma",
+    "": 387,
+    "subjetc": "Resposta metabólica ao trauma",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Restrição do crescimento intrauterino",
+    "": 388,
+    "subjetc": "Restrição do crescimento intrauterino",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Rotura prematura de membranas - Conduta",
+    "": 390,
+    "subjetc": "Rotura prematura de membranas",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Rotura prematura de membranas - Diagnóstico",
+    "": 390,
+    "subjetc": "Rotura prematura de membranas",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Rotura prematura de membranas - Profilaxia antibiótica",
+    "": 390,
+    "subjetc": "Rotura prematura de membranas",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "SAAF",
+    "": 200,
+    "subjetc": "Distúrbios da hemostasia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "SDRA",
+    "": 302,
+    "subjetc": "Insuficiência respiratória aguda",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "SUS - Histórico e tipos de sistemas de saúde",
+    "": 417,
+    "subjetc": "SUS",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "SUS - Leis orgânicas da saúde (8080/90 e 8142/90)",
+    "": 417,
+    "subjetc": "SUS",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "SUS - Marcos legislativos e financiamento",
+    "": 417,
+    "subjetc": "SUS",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "SUS - Políticas públicas e Agências Reguladoras",
+    "": 417,
+    "subjetc": "SUS",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "SUS - Princípios e diretrizes",
+    "": 417,
+    "subjetc": "SUS",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Sangramento Uterino Anormal - Adenomiose",
+    "": 391,
+    "subjetc": "Sangramento Uterino Anormal",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Sangramento Uterino Anormal - Hiperplasia e Neoplasia Endometrial",
+    "": 391,
+    "subjetc": "Sangramento Uterino Anormal",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Sangramento Uterino Anormal - Investigação inicial",
+    "": 391,
+    "subjetc": "Sangramento Uterino Anormal",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Sangramento Uterino Anormal - Mioma uterino",
+    "": 391,
+    "subjetc": "Sangramento Uterino Anormal",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Sangramento Uterino Anormal - Pólipos e sarcoma uterino",
+    "": 391,
+    "subjetc": "Sangramento Uterino Anormal",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Sangramento Uterino Anormal - Tratamento",
+    "": 391,
+    "subjetc": "Sangramento Uterino Anormal",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Sarcoidose",
+    "": 392,
+    "subjetc": "Sarcoidose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Sarcoma - Sarcoma de partes moles",
+    "": 393,
+    "subjetc": "Sarcoma",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Saúde LGBT",
+    "": 347,
+    "subjetc": "Outros temas - Ginecologia e Obstetrícia",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Saúde suplementar e planos de saúde",
+    "": 394,
+    "subjetc": "Saúde suplementar e planos de saúde",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Sepse - Choque séptico na criança",
+    "": 395,
+    "subjetc": "Sepse",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Sepse - Critérios e diagnóstico",
+    "": 395,
+    "subjetc": "Sepse",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Sepse - Tratamento",
+    "": 395,
+    "subjetc": "Sepse",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Sepse neonatal",
+    "": 396,
+    "subjetc": "Sepse neonatal",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Sexualidade",
+    "": 347,
+    "subjetc": "Outros temas - Ginecologia e Obstetrícia",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Suicídio",
+    "": 375,
+    "subjetc": "Psiquiatria",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Sífilis - Diagnóstico",
+    "": 397,
+    "subjetc": "Sífilis",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Sífilis - Tratamento",
+    "": 397,
+    "subjetc": "Sífilis",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Sífilis congênita",
+    "": 423,
+    "subjetc": "TORCH e Sífilis congênita",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Sífilis e gestação",
+    "": 297,
+    "subjetc": "Infecções e gestação",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Síncope",
+    "": 398,
+    "subjetc": "Síncope",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome Colestática",
+    "": 223,
+    "subjetc": "Doenças das vias biliares",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Síndrome Coronariana - Complicações",
+    "": 400,
+    "subjetc": "Síndrome coronariana",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome Coronariana - Diagnóstico Diferencial",
+    "": 400,
+    "subjetc": "Síndrome coronariana",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome Coronariana Aguda - Diagnóstico",
+    "": 400,
+    "subjetc": "Síndrome coronariana",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome Coronariana Aguda - Parede e Artéria",
+    "": 400,
+    "subjetc": "Síndrome coronariana",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome Coronariana Aguda - Tratamento",
+    "": 400,
+    "subjetc": "Síndrome coronariana",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome HELLP",
+    "": 212,
+    "subjetc": "Doença hipertensiva específica da gravidez",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Síndrome compartimental abdominal",
+    "": 399,
+    "subjetc": "Síndrome compartimental abdominal",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Síndrome da lise tumoral",
+    "": 404,
+    "subjetc": "Síndrome de lise tumoral",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome da morte súbita do lactente",
+    "": 401,
+    "subjetc": "Síndrome da morte súbita do lactente",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Síndrome da veia cava superior",
+    "": 402,
+    "subjetc": "Síndrome da veia cava superior",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome de Burnout",
+    "": 375,
+    "subjetc": "Psiquiatria",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome de Cushing",
+    "": 403,
+    "subjetc": "Síndrome de Cushing",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome de Gilbert",
+    "": 270,
+    "subjetc": "Hepatites",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome de Sjogren",
+    "": 405,
+    "subjetc": "Síndrome de Sjogren",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome de Wernicke-Korsakoff",
+    "": 111,
+    "subjetc": "Alcoolismo",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome do Choque Tóxico",
+    "": 406,
+    "subjetc": "Síndrome do Choque Tóxico",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome do Intestino Irritável",
+    "": 408,
+    "subjetc": "Síndrome do intestino irritável",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome do desconforto respiratório neonatal",
+    "": 190,
+    "subjetc": "Desconforto respiratório do recém-nascido",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Síndrome do desfiladeiro torácico",
+    "": 407,
+    "subjetc": "Síndrome do desfiladeiro torácico",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Síndrome dos ovários policísticos - Diagnóstico",
+    "": 409,
+    "subjetc": "Síndrome dos Ovários Policísticos",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Síndrome dos ovários policísticos - Tratamento",
+    "": 409,
+    "subjetc": "Síndrome dos Ovários Policísticos",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Síndrome hemofagocítica",
+    "": 410,
+    "subjetc": "Síndrome hemofagocítica",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome metabólica",
+    "": 196,
+    "subjetc": "Dislipidemia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome mielodisplásica",
+    "": 412,
+    "subjetc": "Síndrome mielodisplásica",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome nefrítica",
+    "": 226,
+    "subjetc": "Doenças glomerulares",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome nefrótica - Causas",
+    "": 226,
+    "subjetc": "Doenças glomerulares",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndrome nefrótica - Diagnóstico e tratamento",
+    "": 226,
+    "subjetc": "Doenças glomerulares",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndromes medulares",
+    "": 413,
+    "subjetc": "Síndromes medulares",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndromes mieloproliferativas",
+    "": 414,
+    "subjetc": "Síndromes mieloproliferativas",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Síndromes pós-gastrectomias",
+    "": 415,
+    "subjetc": "Síndromes pós-gastrectomias",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "TORCHS - Citomegalovírus e Zika",
+    "": 423,
+    "subjetc": "TORCH e Sífilis congênita",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "TORCHS - Rubéola",
+    "": 423,
+    "subjetc": "TORCH e Sífilis congênita",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "TORCHS - Toxoplasmose",
+    "": 423,
+    "subjetc": "TORCH e Sífilis congênita",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Tabagismo - Fases de Motivação",
+    "": 418,
+    "subjetc": "Tabagismo",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Taquiarritmias de QRS estreito",
+    "": 126,
+    "subjetc": "Arritmias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Taquiarritmias de QRS largo",
+    "": 126,
+    "subjetc": "Arritmias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Taquicardia paroxística supraventricular",
+    "": 126,
+    "subjetc": "Arritmias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Terapia intensiva - Manejo do choque",
+    "": 420,
+    "subjetc": "Terapia intensiva",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Terapia intensiva - Monitorização em UTI",
+    "": 420,
+    "subjetc": "Terapia intensiva",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Terapia intensiva - sedação",
+    "": 420,
+    "subjetc": "Terapia intensiva",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Testes diagnósticos - Curva ROC",
+    "": 421,
+    "subjetc": "Testes diagnósticos",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Testes diagnósticos - Razão de verossimilhança",
+    "": 421,
+    "subjetc": "Testes diagnósticos",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Testes diagnósticos - Sensibilidade/Especificidade e Valores Preditivos",
+    "": 421,
+    "subjetc": "Testes diagnósticos",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Tireotoxicose com hipertireoidismo",
+    "": 422,
+    "subjetc": "Tireotoxicose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Tireotoxicose sem hipertireoidismo",
+    "": 422,
+    "subjetc": "Tireotoxicose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Toxoplasmose",
+    "": 424,
+    "subjetc": "Toxoplasmose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Toxoplasmose e gestação",
+    "": 297,
+    "subjetc": "Infecções e gestação",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Transtornos alimentares",
+    "": 375,
+    "subjetc": "Psiquiatria",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Transtornos de ansiedade",
+    "": 375,
+    "subjetc": "Psiquiatria",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Transtornos de personalidade",
+    "": 375,
+    "subjetc": "Psiquiatria",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Transtornos do humor",
+    "": 375,
+    "subjetc": "Psiquiatria",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Tratamento do lúpus",
+    "": 315,
+    "subjetc": "Lúpus eritematoso sistêmico",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Tratamento do tabagismo",
+    "": 418,
+    "subjetc": "Tabagismo",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Trato genitourinário",
+    "": 118,
+    "subjetc": "Anatomia e Fisiologia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Trauma - atendimento inicial",
+    "": 135,
+    "subjetc": "Atendimento inicial ao politraumatizado",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Trauma - choque e transfusão",
+    "": 135,
+    "subjetc": "Atendimento inicial ao politraumatizado",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Trauma - vias aéreas",
+    "": 135,
+    "subjetc": "Atendimento inicial ao politraumatizado",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Trauma abdominal - Penetrante",
+    "": 426,
+    "subjetc": "Trauma abdominal",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Trauma abdominal - trauma abdominal fechado",
+    "": 426,
+    "subjetc": "Trauma abdominal",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Trauma cervical",
+    "": 427,
+    "subjetc": "Trauma cervical",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Trauma de extremidades - Embolia Gordurosa",
+    "": 429,
+    "subjetc": "Trauma de extremidades",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Trauma de extremidades - Fratura e Lesão de Partes moles",
+    "": 429,
+    "subjetc": "Trauma de extremidades",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Trauma de extremidades - Lesão Vascular",
+    "": 429,
+    "subjetc": "Trauma de extremidades",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Trauma de extremidades - Síndrome compartimental e de Esmagamento",
+    "": 429,
+    "subjetc": "Trauma de extremidades",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Trauma de face",
+    "": 428,
+    "subjetc": "Trauma cranioencefálico",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Trauma de tórax - Hemotórax",
+    "": 430,
+    "subjetc": "Trauma de tórax",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Trauma de tórax - Lesão de Aorta e Tamponamento cardíaco",
+    "": 430,
+    "subjetc": "Trauma de tórax",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Trauma de tórax - Pneumotórax",
+    "": 430,
+    "subjetc": "Trauma de tórax",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Trauma de tórax - Tórax instável e contusão pulmonar",
+    "": 430,
+    "subjetc": "Trauma de tórax",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Trauma de tórax - Zona de Ziedler e indicações de Toracotomia",
+    "": 430,
+    "subjetc": "Trauma de tórax",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Trauma perineal",
+    "": 431,
+    "subjetc": "Trauma pélvico e perineal",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Trauma pélvico",
+    "": 431,
+    "subjetc": "Trauma pélvico e perineal",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Trauma raquimedular e coluna",
+    "": 432,
+    "subjetc": "Trauma raquimedular e coluna",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Traumatismo cranioencefálico",
+    "": 428,
+    "subjetc": "Trauma cranioencefálico",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Triagem neonatal",
+    "": 433,
+    "subjetc": "Triagem Neonatal",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Tromboangeíte obliterante",
+    "": 448,
+    "subjetc": "Vasculites",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Trombocitopenia induzida por heparina",
+    "": 200,
+    "subjetc": "Distúrbios da hemostasia",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Tromboembolia pulmonar - manifestações clínicas e diagnóstico",
+    "": 434,
+    "subjetc": "Tromboembolia pulmonar",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Tromboembolia pulmonar - tratamento",
+    "": 434,
+    "subjetc": "Tromboembolia pulmonar",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Trombofilias",
+    "": 133,
+    "subjetc": "Assistência pré-natal",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Trombose venosa profunda - diagnóstico e tratamento",
+    "": 435,
+    "subjetc": "Trombose venosa profunda",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Tuberculose - Diagnóstico",
+    "": 436,
+    "subjetc": "Tuberculose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Tuberculose - Tratamento",
+    "": 436,
+    "subjetc": "Tuberculose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Tuberculose - Tuberculose na criança",
+    "": 436,
+    "subjetc": "Tuberculose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Tuberculose extrapulmonar",
+    "": 436,
+    "subjetc": "Tuberculose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Tuberculose latente",
+    "": 436,
+    "subjetc": "Tuberculose",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Tuberculose pleural",
+    "": 189,
+    "subjetc": "Derrame pleural",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Tuberculose pleural - não",
+    "": 458,
+    "subjetc": "Derrame pleural",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Tumor de pâncreas",
+    "": 437,
+    "subjetc": "Tumor de Pâncreas",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Tumores Abdominais na Infância",
+    "": 438,
+    "subjetc": "Tumores Abdominais na Infância",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Tumores císticos de pâncreas",
+    "": 437,
+    "subjetc": "Tumor de Pâncreas",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Tumores da Cavidade Oral",
+    "": 439,
+    "subjetc": "Tumores de Cabeça e Pescoço",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Tumores da Nasofaringe",
+    "": 439,
+    "subjetc": "Tumores de Cabeça e Pescoço",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Tumores das Glândulas Salivares",
+    "": 439,
+    "subjetc": "Tumores de Cabeça e Pescoço",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Tumores de Cabeça e Pescoço",
+    "": 439,
+    "subjetc": "Tumores de Cabeça e Pescoço",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Tumores de Laringe",
+    "": 439,
+    "subjetc": "Tumores de Cabeça e Pescoço",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Tumores de Mediastino",
+    "": 440,
+    "subjetc": "Tumores de Mediastino",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Tumores hipofisários e hipopituitarismo",
+    "": 441,
+    "subjetc": "Tumores hipofisários e hipopituitarismo",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Tumores neuroendócrinos",
+    "": 442,
+    "subjetc": "Tumores neuroendócrinos",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Técnica cirúrgica - Fios e suturas",
+    "": 419,
+    "subjetc": "Técnica cirúrgica",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Técnica cirúrgica - Incisões e manobras cirúrgicas",
+    "": 419,
+    "subjetc": "Técnica cirúrgica",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Técnica cirúrgica - Instrumentos, materiais e mesa cirúrgica",
+    "": 419,
+    "subjetc": "Técnica cirúrgica",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Técnica cirúrgica - Procedimentos cirúrgicos",
+    "": 419,
+    "subjetc": "Técnica cirúrgica",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Técnica cirúrgica - Procedimentos em Cirurgia plástica",
+    "": 419,
+    "subjetc": "Técnica cirúrgica",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Vacinação - BCG, HPV, Febre amarela e VORH",
+    "": 445,
+    "subjetc": "Vacinação",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Valvopatias - Doenças da válvula mitral",
+    "": 446,
+    "subjetc": "Valvopatias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Valvopatias - Insuficiência aórtica",
+    "": 446,
+    "subjetc": "Valvopatias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Valvopatias- Estenose aórtica",
+    "": 446,
+    "subjetc": "Valvopatias",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Varíola",
+    "": 447,
+    "subjetc": "Varíola",
+    "discipline": "Pediatria"
+  },
+  {},
+  {
+    "topic": "Vascular",
+    "": 118,
+    "subjetc": "Anatomia e Fisiologia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Ventilação mecânica e VNI",
+    "": 416,
+    "subjetc": "Suporte ventilatório - Ventilação mecânica e VNI",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Vertigem",
+    "": 449,
+    "subjetc": "Vertigem",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "Videolaparoscopia",
+    "": 450,
+    "subjetc": "Videolaparoscopia",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Vigilância Epidemiológica - Cadeia epidemiológica",
+    "": 451,
+    "subjetc": "Vigilância Epidemiológica",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Vigilância Epidemiológica - Sistemas de informação",
+    "": 451,
+    "subjetc": "Vigilância Epidemiológica",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Vigilância em Saúde - Conceitos gerais, definições e funções",
+    "": 451,
+    "subjetc": "Vigilância Epidemiológica",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Vigilância epidemiológica - Notificação compulsória",
+    "": 451,
+    "subjetc": "Vigilância Epidemiológica",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Violência doméstica e contra a mulher",
+    "": 452,
+    "subjetc": "Violência doméstica e contra a mulher",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Violência psicológica",
+    "": 453,
+    "subjetc": "Violência psicológica",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Violência sexual",
+    "": 454,
+    "subjetc": "Violência sexual",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Vitalidade fetal - Cardiotocografia",
+    "": 455,
+    "subjetc": "Vitalidade Fetal",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Vitalidade fetal - Perfil biofísico fetal e dopplervelocimetria",
+    "": 455,
+    "subjetc": "Vitalidade Fetal",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Vitalidade fetal - Óbito fetal",
+    "": 455,
+    "subjetc": "Vitalidade Fetal",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Vulvovaginite",
+    "": 456,
+    "subjetc": "Cervicite e vulvovaginite",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "carótidas",
+    "": 162,
+    "subjetc": "Carótidas",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "cirrose biliar primaria",
+    "": 270,
+    "subjetc": "Hepatites",
+    "discipline": "Clínica Médica"
+  },
+  {},
+  {
+    "topic": "lesão de uretra e bexiga",
+    "": 431,
+    "subjetc": "Trauma pélvico e perineal",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "neoplasias do intestino delgado",
+    "": 331,
+    "subjetc": "Neoplasias do intestino delgado",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "trauma de transição toracoabdominal",
+    "": 426,
+    "subjetc": "Trauma abdominal",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Ética médica - Aborto legal",
+    "": 245,
+    "subjetc": "Ética Médica",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Ética médica - Ortotanásia e distanásia",
+    "": 245,
+    "subjetc": "Ética Médica",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Ética médica - Princípios fundamentais e Código de ética",
+    "": 245,
+    "subjetc": "Ética Médica",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Ética médica - Prontuário médico e sigilo profissional",
+    "": 245,
+    "subjetc": "Ética Médica",
+    "discipline": "Medicina Preventiva"
+  },
+  {},
+  {
+    "topic": "Íleo meconial",
+    "": 345,
+    "subjetc": "Outros temas - Cirurgia geral",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Óbito Materno e Near Miss",
+    "": 347,
+    "subjetc": "Outros temas - Ginecologia e Obstetrícia",
+    "discipline": "Ginecologia e Obstetrícia"
+  },
+  {},
+  {
+    "topic": "Úlcera péptica e H.pylori",
+    "": 443,
+    "subjetc": "Úlcera péptica e H. pylori",
+    "discipline": "Cirurgia Geral"
+  },
+  {},
+  {
+    "topic": "Úlceras genitais",
+    "": 444,
+    "subjetc": "Úlceras Genitais",
+    "discipline": "Clínica Médica"
+  },
+  {}
+]

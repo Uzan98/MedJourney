@@ -31,6 +31,7 @@ export interface Question {
   user_id?: string;
   discipline_id?: number;
   subject_id?: number;
+  topic_id?: number;
   content: string;
   explanation?: string;
   difficulty?: 'baixa' | 'média' | 'alta';
