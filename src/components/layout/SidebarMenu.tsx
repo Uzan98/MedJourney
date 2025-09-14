@@ -143,6 +143,11 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
       icon: <FileQuestion className="h-5 w-5 flex-shrink-0" />
     },
     {
+      path: "/genomed-bank",
+      label: "Genomed Bank",
+      icon: <FileText className="h-5 w-5 flex-shrink-0" />
+    },
+    {
       path: "/simulados",
       label: "Simulados",
       icon: <ClipboardList className="h-5 w-5 flex-shrink-0" />,
