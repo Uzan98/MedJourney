@@ -1160,7 +1160,7 @@ export default function UploadProvaPage() {
               // Se não encontrar a instituição, criar uma nova
               const { data: newInstitution, error: createError } = await supabase
                 .from('exam_institutions')
-                .insert({ name: question.institutionName, category: 'other' })
+                .insert({ name: question.institutionName, category: 'residencia_medica' })
                 .select('id')
                 .single();
               
