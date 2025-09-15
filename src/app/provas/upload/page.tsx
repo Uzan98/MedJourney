@@ -847,7 +847,7 @@ export default function UploadProvaPage() {
           question_type: 'multiple_choice',
           correct_answer: question.correctAnswer.toString(),
           difficulty: 'média',
-          is_public: addToGenomaBank && isAdmin // Marcar como pública se for para o Genoma Bank e usuário for admin
+          is_public: addToGenomaBank // Marcar como pública se for para o Genoma Bank
         };
         
         // Adicionar tags se existir

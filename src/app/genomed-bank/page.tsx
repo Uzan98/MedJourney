@@ -63,6 +63,7 @@ interface TreeNode {
 const SYSTEM_USER_ID = 'e6c41b94-f25c-4ef4-b723-c4a2d480cf43';
 
 export default function GenomedBankPage() {
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
@@ -71,6 +72,17 @@ export default function GenomedBankPage() {
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>('');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedTopic, setSelectedTopic] = useState<string>('');
+  
+  // Estados para contadores de questões
+  const [questionCounts, setQuestionCounts] = useState<{
+    disciplines: Record<number, number>;
+    subjects: Record<number, number>;
+    topics: Record<number, number>;
+  }>({
+    disciplines: {},
+    subjects: {},
+    topics: {}
+  });
   
   // Estados para busca hierárquica
   const [searchTerm, setSearchTerm] = useState('');
@@ -89,30 +101,40 @@ export default function GenomedBankPage() {
   
   const [error, setError] = useState<string | null>(null);
 
+  // Obter usuário atual
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current user:', user?.id);
+      setCurrentUserId(user?.id || null);
+    };
+    getCurrentUser();
+  }, []);
+
   // Carregar disciplinas ao montar o componente
   useEffect(() => {
     loadDisciplines();
   }, []);
 
-  // Carregar assuntos quando disciplina for selecionada
+  // Carregar assuntos e questões quando disciplina for selecionada
   useEffect(() => {
     if (selectedDiscipline) {
       loadSubjects(parseInt(selectedDiscipline));
+      loadQuestions(undefined, undefined, parseInt(selectedDiscipline));
       setSelectedSubject('');
       setSelectedTopic('');
       setSubjects([]);
       setTopics([]);
-      setQuestions([]);
     }
   }, [selectedDiscipline]);
 
-  // Carregar tópicos quando assunto for selecionado
+  // Carregar tópicos e questões quando assunto for selecionado
   useEffect(() => {
     if (selectedSubject) {
       loadTopics(parseInt(selectedSubject));
+      loadQuestions(undefined, parseInt(selectedSubject));
       setSelectedTopic('');
       setTopics([]);
-      setQuestions([]);
     }
   }, [selectedSubject]);
 
@@ -138,6 +160,15 @@ export default function GenomedBankPage() {
       if (error) throw error;
       
       setDisciplines(data || []);
+      
+      // Carregar contadores de questões para disciplinas
+      if (data) {
+        const counts: Record<number, number> = {};
+        for (const discipline of data) {
+          counts[discipline.id] = await getQuestionCount('discipline', discipline.id);
+        }
+        setQuestionCounts(prev => ({ ...prev, disciplines: counts }));
+      }
     } catch (err) {
       console.error('Erro ao carregar disciplinas:', err);
       setError('Erro ao carregar disciplinas');
@@ -160,6 +191,15 @@ export default function GenomedBankPage() {
       if (error) throw error;
       
       setSubjects(data || []);
+      
+      // Carregar contadores de questões para assuntos
+      if (data) {
+        const counts: Record<number, number> = {};
+        for (const subject of data) {
+          counts[subject.id] = await getQuestionCount('subject', subject.id);
+        }
+        setQuestionCounts(prev => ({ ...prev, subjects: counts }));
+      }
     } catch (err) {
       console.error('Erro ao carregar assuntos:', err);
       setError('Erro ao carregar assuntos');
@@ -182,6 +222,15 @@ export default function GenomedBankPage() {
       if (error) throw error;
       
       setTopics(data || []);
+      
+      // Carregar contadores de questões para tópicos
+      if (data) {
+        const counts: Record<number, number> = {};
+        for (const topic of data) {
+          counts[topic.id] = await getQuestionCount('topic', topic.id);
+        }
+        setQuestionCounts(prev => ({ ...prev, topics: counts }));
+      }
     } catch (err) {
       console.error('Erro ao carregar tópicos:', err);
       setError('Erro ao carregar tópicos');
@@ -190,51 +239,87 @@ export default function GenomedBankPage() {
     }
   };
 
-  const loadQuestions = async (topicId: number) => {
+  const loadQuestions = async (topicId?: number, subjectId?: number, disciplineId?: number) => {
     try {
       setLoading(prev => ({ ...prev, questions: true }));
       setError(null);
       
-      // Por enquanto, vamos simular questões já que a tabela questions pode não existir ainda
-      // Quando a tabela existir, descomente o código abaixo:
-      /*
-      const { data, error } = await supabase
+      let query = supabase
         .from('questions')
-        .select('id, title, content, topic_id, difficulty, created_at')
-        .eq('topic_id', topicId)
-        .order('created_at', { ascending: false });
+        .select('id, content, discipline_id, subject_id, topic_id, created_at');
+      
+      // Incluir questões públicas OU questões do usuário atual
+      if (currentUserId) {
+        query = query.or(`is_public.eq.true,user_id.eq.${currentUserId}`);
+      } else {
+        query = query.eq('is_public', true);
+      }
+
+      // Filtrar por hierarquia
+      if (topicId) {
+        query = query.eq('topic_id', topicId);
+      } else if (subjectId) {
+        query = query.eq('subject_id', subjectId);
+      } else if (disciplineId) {
+        query = query.eq('discipline_id', disciplineId);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       
-      setQuestions(data || []);
-      */
+      // Transformar dados para o formato esperado
+      const transformedQuestions: Question[] = (data || []).map(q => ({
+        id: q.id,
+        title: `Questão ${q.id}`,
+        content: q.content,
+        topic_id: q.topic_id || 0,
+        difficulty: 'Médio', // Pode ser calculado ou vir do banco
+        created_at: q.created_at
+      }));
       
-      // Simulação temporária de questões
-      const mockQuestions: Question[] = [
-        {
-          id: 1,
-          title: `Questão sobre ${topics.find(t => t.id === topicId)?.name || 'tópico selecionado'}`,
-          content: 'Esta é uma questão de exemplo sobre o tópico selecionado. O conteúdo completo da questão seria exibido aqui.',
-          topic_id: topicId,
-          difficulty: 'Médio',
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 2,
-          title: `Questão avançada de ${topics.find(t => t.id === topicId)?.name || 'tópico selecionado'}`,
-          content: 'Esta é outra questão de exemplo com maior complexidade sobre o mesmo tópico.',
-          topic_id: topicId,
-          difficulty: 'Difícil',
-          created_at: new Date().toISOString()
-        }
-      ];
-      
-      setQuestions(mockQuestions);
+      setQuestions(transformedQuestions);
     } catch (err) {
       console.error('Erro ao carregar questões:', err);
       setError('Erro ao carregar questões');
     } finally {
       setLoading(prev => ({ ...prev, questions: false }));
+    }
+  };
+
+  // Função para contar questões por categoria
+  const getQuestionCount = async (type: 'discipline' | 'subject' | 'topic', id: number): Promise<number> => {
+    try {
+      let query = supabase
+        .from('questions')
+        .select('id', { count: 'exact', head: true });
+      
+      // Incluir questões públicas do genoma bank OU questões do usuário atual
+      if (currentUserId) {
+        query = query.or(`is_public.eq.true,user_id.eq.${currentUserId}`);
+      } else {
+        query = query.eq('is_public', true);
+      }
+
+      switch (type) {
+        case 'discipline':
+          query = query.eq('discipline_id', id);
+          break;
+        case 'subject':
+          query = query.eq('subject_id', id);
+          break;
+        case 'topic':
+          query = query.eq('topic_id', id);
+          break;
+      }
+
+      const { count, error } = await query;
+      if (error) throw error;
+      
+      return count || 0;
+    } catch (err) {
+      console.error(`Erro ao contar questões para ${type}:`, err);
+      return 0;
     }
   };
 
@@ -725,7 +810,12 @@ export default function GenomedBankPage() {
                 <SelectContent>
                   {disciplines.map((discipline) => (
                     <SelectItem key={discipline.id} value={discipline.id.toString()}>
-                      {discipline.name}
+                      <div className="flex justify-between items-center w-full">
+                        <span>{discipline.name}</span>
+                        <Badge variant="secondary" className="ml-2">
+                          {questionCounts.disciplines[discipline.id] || 0}
+                        </Badge>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -752,7 +842,12 @@ export default function GenomedBankPage() {
                 <SelectContent>
                   {subjects.map((subject) => (
                     <SelectItem key={subject.id} value={subject.id.toString()}>
-                      {subject.title || subject.name}
+                      <div className="flex justify-between items-center w-full">
+                        <span>{subject.title || subject.name}</span>
+                        <Badge variant="secondary" className="ml-2">
+                          {questionCounts.subjects[subject.id] || 0}
+                        </Badge>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -779,7 +874,12 @@ export default function GenomedBankPage() {
                 <SelectContent>
                   {topics.map((topic) => (
                     <SelectItem key={topic.id} value={topic.id.toString()}>
-                      {topic.name}
+                      <div className="flex justify-between items-center w-full">
+                        <span>{topic.name}</span>
+                        <Badge variant="secondary" className="ml-2">
+                          {questionCounts.topics[topic.id] || 0}
+                        </Badge>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
