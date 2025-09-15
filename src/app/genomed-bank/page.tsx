@@ -631,7 +631,10 @@ export default function GenomedBankPage() {
   };
 
   const selectAllQuestions = () => {
-    setSelectedQuestions(new Set(questions.map(q => q.id)));
+    const validIds = questions
+      .filter(q => q.id && typeof q.id === 'number' && !isNaN(q.id))
+      .map(q => q.id);
+    setSelectedQuestions(new Set(validIds));
   };
 
   const deselectAllQuestions = () => {
@@ -649,12 +652,15 @@ export default function GenomedBankPage() {
       const examData = {
         title: `Simulado - ${new Date().toLocaleDateString('pt-BR')}`,
         description: `Simulado criado com ${selectedQuestionsArray.length} questões selecionadas`,
-        duration: selectedQuestionsArray.length * 2, // 2 minutos por questão
-        total_questions: selectedQuestionsArray.length,
+        time_limit: selectedQuestionsArray.length * 2, // 2 minutos por questão
         user_id: currentUserId
       };
 
       const examId = await ExamsService.addExam(examData);
+      
+      if (!examId || typeof examId !== 'number' || isNaN(examId)) {
+        throw new Error('Falha ao criar simulado - ID inválido');
+      }
       
       await ExamsService.addQuestionsToExam(examId, selectedQuestionsArray);
       
@@ -1145,15 +1151,19 @@ export default function GenomedBankPage() {
                         <div className="flex-shrink-0 pt-1">
                           <div className="relative">
                             <div className={`absolute inset-0 rounded-lg blur transition-all duration-300 ${
-                              selectedQuestions.has(question.id) 
+                              question.id && selectedQuestions.has(question.id) 
                                 ? 'bg-emerald-400 opacity-30' 
                                 : 'bg-indigo-400 opacity-20'
                             }`}></div>
                             <Checkbox
-                              checked={selectedQuestions.has(question.id)}
-                              onCheckedChange={() => toggleQuestionSelection(question.id)}
+                              checked={question.id ? selectedQuestions.has(question.id) : false}
+                              onCheckedChange={() => {
+                                if (question.id && typeof question.id === 'number' && !isNaN(question.id)) {
+                                  toggleQuestionSelection(question.id);
+                                }
+                              }}
                               className={`relative h-5 w-5 transition-all duration-300 ${
-                                selectedQuestions.has(question.id)
+                                question.id && selectedQuestions.has(question.id)
                                   ? 'data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600'
                                   : 'data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600'
                               }`}
