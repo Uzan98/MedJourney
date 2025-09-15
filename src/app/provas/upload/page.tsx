@@ -30,6 +30,8 @@ interface ParsedQuestion {
   tag?: string;
   image?: File | null;
   imageUrl?: string;
+  institutionName?: string;
+  examYear?: number;
 }
 
 interface QuestionMetadata {
@@ -107,6 +109,10 @@ export default function UploadProvaPage() {
   const [parsedQuestions, setParsedQuestions] = useState<ParsedQuestion[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   
+  // Institution and year states
+  const [institutionName, setInstitutionName] = useState<string>('');
+  const [examYear, setExamYear] = useState<number>(new Date().getFullYear());
+  
   // Discipline and subject states
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -177,6 +183,8 @@ export default function UploadProvaPage() {
       setLoadingTypes(false);
     }
   };
+
+
 
   const loadDisciplines = async () => {
     try {
@@ -459,7 +467,9 @@ export default function UploadProvaPage() {
             alternatives: alternatives.slice(0, 5), // Máximo 5 alternativas
             correctAnswer: answers[questionNum] ?? 0,
             disciplineId: selectedDisciplineId,
-            subjectId: selectedSubjectId
+            subjectId: selectedSubjectId,
+            institutionName: institutionName,
+            examYear: examYear
           });
         }
       });
@@ -878,7 +888,9 @@ export default function UploadProvaPage() {
           disciplineId: validation.disciplineMatch?.id,
           subjectId: validation.subjectMatch?.id,
           topicId,
-          tag: metadata.topico || metadata.assunto
+          tag: metadata.topico || metadata.assunto,
+          institutionName: institutionName,
+          examYear: examYear
         };
       }
 
@@ -1131,6 +1143,43 @@ export default function UploadProvaPage() {
           questionData.topic_id = question.topicId;
         }
         
+        // Buscar institution_id pelo nome da instituição
+        if (question.institutionName && typeof question.institutionName === 'string') {
+          try {
+            const { data: institutions, error: instError } = await supabase
+              .from('exam_institutions')
+              .select('id')
+              .ilike('name', question.institutionName)
+              .limit(1);
+            
+            if (instError) {
+              console.warn('Erro ao buscar instituição:', instError);
+            } else if (institutions && institutions.length > 0) {
+              questionData.institution_id = institutions[0].id;
+            } else {
+              // Se não encontrar a instituição, criar uma nova
+              const { data: newInstitution, error: createError } = await supabase
+                .from('exam_institutions')
+                .insert({ name: question.institutionName, category: 'other' })
+                .select('id')
+                .single();
+              
+              if (createError) {
+                console.warn('Erro ao criar nova instituição:', createError);
+              } else if (newInstitution) {
+                questionData.institution_id = newInstitution.id;
+              }
+            }
+          } catch (error) {
+            console.warn('Erro ao processar instituição:', error);
+          }
+        }
+        
+        // Adicionar exam_year se fornecido
+        if (question.examYear && typeof question.examYear === 'number') {
+          questionData.exam_year = question.examYear;
+        }
+        
         const questionId = await QuestionsBankService.addQuestion(
           questionData,
           question.alternatives.map((alt, index) => ({
@@ -1273,6 +1322,39 @@ export default function UploadProvaPage() {
                 </select>
               </div>
             )}
+            
+            {/* Instituição da Prova */}
+            <div>
+              <label htmlFor="institution" className="block text-sm font-medium text-gray-700 mb-2">
+                Instituição
+              </label>
+              <input
+                type="text"
+                id="institution"
+                value={institutionName}
+                onChange={(e) => setInstitutionName(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Digite o nome da instituição (ex: UNIFESP, USP, UFMG)"
+                required
+              />
+            </div>
+            
+            {/* Ano da Prova */}
+            <div>
+              <label htmlFor="examYear" className="block text-sm font-medium text-gray-700 mb-2">
+                Ano da Prova
+              </label>
+              <input
+                type="number"
+                id="examYear"
+                value={examYear}
+                onChange={(e) => setExamYear(Number(e.target.value))}
+                min="1990"
+                max={new Date().getFullYear() + 1}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Ex: 2024"
+              />
+            </div>
             
             <div>
               <label htmlFor="discipline" className="block text-sm font-medium text-gray-700 mb-2">
@@ -1921,6 +2003,42 @@ Sub-assunto: Porfiria`}
                             </button>
                           </div>
                         ))}
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Instituição:
+                          </label>
+                          <input
+                            type="text"
+                            value={question.institutionName || ''}
+                            onChange={(e) => {
+                              editQuestion(index, 'institutionName', e.target.value);
+                            }}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                            placeholder="Digite o nome da instituição"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Ano da Prova:
+                          </label>
+                          <input
+                            type="number"
+                            value={question.examYear || ''}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              const examYear = value ? Number(value) : null;
+                              editQuestion(index, 'examYear', examYear);
+                            }}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                            placeholder="Ex: 2024"
+                            min="1900"
+                            max="2030"
+                          />
+                        </div>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
