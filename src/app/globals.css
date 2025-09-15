@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  /* Classes específicas para badges de contagem */
+  .badge-discipline {
+    @apply ml-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-2 py-0.5 text-xs font-medium rounded-full inline-flex items-center whitespace-nowrap;
+  }
+  
+  .badge-subject {
+    @apply ml-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-2 py-0.5 text-xs font-medium rounded-full inline-flex items-center whitespace-nowrap;
+  }
+  
+  .badge-topic {
+    @apply ml-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white px-2 py-0.5 text-xs font-medium rounded-full inline-flex items-center whitespace-nowrap;
+  }
+}
+
 @layer base {
   /* Definição global de fontes */
   html {

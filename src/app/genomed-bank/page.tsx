@@ -931,7 +931,7 @@ export default function GenomedBankPage() {
                         <SelectItem key={discipline.id} value={discipline.id.toString()} className="hover:bg-emerald-50 focus:bg-emerald-50 rounded-lg m-1">
                           <div className="flex justify-between items-center w-full">
                             <span className="font-medium text-gray-700">{discipline.name}</span>
-                            <Badge className="ml-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
+                            <Badge className="badge-discipline">
                               {questionCounts.disciplines[discipline.id] || 0}
                             </Badge>
                           </div>
@@ -969,7 +969,7 @@ export default function GenomedBankPage() {
                         <SelectItem key={subject.id} value={subject.id.toString()} className="hover:bg-blue-50 focus:bg-blue-50 rounded-lg m-1">
                           <div className="flex justify-between items-center w-full">
                             <span className="font-medium text-gray-700">{subject.title || subject.name}</span>
-                            <Badge className="ml-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+                            <Badge className="badge-subject">
                               {questionCounts.subjects[subject.id] || 0}
                             </Badge>
                           </div>
@@ -1007,7 +1007,7 @@ export default function GenomedBankPage() {
                         <SelectItem key={topic.id} value={topic.id.toString()} className="hover:bg-purple-50 focus:bg-purple-50 rounded-lg m-1">
                           <div className="flex justify-between items-center w-full">
                             <span className="font-medium text-gray-700">{topic.name}</span>
-                            <Badge className="ml-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white">
+                            <Badge className="badge-topic">
                               {questionCounts.topics[topic.id] || 0}
                             </Badge>
                           </div>
