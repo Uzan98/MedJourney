@@ -200,6 +200,12 @@ export default function GenomaBankPage() {
   
   // Funções para seleção de questões
   const toggleQuestionSelection = (question: Question) => {
+    // Verificar se a questão tem um ID válido antes de adicionar
+    if (!question.id) {
+      toast.error('Esta questão não possui um ID válido e não pode ser selecionada');
+      return;
+    }
+    
     if (selectedQuestions.some(q => q.id === question.id)) {
       setSelectedQuestions(selectedQuestions.filter(q => q.id !== question.id));
     } else {
@@ -231,8 +237,21 @@ export default function GenomaBankPage() {
         user_id: user.id
       });
 
-      // Adicionar questões ao simulado
-      await ExamsService.addQuestionsToExam(newExam.id, selectedQuestions.map(q => q.id));
+      // Filtrar questões com ID válido e adicionar ao simulado
+      const validQuestionIds = selectedQuestions
+        .filter(q => q.id !== null && q.id !== undefined)
+        .map(q => q.id!);
+      
+      if (validQuestionIds.length === 0) {
+        toast.error('Nenhuma questão válida selecionada');
+        return;
+      }
+      
+      if (!newExam.id || typeof newExam.id !== 'number' || isNaN(newExam.id)) {
+        throw new Error('Falha ao criar simulado - ID inválido');
+      }
+      
+      await ExamsService.addQuestionsToExam(newExam.id, validQuestionIds);
 
       toast.success('Simulado criado com sucesso!');
       clearSelectedQuestions();
@@ -253,8 +272,22 @@ export default function GenomaBankPage() {
         return;
       }
 
-      // Adicionar questões ao simulado existente
-      await ExamsService.addQuestionsToExam(examId, selectedQuestions.map(q => q.id));
+      // Filtrar questões com ID válido e adicionar ao simulado existente
+      const validQuestionIds = selectedQuestions
+        .filter(q => q.id !== null && q.id !== undefined)
+        .map(q => q.id!);
+      
+      if (validQuestionIds.length === 0) {
+        toast.error('Nenhuma questão válida selecionada');
+        return;
+      }
+      
+      const numericExamId = Number(examId);
+      if (!numericExamId || isNaN(numericExamId)) {
+        throw new Error('ID do simulado inválido');
+      }
+      
+      await ExamsService.addQuestionsToExam(numericExamId, validQuestionIds);
 
       toast.success('Questões adicionadas ao simulado com sucesso!');
       clearSelectedQuestions();

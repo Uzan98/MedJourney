@@ -180,6 +180,12 @@ export class ExamsService {
    */
   static async getExamById(id: number): Promise<Exam | null> {
     try {
+      // Validar ID
+      if (!id || typeof id !== 'number' || isNaN(id)) {
+        console.error('ID do simulado inválido:', id);
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('exams')
         .select('*')
@@ -208,6 +214,12 @@ export class ExamsService {
    */
   static async getExamQuestions(examId: number, includeQuestionDetails = false): Promise<ExamQuestion[]> {
     try {
+      // Validar examId
+      if (!examId || typeof examId !== 'number' || isNaN(examId)) {
+        console.error('ID do simulado inválido:', examId);
+        return [];
+      }
+
       let query = supabase
         .from('exam_questions')
         .select(includeQuestionDetails ? 'id, exam_id, question_id, position, weight, question:questions(*, question_images(*))' : '*')
@@ -393,7 +405,19 @@ export class ExamsService {
    */
   static async addQuestionsToExam(examId: number, questionIds: number[]): Promise<boolean> {
     try {
-      if (!questionIds.length) {
+      // Validar examId
+      if (!examId || typeof examId !== 'number' || isNaN(examId)) {
+        console.error('ID do simulado inválido:', examId);
+        return false;
+      }
+
+      // Filtrar valores null, undefined ou inválidos
+      const validQuestionIds = questionIds.filter(id => 
+        id !== null && id !== undefined && typeof id === 'number' && !isNaN(id)
+      );
+      
+      if (!validQuestionIds.length) {
+        console.warn('Nenhum ID de questão válido fornecido para addQuestionsToExam');
         return true; // Nada para adicionar
       }
 
@@ -417,7 +441,7 @@ export class ExamsService {
         .from('exam_questions')
         .select('question_id')
         .eq('exam_id', examId)
-        .in('question_id', questionIds);
+        .in('question_id', validQuestionIds);
       
       if (checkError) {
         throw checkError;
@@ -425,7 +449,7 @@ export class ExamsService {
       
       // Filtrar apenas as questões que ainda não existem no simulado
       const existingIds = existing ? existing.map(q => q.question_id) : [];
-      const newQuestionIds = questionIds.filter(id => !existingIds.includes(id));
+      const newQuestionIds = validQuestionIds.filter(id => !existingIds.includes(id));
       
       if (!newQuestionIds.length) {
         return true; // Todas as questões já existem no simulado

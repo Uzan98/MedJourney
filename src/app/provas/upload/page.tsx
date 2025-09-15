@@ -1212,8 +1212,8 @@ export default function UploadProvaPage() {
 
       // Adicionar todas as questões à prova
         if (questionIds.length > 0) {
-          if (!createdExam) {
-            throw new Error('Falha ao criar a prova');
+          if (!createdExam || typeof createdExam !== 'number' || isNaN(createdExam)) {
+            throw new Error('Falha ao criar a prova - ID inválido');
           }
           
           await ExamsService.addQuestionsToExam(createdExam, questionIds);

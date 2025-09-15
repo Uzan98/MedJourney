@@ -67,8 +67,16 @@ export default function QuestionSelectionSidebar({
       const examId = await ExamsService.addExam(newExam);
       
       if (examId) {
-        // Adicionar questões ao novo simulado
-        const questionIds = selectedQuestions.map(q => q.id);
+        // Filtrar questões com ID válido e adicionar ao novo simulado
+        const questionIds = selectedQuestions
+          .filter(q => q.id !== null && q.id !== undefined)
+          .map(q => q.id!);
+        
+        if (questionIds.length === 0) {
+          toast.error('Nenhuma questão válida selecionada');
+          return;
+        }
+        
         const success = await ExamsService.addQuestionsToExam(examId, questionIds);
         
         if (success) {
@@ -100,8 +108,15 @@ export default function QuestionSelectionSidebar({
     
     setIsAddingToExam(true);
     try {
-      // Obter IDs das questões selecionadas
-      const questionIds = selectedQuestions.map(q => q.id);
+      // Filtrar questões com ID válido
+      const questionIds = selectedQuestions
+        .filter(q => q.id !== null && q.id !== undefined)
+        .map(q => q.id!);
+      
+      if (questionIds.length === 0) {
+        toast.error('Nenhuma questão válida selecionada');
+        return;
+      }
       
       // Adicionar questões ao simulado
       const success = await ExamsService.addQuestionsToExam(selectedExamId, questionIds);
