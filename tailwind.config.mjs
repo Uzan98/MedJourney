@@ -6,6 +6,31 @@ export default {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  safelist: [
+    // Classes de gradiente para badges
+    'bg-gradient-to-r',
+    'from-emerald-500',
+    'to-teal-600',
+    'from-blue-500', 
+    'to-indigo-600',
+    'from-purple-500',
+    'to-pink-600',
+    // Classes de texto e estilos dos badges
+    'text-white',
+    'ml-2',
+    'px-2',
+    'py-0.5',
+    'px-2.5',
+    'px-3',
+    'py-1',
+    'text-xs',
+    'text-sm',
+    'font-medium',
+    'rounded-full',
+    'inline-flex',
+    'items-center',
+    'whitespace-nowrap'
+  ],
   theme: {
   	extend: {
   		fontFamily: {
