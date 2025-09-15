@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Filter, BookOpen, FileText, Target, Search, ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { Loader2, Filter, BookOpen, FileText, Target, Search, ChevronDown, ChevronRight, Plus, Sparkles, Zap, Star } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ExamsService } from '@/services/exams.service';
 import { useRouter } from 'next/navigation';
@@ -292,11 +292,15 @@ export default function GenomedBankPage() {
       if (error) throw error;
       
       // Transform data to match interface
-      const transformedData = data?.map(question => ({
-        ...question,
-        institution_name: question.exam_institutions?.name,
-        institution_acronym: question.exam_institutions?.acronym
-      })) || [];
+      const transformedData = (data || []).map((question: any) => {
+        const institutions = question.exam_institutions as { name?: string; acronym?: string }[] | { name?: string; acronym?: string } | undefined;
+        const firstInstitution = Array.isArray(institutions) ? institutions[0] : institutions;
+        return {
+          ...question,
+          institution_name: firstInstitution?.name,
+          institution_acronym: firstInstitution?.acronym,
+        } as Question;
+      });
       
       setQuestions(transformedData);
     } catch (err) {
@@ -420,31 +424,34 @@ export default function GenomedBankPage() {
       });
       
       // Processar resultados de assuntos
-      subjectMatches?.forEach(subject => {
+      subjectMatches?.forEach((subject: any) => {
+        const disciplineFromSubject = Array.isArray(subject.disciplines) ? subject.disciplines[0] : subject.disciplines;
         results.push({
           type: 'subject',
           id: subject.id,
           name: subject.title || subject.name,
           subject,
           hierarchy: {
-            discipline: subject.disciplines,
-            subject
-          }
+            discipline: disciplineFromSubject,
+            subject,
+          },
         });
       });
       
       // Processar resultados de tópicos
-      topicMatches?.forEach(topic => {
+      topicMatches?.forEach((topic: any) => {
+        const subjectFromTopic = Array.isArray(topic.subjects) ? topic.subjects[0] : topic.subjects;
+        const disciplineFromTopic = subjectFromTopic ? (Array.isArray(subjectFromTopic.disciplines) ? subjectFromTopic.disciplines[0] : subjectFromTopic.disciplines) : undefined;
         results.push({
           type: 'topic',
           id: topic.id,
           name: topic.name,
           topic,
           hierarchy: {
-            discipline: topic.subjects.disciplines,
-            subject: topic.subjects,
-            topic
-          }
+            discipline: disciplineFromTopic,
+            subject: subjectFromTopic,
+            topic,
+          },
         });
       });
       
@@ -751,43 +758,92 @@ export default function GenomedBankPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Genomed Bank</h1>
-          <p className="text-gray-600 mt-2">Banco de questões de medicina com filtros avançados</p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <BookOpen className="h-8 w-8 text-blue-600" />
-        </div>
-      </div>
-
-      {/* Busca Hierárquica */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Search className="h-5 w-5" />
-            <span>Busca Hierárquica</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Digite uma palavra-chave para buscar em disciplinas, assuntos ou tópicos... (mín. 2 caracteres)"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-10"
-              />
-              {isSearching && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50">
+      <div className="container mx-auto p-6 space-y-8">
+        {/* Header */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 p-8 shadow-2xl">
+          <div className="absolute inset-0 bg-black/10"></div>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24"></div>
+          
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
+                  <Sparkles className="h-8 w-8 text-white" />
                 </div>
-              )}
+                <h1 className="text-4xl font-bold text-white tracking-tight">
+                  Genomed Bank
+                </h1>
+              </div>
+              <p className="text-white/90 text-lg font-medium max-w-2xl">
+                Explore nosso banco de questões médicas com tecnologia avançada e interface intuitiva
+              </p>
+              <div className="flex items-center space-x-6 text-white/80">
+                <div className="flex items-center space-x-2">
+                  <Zap className="h-5 w-5" />
+                  <span className="text-sm font-medium">Busca Inteligente</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Star className="h-5 w-5" />
+                  <span className="text-sm font-medium">Filtros Avançados</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <BookOpen className="h-5 w-5" />
+                  <span className="text-sm font-medium">Conteúdo Atualizado</span>
+                </div>
+              </div>
             </div>
+            
+            <div className="hidden lg:block">
+              <div className="relative">
+                <div className="w-32 h-32 bg-gradient-to-br from-white/20 to-white/5 rounded-3xl backdrop-blur-sm flex items-center justify-center">
+                  <BookOpen className="h-16 w-16 text-white" />
+                </div>
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
+                  <Sparkles className="h-4 w-4 text-yellow-800" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Busca Hierárquica */}
+        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600"></div>
+          <CardHeader className="bg-gradient-to-r from-cyan-50 to-blue-50 border-b border-cyan-100">
+            <CardTitle className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl">
+                <Search className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-cyan-600 to-blue-700 bg-clip-text text-transparent">
+                Busca Inteligente
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-6">
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-cyan-500" />
+                  <Input
+                    type="text"
+                    placeholder="🔍 Digite para buscar disciplinas, assuntos ou tópicos... (mín. 2 caracteres)"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-12 pr-12 h-14 text-lg border-0 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg focus:ring-2 focus:ring-cyan-400 focus:bg-white transition-all duration-300 placeholder:text-gray-400"
+                  />
+                  {isSearching && (
+                    <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                      <div className="relative">
+                        <Loader2 className="h-5 w-5 animate-spin text-cyan-500" />
+                        <div className="absolute inset-0 h-5 w-5 border-2 border-cyan-200 rounded-full animate-pulse"></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             
             {isSearching && (
               <div className="flex items-center space-x-2 text-sm text-gray-500">
@@ -837,140 +893,188 @@ export default function GenomedBankPage() {
         </CardContent>
       </Card>
 
-      {/* Filtros */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Filter className="h-5 w-5" />
-            <span>Filtros</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Disciplina */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Disciplina</label>
-              <Select value={selectedDiscipline} onValueChange={setSelectedDiscipline}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma disciplina" />
-                </SelectTrigger>
-                <SelectContent>
-                  {disciplines.map((discipline) => (
-                    <SelectItem key={discipline.id} value={discipline.id.toString()}>
-                      <div className="flex justify-between items-center w-full">
-                        <span>{discipline.name}</span>
-                        <Badge variant="secondary" className="ml-2">
-                          {questionCounts.disciplines[discipline.id] || 0}
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {loading.disciplines && (
-                <div className="flex items-center space-x-2 text-sm text-gray-500">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Carregando disciplinas...</span>
+        {/* Filtros */}
+        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-600"></div>
+          <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-100">
+            <CardTitle className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl">
+                <Filter className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-700 bg-clip-text text-transparent">
+                Filtros Avançados
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Disciplina */}
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-emerald-700 flex items-center space-x-2">
+                  <BookOpen className="h-4 w-4" />
+                  <span>Disciplina</span>
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+                  <Select value={selectedDiscipline} onValueChange={setSelectedDiscipline}>
+                    <SelectTrigger className="relative bg-white/90 backdrop-blur-sm border-0 rounded-xl shadow-lg h-12 focus:ring-2 focus:ring-emerald-400 transition-all duration-300">
+                      <SelectValue placeholder="🎯 Selecione uma disciplina" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-xl">
+                      {disciplines.map((discipline) => (
+                        <SelectItem key={discipline.id} value={discipline.id.toString()} className="hover:bg-emerald-50 focus:bg-emerald-50 rounded-lg m-1">
+                          <div className="flex justify-between items-center w-full">
+                            <span className="font-medium text-gray-700">{discipline.name}</span>
+                            <Badge className="ml-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
+                              {questionCounts.disciplines[discipline.id] || 0}
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
+                {loading.disciplines && (
+                  <div className="flex items-center space-x-2 text-sm text-emerald-600">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="font-medium">Carregando disciplinas...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Assunto */}
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-blue-700 flex items-center space-x-2">
+                  <FileText className="h-4 w-4" />
+                  <span>Assunto</span>
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+                  <Select 
+                    value={selectedSubject} 
+                    onValueChange={setSelectedSubject}
+                    disabled={!selectedDiscipline || loading.subjects}
+                  >
+                    <SelectTrigger className="relative bg-white/90 backdrop-blur-sm border-0 rounded-xl shadow-lg h-12 focus:ring-2 focus:ring-blue-400 transition-all duration-300 disabled:opacity-50">
+                      <SelectValue placeholder="📚 Selecione um assunto" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-xl">
+                      {subjects.map((subject) => (
+                        <SelectItem key={subject.id} value={subject.id.toString()} className="hover:bg-blue-50 focus:bg-blue-50 rounded-lg m-1">
+                          <div className="flex justify-between items-center w-full">
+                            <span className="font-medium text-gray-700">{subject.title || subject.name}</span>
+                            <Badge className="ml-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+                              {questionCounts.subjects[subject.id] || 0}
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {loading.subjects && (
+                  <div className="flex items-center space-x-2 text-sm text-blue-600">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="font-medium">Carregando assuntos...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Tópico */}
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-purple-700 flex items-center space-x-2">
+                  <Target className="h-4 w-4" />
+                  <span>Tópico</span>
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+                  <Select 
+                    value={selectedTopic} 
+                    onValueChange={setSelectedTopic}
+                    disabled={!selectedSubject || loading.topics}
+                  >
+                    <SelectTrigger className="relative bg-white/90 backdrop-blur-sm border-0 rounded-xl shadow-lg h-12 focus:ring-2 focus:ring-purple-400 transition-all duration-300 disabled:opacity-50">
+                      <SelectValue placeholder="🎯 Selecione um tópico" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-xl">
+                      {topics.map((topic) => (
+                        <SelectItem key={topic.id} value={topic.id.toString()} className="hover:bg-purple-50 focus:bg-purple-50 rounded-lg m-1">
+                          <div className="flex justify-between items-center w-full">
+                            <span className="font-medium text-gray-700">{topic.name}</span>
+                            <Badge className="ml-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white">
+                              {questionCounts.topics[topic.id] || 0}
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {loading.topics && (
+                  <div className="flex items-center space-x-2 text-sm text-purple-600">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="font-medium">Carregando tópicos...</span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Assunto */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Assunto</label>
-              <Select 
-                value={selectedSubject} 
-                onValueChange={setSelectedSubject}
-                disabled={!selectedDiscipline || loading.subjects}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um assunto" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject.id} value={subject.id.toString()}>
-                      <div className="flex justify-between items-center w-full">
-                        <span>{subject.title || subject.name}</span>
-                        <Badge variant="secondary" className="ml-2">
-                          {questionCounts.subjects[subject.id] || 0}
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {loading.subjects && (
-                <div className="flex items-center space-x-2 text-sm text-gray-500">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Carregando assuntos...</span>
-                </div>
-              )}
+            {/* Botão Limpar Filtros */}
+            <div className="mt-6 flex justify-end">
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-gray-400 to-gray-500 rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+                <Button 
+                  variant="outline" 
+                  onClick={clearFilters}
+                  className="relative bg-white/90 backdrop-blur-sm border-0 rounded-xl shadow-lg px-6 py-2 hover:bg-gray-50 focus:ring-2 focus:ring-gray-400 transition-all duration-300 font-medium"
+                >
+                  ✨ Limpar Filtros
+                </Button>
+              </div>
             </div>
-
-            {/* Tópico */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Tópico</label>
-              <Select 
-                value={selectedTopic} 
-                onValueChange={setSelectedTopic}
-                disabled={!selectedSubject || loading.topics}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um tópico" />
-                </SelectTrigger>
-                <SelectContent>
-                  {topics.map((topic) => (
-                    <SelectItem key={topic.id} value={topic.id.toString()}>
-                      <div className="flex justify-between items-center w-full">
-                        <span>{topic.name}</span>
-                        <Badge variant="secondary" className="ml-2">
-                          {questionCounts.topics[topic.id] || 0}
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {loading.topics && (
-                <div className="flex items-center space-x-2 text-sm text-gray-500">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Carregando tópicos...</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Botão Limpar Filtros */}
-          <div className="mt-4 flex justify-end">
-            <Button variant="outline" onClick={clearFilters}>
-              Limpar Filtros
-            </Button>
-          </div>
         </CardContent>
       </Card>
 
       {/* Estatísticas */}
       {(selectedDiscipline || selectedSubject || selectedTopic) && (
-        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {selectedDiscipline ? disciplines.find(d => d.id.toString() === selectedDiscipline)?.name : '-'}
+        <Card className="mb-8 bg-gradient-to-br from-white via-emerald-50/30 to-blue-50/30 backdrop-blur-sm border-0 shadow-2xl">
+          <CardContent className="pt-8 pb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+                <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 text-center shadow-lg hover:shadow-xl transition-all duration-300">
+                  <div className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                    {selectedDiscipline ? disciplines.find(d => d.id.toString() === selectedDiscipline)?.name : '-'}
+                  </div>
+                  <p className="text-sm font-medium text-gray-600 mt-2 flex items-center justify-center space-x-1">
+                    <BookOpen className="h-4 w-4" />
+                    <span>Disciplina</span>
+                  </p>
                 </div>
-                <p className="text-xs sm:text-sm font-medium text-gray-600">Disciplina</p>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {selectedSubject ? subjects.find(s => s.id.toString() === selectedSubject)?.title || subjects.find(s => s.id.toString() === selectedSubject)?.name : '-'}
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+                <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 text-center shadow-lg hover:shadow-xl transition-all duration-300">
+                  <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    {selectedSubject ? subjects.find(s => s.id.toString() === selectedSubject)?.title || subjects.find(s => s.id.toString() === selectedSubject)?.name : '-'}
+                  </div>
+                  <p className="text-sm font-medium text-gray-600 mt-2 flex items-center justify-center space-x-1">
+                    <FileText className="h-4 w-4" />
+                    <span>Assunto</span>
+                  </p>
                 </div>
-                <p className="text-xs sm:text-sm font-medium text-gray-600">Assunto</p>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">
-                  {questions.length}
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+                <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 text-center shadow-lg hover:shadow-xl transition-all duration-300">
+                  <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    {questions.length}
+                  </div>
+                  <p className="text-sm font-medium text-gray-600 mt-2 flex items-center justify-center space-x-1">
+                    <Sparkles className="h-4 w-4" />
+                    <span>Questões</span>
+                  </p>
                 </div>
-                <p className="text-xs sm:text-sm font-medium text-gray-600">Questões</p>
               </div>
             </div>
           </CardContent>
@@ -979,27 +1083,37 @@ export default function GenomedBankPage() {
 
       {/* Lista de Questões */}
       {questions.length > 0 && (
-        <Card className="border-0 shadow-lg overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-2" />
-          <CardHeader className="bg-blue-50 border-b border-blue-100">
+        <Card className="border-0 shadow-2xl overflow-hidden bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 backdrop-blur-sm">
+          <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-3" />
+          <CardHeader className="bg-gradient-to-r from-indigo-50/50 to-purple-50/50 border-b border-indigo-100/50 backdrop-blur-sm">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <CardTitle className="text-blue-800 flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Questões Encontradas ({questions.length})
+              <CardTitle className="text-indigo-800 flex items-center gap-3 text-xl">
+                <div className="p-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl">
+                  <FileText className="h-6 w-6 text-white" />
+                </div>
+                <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent font-bold">
+                  Questões Encontradas ({questions.length})
+                </span>
               </CardTitle>
               
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-gray-600">
-                  {selectedQuestions.size} selecionada{selectedQuestions.size !== 1 ? 's' : ''}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={selectedQuestions.size === questions.length ? deselectAllQuestions : selectAllQuestions}
-                  className="text-xs"
-                >
-                  {selectedQuestions.size === questions.length ? 'Desmarcar Todas' : 'Selecionar Todas'}
-                </Button>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-sm bg-white/60 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg">
+                  <Sparkles className="h-4 w-4 text-indigo-600" />
+                  <span className="font-medium text-indigo-700">
+                    {selectedQuestions.size} selecionada{selectedQuestions.size !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-400 to-purple-500 rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={selectedQuestions.size === questions.length ? deselectAllQuestions : selectAllQuestions}
+                    className="relative bg-white/90 backdrop-blur-sm border-0 rounded-xl shadow-lg px-4 py-2 hover:bg-indigo-50 focus:ring-2 focus:ring-indigo-400 transition-all duration-300 font-medium text-indigo-700"
+                  >
+                    {selectedQuestions.size === questions.length ? '❌ Desmarcar Todas' : '✅ Selecionar Todas'}
+                  </Button>
+                </div>
                 {selectedQuestions.size > 0 && (
                   <Button
                     size="sm"
@@ -1014,71 +1128,105 @@ export default function GenomedBankPage() {
             </div>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="space-y-4">
+            <div className="space-y-6">
               {questions.map((question) => (
-                <Card key={question.id} className="border-0 shadow-md hover:shadow-lg transition-all duration-200">
-                  <div className={`bg-gradient-to-r h-1 transition-all duration-200 ${
-                    selectedQuestions.has(question.id) 
-                      ? 'from-green-400 to-green-500' 
-                      : 'from-blue-400 to-blue-500'
-                  }`} />
-                  <CardContent className="pt-6">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 pt-1">
-                        <Checkbox
-                          checked={selectedQuestions.has(question.id)}
-                          onCheckedChange={() => toggleQuestionSelection(question.id)}
-                          className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <div className={`font-semibold text-lg mb-2 transition-colors duration-200 ${
-                          selectedQuestions.has(question.id) ? 'text-green-900' : 'text-blue-900'
-                        }`}>
-                          <p className="text-gray-700 mb-4 leading-relaxed">{question.content}</p>
+                <div key={question.id} className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-400/20 via-purple-400/20 to-pink-400/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
+                  <Card className={`relative border-0 shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/20 backdrop-blur-sm ${
+                    selectedQuestions.has(question.id) ? 'ring-2 ring-emerald-400 shadow-emerald-200/50' : ''
+                  }`}>
+                    <div className={`bg-gradient-to-r h-2 rounded-t-2xl transition-all duration-300 ${
+                      selectedQuestions.has(question.id) 
+                        ? 'from-emerald-400 via-teal-500 to-green-500' 
+                        : 'from-indigo-400 via-purple-500 to-pink-500'
+                    }`} />
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0 pt-1">
+                          <div className="relative">
+                            <div className={`absolute inset-0 rounded-lg blur transition-all duration-300 ${
+                              selectedQuestions.has(question.id) 
+                                ? 'bg-emerald-400 opacity-30' 
+                                : 'bg-indigo-400 opacity-20'
+                            }`}></div>
+                            <Checkbox
+                              checked={selectedQuestions.has(question.id)}
+                              onCheckedChange={() => toggleQuestionSelection(question.id)}
+                              className={`relative h-5 w-5 transition-all duration-300 ${
+                                selectedQuestions.has(question.id)
+                                  ? 'data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600'
+                                  : 'data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600'
+                              }`}
+                            />
+                          </div>
                         </div>
-                        <div className="flex items-center flex-wrap gap-3">
-                          {question.difficulty && (
-                            <Badge className={`${getDifficultyColor(question.difficulty)} px-3 py-1 text-sm rounded-full`}>
-                              {question.difficulty}
-                            </Badge>
-                          )}
-                          <span className="text-sm text-gray-500 flex items-center gap-1">
-                            <FileText className="h-4 w-4" />
-                            {new Date(question.created_at).toLocaleDateString('pt-BR')}
-                          </span>
-                          {question.institution_name && (
-                            <Badge variant="outline" className="px-3 py-1 text-sm rounded-full border-blue-200 text-blue-700">
-                              {question.institution_acronym || question.institution_name}
-                            </Badge>
-                          )}
-                          {question.exam_year && (
-                            <Badge variant="outline" className="px-3 py-1 text-sm rounded-full border-purple-200 text-purple-700">
-                              {question.exam_year}
-                            </Badge>
-                          )}
-                          {selectedQuestions.has(question.id) && (
-                            <Badge className="bg-green-100 text-green-700 px-2 py-0.5 text-xs rounded-full">
-                              ✓ Selecionada
-                            </Badge>
-                          )}
+                        <div className="flex-1">
+                          <div className={`mb-4 transition-colors duration-300`}>
+                            <p className="text-gray-800 leading-relaxed font-medium text-base">{question.content}</p>
+                          </div>
+                          <div className="flex items-center flex-wrap gap-3">
+                            {question.difficulty && (
+                              <div className="relative">
+                                <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-500 rounded-full blur opacity-20"></div>
+                                <Badge className={`relative ${getDifficultyColor(question.difficulty)} px-4 py-1.5 text-sm rounded-full font-medium shadow-lg`}>
+                                  ⚡ {question.difficulty}
+                                </Badge>
+                              </div>
+                            )}
+                            <div className="relative">
+                              <div className="absolute inset-0 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full blur opacity-20"></div>
+                              <span className="relative text-sm text-gray-600 flex items-center gap-2 bg-white/60 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg font-medium">
+                                <FileText className="h-4 w-4" />
+                                {new Date(question.created_at).toLocaleDateString('pt-BR')}
+                              </span>
+                            </div>
+                            {question.institution_name && (
+                              <div className="relative">
+                                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full blur opacity-20"></div>
+                                <Badge className="relative bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-1.5 text-sm rounded-full font-medium shadow-lg">
+                                  🏛️ {question.institution_acronym || question.institution_name}
+                                </Badge>
+                              </div>
+                            )}
+                            {question.exam_year && (
+                              <div className="relative">
+                                <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full blur opacity-20"></div>
+                                <Badge className="relative bg-gradient-to-r from-purple-500 to-pink-600 text-white px-4 py-1.5 text-sm rounded-full font-medium shadow-lg">
+                                  📅 {question.exam_year}
+                                </Badge>
+                              </div>
+                            )}
+                            {selectedQuestions.has(question.id) && (
+                              <div className="relative">
+                                <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full blur opacity-30"></div>
+                                <Badge className="relative bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-3 py-1 text-xs rounded-full font-medium shadow-lg animate-pulse">
+                                  ✨ Selecionada
+                                </Badge>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </div>
               ))}
             </div>
 
             {loading.questions && (
-              <div className="flex flex-col items-center justify-center py-12">
-                <div className="relative mb-4">
-                  <div className="h-16 w-16 rounded-full border-4 border-blue-100 border-t-blue-500 animate-spin shadow-lg"></div>
-                  <FileText className="h-6 w-6 text-blue-600 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+              <div className="flex flex-col items-center justify-center py-16">
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-400 to-purple-500 rounded-full blur opacity-30 animate-pulse"></div>
+                  <div className="relative h-20 w-20 rounded-full border-4 border-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 animate-spin shadow-2xl">
+                    <div className="absolute inset-1 bg-white rounded-full"></div>
+                  </div>
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <Sparkles className="h-8 w-8 text-indigo-600 animate-pulse" />
+                  </div>
                 </div>
-                <div className="text-center space-y-2">
-                  <span className="text-blue-700 font-semibold text-lg">Carregando questões...</span>
-                  <p className="text-gray-600 text-sm">Aguarde enquanto organizamos o conteúdo para você</p>
+                <div className="text-center space-y-3">
+                  <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent font-bold text-xl">Carregando questões...</span>
+                  <p className="text-gray-600 text-base font-medium">✨ Aguarde enquanto organizamos o conteúdo para você</p>
                 </div>
               </div>
             )}
@@ -1088,20 +1236,25 @@ export default function GenomedBankPage() {
 
       {/* Mensagem quando não há questões */}
       {selectedTopic && questions.length === 0 && !loading.questions && (
-        <Card className="border-0 shadow-lg overflow-hidden">
-          <CardContent className="p-8">
-            <div className="text-center py-8 max-w-md mx-auto">
-              <div className="bg-gray-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-                <FileText className="h-10 w-10 text-gray-500" />
+        <Card className="border-0 shadow-2xl overflow-hidden bg-gradient-to-br from-white via-gray-50 to-gray-100 backdrop-blur-sm">
+          <CardContent className="p-10">
+            <div className="text-center py-10 max-w-lg mx-auto">
+              <div className="relative mb-8">
+                <div className="absolute inset-0 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full blur opacity-50"></div>
+                <div className="relative bg-gradient-to-br from-gray-100 via-gray-200 to-gray-300 w-24 h-24 rounded-full flex items-center justify-center mx-auto shadow-2xl border border-gray-200">
+                  <FileText className="h-12 w-12 text-gray-500" />
+                </div>
+                <div className="absolute -top-2 -right-8 h-8 w-8 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 flex items-center justify-center shadow-lg">
+                  <span className="text-sm font-bold text-white">!</span>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Nenhuma questão encontrada</h3>
-              <p className="text-gray-600 leading-relaxed">Não há questões disponíveis para o tópico selecionado. Tente selecionar outro tópico ou disciplina.</p>
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-700 to-gray-900 bg-clip-text text-transparent mb-4">Nenhuma questão encontrada</h3>
+              <p className="text-gray-600 leading-relaxed text-lg font-medium mb-8">📚 Não há questões disponíveis para o tópico selecionado. Tente selecionar outro tópico ou disciplina.</p>
               <Button 
-                variant="outline" 
                 onClick={clearFilters}
-                className="mt-6"
+                className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
               >
-                Limpar filtros e tentar novamente
+                ✨ Limpar filtros e tentar novamente
               </Button>
             </div>
           </CardContent>
@@ -1110,22 +1263,28 @@ export default function GenomedBankPage() {
 
       {/* Mensagem de boas-vindas */}
       {!selectedDiscipline && disciplines.length > 0 && (
-        <Card className="border-0 shadow-lg overflow-hidden bg-gradient-to-b from-white to-blue-50">
-          <CardContent className="p-8">
-            <div className="text-center py-8 max-w-lg mx-auto">
-              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <BookOpen className="h-12 w-12 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Bem-vindo ao Genomed Bank</h3>
-              <p className="text-gray-700 leading-relaxed mb-6">Escolha uma disciplina, assunto e tópico nos filtros acima para visualizar as questões disponíveis. Você também pode usar a busca hierárquica para encontrar conteúdos específicos.</p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <div className="flex items-center space-x-2 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                  <Filter className="h-5 w-5 text-blue-500" />
-                  <span className="text-blue-700 font-medium">Use os filtros</span>
+        <Card className="border-0 shadow-2xl overflow-hidden bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 backdrop-blur-sm">
+          <CardContent className="p-12">
+            <div className="text-center py-12 max-w-2xl mx-auto">
+              <div className="relative mb-10">
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-400 to-purple-500 rounded-full blur-lg opacity-30 animate-pulse"></div>
+                <div className="relative bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 w-28 h-28 rounded-full flex items-center justify-center mx-auto shadow-2xl">
+                  <BookOpen className="h-14 w-14 text-white" />
                 </div>
-                <div className="flex items-center space-x-2 bg-indigo-50 p-3 rounded-lg border border-indigo-100">
-                  <Search className="h-5 w-5 text-indigo-500" />
-                  <span className="text-indigo-700 font-medium">Ou faça uma busca</span>
+                <div className="absolute -top-3 -right-3 h-10 w-10 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg animate-bounce">
+                  <Star className="h-5 w-5 text-white" />
+                </div>
+              </div>
+              <h3 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-6">Bem-vindo ao Genomed Bank</h3>
+              <p className="text-gray-700 leading-relaxed text-xl font-medium mb-10">🚀 Escolha uma disciplina, assunto e tópico nos filtros acima para visualizar as questões disponíveis. Você também pode usar a busca hierárquica para encontrar conteúdos específicos.</p>
+              <div className="flex flex-wrap justify-center gap-6">
+                <div className="flex items-center space-x-3 bg-gradient-to-r from-indigo-50 to-indigo-100 p-4 rounded-xl border border-indigo-200 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                  <Filter className="h-6 w-6 text-indigo-600" />
+                  <span className="text-indigo-700 font-semibold text-lg">Use os filtros</span>
+                </div>
+                <div className="flex items-center space-x-3 bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                  <Search className="h-6 w-6 text-purple-600" />
+                  <span className="text-purple-700 font-semibold text-lg">Ou faça uma busca</span>
                 </div>
               </div>
             </div>
@@ -1145,5 +1304,6 @@ export default function GenomedBankPage() {
         </Card>
       )}
     </div>
+  </div>
   );
 }
