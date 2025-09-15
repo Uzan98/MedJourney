@@ -14,15 +14,22 @@ if (!isBuild) {
 }
 
 // Verificação adicional para garantir que a URL é válida antes de criar o cliente
-// Inicializamos com um mock para garantir que nunca seja undefined/null
-let supabaseClient: SupabaseClient = createMockClient();
+let supabaseClient: SupabaseClient;
 
 // Flag para controlar o estado de conexão
 let isReconnecting = false;
 let wasConnected = false;
 
-// Deprecated: use supabaseClient instead
-// let supabase: SupabaseClient | null = null;
+let supabase: SupabaseClient | null = null;
+
+// Só criar o cliente se não estivermos em build e as variáveis existirem
+if (!isBuild && supabaseUrl && supabaseAnonKey) {
+  try {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+  } catch (error) {
+    console.error('Erro ao criar cliente Supabase:', error);
+  }
+}
 
 try {
   if (!isBuild && supabaseUrl && supabaseAnonKey) {
@@ -120,7 +127,7 @@ try {
           setTimeout(() => {
             if (!supabaseClient.realtime.isConnected()) {
               console.log('Reconectando Supabase Realtime após restauração de rede');
-              supabaseClient.realtime.connect();
+        supabaseClient.realtime.connect();
             }
             isReconnecting = false;
           }, 2000);
@@ -137,17 +144,17 @@ try {
       checkConnectionInterval = setInterval(() => {
         // Só verificar se a página estiver visível e não estiver em processo de reconexão
         if (isPageVisible && !isReconnecting) {
-          const isConnected = supabaseClient.realtime.isConnected();
+        const isConnected = supabaseClient.realtime.isConnected();
           
           // Registrar o estado da conexão
           wasConnected = isConnected;
-          
+        
           // Reconectar apenas se estiver desconectado
-          if (!isConnected) {
+        if (!isConnected) {
             console.log('Status da conexão Realtime: desconectado, tentando reconectar...');
             isReconnecting = true;
             
-            supabaseClient.realtime.connect();
+          supabaseClient.realtime.connect();
             
             // Resetar flag após um tempo
             setTimeout(() => {
@@ -165,17 +172,18 @@ try {
     }
   } else if (!isBuild) {
     console.error('Não foi possível criar o cliente Supabase: URL ou chave anônima ausentes');
-    // Já estamos com mock por padrão
+    // Criar um cliente mock para evitar erros de runtime
+    supabaseClient = createMockClient();
   }
 } catch (error) {
   if (!isBuild) {
     console.error('Erro ao criar cliente Supabase:', error);
-    // Já estamos com mock por padrão
+    // Criar um cliente mock para evitar erros de runtime
+    supabaseClient = createMockClient();
   }
 }
 
-// Exportar um cliente sempre definido (mock em fallback)
-export const supabase: SupabaseClient = supabaseClient;
+export { supabase };
 
 // Função para criar um cliente mock que implementa a API do Supabase
 function createMockClient(): SupabaseClient {
@@ -187,9 +195,6 @@ function createMockClient(): SupabaseClient {
         builder.eq = () => builder;
         builder.limit = () => builder;
         builder.order = () => builder;
-        builder.in = () => builder;
-        builder.or = () => builder;
-        builder.head = () => builder;
         builder.single = () => Promise.resolve({ data: null, error: new Error('Cliente Supabase não inicializado') });
         return builder;
       },
@@ -205,20 +210,19 @@ function createMockClient(): SupabaseClient {
       delete: () => Promise.resolve({ error: new Error('Cliente Supabase não inicializado') }),
     }),
     auth: {
-      getUser: () => Promise.resolve({ data: { user: null }, error: null as any }),
-      signIn: () => Promise.resolve({ user: null as any, session: null as any, error: new Error('Cliente Supabase não inicializado') as any }),
-      signOut: () => Promise.resolve({ error: new Error('Cliente Supabase não inicializado') as any }),
-    } as any,
+      signIn: () => Promise.resolve({ user: null, session: null, error: new Error('Cliente Supabase não inicializado') }),
+      signOut: () => Promise.resolve({ error: new Error('Cliente Supabase não inicializado') }),
+    },
     realtime: {
       setAuth: () => {},
       channel: () => ({
         on: () => ({ subscribe: () => {} }),
         subscribe: () => {}
-      }) as any,
+      }),
       connect: () => {},
       disconnect: () => {},
       isConnected: () => false
-    } as any
+    }
   } as unknown as SupabaseClient;
 }
 

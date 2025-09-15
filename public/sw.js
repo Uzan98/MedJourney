@@ -135,14 +135,15 @@ self.addEventListener('fetch', event => {
     }
   }
   
-  // Para outras solicitações, use estratégia de cache primeiro, depois rede
+  // Para outras solicitações, use estratégia de cache primeiro, depois rede (apenas para GET)
   event.respondWith(
-    caches.match(request)
+    // Só tenta buscar no cache para métodos GET
+    (request.method === 'GET' ? caches.match(request) : Promise.resolve(null))
       .then((cachedResponse) => {
         // Se o recurso estiver em cache, retorne-o
-  if (cachedResponse) {
-    return cachedResponse;
-  }
+        if (cachedResponse) {
+          return cachedResponse;
+        }
 
         // Caso contrário, busque da rede
         return fetch(request)
@@ -155,8 +156,8 @@ self.addEventListener('fetch', event => {
               return networkResponse;
             }
             
-            // Armazenar em cache recursos não-API para uso futuro
-            if (!url.pathname.includes('/api/') && !url.pathname.includes('/rest/v1/')) {
+            // Armazenar em cache recursos não-API para uso futuro (apenas métodos GET)
+            if (request.method === 'GET' && !url.pathname.includes('/api/') && !url.pathname.includes('/rest/v1/')) {
               const responseToCache = networkResponse.clone();
               caches.open(CACHE_NAME)
                 .then((cache) => {
