@@ -30,6 +30,8 @@ interface ParsedQuestion {
   tag?: string;
   image?: File | null;
   imageUrl?: string;
+  institutionName?: string;
+  examYear?: number;
 }
 
 interface QuestionMetadata {
@@ -37,6 +39,13 @@ interface QuestionMetadata {
   grandeArea: string;
   categoria: string;
   subAssunto: string;
+}
+
+interface NewQuestionMetadata {
+  questionNumber: number;
+  disciplina: string;
+  assunto: string;
+  topico?: string;
 }
 
 interface ValidationResult {
@@ -100,6 +109,10 @@ export default function UploadProvaPage() {
   const [parsedQuestions, setParsedQuestions] = useState<ParsedQuestion[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   
+  // Institution and year states
+  const [institutionName, setInstitutionName] = useState<string>('');
+  const [examYear, setExamYear] = useState<number>(new Date().getFullYear());
+  
   // Discipline and subject states
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -124,6 +137,12 @@ export default function UploadProvaPage() {
   const [parsedMetadata, setParsedMetadata] = useState<QuestionMetadata[]>([]);
   const [validationResults, setValidationResults] = useState<{[questionNumber: number]: ValidationResult}>({});
   const [showMetadataParser, setShowMetadataParser] = useState(false);
+  
+  // Estados para novo parser de metadados
+  const [newMetadataText, setNewMetadataText] = useState('');
+  const [parsedNewMetadata, setParsedNewMetadata] = useState<NewQuestionMetadata[]>([]);
+  const [newValidationResults, setNewValidationResults] = useState<{[questionNumber: number]: ValidationResult}>({});
+  const [showNewMetadataParser, setShowNewMetadataParser] = useState(false);
   
   useEffect(() => {
     if (!user) {
@@ -164,6 +183,8 @@ export default function UploadProvaPage() {
       setLoadingTypes(false);
     }
   };
+
+
 
   const loadDisciplines = async () => {
     try {
@@ -446,7 +467,9 @@ export default function UploadProvaPage() {
             alternatives: alternatives.slice(0, 5), // Máximo 5 alternativas
             correctAnswer: answers[questionNum] ?? 0,
             disciplineId: selectedDisciplineId,
-            subjectId: selectedSubjectId
+            subjectId: selectedSubjectId,
+            institutionName: institutionName,
+            examYear: examYear
           });
         }
       });
@@ -607,6 +630,152 @@ export default function UploadProvaPage() {
     setValidationResults(results);
   };
 
+  // Função para parsear novo formato de metadados (Disciplina, Assunto, Tópico)
+  const parseNewMetadataFormat = async () => {
+    if (!newMetadataText.trim()) {
+      toast.error('Digite os metadados para processar');
+      return;
+    }
+
+    try {
+      const lines = newMetadataText.split('\n').map(line => line.trim()).filter(line => line);
+      const metadata: NewQuestionMetadata[] = [];
+      let currentQuestion: Partial<NewQuestionMetadata> = {};
+
+      for (const line of lines) {
+        // Detectar início de nova questão
+        const questionMatch = line.match(/^Questão\s+(\d+):/i);
+        if (questionMatch) {
+          // Salvar questão anterior se completa
+          if (currentQuestion.questionNumber && currentQuestion.disciplina && currentQuestion.assunto) {
+            metadata.push(currentQuestion as NewQuestionMetadata);
+          }
+          // Iniciar nova questão
+          currentQuestion = { questionNumber: parseInt(questionMatch[1]) };
+          continue;
+        }
+
+        // Parsear campos
+        const disciplinaMatch = line.match(/^Disciplina:\s*(.+)$/i);
+        if (disciplinaMatch) {
+          currentQuestion.disciplina = disciplinaMatch[1].trim();
+          continue;
+        }
+
+        const assuntoMatch = line.match(/^Assunto:\s*(.+)$/i);
+        if (assuntoMatch) {
+          currentQuestion.assunto = assuntoMatch[1].trim();
+          continue;
+        }
+
+        const topicoMatch = line.match(/^Tópico:\s*(.+)$/i);
+        if (topicoMatch) {
+          currentQuestion.topico = topicoMatch[1].trim();
+          continue;
+        }
+      }
+
+      // Adicionar última questão se completa
+      if (currentQuestion.questionNumber && currentQuestion.disciplina && currentQuestion.assunto) {
+        metadata.push(currentQuestion as NewQuestionMetadata);
+      }
+
+      if (metadata.length === 0) {
+        toast.error('Nenhum metadado válido encontrado. Verifique o formato.');
+        return;
+      }
+
+      setParsedNewMetadata(metadata);
+      await validateNewMetadata(metadata);
+      toast.success(`${metadata.length} metadados de questões processados`);
+    } catch (error) {
+      console.error('Erro ao parsear novos metadados:', error);
+      toast.error('Erro ao processar metadados. Verifique o formato.');
+    }
+   };
+
+  // Função para validar novos metadados contra disciplinas, assuntos e tópicos cadastrados
+  const validateNewMetadata = async (metadata: NewQuestionMetadata[]) => {
+    const results: {[questionNumber: number]: ValidationResult} = {};
+
+    for (const meta of metadata) {
+      const result: ValidationResult = {
+        disciplineMatch: null,
+        subjectMatch: null,
+        isValid: false,
+        errors: []
+      };
+
+      // Buscar disciplina
+      let disciplineMatch = disciplines.find(d => 
+        d.name.toLowerCase() === meta.disciplina.toLowerCase()
+      );
+      
+      // Se não encontrar correspondência exata, usar busca por inclusão
+      if (!disciplineMatch) {
+        disciplineMatch = disciplines.find(d => 
+          d.name.toLowerCase().includes(meta.disciplina.toLowerCase()) ||
+          meta.disciplina.toLowerCase().includes(d.name.toLowerCase())
+        );
+      }
+      
+      console.log(`🔍 Buscando disciplina para: "${meta.disciplina}"`);
+      console.log('📚 Disciplinas disponíveis:', disciplines.map(d => d.name));
+      console.log('✅ Disciplina encontrada:', disciplineMatch?.name || 'Nenhuma');
+
+      if (disciplineMatch) {
+        result.disciplineMatch = disciplineMatch;
+        
+        // Carregar assuntos da disciplina se ainda não foram carregados
+        let disciplineSubjects = disciplineMatch.subjects || questionSubjects[disciplineMatch.id] || [];
+        
+        if (disciplineSubjects.length === 0 && !loadingQuestionSubjects[disciplineMatch.id]) {
+          console.log(`📖 Carregando assuntos para disciplina ${disciplineMatch.name} (ID: ${disciplineMatch.id})`);
+          try {
+            const data = await DisciplinesRestService.getSubjects(disciplineMatch.id, true);
+            console.log('📚 Assuntos carregados:', data?.length || 0, data);
+            disciplineSubjects = data || [];
+            // Atualizar o estado também
+            setQuestionSubjects(prev => ({ ...prev, [disciplineMatch.id]: data || [] }));
+          } catch (error) {
+            console.error('❌ Erro ao carregar assuntos:', error);
+            disciplineSubjects = [];
+          }
+        }
+        
+        console.log(`🔍 Disciplina: ${disciplineMatch.name}, Assuntos disponíveis:`, disciplineSubjects.map(s => s.title || s.name));
+        console.log(`🔍 Procurando por assunto: "${meta.assunto}"`);
+        
+        // Buscar assunto
+        const subjectMatch = disciplineSubjects.find(s => {
+          const subjectName = s.title || s.name || '';
+          const exactMatch = subjectName.toLowerCase() === meta.assunto.toLowerCase();
+          const includesMatch = subjectName.toLowerCase().includes(meta.assunto.toLowerCase()) ||
+                               meta.assunto.toLowerCase().includes(subjectName.toLowerCase());
+          console.log(`📝 Comparando "${subjectName}" com "${meta.assunto}": exato=${exactMatch}, inclusão=${includesMatch}`);
+          return exactMatch || includesMatch;
+        });
+
+        if (subjectMatch) {
+          result.subjectMatch = subjectMatch;
+          result.isValid = true;
+          console.log(`✅ Assunto encontrado: ${subjectMatch.title || subjectMatch.name}`);
+        } else {
+          result.errors.push(`Assunto "${meta.assunto}" não encontrado na disciplina "${disciplineMatch.name}"`);
+          console.log(`❌ Assunto "${meta.assunto}" não encontrado`);
+        }
+      } else {
+        result.errors.push(`Disciplina "${meta.disciplina}" não encontrada`);
+        console.log(`❌ Disciplina "${meta.disciplina}" não encontrada`);
+      }
+
+      results[meta.questionNumber] = result;
+    }
+
+    setNewValidationResults(results);
+    console.log('🎯 Resultados da validação:', results);
+  };
+
   // Função para aplicar metadados validados às questões
   const applyMetadataToQuestions = () => {
     if (parsedQuestions.length === 0) {
@@ -639,6 +808,99 @@ export default function UploadProvaPage() {
     setParsedQuestions(updatedQuestions);
     
     const appliedCount = updatedQuestions.filter(q => q.disciplineId && q.subjectId).length;
+    toast.success(`Metadados aplicados a ${appliedCount} questões`);
+  };
+
+  // Função para aplicar novos metadados validados às questões
+  const applyNewMetadataToQuestions = async () => {
+    if (parsedQuestions.length === 0) {
+      toast.error('Parse as questões primeiro');
+      return;
+    }
+
+    if (parsedNewMetadata.length === 0) {
+      toast.error('Parse os metadados primeiro');
+      return;
+    }
+
+    const updatedQuestions = await Promise.all(parsedQuestions.map(async (question, index) => {
+      const questionNumber = index + 1;
+      const metadata = parsedNewMetadata.find(m => m.questionNumber === questionNumber);
+      const validation = newValidationResults[questionNumber];
+
+      if (metadata && validation && validation.isValid) {
+        let topicId = null;
+        
+        // Se há tópico nos metadados e temos um assunto válido, buscar o tópico
+        if (metadata.topico && validation.subjectMatch?.id) {
+          try {
+            // Carregar tópicos se não estiverem carregados
+            if (!questionTopics[validation.subjectMatch.id]) {
+              await loadQuestionTopics(validation.subjectMatch.id);
+            }
+            
+            // Buscar tópico correspondente
+            const topics = questionTopics[validation.subjectMatch.id] || [];
+            console.log(`🔍 Buscando tópico "${metadata.topico}" entre:`, topics.map(t => t.name));
+            
+            const topicMatch = topics.find(topic => {
+              const topicName = topic.name.toLowerCase();
+              const metadataTopico = metadata.topico!.toLowerCase();
+              
+              console.log(`🔍 Comparando "${topicName}" com "${metadataTopico}"`);
+              
+              // Busca exata primeiro
+              if (topicName === metadataTopico) {
+                console.log(`✅ Match exato encontrado: "${topicName}"`);
+                return true;
+              }
+              
+              // Busca por inclusão
+              const includesMatch = topicName.includes(metadataTopico) || metadataTopico.includes(topicName);
+              if (includesMatch) {
+                console.log(`✅ Match por inclusão encontrado: "${topicName}" <-> "${metadataTopico}"`);
+              }
+              return includesMatch;
+            });
+            
+            if (topicMatch) {
+              topicId = topicMatch.id;
+              console.log(`🎯 Tópico encontrado para questão ${questionNumber}:`, topicMatch.name);
+            } else {
+              console.log(`⚠️ Tópico "${metadata.topico}" não encontrado para questão ${questionNumber}`);
+            }
+          } catch (error) {
+            console.error(`❌ Erro ao buscar tópico para questão ${questionNumber}:`, error);
+          }
+        }
+        
+        console.log(`🎯 Aplicando metadados à questão ${questionNumber}:`, {
+          disciplineId: validation.disciplineMatch?.id,
+          disciplineName: validation.disciplineMatch?.name,
+          subjectId: validation.subjectMatch?.id,
+          subjectName: validation.subjectMatch?.title || validation.subjectMatch?.name,
+          topicId,
+          tag: metadata.topico || metadata.assunto
+        });
+        
+        return {
+          ...question,
+          disciplineId: validation.disciplineMatch?.id,
+          subjectId: validation.subjectMatch?.id,
+          topicId,
+          tag: metadata.topico || metadata.assunto,
+          institutionName: institutionName,
+          examYear: examYear
+        };
+      }
+
+      return question;
+    }));
+
+    setParsedQuestions(updatedQuestions);
+    
+    const appliedCount = updatedQuestions.filter(q => q.disciplineId && q.subjectId).length;
+    console.log(`✅ Metadados aplicados a ${appliedCount} de ${parsedQuestions.length} questões`);
     toast.success(`Metadados aplicados a ${appliedCount} questões`);
   };
   
@@ -847,7 +1109,7 @@ export default function UploadProvaPage() {
           question_type: 'multiple_choice',
           correct_answer: question.correctAnswer.toString(),
           difficulty: 'média',
-          is_public: addToGenomaBank && isAdmin // Marcar como pública se for para o Genoma Bank e usuário for admin
+          is_public: addToGenomaBank // Marcar como pública se for para o Genoma Bank
         };
         
         // Adicionar tags se existir
@@ -879,6 +1141,43 @@ export default function UploadProvaPage() {
         // Adicionar topic_id se fornecido
         if (question.topicId && typeof question.topicId === 'number') {
           questionData.topic_id = question.topicId;
+        }
+        
+        // Buscar institution_id pelo nome da instituição
+        if (question.institutionName && typeof question.institutionName === 'string') {
+          try {
+            const { data: institutions, error: instError } = await supabase
+              .from('exam_institutions')
+              .select('id')
+              .ilike('name', question.institutionName)
+              .limit(1);
+            
+            if (instError) {
+              console.warn('Erro ao buscar instituição:', instError);
+            } else if (institutions && institutions.length > 0) {
+              questionData.institution_id = institutions[0].id;
+            } else {
+              // Se não encontrar a instituição, criar uma nova
+              const { data: newInstitution, error: createError } = await supabase
+                .from('exam_institutions')
+                .insert({ name: question.institutionName, category: 'other' })
+                .select('id')
+                .single();
+              
+              if (createError) {
+                console.warn('Erro ao criar nova instituição:', createError);
+              } else if (newInstitution) {
+                questionData.institution_id = newInstitution.id;
+              }
+            }
+          } catch (error) {
+            console.warn('Erro ao processar instituição:', error);
+          }
+        }
+        
+        // Adicionar exam_year se fornecido
+        if (question.examYear && typeof question.examYear === 'number') {
+          questionData.exam_year = question.examYear;
         }
         
         const questionId = await QuestionsBankService.addQuestion(
@@ -1023,6 +1322,39 @@ export default function UploadProvaPage() {
                 </select>
               </div>
             )}
+            
+            {/* Instituição da Prova */}
+            <div>
+              <label htmlFor="institution" className="block text-sm font-medium text-gray-700 mb-2">
+                Instituição
+              </label>
+              <input
+                type="text"
+                id="institution"
+                value={institutionName}
+                onChange={(e) => setInstitutionName(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Digite o nome da instituição (ex: UNIFESP, USP, UFMG)"
+                required
+              />
+            </div>
+            
+            {/* Ano da Prova */}
+            <div>
+              <label htmlFor="examYear" className="block text-sm font-medium text-gray-700 mb-2">
+                Ano da Prova
+              </label>
+              <input
+                type="number"
+                id="examYear"
+                value={examYear}
+                onChange={(e) => setExamYear(Number(e.target.value))}
+                min="1990"
+                max={new Date().getFullYear() + 1}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Ex: 2024"
+              />
+            </div>
             
             <div>
               <label htmlFor="discipline" className="block text-sm font-medium text-gray-700 mb-2">
@@ -1193,11 +1525,161 @@ E) 7`}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
               >
                 <FaEdit className="mr-2" />
-                {showMetadataParser ? 'Ocultar' : 'Mostrar'} Parser de Metadados
+                {showMetadataParser ? 'Ocultar' : 'Mostrar'} Parser Antigo
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setShowNewMetadataParser(!showNewMetadataParser)}
+                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center"
+              >
+                <FaEdit className="mr-2" />
+                {showNewMetadataParser ? 'Ocultar' : 'Mostrar'} Novo Parser
               </button>
             </div>
           </div>
         </div>
+        
+        {/* Novo Parser de Metadados */}
+        {showNewMetadataParser && (
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              <FaEdit className="inline mr-2" />
+              Novo Parser de Metadados (Disciplina/Assunto/Tópico)
+            </h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="newMetadataText" className="block text-sm font-medium text-gray-700 mb-2">
+                  Cole os metadados das questões *
+                </label>
+                <textarea
+                  id="newMetadataText"
+                  value={newMetadataText}
+                  onChange={(e) => setNewMetadataText(e.target.value)}
+                  rows={12}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                  placeholder={`Exemplo de formato:
+
+Questão 1:
+
+Disciplina: Cirurgia Geral
+
+Assunto: Pancreatite aguda
+
+Tópico: Pancreatite aguda - Diagnóstico e Etiologias
+
+Questão 2:
+
+Disciplina: Cirurgia Geral
+
+Assunto: Pneumotórax Espontâneo`}
+                />
+              </div>
+              
+              <div className="flex justify-center space-x-4">
+                <button
+                  type="button"
+                  onClick={parseNewMetadataFormat}
+                  disabled={!newMetadataText.trim()}
+                  className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+                >
+                  <FaListOl className="mr-2" />
+                  Processar Metadados
+                </button>
+                
+                {parsedNewMetadata.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={applyNewMetadataToQuestions}
+                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center"
+                  >
+                    <FaCheck className="mr-2" />
+                    Aplicar às Questões
+                  </button>
+                )}
+              </div>
+              
+              {/* Resultados da Validação */}
+              {parsedNewMetadata.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Resultados da Validação</h3>
+                  <div className="space-y-3">
+                    {parsedNewMetadata.map((meta) => {
+                      const validation = newValidationResults[meta.questionNumber];
+                      const isValid = validation?.isValid;
+                      
+                      return (
+                        <div
+                          key={meta.questionNumber}
+                          className={`p-4 rounded-lg border-2 ${
+                            isValid
+                              ? 'border-green-200 bg-green-50'
+                              : 'border-red-200 bg-red-50'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-gray-900">
+                                Questão {meta.questionNumber}
+                              </h4>
+                              <div className="mt-2 space-y-1 text-sm">
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-medium text-gray-700">Disciplina:</span>
+                                  <span className={isValid ? 'text-green-700' : 'text-red-700'}>
+                                    {meta.disciplina}
+                                  </span>
+                                  {validation?.disciplineMatch && (
+                                    <span className="text-green-600 text-xs">
+                                      → {validation.disciplineMatch.name}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-medium text-gray-700">Assunto:</span>
+                                  <span className={isValid ? 'text-green-700' : 'text-red-700'}>
+                                    {meta.assunto}
+                                  </span>
+                                  {validation?.subjectMatch && (
+                                    <span className="text-green-600 text-xs">
+                                      → {validation.subjectMatch.title || validation.subjectMatch.name}
+                                    </span>
+                                  )}
+                                </div>
+                                {meta.topico && (
+                                  <div className="flex items-center space-x-2">
+                                    <span className="font-medium text-gray-700">Tópico:</span>
+                                    <span className="text-gray-700">
+                                      {meta.topico}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="ml-4">
+                              {isValid ? (
+                                <FaCheck className="text-green-600 text-xl" />
+                              ) : (
+                                <div className="text-red-600">
+                                  <div className="text-xs font-medium mb-1">Erros:</div>
+                                  {validation?.errors.map((error, idx) => (
+                                    <div key={idx} className="text-xs text-red-600">
+                                      {error}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         
         {/* Parser Automático de Metadados */}
         {showMetadataParser && (
@@ -1521,6 +2003,42 @@ Sub-assunto: Porfiria`}
                             </button>
                           </div>
                         ))}
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Instituição:
+                          </label>
+                          <input
+                            type="text"
+                            value={question.institutionName || ''}
+                            onChange={(e) => {
+                              editQuestion(index, 'institutionName', e.target.value);
+                            }}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                            placeholder="Digite o nome da instituição"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Ano da Prova:
+                          </label>
+                          <input
+                            type="number"
+                            value={question.examYear || ''}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              const examYear = value ? Number(value) : null;
+                              editQuestion(index, 'examYear', examYear);
+                            }}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                            placeholder="Ex: 2024"
+                            min="1900"
+                            max="2030"
+                          />
+                        </div>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
