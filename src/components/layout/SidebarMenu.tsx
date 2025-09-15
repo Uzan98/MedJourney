@@ -28,7 +28,8 @@ import {
   Clock,
   Timer,
   Play,
-  Bell
+  Bell,
+  Stethoscope
 } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -145,7 +146,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
     {
       path: "/genomed-bank",
       label: "Genomed Bank",
-      icon: <FileText className="h-5 w-5 flex-shrink-0" />
+      icon: <Stethoscope className="h-5 w-5 flex-shrink-0" />
     },
     {
       path: "/simulados",
