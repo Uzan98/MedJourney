@@ -58,6 +58,7 @@ interface TreeNode {
   children: TreeNode[];
   expanded: boolean;
   matched: boolean;
+  questionCount?: number;
 }
 
 const SYSTEM_USER_ID = 'e6c41b94-f25c-4ef4-b723-c4a2d480cf43';
@@ -419,7 +420,7 @@ export default function GenomedBankPage() {
       });
 
       setSearchResults(results);
-      buildTreeFromResults(results, term);
+      await buildTreeFromResults(results, term);
       setShowSearchResults(true);
 
     } catch (err) {
@@ -431,7 +432,7 @@ export default function GenomedBankPage() {
   };
 
   // Construir árvore hierárquica dos resultados
-  const buildTreeFromResults = (results: SearchResult[], searchTerm: string) => {
+  const buildTreeFromResults = async (results: SearchResult[], searchTerm: string) => {
     const treeMap = new Map<string, TreeNode>();
     const rootNodes: TreeNode[] = [];
 
@@ -449,7 +450,8 @@ export default function GenomedBankPage() {
           type: 'discipline',
           children: [],
           expanded: true,
-          matched: hierarchy.discipline.name.toLowerCase().includes(searchTerm.toLowerCase())
+          matched: hierarchy.discipline.name.toLowerCase().includes(searchTerm.toLowerCase()),
+          questionCount: 0
         };
         treeMap.set(disciplineId, disciplineNode);
         rootNodes.push(disciplineNode);
@@ -466,7 +468,8 @@ export default function GenomedBankPage() {
             type: 'subject',
             children: [],
             expanded: true,
-            matched: (hierarchy.subject.title || hierarchy.subject.name).toLowerCase().includes(searchTerm.toLowerCase())
+            matched: (hierarchy.subject.title || hierarchy.subject.name).toLowerCase().includes(searchTerm.toLowerCase()),
+            questionCount: 0
           };
           treeMap.set(subjectId, subjectNode);
           disciplineNode.children.push(subjectNode);
@@ -483,7 +486,8 @@ export default function GenomedBankPage() {
               type: 'topic',
               children: [],
               expanded: false,
-              matched: hierarchy.topic.name.toLowerCase().includes(searchTerm.toLowerCase())
+              matched: hierarchy.topic.name.toLowerCase().includes(searchTerm.toLowerCase()),
+              questionCount: 0
             };
             treeMap.set(topicId, topicNode);
             subjectNode.children.push(topicNode);
@@ -492,6 +496,19 @@ export default function GenomedBankPage() {
       }
     });
 
+    // Calcular contagens de questões para cada nó
+    const updateCounts = async (nodes: TreeNode[]) => {
+      for (const node of nodes) {
+        const nodeId = parseInt(node.id.split('-')[1]);
+        node.questionCount = await getQuestionCount(node.type, nodeId);
+        
+        if (node.children.length > 0) {
+          await updateCounts(node.children);
+        }
+      }
+    };
+
+    await updateCounts(rootNodes);
     setTreeData(rootNodes);
   };
 
@@ -615,7 +632,7 @@ export default function GenomedBankPage() {
     const renderNode = (node: TreeNode, level: number = 0) => {
     const hasChildren = node.children.length > 0;
     const paddingLeft = level * 20;
-    const isClickable = node.type === 'subject' || hasChildren;
+    const isClickable = node.type === 'subject' || hasChildren || (node.type === 'topic' && node.questionCount && node.questionCount > 0);
     
     const getNodeIcon = () => {
       switch (node.type) {
@@ -630,9 +647,44 @@ export default function GenomedBankPage() {
       }
     };
 
-    const handleClick = () => {
+    const handleClick = async () => {
       if (node.type === 'subject') {
         handleNodeClick(node);
+      } else if (node.type === 'topic' && node.questionCount && node.questionCount > 0) {
+        // Carregar questões do tópico
+        const topicId = parseInt(node.id.replace('topic-', ''));
+        try {
+          const { data: topicQuestions, error } = await supabase
+            .from('questions')
+            .select('*')
+            .eq('topic_id', topicId)
+            .or(currentUserId ? `is_public.eq.true,user_id.eq.${currentUserId}` : 'is_public.eq.true');
+          
+          if (error) throw error;
+          
+          setQuestions(topicQuestions || []);
+          setSelectedTopic(topicId.toString());
+          
+          // Encontrar subject e discipline relacionados
+          const { data: topicData } = await supabase
+            .from('topics')
+            .select(`
+              id, name, subject_id,
+              subjects!inner(id, name, discipline_id,
+                disciplines!inner(id, name)
+              )
+            `)
+            .eq('id', topicId)
+            .single();
+          
+          if (topicData) {
+            setSelectedSubject(topicData.subjects.id.toString());
+            setSelectedDiscipline(topicData.subjects.disciplines.id.toString());
+          }
+          
+        } catch (error) {
+          console.error('Erro ao carregar questões do tópico:', error);
+        }
       } else if (hasChildren) {
         onToggle(node.id);
       }
@@ -675,9 +727,21 @@ export default function GenomedBankPage() {
              node.type === 'subject' ? 'Assunto' : 'Tópico'}
           </Badge>
           
+          {typeof node.questionCount === 'number' && (
+            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
+              {node.questionCount} questão{node.questionCount !== 1 ? 'ões' : ''}
+            </Badge>
+          )}
+          
           {node.type === 'subject' && (
             <span className="text-xs text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full ml-auto">
               Clique para ver tópicos
+            </span>
+          )}
+          
+          {node.type === 'topic' && node.questionCount && node.questionCount > 0 && (
+            <span className="text-xs text-green-500 bg-green-50 px-2 py-0.5 rounded-full ml-auto">
+              Clique para ver questões
             </span>
           )}
         </div>
