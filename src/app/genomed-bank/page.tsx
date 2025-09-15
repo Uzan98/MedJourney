@@ -745,7 +745,12 @@ export default function GenomedBankPage() {
                 </span>
                 
                 {node.questionCount !== undefined && (
-                  <Badge variant="secondary" className="ml-auto">
+                  <Badge className={`ml-auto ${
+                    node.type === 'discipline' ? 'badge-discipline' :
+                    node.type === 'subject' ? 'badge-subject' :
+                    node.type === 'topic' ? 'badge-topic' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
                     {node.questionCount}
                   </Badge>
                 )}
