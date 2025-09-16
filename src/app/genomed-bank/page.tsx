@@ -12,6 +12,9 @@ import { supabase } from '@/lib/supabase';
 import { ExamsService } from '@/services/exams.service';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import 'react-quill/dist/quill.snow.css';
+import '@/styles/quill-custom.css';
+import '@/styles/quill-mobile.css';
 
 interface Discipline {
   id: number;
@@ -1177,7 +1180,10 @@ export default function GenomedBankPage() {
                         </div>
                         <div className="flex-1">
                           <div className={`mb-4 transition-colors duration-300`}>
-                            <p className="text-gray-800 leading-relaxed font-medium text-base">{question.content}</p>
+                            <div 
+                              className="quill-content text-gray-800 leading-relaxed font-medium text-base"
+                              dangerouslySetInnerHTML={{ __html: question.content || '' }}
+                            />
                           </div>
                           <div className="flex items-center flex-wrap gap-3">
                             {question.difficulty && (
