@@ -87,6 +87,13 @@ export default function AdminPage() {
       color: 'bg-purple-500'
     },
     {
+      title: 'Testes de Importação',
+      description: 'Teste o sistema de importação de questões sem duplicações',
+      icon: Settings,
+      href: '/admin/testes-importacao',
+      color: 'bg-orange-500'
+    },
+    {
       title: 'Estatísticas',
       description: 'Visualize métricas e estatísticas do sistema',
       icon: BarChart3,

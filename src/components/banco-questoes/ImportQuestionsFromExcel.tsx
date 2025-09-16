@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
-import { Upload, AlertCircle, Check, Info } from 'lucide-react';
+import { Upload, AlertCircle, Check, Info, Globe } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { toast } from 'react-hot-toast';
 import { QuestionsBankService, Question, AnswerOption } from '@/services/questions-bank.service';
@@ -465,32 +465,47 @@ export const ImportQuestionsFromExcel: React.FC<ImportQuestionsFromExcelProps> =
         {/* Opção para tornar públicas */}
         {!defaultIsPublic && (
           <div className="mt-3">
-            <label className="flex items-start touch-manipulation">
+            <label className="flex items-start cursor-pointer p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors touch-manipulation">
               <input
                 type="checkbox"
                 checked={isPublic}
                 onChange={(e) => setIsPublic(e.target.checked)}
-                className="h-4 w-4 mt-0.5 text-green-600 focus:ring-green-500 rounded"
+                className="h-5 w-5 text-blue-600 focus:ring-blue-500 rounded mt-0.5 flex-shrink-0"
                 disabled={isUploading}
               />
-              <span className="ml-2 flex items-start text-xs sm:text-sm text-gray-700">
-                <span>Adicionar ao Genoma Bank (compartilhar estas questões publicamente)</span>
-              </span>
+              <div className="ml-3">
+                <span className="flex items-center text-gray-700 font-medium">
+                  <Globe className="h-4 w-4 mr-2 text-blue-500" />
+                  <span className="text-sm">Adicionar ao Genoma Bank</span>
+                </span>
+                <p className="text-sm text-gray-600 mt-1">
+                  Compartilhar estas questões publicamente para outros usuários
+                </p>
+              </div>
             </label>
             {isPublic && (
-              <p className="mt-1 text-xs sm:text-sm text-gray-500 pl-6">
-                Estas questões serão visíveis para todos os usuários no Genoma Bank.
-              </p>
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-700 flex items-center">
+                  <Globe className="h-4 w-4 mr-2 text-green-600" />
+                  Estas questões serão visíveis para todos os usuários no Genoma Bank.
+                </p>
+              </div>
             )}
           </div>
         )}
         
         {defaultIsPublic && (
-          <div className="flex items-center gap-2 mt-3 text-purple-700 bg-purple-50 p-2 rounded-md">
-            <Check className="h-4 w-4" />
-            <span className="text-sm font-medium">
-              Todas as questões serão adicionadas ao Genoma Bank (públicas)
-            </span>
+          <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+            <div className="flex items-center text-purple-700">
+              <Globe className="h-4 w-4 mr-2 text-purple-600" />
+              <Check className="h-4 w-4 mr-2" />
+              <span className="text-sm font-medium">
+                Todas as questões serão adicionadas ao Genoma Bank (públicas)
+              </span>
+            </div>
+            <p className="text-sm text-purple-600 mt-1 ml-8">
+              Estas questões serão visíveis para todos os usuários.
+            </p>
           </div>
         )}
       </div>
