@@ -24,6 +24,10 @@ export default function AIQuestionGeneratorModal({
   const [disciplineName, setDisciplineName] = useState<string>('');
   const [subjectId, setSubjectId] = useState<number | null>(null);
   const [subjectName, setSubjectName] = useState<string>('');
+  const [topicId, setTopicId] = useState<number | null>(null);
+  const [topicName, setTopicName] = useState<string>('');
+  const [institutionId, setInstitutionId] = useState<number | null>(null);
+  const [examYear, setExamYear] = useState<number | null>(null);
   const [difficulty, setDifficulty] = useState<'baixa' | 'média' | 'alta'>('média');
   const [questionType, setQuestionType] = useState<'multiple_choice' | 'true_false' | 'essay'>('multiple_choice');
   const [additionalContext, setAdditionalContext] = useState<string>('');
@@ -32,6 +36,8 @@ export default function AIQuestionGeneratorModal({
   // Estados para disciplinas e assuntos
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [topics, setTopics] = useState<Subject[]>([]);
+  const [institutions, setInstitutions] = useState<any[]>([]);
   
   // Estados para controle do fluxo
   const [isGenerating, setIsGenerating] = useState(false);
@@ -52,10 +58,11 @@ export default function AIQuestionGeneratorModal({
     }
   }, [limiteAtingido, hasAIAccess, isOpen]);
   
-  // Carregar disciplinas ao abrir o modal
+  // Carregar disciplinas e instituições ao abrir o modal
   useEffect(() => {
     if (isOpen) {
       loadDisciplines();
+      loadInstitutions();
     }
   }, [isOpen]);
   
@@ -88,11 +95,52 @@ export default function AIQuestionGeneratorModal({
     }
   };
   
+  // Carregar tópicos com base no assunto selecionado
+  const loadTopics = async (subjectId: number) => {
+    try {
+      const data = await DisciplinesRestService.getTopics(subjectId);
+      if (data && data.length > 0) {
+        setTopics(data.sort((a, b) => a.name.localeCompare(b.name)));
+      } else {
+        setTopics([]);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar tópicos:', error);
+      toast.error('Erro ao carregar tópicos');
+      setTopics([]);
+    }
+  };
+  
+  // Carregar instituições
+  const loadInstitutions = async () => {
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      if (!supabase) {
+        console.error('Supabase client não está disponível');
+        setInstitutions([]);
+        return;
+      }
+      const { data, error } = await supabase
+        .from('exam_institutions')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      
+      setInstitutions(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar instituições:', error);
+      toast.error('Erro ao carregar instituições');
+      setInstitutions([]);
+    }
+  };
+  
   // Função para lidar com a alteração de disciplina
   const handleDisciplineChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value ? parseInt(e.target.value) : null;
     setDisciplineId(value);
     setSubjectId(null); // Resetar o assunto ao mudar a disciplina
+    setTopicId(null); // Resetar o tópico ao mudar a disciplina
     
     if (value) {
       const selected = disciplines.find(d => d.id === value);
@@ -102,18 +150,38 @@ export default function AIQuestionGeneratorModal({
       setDisciplineName('');
       setSubjects([]);
     }
+    setSubjectName('');
+    setTopicName('');
+    setTopics([]);
   };
   
   // Função para lidar com a alteração de assunto
   const handleSubjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value ? parseInt(e.target.value) : null;
     setSubjectId(value);
+    setTopicId(null); // Resetar o tópico ao mudar o assunto
     
     if (value) {
       const selected = subjects.find(s => s.id === value);
       setSubjectName(selected?.name || '');
+      loadTopics(value);
     } else {
       setSubjectName('');
+      setTopics([]);
+    }
+    setTopicName('');
+  };
+  
+  // Função para lidar com a alteração de tópico
+  const handleTopicChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value ? parseInt(e.target.value) : null;
+    setTopicId(value);
+    
+    if (value) {
+      const selected = topics.find(t => t.id === value);
+      setTopicName(selected?.name || '');
+    } else {
+      setTopicName('');
     }
   };
   
@@ -135,6 +203,7 @@ export default function AIQuestionGeneratorModal({
       const params: AIQuestionGeneratorParams = {
         discipline: disciplineName,
         subject: subjectName,
+        topic: topicName || undefined,
         difficulty,
         questionType,
         additionalContext: additionalContext.trim() || undefined
@@ -143,11 +212,14 @@ export default function AIQuestionGeneratorModal({
       const result = await AIQuestionGeneratorService.generateQuestion(params);
       
       if (result) {
-        // Adicionar IDs de disciplina e assunto ao objeto de questão
+        // Adicionar IDs de disciplina, assunto, tópico, instituição e ano ao objeto de questão
         const questionWithIds: Question = {
           ...result.question,
           discipline_id: disciplineId || undefined,
           subject_id: subjectId || undefined,
+          topic_id: topicId || undefined,
+          institution_id: institutionId || undefined,
+          exam_year: examYear || undefined,
           is_public: isPublic
         };
         
@@ -199,6 +271,19 @@ export default function AIQuestionGeneratorModal({
     setGeneratedQuestion(null);
     setGeneratedOptions([]);
     setShowQuestionModal(false);
+    setDisciplineId(null);
+    setDisciplineName('');
+    setSubjectId(null);
+    setSubjectName('');
+    setTopicId(null);
+    setTopicName('');
+    setDisciplines([]);
+    setSubjects([]);
+    setTopics([]);
+    setDifficulty('média');
+    setQuestionType('multiple_choice');
+    setAdditionalContext('');
+    setIsPublic(false);
     onClose();
   };
   
@@ -292,6 +377,64 @@ export default function AIQuestionGeneratorModal({
               {!disciplineId && (
                 <p className="text-xs text-gray-500 mt-1">Selecione uma disciplina primeiro</p>
               )}
+            </div>
+            
+            {/* Tópico */}
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                Tópico (opcional)
+              </label>
+              <select
+                value={topicId || ''}
+                onChange={handleTopicChange}
+                disabled={!subjectId}
+                className="w-full border border-gray-300 rounded-md px-3 py-2.5 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400 touch-manipulation"
+              >
+                <option value="">Selecione um tópico</option>
+                {topics.map((topic) => (
+                  <option key={topic.id} value={topic.id}>
+                    {topic.name}
+                  </option>
+                ))}
+              </select>
+              {!subjectId && (
+                <p className="text-xs text-gray-500 mt-1">Selecione um assunto primeiro</p>
+              )}
+            </div>
+            
+            {/* Instituição */}
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                Instituição (opcional)
+              </label>
+              <select
+                value={institutionId || ''}
+                onChange={(e) => setInstitutionId(e.target.value ? parseInt(e.target.value) : null)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2.5 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation"
+              >
+                <option value="">Selecione uma instituição</option>
+                {institutions.map((institution) => (
+                  <option key={institution.id} value={institution.id}>
+                    {institution.acronym ? `${institution.acronym} - ${institution.name}` : institution.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            {/* Ano da Prova */}
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                Ano da Prova (opcional)
+              </label>
+              <input
+                type="number"
+                value={examYear || ''}
+                onChange={(e) => setExamYear(e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="Ex: 2024"
+                min="1900"
+                max="2030"
+                className="w-full border border-gray-300 rounded-md px-3 py-2.5 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation"
+              />
             </div>
             
             {/* Dificuldade */}
