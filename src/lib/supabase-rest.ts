@@ -376,6 +376,30 @@ export const DisciplinesRestService = {
     }
   },
 
+  /**
+   * Obtém todos os tópicos de um assunto
+   * @param subjectId ID do assunto
+   */
+  async getTopics(subjectId: number): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('topics')
+        .select('id, name, subject_id, discipline_id')
+        .eq('subject_id', subjectId)
+        .order('name');
+
+      if (error) {
+        console.error('Erro ao buscar tópicos:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Erro ao obter tópicos:', error);
+      return [];
+    }
+  },
+
   async getAllSubjects(onlyUser = true): Promise<Subject[]> {
     try {
       const headers = await getAuthHeaders();

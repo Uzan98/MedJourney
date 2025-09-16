@@ -46,9 +46,16 @@ export default function QuestionModal({
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [fullscreenImage, setFullscreenImage] = useState<{ url: string; description?: string } | null>(null);
   
-  // Estados para disciplinas e assuntos
+  // Estados para disciplinas, assuntos e tópicos
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [topics, setTopics] = useState<any[]>([]);
+  const [topicId, setTopicId] = useState<number | null>(null);
+  
+  // Estados para instituição e ano
+  const [institutionId, setInstitutionId] = useState<number | null>(null);
+  const [examYear, setExamYear] = useState<number | null>(null);
+  const [institutions, setInstitutions] = useState<any[]>([]);
   
   // Estado de loading
   const [isSaving, setIsSaving] = useState(false);
@@ -113,6 +120,9 @@ export default function QuestionModal({
       setExplanation(initialData.explanation || '');
       setDisciplineId(initialData.discipline_id || null);
       setSubjectId(initialData.subject_id || null);
+      setTopicId(initialData.topic_id || null);
+      setInstitutionId(initialData.institution_id || null);
+      setExamYear(initialData.exam_year || null);
       setDifficulty(initialData.difficulty || 'média');
       setQuestionType(initialData.question_type || 'multiple_choice');
       setTags(initialData.tags || []);
@@ -141,6 +151,9 @@ export default function QuestionModal({
         setExplanation(savedData.explanation || '');
         setDisciplineId(savedData.disciplineId || null);
         setSubjectId(savedData.subjectId || null);
+        setTopicId(savedData.topicId || null);
+        setInstitutionId(savedData.institutionId || null);
+        setExamYear(savedData.examYear || null);
         setDifficulty(savedData.difficulty || 'média');
         setQuestionType(savedData.questionType || 'multiple_choice');
         setAnswerOptions(savedData.answerOptions || []);
@@ -158,8 +171,9 @@ export default function QuestionModal({
       }
     }
     
-    // Carregar disciplinas
+    // Carregar disciplinas e instituições
     loadDisciplines();
+    loadInstitutions();
   }, [initialData, isOpen]); // Removido loadFromStorage das dependências
   
   // Salvar automaticamente o estado do formulário no sessionStorage
@@ -170,6 +184,9 @@ export default function QuestionModal({
         explanation,
         disciplineId,
         subjectId,
+        topicId,
+        institutionId,
+        examYear,
         difficulty,
         questionType,
         answerOptions,
@@ -187,7 +204,7 @@ export default function QuestionModal({
       });
       saveToStorage(formData);
     }
-  }, [content, explanation, disciplineId, subjectId, difficulty, questionType, answerOptions, correctAnswer, tags, isPublic, images, isOpen, initialData, saveToStorage]);
+  }, [content, explanation, disciplineId, subjectId, topicId, institutionId, examYear, difficulty, questionType, answerOptions, correctAnswer, tags, isPublic, images, isOpen, initialData, saveToStorage]);
    
    // Detectar mudança de visibilidade da página para recuperar dados perdidos
    useEffect(() => {
@@ -215,6 +232,7 @@ export default function QuestionModal({
                setExplanation(savedData.explanation || '');
                setDisciplineId(savedData.disciplineId || null);
                setSubjectId(savedData.subjectId || null);
+               setTopicId(savedData.topicId || null);
                setDifficulty(savedData.difficulty || 'média');
                setQuestionType(savedData.questionType || 'multiple_choice');
                setAnswerOptions(savedData.answerOptions || []);
@@ -224,6 +242,10 @@ export default function QuestionModal({
                
                if (savedData.disciplineId) {
                  loadSubjects(savedData.disciplineId);
+               }
+               
+               if (savedData.subjectId) {
+                 loadTopics(savedData.subjectId);
                }
                
                toast.success('Conteúdo recuperado automaticamente!');
@@ -248,6 +270,8 @@ export default function QuestionModal({
     setExplanation('');
     setDisciplineId(null);
     setSubjectId(null);
+    setTopicId(null);
+    setTopics([]);
     setDifficulty('média');
     setQuestionType('multiple_choice');
     setAnswerOptions([]);
@@ -287,6 +311,49 @@ export default function QuestionModal({
       console.error('Erro ao carregar assuntos:', error);
       toast.error('Erro ao carregar assuntos');
       setSubjects([]);
+    }
+  };
+
+  // Carregar tópicos com base no assunto selecionado
+  const loadTopics = async (subjectId: number) => {
+    try {
+      const data = await DisciplinesRestService.getTopics(subjectId);
+      if (data && data.length > 0) {
+        setTopics(data);
+      } else {
+        setTopics([]);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar tópicos:', error);
+      toast.error('Erro ao carregar tópicos');
+      setTopics([]);
+    }
+  };
+
+  // Carregar instituições
+  const loadInstitutions = async () => {
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      if (!supabase) {
+        console.error('Supabase client não está disponível');
+        return;
+      }
+      const { data, error } = await supabase
+        .from('exam_institutions')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setInstitutions(data);
+      } else {
+        setInstitutions([]);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar instituições:', error);
+      toast.error('Erro ao carregar instituições');
+      setInstitutions([]);
     }
   };
   
@@ -447,8 +514,11 @@ export default function QuestionModal({
     const value = e.target.value ? parseInt(e.target.value) : null;
     setDisciplineId(value);
     setSubjectId(null); // Resetar o assunto ao mudar a disciplina
-    
-    if (value) {
+     setTopicId(null); // Resetar o tópico ao mudar a disciplina
+     setSubjects([]);
+     setTopics([]);
+     
+     if (value) {
       loadSubjects(value);
     } else {
       setSubjects([]);
@@ -493,6 +563,9 @@ export default function QuestionModal({
         explanation: explanation.trim() || undefined,
         discipline_id: disciplineId || undefined,
         subject_id: subjectId || undefined,
+        topic_id: topicId || undefined,
+        institution_id: institutionId || undefined,
+        exam_year: examYear || undefined,
         difficulty,
         question_type: questionType,
         tags: tags.length > 0 ? tags : undefined,
@@ -869,7 +942,16 @@ export default function QuestionModal({
                 <select
                   id="subject"
                   value={subjectId || ''}
-                  onChange={(e) => setSubjectId(e.target.value ? parseInt(e.target.value) : null)}
+                  onChange={(e) => {
+                    const value = e.target.value ? parseInt(e.target.value) : null;
+                    setSubjectId(value);
+                    setTopicId(null); // Reset topic when subject changes
+                    if (value) {
+                      loadTopics(value);
+                    } else {
+                      setTopics([]);
+                    }
+                  }}
                   className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm touch-manipulation disabled:bg-gray-100 disabled:text-gray-500"
                   disabled={!disciplineId || subjects.length === 0}
                 >
@@ -882,6 +964,66 @@ export default function QuestionModal({
                     </option>
                   ))}
                 </select>
+              </div>
+              
+              {/* Tópico */}
+              <div>
+                <label htmlFor="topic" className="block text-sm font-medium text-gray-700 mb-2">
+                  Tópico
+                </label>
+                <select
+                  id="topic"
+                  value={topicId || ''}
+                  onChange={(e) => setTopicId(e.target.value ? parseInt(e.target.value) : null)}
+                  className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm touch-manipulation disabled:bg-gray-100 disabled:text-gray-500"
+                  disabled={!subjectId || topics.length === 0}
+                >
+                  <option value="">
+                    {!subjectId ? 'Selecione um assunto primeiro' : 'Selecione um tópico (opcional)'}
+                  </option>
+                  {topics.map(topic => (
+                    <option key={topic.id} value={topic.id}>
+                      {topic.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Instituição */}
+              <div>
+                <label htmlFor="institution" className="block text-sm font-medium text-gray-700 mb-2">
+                  Instituição
+                </label>
+                <select
+                  id="institution"
+                  value={institutionId || ''}
+                  onChange={(e) => setInstitutionId(e.target.value ? parseInt(e.target.value) : null)}
+                  className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm touch-manipulation"
+                >
+                  <option value="">Selecione uma instituição (opcional)</option>
+                  {institutions.map(institution => (
+                    <option key={institution.id} value={institution.id}>
+                      {institution.acronym ? `${institution.acronym} - ${institution.name}` : institution.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Ano da Prova */}
+              <div>
+                <label htmlFor="examYear" className="block text-sm font-medium text-gray-700 mb-2">
+                  Ano da Prova
+                </label>
+                <input
+                  type="number"
+                  id="examYear"
+                  value={examYear || ''}
+                  onChange={(e) => setExamYear(e.target.value ? parseInt(e.target.value) : null)}
+                  placeholder="Ex: 2024"
+                  min="1900"
+                  max="2030"
+                  className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm touch-manipulation"
+                />
               </div>
               
               {/* Dificuldade */}

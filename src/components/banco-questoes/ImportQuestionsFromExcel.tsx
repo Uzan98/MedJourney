@@ -61,16 +61,22 @@ export const ImportQuestionsFromExcel: React.FC<ImportQuestionsFromExcelProps> =
   const [isPublic, setIsPublic] = useState(defaultIsPublic);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [topics, setTopics] = useState<Subject[]>([]);
   const [selectedDiscipline, setSelectedDiscipline] = useState<number | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<number | null>(null);
+  const [selectedTopic, setSelectedTopic] = useState<number | null>(null);
+  const [selectedInstitution, setSelectedInstitution] = useState<number | null>(null);
+  const [selectedExamYear, setSelectedExamYear] = useState<number | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('média');
+  const [institutions, setInstitutions] = useState<any[]>([]);
   const [isLoadingDisciplines, setIsLoadingDisciplines] = useState(false);
   const [parsedQuestions, setParsedQuestions] = useState<any[]>([]);
   const [showPreview, setShowPreview] = useState(false);
 
-  // Carregar disciplinas ao montar o componente
+  // Carregar disciplinas e instituições ao montar o componente
   useEffect(() => {
     loadDisciplines();
+    loadInstitutions();
   }, []);
 
   // Carregar assuntos quando a disciplina selecionada mudar
@@ -81,7 +87,19 @@ export const ImportQuestionsFromExcel: React.FC<ImportQuestionsFromExcelProps> =
       setSubjects([]);
       setSelectedSubject(null);
     }
+    setTopics([]);
+    setSelectedTopic(null);
   }, [selectedDiscipline]);
+
+  // Carregar tópicos quando o assunto selecionado mudar
+  useEffect(() => {
+    if (selectedSubject) {
+      loadTopics(selectedSubject);
+    } else {
+      setTopics([]);
+      setSelectedTopic(null);
+    }
+  }, [selectedSubject]);
 
   const loadDisciplines = async () => {
     try {
@@ -103,6 +121,33 @@ export const ImportQuestionsFromExcel: React.FC<ImportQuestionsFromExcelProps> =
     } catch (error) {
       console.error('Erro ao carregar assuntos:', error);
       setSubjects([]);
+    }
+  };
+
+  const loadTopics = async (subjectId: number) => {
+    try {
+      const topicsData = await DisciplinesRestService.getTopics(subjectId);
+      setTopics(topicsData ? topicsData.sort((a, b) => a.name.localeCompare(b.name)) : []);
+    } catch (error) {
+      console.error('Erro ao carregar tópicos:', error);
+      setTopics([]);
+    }
+  };
+
+  const loadInstitutions = async () => {
+    try {
+      const { data, error } = await DisciplinesRestService.supabase
+        .from('exam_institutions')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      
+      setInstitutions(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar instituições:', error);
+      toast.error('Erro ao carregar instituições');
+      setInstitutions([]);
     }
   };
 
@@ -275,6 +320,9 @@ export const ImportQuestionsFromExcel: React.FC<ImportQuestionsFromExcelProps> =
             content: parsedQuestion.question_text,
             discipline_id: selectedDiscipline,
             subject_id: selectedSubject || undefined,
+            topic_id: selectedTopic || undefined,
+            institution_id: selectedInstitution || undefined,
+            exam_year: selectedExamYear || undefined,
             difficulty: selectedDifficulty as 'baixa' | 'média' | 'alta',
             question_type: parsedQuestion.question_type as 'multiple_choice' | 'true_false' | 'essay',
             explanation: parsedQuestion.explanation || '',
@@ -435,7 +483,67 @@ export const ImportQuestionsFromExcel: React.FC<ImportQuestionsFromExcelProps> =
               ))}
             </select>
           </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Tópico (opcional)
+            </label>
+            <select
+              value={selectedTopic?.toString() || ''}
+              onChange={(e) => setSelectedTopic(e.target.value ? Number(e.target.value) : null)}
+              className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+              disabled={!selectedSubject || topics.length === 0 || isUploading}
+            >
+              <option value="">Selecione um tópico</option>
+              {topics.map((topic) => (
+                <option key={topic.id} value={topic.id}>
+                  {topic.title || topic.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Instituição (opcional)
+            </label>
+            <select
+              value={selectedInstitution?.toString() || ''}
+              onChange={(e) => setSelectedInstitution(e.target.value ? Number(e.target.value) : null)}
+              className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+              disabled={isUploading}
+            >
+              <option value="">Selecione uma instituição</option>
+              {institutions.map((institution) => (
+                <option key={institution.id} value={institution.id}>
+                  {institution.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Ano do Exame (opcional)
+            </label>
+            <input
+              type="number"
+              value={selectedExamYear || ''}
+              onChange={(e) => setSelectedExamYear(e.target.value ? Number(e.target.value) : null)}
+              className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+              placeholder="Ex: 2024"
+              min="1900"
+              max="2100"
+              disabled={isUploading}
+            />
+           </div>
         </div>
+        
+        {!selectedSubject && (
+              <p className="text-xs text-gray-500 mt-1">
+                Selecione um assunto primeiro
+              </p>
+            )}
         
         {/* Seleção de dificuldade */}
         <div className="mt-2">
