@@ -354,6 +354,22 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
             )}
           </div>
           
+          {/* Informações da questão (instituição e ano) */}
+          {(question.institution_name || question.exam_year) && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {question.institution_name && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                  {question.institution_name}
+                </span>
+              )}
+              {question.exam_year && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                  {question.exam_year}
+                </span>
+              )}
+            </div>
+          )}
+          
           <div 
             className="quill-content text-gray-700 mb-6 text-lg" 
             dangerouslySetInnerHTML={{ __html: question.content || '' }}
