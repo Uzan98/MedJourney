@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
 import { initializeSubscriptionUsage } from '@/utils/subscription-fix';
+import { calculateQuestionHash } from '@/utils/question-hash';
 
 export interface AnswerOption {
   id?: number;
@@ -38,6 +39,7 @@ export interface Question {
   question_type?: 'multiple_choice' | 'true_false' | 'essay';
   correct_answer?: string;
   tags?: string[];
+  hash?: string; // Campo hash para evitar duplicações
   created_at?: string;
   updated_at?: string;
   answer_options?: AnswerOption[]; // Referência às opções de resposta
@@ -398,15 +400,19 @@ export class QuestionsBankService {
         }
       }
       
-      // Adiciona o user_id à questão
+      // Calcular o hash da questão para evitar duplicações
+      const questionHash = calculateQuestionHash(question, answerOptions);
+      
+      // Adiciona o user_id e hash à questão
       const newQuestion = {
         ...question,
         user_id: user.user.id,
+        hash: questionHash,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
       
-      // Insere a questão
+      // Insere a questão usando ON CONFLICT para evitar duplicações
       const { data, error } = await supabase
         .from('questions')
         .insert([newQuestion])
@@ -414,6 +420,11 @@ export class QuestionsBankService {
         .single();
 
       if (error) {
+        // Se for erro de duplicação (violação de constraint UNIQUE), retornar null silenciosamente
+        if (error.code === '23505' && error.message.includes('hash')) {
+          console.log('Questão já existe (hash duplicado), pulando inserção');
+          return null;
+        }
         throw error;
       }
       
