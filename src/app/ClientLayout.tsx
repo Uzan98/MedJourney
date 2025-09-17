@@ -6,6 +6,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { PWAProvider } from '@/components/PWAProvider';
+import { QueryProvider } from '@/contexts/QueryProvider';
 import { StartupProvider } from './providers';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import PWABanner from '@/components/PWABanner';
@@ -25,27 +26,29 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   }, []);
 
   return (
-    <SupabaseProvider>
-      <AuthProvider>
-        <SubscriptionProvider>
-          <NotificationProvider>
-            <PWAProvider>
-              <StartupProvider>
-                {children}
-                
-                {/* Mobile Menu - Only visible on mobile devices */}
-                <MobileMenu />
-                
-                {/* PWA Components */}
-                 <PWABanner />
-                 <PWAInstallPrompt />
-                 
-                 {/* Update Notification - Removido: atualização automática silenciosa */}
-              </StartupProvider>
-            </PWAProvider>
-          </NotificationProvider>
-        </SubscriptionProvider>
-      </AuthProvider>
-    </SupabaseProvider>
+    <QueryProvider>
+      <SupabaseProvider>
+        <AuthProvider>
+          <SubscriptionProvider>
+            <NotificationProvider>
+              <PWAProvider>
+                <StartupProvider>
+                  {children}
+                  
+                  {/* Mobile Menu - Only visible on mobile devices */}
+                  <MobileMenu />
+                  
+                  {/* PWA Components */}
+                   <PWABanner />
+                   <PWAInstallPrompt />
+                   
+                   {/* Update Notification - Removido: atualização automática silenciosa */}
+                </StartupProvider>
+              </PWAProvider>
+            </NotificationProvider>
+          </SubscriptionProvider>
+        </AuthProvider>
+      </SupabaseProvider>
+    </QueryProvider>
   );
 }
