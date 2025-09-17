@@ -6,6 +6,7 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { FaArrowLeft, FaHome, FaRedoAlt, FaCheck, FaTimes, FaClock, FaFileAlt, FaChartPie, FaTrophy, FaBrain } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Exam, ExamQuestion, ExamAttempt, ExamAnswer, ExamsService } from '@/services/exams.service';
 import { QuestionsBankService } from '@/services/questions-bank.service';
 import Loading from '@/components/Loading';
@@ -16,6 +17,7 @@ import { AIExplanationModal } from '@/components/ai/AIExplanationModal';
 export default function ResultadoSimulado({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { user } = useAuth();
+  const { isProOrHigher, showUpgradeModal } = useSubscription();
   const attemptId = parseInt(params.id);
   
   const [loading, setLoading] = useState(true);
@@ -135,6 +137,11 @@ export default function ResultadoSimulado({ params }: { params: { id: string } }
   };
 
   const handleOpenAIExplanation = (questionData: any) => {
+    if (!isProOrHigher()) {
+      showUpgradeModal('pro', 'Explicações com IA estão disponíveis apenas para assinantes dos planos Pro e Pro+.');
+      return;
+    }
+    
     setSelectedQuestionForAI(questionData);
     setShowAIExplanationModal(true);
   };
@@ -372,10 +379,15 @@ export default function ResultadoSimulado({ params }: { params: { id: string } }
                 {!questionData.explanation && (
                   <button
                     onClick={() => handleOpenAIExplanation(questionData)}
-                    className="inline-flex items-center px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+                    className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-lg transition-colors ${
+                      isProOrHigher()
+                        ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                        : 'bg-gray-200 hover:bg-gray-300 text-gray-600 border border-gray-300'
+                    }`}
+                    title={!isProOrHigher() ? 'Recurso disponível apenas para planos Pro e Pro+' : ''}
                   >
                     <FaBrain className="mr-1" />
-                    Gerar com IA
+                    {isProOrHigher() ? 'Gerar com IA' : 'Gerar com IA (Pro)'}
                   </button>
                 )}
               </div>
