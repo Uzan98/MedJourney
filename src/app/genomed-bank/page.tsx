@@ -269,7 +269,7 @@ export default function GenomedBankPage() {
           question_type, 
           correct_answer, 
           exam_year,
-          exam_institutions!inner(
+          exam_institutions(
             name,
             acronym
           )
