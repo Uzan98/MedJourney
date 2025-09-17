@@ -222,7 +222,7 @@ export class ExamsService {
 
       let query = supabase
         .from('exam_questions')
-        .select(includeQuestionDetails ? 'id, exam_id, question_id, position, weight, question:questions(*, question_images(*))' : '*')
+        .select(includeQuestionDetails ? 'id, exam_id, question_id, position, weight, question:questions(*, question_images(*), exam_institutions!inner(name, acronym))' : '*')
         .eq('exam_id', examId)
         .order('position', { ascending: true });
       
@@ -232,12 +232,24 @@ export class ExamsService {
         throw error;
       }
       
-      // Se incluir detalhes da questão, mapear question_images para images
+      // Se incluir detalhes da questão, mapear question_images para images e dados da instituição
       if (includeQuestionDetails && data) {
         data.forEach((examQuestion: any) => {
-          if (examQuestion.question && examQuestion.question.question_images) {
-            examQuestion.question.images = examQuestion.question.question_images;
-            delete examQuestion.question.question_images;
+          if (examQuestion.question) {
+            // Mapear imagens
+            if (examQuestion.question.question_images) {
+              examQuestion.question.images = examQuestion.question.question_images;
+              delete examQuestion.question.question_images;
+            }
+            
+            // Mapear dados da instituição
+            if (examQuestion.question.exam_institutions) {
+              const institutions = examQuestion.question.exam_institutions;
+              const firstInstitution = Array.isArray(institutions) ? institutions[0] : institutions;
+              examQuestion.question.institution_name = firstInstitution?.name;
+              examQuestion.question.institution_acronym = firstInstitution?.acronym;
+              delete examQuestion.question.exam_institutions;
+            }
           }
         });
       }

@@ -12,6 +12,9 @@ import { supabase } from '@/lib/supabase';
 import { ExamsService } from '@/services/exams.service';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import 'react-quill/dist/quill.snow.css';
+import '@/styles/quill-custom.css';
+import '@/styles/quill-mobile.css';
 
 interface Discipline {
   id: number;
@@ -918,39 +921,51 @@ export default function GenomedBankPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-6">
               {/* Disciplina */}
               <div className="space-y-3">
                 <label className="text-sm font-bold text-emerald-700 flex items-center space-x-2">
                   <BookOpen className="h-4 w-4" />
                   <span>Disciplina</span>
+                  {selectedDiscipline && (
+                    <Badge className="ml-2 bg-emerald-100 text-emerald-700">
+                      {disciplines.find(d => d.id.toString() === selectedDiscipline)?.name}
+                    </Badge>
+                  )}
                 </label>
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
-                  <Select value={selectedDiscipline} onValueChange={setSelectedDiscipline}>
-                    <SelectTrigger className="relative bg-white/90 backdrop-blur-sm border-0 rounded-xl shadow-lg h-12 focus:ring-2 focus:ring-emerald-400 transition-all duration-300">
-                      <SelectValue placeholder="🎯 Selecione uma disciplina" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-xl">
-                      {disciplines.map((discipline) => (
-                        <SelectItem key={discipline.id} value={discipline.id.toString()} className="hover:bg-emerald-50 focus:bg-emerald-50 rounded-lg m-1">
-                          <div className="flex justify-between items-center w-full">
-                            <span className="font-medium text-gray-700">{discipline.name}</span>
-                            <Badge className="badge-discipline">
+                <div className="relative">
+                  <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-emerald-300 scrollbar-track-emerald-100 pb-2 space-x-3">
+                    {loading.disciplines ? (
+                      <div className="flex items-center space-x-2 text-sm text-emerald-600 px-4 py-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="font-medium whitespace-nowrap">Carregando disciplinas...</span>
+                      </div>
+                    ) : (
+                      disciplines.map((discipline) => (
+                        <button
+                          key={discipline.id}
+                          onClick={() => setSelectedDiscipline(discipline.id.toString())}
+                          className={`flex-shrink-0 px-4 py-2 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
+                            selectedDiscipline === discipline.id.toString()
+                              ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-emerald-500 shadow-lg'
+                              : 'bg-white/90 text-gray-700 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-2">
+                            <span className="font-medium whitespace-nowrap">{discipline.name}</span>
+                            <Badge className={`text-xs ${
+                              selectedDiscipline === discipline.id.toString()
+                                ? 'bg-white/20 text-white'
+                                : 'bg-emerald-100 text-emerald-700'
+                            }`}>
                               {questionCounts.disciplines[discipline.id] || 0}
                             </Badge>
                           </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {loading.disciplines && (
-                  <div className="flex items-center space-x-2 text-sm text-emerald-600">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="font-medium">Carregando disciplinas...</span>
+                        </button>
+                      ))
+                    )}
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Assunto */}
@@ -958,37 +973,55 @@ export default function GenomedBankPage() {
                 <label className="text-sm font-bold text-blue-700 flex items-center space-x-2">
                   <FileText className="h-4 w-4" />
                   <span>Assunto</span>
+                  {selectedSubject && (
+                    <Badge className="ml-2 bg-blue-100 text-blue-700">
+                      {subjects.find(s => s.id.toString() === selectedSubject)?.title || subjects.find(s => s.id.toString() === selectedSubject)?.name}
+                    </Badge>
+                  )}
                 </label>
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
-                  <Select 
-                    value={selectedSubject} 
-                    onValueChange={setSelectedSubject}
-                    disabled={!selectedDiscipline || loading.subjects}
-                  >
-                    <SelectTrigger className="relative bg-white/90 backdrop-blur-sm border-0 rounded-xl shadow-lg h-12 focus:ring-2 focus:ring-blue-400 transition-all duration-300 disabled:opacity-50">
-                      <SelectValue placeholder="📚 Selecione um assunto" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-xl">
-                      {subjects.map((subject) => (
-                        <SelectItem key={subject.id} value={subject.id.toString()} className="hover:bg-blue-50 focus:bg-blue-50 rounded-lg m-1">
-                          <div className="flex justify-between items-center w-full">
-                            <span className="font-medium text-gray-700">{subject.title || subject.name}</span>
-                            <Badge className="badge-subject">
-                              {questionCounts.subjects[subject.id] || 0}
-                            </Badge>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="relative">
+                  {!selectedDiscipline ? (
+                    <div className="text-sm text-gray-500 italic px-4 py-3 bg-gray-50 rounded-xl">
+                      Selecione uma disciplina primeiro
+                    </div>
+                  ) : (
+                    <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-blue-100 pb-2 space-x-3">
+                      {loading.subjects ? (
+                        <div className="flex items-center space-x-2 text-sm text-blue-600 px-4 py-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="font-medium whitespace-nowrap">Carregando assuntos...</span>
+                        </div>
+                      ) : subjects.length === 0 ? (
+                        <div className="text-sm text-gray-500 italic px-4 py-3">
+                          Nenhum assunto encontrado
+                        </div>
+                      ) : (
+                        subjects.map((subject) => (
+                          <button
+                            key={subject.id}
+                            onClick={() => setSelectedSubject(subject.id.toString())}
+                            className={`flex-shrink-0 px-4 py-2 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
+                              selectedSubject === subject.id.toString()
+                                ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-blue-500 shadow-lg'
+                                : 'bg-white/90 text-gray-700 border-blue-200 hover:border-blue-400 hover:bg-blue-50'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <span className="font-medium whitespace-nowrap">{subject.title || subject.name}</span>
+                              <Badge className={`text-xs ${
+                                selectedSubject === subject.id.toString()
+                                  ? 'bg-white/20 text-white'
+                                  : 'bg-blue-100 text-blue-700'
+                              }`}>
+                                {questionCounts.subjects[subject.id] || 0}
+                              </Badge>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
                 </div>
-                {loading.subjects && (
-                  <div className="flex items-center space-x-2 text-sm text-blue-600">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="font-medium">Carregando assuntos...</span>
-                  </div>
-                )}
               </div>
 
               {/* Tópico */}
@@ -996,37 +1029,55 @@ export default function GenomedBankPage() {
                 <label className="text-sm font-bold text-purple-700 flex items-center space-x-2">
                   <Target className="h-4 w-4" />
                   <span>Tópico</span>
+                  {selectedTopic && (
+                    <Badge className="ml-2 bg-purple-100 text-purple-700">
+                      {topics.find(t => t.id.toString() === selectedTopic)?.name}
+                    </Badge>
+                  )}
                 </label>
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
-                  <Select 
-                    value={selectedTopic} 
-                    onValueChange={setSelectedTopic}
-                    disabled={!selectedSubject || loading.topics}
-                  >
-                    <SelectTrigger className="relative bg-white/90 backdrop-blur-sm border-0 rounded-xl shadow-lg h-12 focus:ring-2 focus:ring-purple-400 transition-all duration-300 disabled:opacity-50">
-                      <SelectValue placeholder="🎯 Selecione um tópico" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-xl">
-                      {topics.map((topic) => (
-                        <SelectItem key={topic.id} value={topic.id.toString()} className="hover:bg-purple-50 focus:bg-purple-50 rounded-lg m-1">
-                          <div className="flex justify-between items-center w-full">
-                            <span className="font-medium text-gray-700">{topic.name}</span>
-                            <Badge className="badge-topic">
-                              {questionCounts.topics[topic.id] || 0}
-                            </Badge>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="relative">
+                  {!selectedSubject ? (
+                    <div className="text-sm text-gray-500 italic px-4 py-3 bg-gray-50 rounded-xl">
+                      Selecione um assunto primeiro
+                    </div>
+                  ) : (
+                    <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-purple-300 scrollbar-track-purple-100 pb-2 space-x-3">
+                      {loading.topics ? (
+                        <div className="flex items-center space-x-2 text-sm text-purple-600 px-4 py-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="font-medium whitespace-nowrap">Carregando tópicos...</span>
+                        </div>
+                      ) : topics.length === 0 ? (
+                        <div className="text-sm text-gray-500 italic px-4 py-3">
+                          Nenhum tópico encontrado
+                        </div>
+                      ) : (
+                        topics.map((topic) => (
+                          <button
+                            key={topic.id}
+                            onClick={() => setSelectedTopic(topic.id.toString())}
+                            className={`flex-shrink-0 px-4 py-2 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
+                              selectedTopic === topic.id.toString()
+                                ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white border-purple-500 shadow-lg'
+                                : 'bg-white/90 text-gray-700 border-purple-200 hover:border-purple-400 hover:bg-purple-50'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <span className="font-medium whitespace-nowrap">{topic.name}</span>
+                              <Badge className={`text-xs ${
+                                selectedTopic === topic.id.toString()
+                                  ? 'bg-white/20 text-white'
+                                  : 'bg-purple-100 text-purple-700'
+                              }`}>
+                                {questionCounts.topics[topic.id] || 0}
+                              </Badge>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
                 </div>
-                {loading.topics && (
-                  <div className="flex items-center space-x-2 text-sm text-purple-600">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="font-medium">Carregando tópicos...</span>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -1177,7 +1228,10 @@ export default function GenomedBankPage() {
                         </div>
                         <div className="flex-1">
                           <div className={`mb-4 transition-colors duration-300`}>
-                            <p className="text-gray-800 leading-relaxed font-medium text-base">{question.content}</p>
+                            <div 
+                              className="quill-content text-gray-800 leading-relaxed font-medium text-base"
+                              dangerouslySetInnerHTML={{ __html: question.content || '' }}
+                            />
                           </div>
                           <div className="flex items-center flex-wrap gap-3">
                             {question.difficulty && (
