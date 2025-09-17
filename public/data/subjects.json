@@ -1,0 +1,1453 @@
+{
+  "generated_at": "2025-09-17T01:22:19.585Z",
+  "total_disciplines": 5,
+  "total_subjects": 354,
+  "disciplines": [
+    {
+      "id": 123,
+      "name": "Cirurgia Geral",
+      "subjects": [
+        {
+          "id": 1034,
+          "name": "Abdome agudo hemorrágico"
+        },
+        {
+          "id": 1035,
+          "name": "Abdome agudo obstrutivo"
+        },
+        {
+          "id": 1036,
+          "name": "Abdome agudo perfurativo"
+        },
+        {
+          "id": 1037,
+          "name": "Abdome agudo vascular"
+        },
+        {
+          "id": 1038,
+          "name": "Abscesso cervical"
+        },
+        {
+          "id": 1039,
+          "name": "Alterações genitais"
+        },
+        {
+          "id": 1040,
+          "name": "Anatomia e Fisiologia"
+        },
+        {
+          "id": 1041,
+          "name": "Anestesia"
+        },
+        {
+          "id": 1042,
+          "name": "Aneurisma"
+        },
+        {
+          "id": 1043,
+          "name": "Apendicite aguda"
+        },
+        {
+          "id": 1044,
+          "name": "Atendimento inicial ao politraumatizado"
+        },
+        {
+          "id": 1045,
+          "name": "Atresia de Vias Biliares"
+        },
+        {
+          "id": 1046,
+          "name": "Atresias do Tubo digestivo"
+        },
+        {
+          "id": 1055,
+          "name": "Câncer colorretal"
+        },
+        {
+          "id": 1057,
+          "name": "Câncer de bexiga"
+        },
+        {
+          "id": 1058,
+          "name": "Câncer de canal anal"
+        },
+        {
+          "id": 1060,
+          "name": "Câncer de esôfago"
+        },
+        {
+          "id": 1059,
+          "name": "Câncer de estômago"
+        },
+        {
+          "id": 1061,
+          "name": "Câncer de pele não melanoma"
+        },
+        {
+          "id": 1056,
+          "name": "Câncer de Próstata"
+        },
+        {
+          "id": 1062,
+          "name": "Câncer de testículo"
+        },
+        {
+          "id": 1063,
+          "name": "Câncer renal"
+        },
+        {
+          "id": 1047,
+          "name": "Carótidas"
+        },
+        {
+          "id": 1048,
+          "name": "Cicatrização"
+        },
+        {
+          "id": 1049,
+          "name": "Cirurgia cardíaca"
+        },
+        {
+          "id": 1050,
+          "name": "Cirurgia de obesidade"
+        },
+        {
+          "id": 1051,
+          "name": "Cirurgia pediátrica"
+        },
+        {
+          "id": 1052,
+          "name": "Controle de Danos"
+        },
+        {
+          "id": 1053,
+          "name": "Corpo estranho"
+        },
+        {
+          "id": 1054,
+          "name": "Criptorquidia"
+        },
+        {
+          "id": 1064,
+          "name": "Derrame pleural"
+        },
+        {
+          "id": 1065,
+          "name": "Dispepsia"
+        },
+        {
+          "id": 1066,
+          "name": "Dissecção de aorta"
+        },
+        {
+          "id": 1067,
+          "name": "Diverticulite aguda"
+        },
+        {
+          "id": 1068,
+          "name": "Divertículo de Meckel"
+        },
+        {
+          "id": 1069,
+          "name": "Doença de Hirschsprung"
+        },
+        {
+          "id": 1070,
+          "name": "Doença do refluxo gastroesofágico"
+        },
+        {
+          "id": 1072,
+          "name": "Doenças benignas do esôfago"
+        },
+        {
+          "id": 1073,
+          "name": "Doenças das vias biliares"
+        },
+        {
+          "id": 1074,
+          "name": "Doenças orificiais"
+        },
+        {
+          "id": 1071,
+          "name": "Doença vascular periférica"
+        },
+        {
+          "id": 1075,
+          "name": "Emergências Urológicas"
+        },
+        {
+          "id": 1076,
+          "name": "Enterocolite Necrosante"
+        },
+        {
+          "id": 1077,
+          "name": "Enxerto e Retalho"
+        },
+        {
+          "id": 1078,
+          "name": "Estenose Hipertrófica de Piloro"
+        },
+        {
+          "id": 1079,
+          "name": "Fasceíte Necrosante e Gangrena de Fournier"
+        },
+        {
+          "id": 1080,
+          "name": "Fístula arteriovenosa"
+        },
+        {
+          "id": 1081,
+          "name": "Gastrosquise e Onfalocele"
+        },
+        {
+          "id": 1082,
+          "name": "Hemoptise"
+        },
+        {
+          "id": 1083,
+          "name": "Hemorragia Digestiva Alta Não Varicosa"
+        },
+        {
+          "id": 1084,
+          "name": "Hemorragia Digestiva Alta Varicosa"
+        },
+        {
+          "id": 1085,
+          "name": "Hemorragia Digestiva Baixa"
+        },
+        {
+          "id": 1087,
+          "name": "Hérnias"
+        },
+        {
+          "id": 1088,
+          "name": "Hérnias na Infância"
+        },
+        {
+          "id": 1086,
+          "name": "Hiperplasia prostática benigna"
+        },
+        {
+          "id": 1089,
+          "name": "Intussuscepção e Volvo de Intestino"
+        },
+        {
+          "id": 1090,
+          "name": "Malformações anorretais"
+        },
+        {
+          "id": 1091,
+          "name": "Massas cervicais benignas"
+        },
+        {
+          "id": 1092,
+          "name": "Melanoma"
+        },
+        {
+          "id": 1093,
+          "name": "Nefrolitíase"
+        },
+        {
+          "id": 1094,
+          "name": "Neoplasias do intestino delgado"
+        },
+        {
+          "id": 1095,
+          "name": "Nódulos hepáticos"
+        },
+        {
+          "id": 1096,
+          "name": "Oftalmologia"
+        },
+        {
+          "id": 1097,
+          "name": "Oncologia"
+        },
+        {
+          "id": 1098,
+          "name": "Ortopedia"
+        },
+        {
+          "id": 1099,
+          "name": "Otorrinolaringologia"
+        },
+        {
+          "id": 1100,
+          "name": "Outros temas - Cirurgia geral"
+        },
+        {
+          "id": 1102,
+          "name": "Pancreatite aguda"
+        },
+        {
+          "id": 1101,
+          "name": "Pancreatite Crônica"
+        },
+        {
+          "id": 1103,
+          "name": "Patologias Traqueais"
+        },
+        {
+          "id": 1104,
+          "name": "Perioperatório"
+        },
+        {
+          "id": 1105,
+          "name": "Pneumotórax Espontâneo"
+        },
+        {
+          "id": 1106,
+          "name": "Queimados"
+        },
+        {
+          "id": 1107,
+          "name": "Refluxo Vesico Ureteral e Estenose de JUP"
+        },
+        {
+          "id": 1108,
+          "name": "Resposta metabólica ao trauma"
+        },
+        {
+          "id": 1109,
+          "name": "Sarcoma"
+        },
+        {
+          "id": 1110,
+          "name": "Síndrome compartimental abdominal"
+        },
+        {
+          "id": 1111,
+          "name": "Síndrome do desfiladeiro torácico"
+        },
+        {
+          "id": 1112,
+          "name": "Síndromes pós-gastrectomias"
+        },
+        {
+          "id": 1127,
+          "name": "Técnica cirúrgica"
+        },
+        {
+          "id": 1113,
+          "name": "Transplante de fígado"
+        },
+        {
+          "id": 1114,
+          "name": "Trauma abdominal"
+        },
+        {
+          "id": 1115,
+          "name": "Trauma cervical"
+        },
+        {
+          "id": 1116,
+          "name": "Trauma cranioencefálico"
+        },
+        {
+          "id": 1117,
+          "name": "Trauma de extremidades"
+        },
+        {
+          "id": 1118,
+          "name": "Trauma de tórax"
+        },
+        {
+          "id": 1119,
+          "name": "Trauma pélvico e perineal"
+        },
+        {
+          "id": 1120,
+          "name": "Trauma raquimedular e coluna"
+        },
+        {
+          "id": 1121,
+          "name": "Trombose venosa profunda"
+        },
+        {
+          "id": 1122,
+          "name": "Tumor de Pâncreas"
+        },
+        {
+          "id": 1123,
+          "name": "Tumores Abdominais na Infância"
+        },
+        {
+          "id": 1124,
+          "name": "Tumores de Cabeça e Pescoço"
+        },
+        {
+          "id": 1125,
+          "name": "Tumores de Mediastino"
+        },
+        {
+          "id": 1126,
+          "name": "Tumores neuroendócrinos"
+        },
+        {
+          "id": 1129,
+          "name": "Úlcera péptica e H. pylori"
+        },
+        {
+          "id": 1128,
+          "name": "Videolaparoscopia"
+        }
+      ]
+    },
+    {
+      "id": 124,
+      "name": "Clínica Médica",
+      "subjects": [
+        {
+          "id": 1133,
+          "name": "Abscesso pulmonar"
+        },
+        {
+          "id": 1134,
+          "name": "Abuso de substâncias"
+        },
+        {
+          "id": 1135,
+          "name": "Acidentes com animais peçonhentos"
+        },
+        {
+          "id": 1130,
+          "name": "ACLS"
+        },
+        {
+          "id": 1136,
+          "name": "Acromegalia"
+        },
+        {
+          "id": 1137,
+          "name": "Alcoolismo"
+        },
+        {
+          "id": 1138,
+          "name": "Amiloidose"
+        },
+        {
+          "id": 1139,
+          "name": "Anafilaxia"
+        },
+        {
+          "id": 1140,
+          "name": "Anemia falciforme"
+        },
+        {
+          "id": 1141,
+          "name": "Anemias"
+        },
+        {
+          "id": 1142,
+          "name": "Angioedema hereditário"
+        },
+        {
+          "id": 1143,
+          "name": "Apneia do sono"
+        },
+        {
+          "id": 1144,
+          "name": "Arritmias"
+        },
+        {
+          "id": 1145,
+          "name": "Artrite idiopática juvenil"
+        },
+        {
+          "id": 1146,
+          "name": "Artrite reumatoide"
+        },
+        {
+          "id": 1147,
+          "name": "Artrites infecciosas"
+        },
+        {
+          "id": 1148,
+          "name": "Artrites soronegativas"
+        },
+        {
+          "id": 1149,
+          "name": "Asma"
+        },
+        {
+          "id": 1150,
+          "name": "Aspergilus e pulmão"
+        },
+        {
+          "id": 1131,
+          "name": "AVCH"
+        },
+        {
+          "id": 1132,
+          "name": "AVCI"
+        },
+        {
+          "id": 1151,
+          "name": "Bradiarritmias"
+        },
+        {
+          "id": 1152,
+          "name": "Bronquiectasias"
+        },
+        {
+          "id": 1162,
+          "name": "Câncer de pulmão"
+        },
+        {
+          "id": 1163,
+          "name": "Câncer de tireoide"
+        },
+        {
+          "id": 1154,
+          "name": "Cefaleias"
+        },
+        {
+          "id": 1155,
+          "name": "Choque"
+        },
+        {
+          "id": 1156,
+          "name": "Cirrose"
+        },
+        {
+          "id": 1157,
+          "name": "Colite pseudomembranosa"
+        },
+        {
+          "id": 1158,
+          "name": "Constipação"
+        },
+        {
+          "id": 1159,
+          "name": "Corrimento uretral"
+        },
+        {
+          "id": 1153,
+          "name": "COVID-19"
+        },
+        {
+          "id": 1160,
+          "name": "Crise hipertensiva"
+        },
+        {
+          "id": 1161,
+          "name": "Cuidados paliativos"
+        },
+        {
+          "id": 1165,
+          "name": "Delirium"
+        },
+        {
+          "id": 1166,
+          "name": "Demência"
+        },
+        {
+          "id": 1167,
+          "name": "Dengue e outras arboviroses"
+        },
+        {
+          "id": 1168,
+          "name": "Dermatologia"
+        },
+        {
+          "id": 1169,
+          "name": "Derrame pleural"
+        },
+        {
+          "id": 1170,
+          "name": "Diabetes"
+        },
+        {
+          "id": 1171,
+          "name": "Dislipidemia"
+        },
+        {
+          "id": 1174,
+          "name": "Distúrbios ácido-básicos"
+        },
+        {
+          "id": 1172,
+          "name": "Distúrbios da hemostasia"
+        },
+        {
+          "id": 1173,
+          "name": "Distúrbios hidroeletrolíticos"
+        },
+        {
+          "id": 1177,
+          "name": "Doença celíaca"
+        },
+        {
+          "id": 1178,
+          "name": "Doença de Chagas"
+        },
+        {
+          "id": 1179,
+          "name": "Doença de Parkinson"
+        },
+        {
+          "id": 1180,
+          "name": "Doença de Still"
+        },
+        {
+          "id": 1175,
+          "name": "Doença Inflamatória Intestinal"
+        },
+        {
+          "id": 1181,
+          "name": "Doença policística renal"
+        },
+        {
+          "id": 1182,
+          "name": "Doença pulmonar parenquimatosa difusa"
+        },
+        {
+          "id": 1183,
+          "name": "Doença relacionada a IgG4"
+        },
+        {
+          "id": 1176,
+          "name": "Doença Renal Crônica"
+        },
+        {
+          "id": 1184,
+          "name": "Doenças do pericárdio"
+        },
+        {
+          "id": 1185,
+          "name": "Doenças glomerulares"
+        },
+        {
+          "id": 1186,
+          "name": "Doenças neuromusculares"
+        },
+        {
+          "id": 1164,
+          "name": "DPOC"
+        },
+        {
+          "id": 1187,
+          "name": "Drogas - Efeitos adversos"
+        },
+        {
+          "id": 1189,
+          "name": "Ebola"
+        },
+        {
+          "id": 1188,
+          "name": "ENADE"
+        },
+        {
+          "id": 1190,
+          "name": "Endocardite"
+        },
+        {
+          "id": 1191,
+          "name": "Epilepsia"
+        },
+        {
+          "id": 1192,
+          "name": "Esclerose múltipla"
+        },
+        {
+          "id": 1193,
+          "name": "Esclerose sistêmica"
+        },
+        {
+          "id": 1194,
+          "name": "Esquistossomose"
+        },
+        {
+          "id": 1195,
+          "name": "Febre reumática"
+        },
+        {
+          "id": 1196,
+          "name": "Febre tifóide"
+        },
+        {
+          "id": 1197,
+          "name": "Feocromocitoma"
+        },
+        {
+          "id": 1198,
+          "name": "Fibromialgia"
+        },
+        {
+          "id": 1199,
+          "name": "Geriatria"
+        },
+        {
+          "id": 1200,
+          "name": "Gota"
+        },
+        {
+          "id": 1201,
+          "name": "Gripe"
+        },
+        {
+          "id": 1203,
+          "name": "Hanseníase"
+        },
+        {
+          "id": 1204,
+          "name": "Hantavirose"
+        },
+        {
+          "id": 1205,
+          "name": "Hepatites"
+        },
+        {
+          "id": 1206,
+          "name": "Hepatites virais"
+        },
+        {
+          "id": 1207,
+          "name": "Herpes Zóster"
+        },
+        {
+          "id": 1208,
+          "name": "Hiperaldosteronismo Primário"
+        },
+        {
+          "id": 1209,
+          "name": "Hiperparatireoidismo primário"
+        },
+        {
+          "id": 1210,
+          "name": "Hiperplasia adrenal congênita"
+        },
+        {
+          "id": 1211,
+          "name": "Hiperprolactinemia"
+        },
+        {
+          "id": 1213,
+          "name": "Hipertensão arterial sistêmica"
+        },
+        {
+          "id": 1214,
+          "name": "Hipertensão intracraniana"
+        },
+        {
+          "id": 1215,
+          "name": "Hipertensão pulmonar"
+        },
+        {
+          "id": 1212,
+          "name": "Hipertensão Renovascular"
+        },
+        {
+          "id": 1216,
+          "name": "Hipotireoidismo"
+        },
+        {
+          "id": 1217,
+          "name": "Histoplasmose"
+        },
+        {
+          "id": 1202,
+          "name": "HIV"
+        },
+        {
+          "id": 1218,
+          "name": "Incidentaloma Adrenal"
+        },
+        {
+          "id": 1219,
+          "name": "Infecção do trato urinário"
+        },
+        {
+          "id": 1220,
+          "name": "Infecções de partes moles"
+        },
+        {
+          "id": 1221,
+          "name": "Infecções de pele e partes moles"
+        },
+        {
+          "id": 1222,
+          "name": "Injúria Renal Aguda"
+        },
+        {
+          "id": 1223,
+          "name": "Insuficiência Adrenal"
+        },
+        {
+          "id": 1224,
+          "name": "Insuficiência Cardíaca"
+        },
+        {
+          "id": 1225,
+          "name": "Insuficiência respiratória aguda"
+        },
+        {
+          "id": 1226,
+          "name": "Intoxicações exógenas"
+        },
+        {
+          "id": 1227,
+          "name": "Leishmaniose"
+        },
+        {
+          "id": 1228,
+          "name": "Leptospirose"
+        },
+        {
+          "id": 1229,
+          "name": "Leucemias"
+        },
+        {
+          "id": 1230,
+          "name": "Linfoma"
+        },
+        {
+          "id": 1231,
+          "name": "Linfonodomegalias"
+        },
+        {
+          "id": 1232,
+          "name": "Lombalgia"
+        },
+        {
+          "id": 1233,
+          "name": "Lúpus eritematoso sistêmico"
+        },
+        {
+          "id": 1234,
+          "name": "Malária"
+        },
+        {
+          "id": 1235,
+          "name": "Meningite"
+        },
+        {
+          "id": 1236,
+          "name": "Micoses profundas"
+        },
+        {
+          "id": 1237,
+          "name": "Mieloma múltiplo"
+        },
+        {
+          "id": 1238,
+          "name": "Morte encefálica"
+        },
+        {
+          "id": 1239,
+          "name": "Mucormicose"
+        },
+        {
+          "id": 1240,
+          "name": "Neuropatias periféricas"
+        },
+        {
+          "id": 1241,
+          "name": "Neutropenia febril"
+        },
+        {
+          "id": 1242,
+          "name": "Nódulo de tireoide"
+        },
+        {
+          "id": 1243,
+          "name": "Nódulos de pulmão"
+        },
+        {
+          "id": 1244,
+          "name": "Osteoartrite"
+        },
+        {
+          "id": 1245,
+          "name": "Osteoporose"
+        },
+        {
+          "id": 1246,
+          "name": "Outras infecções e antibióticos"
+        },
+        {
+          "id": 1247,
+          "name": "Outros temas - Clínica médica"
+        },
+        {
+          "id": 1248,
+          "name": "Paracoccidioidomicose"
+        },
+        {
+          "id": 1249,
+          "name": "Paralisia facial"
+        },
+        {
+          "id": 1250,
+          "name": "Pneumonia"
+        },
+        {
+          "id": 1251,
+          "name": "Policondrite recidivante"
+        },
+        {
+          "id": 1252,
+          "name": "Polimialgia reumática"
+        },
+        {
+          "id": 1253,
+          "name": "Polimiosite e Dermatomiosite"
+        },
+        {
+          "id": 1254,
+          "name": "Porfirias"
+        },
+        {
+          "id": 1255,
+          "name": "Precauções e Isolamento"
+        },
+        {
+          "id": 1256,
+          "name": "Profilaxia de raiva"
+        },
+        {
+          "id": 1257,
+          "name": "Profilaxia de tétano"
+        },
+        {
+          "id": 1258,
+          "name": "Profilaxia pós-exposição"
+        },
+        {
+          "id": 1259,
+          "name": "Propedêutica"
+        },
+        {
+          "id": 1260,
+          "name": "Psiquiatria"
+        },
+        {
+          "id": 1261,
+          "name": "Rabdomiólise"
+        },
+        {
+          "id": 1262,
+          "name": "Reações transfusionais"
+        },
+        {
+          "id": 1263,
+          "name": "Ricketsioses"
+        },
+        {
+          "id": 1264,
+          "name": "Sarcoidose"
+        },
+        {
+          "id": 1265,
+          "name": "Sepse"
+        },
+        {
+          "id": 1267,
+          "name": "Sífilis"
+        },
+        {
+          "id": 1268,
+          "name": "Síncope"
+        },
+        {
+          "id": 1269,
+          "name": "Síndrome coronariana"
+        },
+        {
+          "id": 1270,
+          "name": "Síndrome da veia cava superior"
+        },
+        {
+          "id": 1271,
+          "name": "Síndrome de Cushing"
+        },
+        {
+          "id": 1273,
+          "name": "Síndrome de lise tumoral"
+        },
+        {
+          "id": 1272,
+          "name": "Síndrome de Sjogren"
+        },
+        {
+          "id": 1274,
+          "name": "Síndrome do Choque Tóxico"
+        },
+        {
+          "id": 1275,
+          "name": "Síndrome do intestino irritável"
+        },
+        {
+          "id": 1276,
+          "name": "Síndrome hemofagocítica"
+        },
+        {
+          "id": 1277,
+          "name": "Síndrome metabólica"
+        },
+        {
+          "id": 1278,
+          "name": "Síndrome mielodisplásica"
+        },
+        {
+          "id": 1279,
+          "name": "Síndromes medulares"
+        },
+        {
+          "id": 1280,
+          "name": "Síndromes mieloproliferativas"
+        },
+        {
+          "id": 1266,
+          "name": "Suporte ventilatório - Ventilação mecânica e VNI"
+        },
+        {
+          "id": 1281,
+          "name": "Tabagismo"
+        },
+        {
+          "id": 1282,
+          "name": "Terapia intensiva"
+        },
+        {
+          "id": 1283,
+          "name": "Tireotoxicose"
+        },
+        {
+          "id": 1284,
+          "name": "Toxoplasmose"
+        },
+        {
+          "id": 1285,
+          "name": "Tromboembolia pulmonar"
+        },
+        {
+          "id": 1286,
+          "name": "Tuberculose"
+        },
+        {
+          "id": 1287,
+          "name": "Tumores hipofisários e hipopituitarismo"
+        },
+        {
+          "id": 1291,
+          "name": "Úlceras Genitais"
+        },
+        {
+          "id": 1288,
+          "name": "Valvopatias"
+        },
+        {
+          "id": 1289,
+          "name": "Vasculites"
+        },
+        {
+          "id": 1290,
+          "name": "Vertigem"
+        }
+      ]
+    },
+    {
+      "id": 125,
+      "name": "Ginecologia e Obstetrícia",
+      "subjects": [
+        {
+          "id": 1292,
+          "name": "Amenorreia"
+        },
+        {
+          "id": 1293,
+          "name": "Assistência pré-natal"
+        },
+        {
+          "id": 1297,
+          "name": "Câncer de colo de útero e HPV"
+        },
+        {
+          "id": 1298,
+          "name": "Câncer de endométrio"
+        },
+        {
+          "id": 1299,
+          "name": "Câncer de mama"
+        },
+        {
+          "id": 1300,
+          "name": "Câncer de vulva"
+        },
+        {
+          "id": 1294,
+          "name": "Cervicite e vulvovaginite"
+        },
+        {
+          "id": 1295,
+          "name": "Ciclo e fisiologia menstrual"
+        },
+        {
+          "id": 1296,
+          "name": "Climatério"
+        },
+        {
+          "id": 1301,
+          "name": "Diabetes na gestação"
+        },
+        {
+          "id": 1302,
+          "name": "Diagnóstico de gestação"
+        },
+        {
+          "id": 1303,
+          "name": "Doença hipertensiva específica da gravidez"
+        },
+        {
+          "id": 1304,
+          "name": "Doença inflamatória pélvica"
+        },
+        {
+          "id": 1305,
+          "name": "Doenças da Mama"
+        },
+        {
+          "id": 1306,
+          "name": "Doenças ovarianas"
+        },
+        {
+          "id": 1307,
+          "name": "Endometriose"
+        },
+        {
+          "id": 1308,
+          "name": "Gemelaridade"
+        },
+        {
+          "id": 1309,
+          "name": "Hemorragias da primeira metade da gestação"
+        },
+        {
+          "id": 1310,
+          "name": "Hemorragias da segunda metade da gestação"
+        },
+        {
+          "id": 1311,
+          "name": "Incontinência Urinária e Prolapso Genital"
+        },
+        {
+          "id": 1312,
+          "name": "Infecção de trato urinário na gestante"
+        },
+        {
+          "id": 1313,
+          "name": "Infecções e gestação"
+        },
+        {
+          "id": 1314,
+          "name": "Infertilidade"
+        },
+        {
+          "id": 1315,
+          "name": "Isoimunização RH"
+        },
+        {
+          "id": 1316,
+          "name": "Mecanismo de parto e assistência clínica"
+        },
+        {
+          "id": 1317,
+          "name": "Métodos contraceptivos"
+        },
+        {
+          "id": 1318,
+          "name": "Outros temas - Ginecologia e Obstetrícia"
+        },
+        {
+          "id": 1319,
+          "name": "Prematuridade"
+        },
+        {
+          "id": 1320,
+          "name": "Puerpério"
+        },
+        {
+          "id": 1321,
+          "name": "Relações uterofetais"
+        },
+        {
+          "id": 1322,
+          "name": "Restrição do crescimento intrauterino"
+        },
+        {
+          "id": 1323,
+          "name": "Rotura prematura de membranas"
+        },
+        {
+          "id": 1324,
+          "name": "Sangramento Uterino Anormal"
+        },
+        {
+          "id": 1325,
+          "name": "Síndrome dos Ovários Policísticos"
+        },
+        {
+          "id": 1326,
+          "name": "Violência sexual"
+        },
+        {
+          "id": 1327,
+          "name": "Vitalidade Fetal"
+        }
+      ]
+    },
+    {
+      "id": 126,
+      "name": "Medicina Preventiva",
+      "subjects": [
+        {
+          "id": 1328,
+          "name": "Atenção básica"
+        },
+        {
+          "id": 1329,
+          "name": "Bioestatística"
+        },
+        {
+          "id": 1330,
+          "name": "Declaração de óbito"
+        },
+        {
+          "id": 1331,
+          "name": "Epidemias"
+        },
+        {
+          "id": 1332,
+          "name": "Estratégia de saúde da família"
+        },
+        {
+          "id": 1333,
+          "name": "Estudos epidemiológicos"
+        },
+        {
+          "id": 1349,
+          "name": "Ética Médica"
+        },
+        {
+          "id": 1334,
+          "name": "Gestão em Saúde"
+        },
+        {
+          "id": 1335,
+          "name": "Indicadores em Saúde"
+        },
+        {
+          "id": 1336,
+          "name": "Medicina do trabalho"
+        },
+        {
+          "id": 1337,
+          "name": "Outros temas - Medicina preventiva"
+        },
+        {
+          "id": 1338,
+          "name": "Prevenção de acidentes"
+        },
+        {
+          "id": 1339,
+          "name": "Processo Saúde-Doença"
+        },
+        {
+          "id": 1340,
+          "name": "Programa Mais Médicos"
+        },
+        {
+          "id": 1341,
+          "name": "Questões de gênero e sexualidade"
+        },
+        {
+          "id": 1342,
+          "name": "Rastreamento"
+        },
+        {
+          "id": 1344,
+          "name": "Saúde suplementar e planos de saúde"
+        },
+        {
+          "id": 1343,
+          "name": "SUS"
+        },
+        {
+          "id": 1345,
+          "name": "Testes diagnósticos"
+        },
+        {
+          "id": 1346,
+          "name": "Vigilância Epidemiológica"
+        },
+        {
+          "id": 1347,
+          "name": "Violência doméstica e contra a mulher"
+        },
+        {
+          "id": 1348,
+          "name": "Violência psicológica"
+        }
+      ]
+    },
+    {
+      "id": 127,
+      "name": "Pediatria",
+      "subjects": [
+        {
+          "id": 1350,
+          "name": "Aleitamento materno"
+        },
+        {
+          "id": 1351,
+          "name": "Alergia à proteína do leite de vaca"
+        },
+        {
+          "id": 1352,
+          "name": "Avaliação neonatal"
+        },
+        {
+          "id": 1353,
+          "name": "Bronquiolite e lactente sibilante"
+        },
+        {
+          "id": 1354,
+          "name": "Cardiopatias congênitas"
+        },
+        {
+          "id": 1355,
+          "name": "Convulsão febril"
+        },
+        {
+          "id": 1356,
+          "name": "Coqueluche"
+        },
+        {
+          "id": 1357,
+          "name": "Desconforto respiratório do recém-nascido"
+        },
+        {
+          "id": 1358,
+          "name": "Desnutrição"
+        },
+        {
+          "id": 1359,
+          "name": "Diarreia e desidratação"
+        },
+        {
+          "id": 1360,
+          "name": "Distúrbios do Crescimento e Desenvolvimento"
+        },
+        {
+          "id": 1361,
+          "name": "Doença do refluxo gastroesofágico na infância"
+        },
+        {
+          "id": 1362,
+          "name": "Doenças Congênitas"
+        },
+        {
+          "id": 1363,
+          "name": "Doenças exantemáticas"
+        },
+        {
+          "id": 1364,
+          "name": "Febre sem sinais localizatórios"
+        },
+        {
+          "id": 1365,
+          "name": "Fibrose cística"
+        },
+        {
+          "id": 1366,
+          "name": "Hemorragia neonatal"
+        },
+        {
+          "id": 1367,
+          "name": "Hidrocefalia"
+        },
+        {
+          "id": 1368,
+          "name": "Hipoglicemia neonatal"
+        },
+        {
+          "id": 1370,
+          "name": "Icterícia neonatal"
+        },
+        {
+          "id": 1371,
+          "name": "Imunodeficiência"
+        },
+        {
+          "id": 1372,
+          "name": "Infecção urinária na infância"
+        },
+        {
+          "id": 1369,
+          "name": "IVAS"
+        },
+        {
+          "id": 1373,
+          "name": "Maus tratos"
+        },
+        {
+          "id": 1374,
+          "name": "Obesidade na infância"
+        },
+        {
+          "id": 1375,
+          "name": "Outros temas - Pediatria"
+        },
+        {
+          "id": 1377,
+          "name": "Parasitoses"
+        },
+        {
+          "id": 1376,
+          "name": "PBLS e PALS"
+        },
+        {
+          "id": 1378,
+          "name": "Pneumonia na infância"
+        },
+        {
+          "id": 1379,
+          "name": "Puberdade precoce e tardia"
+        },
+        {
+          "id": 1380,
+          "name": "Puericultura"
+        },
+        {
+          "id": 1381,
+          "name": "Reanimação Neonatal"
+        },
+        {
+          "id": 1382,
+          "name": "Sepse neonatal"
+        },
+        {
+          "id": 1383,
+          "name": "Síndrome da morte súbita do lactente"
+        },
+        {
+          "id": 1384,
+          "name": "TORCH e Sífilis congênita"
+        },
+        {
+          "id": 1385,
+          "name": "Triagem Neonatal"
+        },
+        {
+          "id": 1386,
+          "name": "Vacinação"
+        },
+        {
+          "id": 1387,
+          "name": "Varíola"
+        }
+      ]
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import { Loader2, Filter, BookOpen, FileText, Target, Search, ChevronDown, Chevr
 import { supabase } from '@/lib/supabase';
 import { ExamsService } from '@/services/exams.service';
 import { useRouter } from 'next/navigation';
+import { useAssuntosByDisciplina } from '@/hooks/useAssuntos';
 import toast from 'react-hot-toast';
 import 'react-quill/dist/quill.snow.css';
 import '@/styles/quill-custom.css';
@@ -27,6 +28,7 @@ interface Subject {
   name: string;
   title?: string;
   discipline_id: number;
+  questoes_count?: number;
 }
 
 interface Topic {
@@ -80,7 +82,6 @@ export default function GenomedBankPage() {
   
   // Estados principais
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   
@@ -90,10 +91,27 @@ export default function GenomedBankPage() {
   const [selectedTopic, setSelectedTopic] = useState<string>('');
   const [selectedQuestions, setSelectedQuestions] = useState<Set<number>>(new Set());
   
+  // Hook para carregar assuntos com cache
+  const { 
+    data: subjects = [], 
+    isLoading: loadingSubjects, 
+    error: subjectsError 
+  } = useAssuntosByDisciplina(
+    selectedDiscipline ? parseInt(selectedDiscipline) : 0,
+    !!selectedDiscipline
+  );
+
+  // Tratar erros do hook de assuntos
+  useEffect(() => {
+    if (subjectsError) {
+      console.error('Erro ao carregar assuntos:', subjectsError);
+      setError('Erro ao carregar assuntos');
+    }
+  }, [subjectsError]);
+  
   // Estados de loading
   const [loading, setLoading] = useState({
     disciplines: false,
-    subjects: false,
     topics: false,
     questions: false
   });
@@ -110,11 +128,9 @@ export default function GenomedBankPage() {
   const [error, setError] = useState<string | null>(null);
   const [questionCounts, setQuestionCounts] = useState<{
     disciplines: Record<number, number>;
-    subjects: Record<number, number>;
     topics: Record<number, number>;
   }>({
     disciplines: {},
-    subjects: {},
     topics: {}
   });
 
@@ -166,16 +182,14 @@ export default function GenomedBankPage() {
     }
   };
 
-  // Carregar assuntos quando disciplina é selecionada
+  // Limpar seleções dependentes quando disciplina muda
   useEffect(() => {
     if (selectedDiscipline) {
-      loadSubjects(parseInt(selectedDiscipline));
       setSelectedSubject('');
       setSelectedTopic('');
       setTopics([]);
       setQuestions([]);
     } else {
-      setSubjects([]);
       setSelectedSubject('');
       setSelectedTopic('');
       setTopics([]);
@@ -183,36 +197,7 @@ export default function GenomedBankPage() {
     }
   }, [selectedDiscipline]);
 
-  // Carregar assuntos
-  const loadSubjects = async (disciplineId: number) => {
-    try {
-      setLoading(prev => ({ ...prev, subjects: true }));
-      
-      const { data, error } = await supabase
-        .from('subjects')
-        .select('id, name, title, discipline_id')
-        .eq('discipline_id', disciplineId)
-        .order('name');
-
-      if (error) throw error;
-      
-      setSubjects(data || []);
-      
-      // Carregar contadores de questões para assuntos
-      if (data) {
-        const counts: Record<number, number> = {};
-        for (const subject of data) {
-          counts[subject.id] = await getQuestionCount('subject', subject.id);
-        }
-        setQuestionCounts(prev => ({ ...prev, subjects: counts }));
-      }
-    } catch (err) {
-      console.error('Erro ao carregar assuntos:', err);
-      setError('Erro ao carregar assuntos');
-    } finally {
-      setLoading(prev => ({ ...prev, subjects: false }));
-    }
-  };
+  // Os contadores de questões para assuntos agora vêm diretamente do hook useAssuntosByDisciplina
 
   // Carregar tópicos quando assunto é selecionado
   useEffect(() => {
@@ -986,7 +971,7 @@ export default function GenomedBankPage() {
                     </div>
                   ) : (
                     <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-blue-100 pb-2 space-x-3">
-                      {loading.subjects ? (
+                      {loadingSubjects ? (
                         <div className="flex items-center space-x-2 text-sm text-blue-600 px-4 py-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           <span className="font-medium whitespace-nowrap">Carregando assuntos...</span>
@@ -1013,7 +998,9 @@ export default function GenomedBankPage() {
                                   ? 'bg-white/20 text-white'
                                   : 'bg-blue-100 text-blue-700'
                               }`}>
-                                {questionCounts.subjects[subject.id] || 0}
+                                {subject.questoes_count !== undefined ? subject.questoes_count : (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                )}
                               </Badge>
                             </div>
                           </button>
