@@ -39,6 +39,7 @@ export default function GenomaBankPage() {
   
   // Estados para seleção de questões
   const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState<number[]>([]);
   const [showSelectionSidebar, setShowSelectionSidebar] = useState(false);
   
   // Estados para filtros e pesquisa
@@ -59,6 +60,31 @@ export default function GenomaBankPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   
   const { subscriptionLimits, hasReachedLimit, showUpgradeModal, refreshLimits } = useSubscription();
+
+  // Funções para persistência das seleções no localStorage
+  const saveSelectionsToStorage = (questionIds: number[]) => {
+    try {
+      localStorage.setItem('genoma-bank-selected-questions', JSON.stringify(questionIds));
+    } catch (error) {
+      console.error('Erro ao salvar seleções no localStorage:', error);
+    }
+  };
+
+  const loadSelectionsFromStorage = (): number[] => {
+    try {
+      const stored = localStorage.getItem('genoma-bank-selected-questions');
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error('Erro ao carregar seleções do localStorage:', error);
+      return [];
+    }
+  };
+
+  // Função para reconstruir selectedQuestions a partir dos IDs e questões atuais
+  const updateSelectedQuestionsFromIds = (questionIds: number[], currentQuestions: Question[]) => {
+    const selectedQs = currentQuestions.filter(q => q.id && questionIds.includes(q.id));
+    setSelectedQuestions(selectedQs);
+  };
   
   // Atualizar limites ao montar a página
   useEffect(() => {
@@ -81,7 +107,18 @@ export default function GenomaBankPage() {
   useEffect(() => {
     // Não carregamos questões automaticamente, apenas os limites de assinatura
     refreshLimits();
+    
+    // Carregar seleções do localStorage
+    const storedIds = loadSelectionsFromStorage();
+    if (storedIds.length > 0) {
+      setSelectedQuestionIds(storedIds);
+    }
   }, []);
+
+  // Atualizar selectedQuestions quando as questões ou IDs selecionados mudarem
+  useEffect(() => {
+    updateSelectedQuestionsFromIds(selectedQuestionIds, questions);
+  }, [selectedQuestionIds, questions]);
   
   // Recarregar questões quando os filtros mudarem ou a página atual mudar
   useEffect(() => {
@@ -206,15 +243,23 @@ export default function GenomaBankPage() {
       return;
     }
     
-    if (selectedQuestions.some(q => q.id === question.id)) {
-      setSelectedQuestions(selectedQuestions.filter(q => q.id !== question.id));
+    const questionId = question.id;
+    let newSelectedIds: number[];
+    
+    if (selectedQuestionIds.includes(questionId)) {
+      newSelectedIds = selectedQuestionIds.filter(id => id !== questionId);
     } else {
-      setSelectedQuestions([...selectedQuestions, question]);
+      newSelectedIds = [...selectedQuestionIds, questionId];
     }
+    
+    setSelectedQuestionIds(newSelectedIds);
+    saveSelectionsToStorage(newSelectedIds);
   };
 
   const clearSelectedQuestions = () => {
     setSelectedQuestions([]);
+    setSelectedQuestionIds([]);
+    saveSelectionsToStorage([]);
   };
 
   const handleCreateNewExam = async () => {
@@ -747,7 +792,7 @@ export default function GenomaBankPage() {
                   onAccess={handleQuestionAccess}
                   onQuestionAdded={handleQuestionAdded}
                   isGenomeBank={true}
-                  isSelected={selectedQuestions.some(q => q.id === question.id)}
+                  isSelected={question.id ? selectedQuestionIds.includes(question.id) : false}
                   onToggleSelection={() => toggleQuestionSelection(question)}
                   selectionEnabled={true}
                 />
