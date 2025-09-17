@@ -222,7 +222,7 @@ export class ExamsService {
 
       let query = supabase
         .from('exam_questions')
-        .select(includeQuestionDetails ? 'id, exam_id, question_id, position, weight, question:questions(*, question_images(*), exam_institutions!inner(name, acronym))' : '*')
+        .select(includeQuestionDetails ? 'id, exam_id, question_id, position, weight, question:questions(*, answer_options(*), question_images(*), exam_institutions!inner(name, acronym))' : '*')
         .eq('exam_id', examId)
         .order('position', { ascending: true });
       

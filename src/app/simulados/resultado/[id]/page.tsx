@@ -4,13 +4,14 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { FaArrowLeft, FaHome, FaRedoAlt, FaCheck, FaTimes, FaClock, FaFileAlt, FaChartPie, FaTrophy } from 'react-icons/fa';
+import { FaArrowLeft, FaHome, FaRedoAlt, FaCheck, FaTimes, FaClock, FaFileAlt, FaChartPie, FaTrophy, FaBrain } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { Exam, ExamQuestion, ExamAttempt, ExamAnswer, ExamsService } from '@/services/exams.service';
 import { QuestionsBankService } from '@/services/questions-bank.service';
 import Loading from '@/components/Loading';
 import Pill from '@/components/Pill';
 import DisciplinePerformanceChart, { DisciplinePerformance } from '@/components/DisciplinePerformanceChart';
+import { AIExplanationModal } from '@/components/ai/AIExplanationModal';
 
 export default function ResultadoSimulado({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -31,6 +32,8 @@ export default function ResultadoSimulado({ params }: { params: { id: string } }
   const [feedbackByDiscipline, setFeedbackByDiscipline] = useState<any[]>([]);
   const [feedbackBySubject, setFeedbackBySubject] = useState<any[]>([]);
   const [detailedAnalysis, setDetailedAnalysis] = useState<any>(null);
+  const [showAIExplanationModal, setShowAIExplanationModal] = useState(false);
+  const [selectedQuestionForAI, setSelectedQuestionForAI] = useState<any>(null);
   
   useEffect(() => {
     loadResultData();
@@ -128,6 +131,36 @@ export default function ResultadoSimulado({ params }: { params: { id: string } }
       toast.error('Não foi possível carregar o desempenho por assunto');
     } finally {
       setLoadingSubjectPerformance(false);
+    }
+  };
+
+  const handleOpenAIExplanation = (questionData: any) => {
+    setSelectedQuestionForAI(questionData);
+    setShowAIExplanationModal(true);
+  };
+
+  const handleCloseAIExplanation = () => {
+    setShowAIExplanationModal(false);
+    setSelectedQuestionForAI(null);
+  };
+
+  const handleSaveAIExplanation = async (explanation: string) => {
+    if (!selectedQuestionForAI) return;
+    
+    try {
+      // Atualizar a explicação da questão no banco de dados
+      await QuestionsBankService.updateQuestion(selectedQuestionForAI.id, {
+        explanation: explanation
+      });
+      
+      // Recarregar os dados para mostrar a nova explicação
+      await loadResultData();
+      
+      toast.success('Explicação salva com sucesso!');
+      handleCloseAIExplanation();
+    } catch (error) {
+      console.error('Erro ao salvar explicação:', error);
+      toast.error('Erro ao salvar explicação');
     }
   };
   
@@ -332,13 +365,31 @@ export default function ResultadoSimulado({ params }: { params: { id: string } }
           )}
           
           {/* Explicação (se disponível e se o simulado permite mostrar respostas) */}
-          {exam?.show_answers && questionData.explanation && (
+          {exam?.show_answers && (
             <div className="mt-4 pt-4 border-t border-gray-200">
-              <h4 className="font-medium text-gray-700 mb-2">Explicação:</h4>
-              <div 
-                className="text-gray-600 bg-yellow-50 p-4 rounded-lg"
-                dangerouslySetInnerHTML={{ __html: questionData.explanation }}
-              />
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium text-gray-700">Explicação:</h4>
+                {!questionData.explanation && (
+                  <button
+                    onClick={() => handleOpenAIExplanation(questionData)}
+                    className="inline-flex items-center px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    <FaBrain className="mr-1" />
+                    Gerar com IA
+                  </button>
+                )}
+              </div>
+              {questionData.explanation ? (
+                <div 
+                  className="text-gray-600 bg-yellow-50 p-4 rounded-lg"
+                  dangerouslySetInnerHTML={{ __html: questionData.explanation }}
+                />
+              ) : (
+                <div className="bg-gray-50 p-4 rounded-lg text-center">
+                  <p className="text-gray-500 text-sm mb-2">Nenhuma explicação disponível para esta questão.</p>
+                  <p className="text-gray-400 text-xs">Clique em "Gerar com IA" para criar uma explicação automática.</p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -520,6 +571,25 @@ export default function ResultadoSimulado({ params }: { params: { id: string } }
           </div>
         )}
       </div>
+
+      {/* Modal de Explicação com IA */}
+      {showAIExplanationModal && selectedQuestionForAI && (
+        <AIExplanationModal
+          isOpen={showAIExplanationModal}
+          onClose={handleCloseAIExplanation}
+          questionContent={selectedQuestionForAI.content || ''}
+          alternatives={selectedQuestionForAI.answer_options?.map(opt => opt.text) || []}
+          correctAnswer={
+            selectedQuestionForAI.answer_options?.find(opt => opt.is_correct)?.text ||
+            (selectedQuestionForAI.correct_answer && selectedQuestionForAI.answer_options ? 
+              selectedQuestionForAI.answer_options[parseInt(selectedQuestionForAI.correct_answer) - 1]?.text : '') ||
+            selectedQuestionForAI.correct_answer || ''
+          }
+          discipline={selectedQuestionForAI.discipline_name}
+          subject={selectedQuestionForAI.subject_name}
+          onExplanationGenerated={handleSaveAIExplanation}
+        />
+      )}
     </div>
   );
 }
