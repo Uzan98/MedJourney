@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Filter, BookOpen, FileText, Target, Search, ChevronDown, ChevronRight, Plus, Sparkles, Zap, Star } from 'lucide-react';
+import { Loader2, Filter, BookOpen, FileText, Target, Search, ChevronDown, ChevronRight, Plus, Sparkles, Zap, Star, Building2, Calendar, Library, Rocket } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ExamsService } from '@/services/exams.service';
 import { useRouter } from 'next/navigation';
@@ -828,7 +828,7 @@ export default function GenomedBankPage() {
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-cyan-500" />
                   <Input
                     type="text"
-                    placeholder="🔍 Digite para buscar disciplinas, assuntos ou tópicos... (mín. 2 caracteres)"
+                    placeholder="Digite para buscar disciplinas, assuntos ou tópicos... (mín. 2 caracteres)"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-12 pr-12 h-14 text-lg border-0 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg focus:ring-2 focus:ring-cyan-400 focus:bg-white transition-all duration-300 placeholder:text-gray-400"
@@ -913,9 +913,9 @@ export default function GenomedBankPage() {
                   <BookOpen className="h-4 w-4" />
                   <span>Disciplina</span>
                   {selectedDiscipline && (
-                    <Badge className="ml-2 bg-emerald-100 text-emerald-700">
+                    <span className="badge-discipline">
                       {disciplines.find(d => d.id.toString() === selectedDiscipline)?.name}
-                    </Badge>
+                    </span>
                   )}
                 </label>
                 <div className="relative">
@@ -938,13 +938,13 @@ export default function GenomedBankPage() {
                         >
                           <div className="flex items-center space-x-2">
                             <span className="font-medium whitespace-nowrap">{discipline.name}</span>
-                            <Badge className={`text-xs ${
+                            <span className={`text-xs ${
                               selectedDiscipline === discipline.id.toString()
-                                ? 'bg-white/20 text-white'
-                                : 'bg-emerald-100 text-emerald-700'
+                                ? 'bg-white/20 text-white px-2 py-0.5 rounded-full font-medium'
+                                : 'badge-discipline'
                             }`}>
                               {questionCounts.disciplines[discipline.id] || 0}
-                            </Badge>
+                            </span>
                           </div>
                         </button>
                       ))
@@ -959,9 +959,9 @@ export default function GenomedBankPage() {
                   <FileText className="h-4 w-4" />
                   <span>Assunto</span>
                   {selectedSubject && (
-                    <Badge className="ml-2 bg-blue-100 text-blue-700">
+                    <span className="badge-subject">
                       {subjects.find(s => s.id.toString() === selectedSubject)?.title || subjects.find(s => s.id.toString() === selectedSubject)?.name}
-                    </Badge>
+                    </span>
                   )}
                 </label>
                 <div className="relative">
@@ -993,15 +993,15 @@ export default function GenomedBankPage() {
                           >
                             <div className="flex items-center space-x-2">
                               <span className="font-medium whitespace-nowrap">{subject.title || subject.name}</span>
-                              <Badge className={`text-xs ${
+                              <span className={`text-xs ${
                                 selectedSubject === subject.id.toString()
-                                  ? 'bg-white/20 text-white'
-                                  : 'bg-blue-100 text-blue-700'
+                                  ? 'bg-white/20 text-white px-2 py-0.5 rounded-full font-medium'
+                                  : 'badge-subject'
                               }`}>
                                 {subject.questoes_count !== undefined ? subject.questoes_count : (
                                   <Loader2 className="h-3 w-3 animate-spin" />
                                 )}
-                              </Badge>
+                              </span>
                             </div>
                           </button>
                         ))
@@ -1017,9 +1017,9 @@ export default function GenomedBankPage() {
                   <Target className="h-4 w-4" />
                   <span>Tópico</span>
                   {selectedTopic && (
-                    <Badge className="ml-2 bg-purple-100 text-purple-700">
+                    <span className="badge-topic">
                       {topics.find(t => t.id.toString() === selectedTopic)?.name}
-                    </Badge>
+                    </span>
                   )}
                 </label>
                 <div className="relative">
@@ -1051,13 +1051,13 @@ export default function GenomedBankPage() {
                           >
                             <div className="flex items-center space-x-2">
                               <span className="font-medium whitespace-nowrap">{topic.name}</span>
-                              <Badge className={`text-xs ${
+                              <span className={`text-xs ${
                                 selectedTopic === topic.id.toString()
-                                  ? 'bg-white/20 text-white'
-                                  : 'bg-purple-100 text-purple-700'
+                                  ? 'bg-white/20 text-white px-2 py-0.5 rounded-full font-medium'
+                                  : 'badge-topic'
                               }`}>
                                 {questionCounts.topics[topic.id] || 0}
-                              </Badge>
+                              </span>
                             </div>
                           </button>
                         ))
@@ -1240,7 +1240,8 @@ export default function GenomedBankPage() {
                               <div className="relative">
                                 <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full blur opacity-20"></div>
                                 <Badge className="relative bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-1.5 text-sm rounded-full font-medium shadow-lg">
-                                  🏛️ {question.institution_acronym || question.institution_name}
+                                  <Building2 className="h-4 w-4 inline mr-1" />
+                        {question.institution_acronym || question.institution_name}
                                 </Badge>
                               </div>
                             )}
@@ -1248,7 +1249,8 @@ export default function GenomedBankPage() {
                               <div className="relative">
                                 <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full blur opacity-20"></div>
                                 <Badge className="relative bg-gradient-to-r from-purple-500 to-pink-600 text-white px-4 py-1.5 text-sm rounded-full font-medium shadow-lg">
-                                  📅 {question.exam_year}
+                                  <Calendar className="h-4 w-4 inline mr-1" />
+                        {question.exam_year}
                                 </Badge>
                               </div>
                             )}
@@ -1305,7 +1307,10 @@ export default function GenomedBankPage() {
                 </div>
               </div>
               <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-700 to-gray-900 bg-clip-text text-transparent mb-4">Nenhuma questão encontrada</h3>
-              <p className="text-gray-600 leading-relaxed text-lg font-medium mb-8">📚 Não há questões disponíveis para o tópico selecionado. Tente selecionar outro tópico ou disciplina.</p>
+              <div className="flex items-center justify-center mb-8">
+                <Library className="h-6 w-6 text-gray-500 mr-2" />
+                <p className="text-gray-600 leading-relaxed text-lg font-medium">Não há questões disponíveis para o tópico selecionado. Tente selecionar outro tópico ou disciplina.</p>
+              </div>
               <Button 
                 onClick={clearFilters}
                 className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
@@ -1332,7 +1337,10 @@ export default function GenomedBankPage() {
                 </div>
               </div>
               <h3 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-6">Bem-vindo ao Genomed Bank</h3>
-              <p className="text-gray-700 leading-relaxed text-xl font-medium mb-10">🚀 Escolha uma disciplina, assunto e tópico nos filtros acima para visualizar as questões disponíveis. Você também pode usar a busca hierárquica para encontrar conteúdos específicos.</p>
+              <div className="flex items-center justify-center mb-10">
+                <Rocket className="h-6 w-6 text-purple-600 mr-3" />
+                <p className="text-gray-700 leading-relaxed text-xl font-medium">Escolha uma disciplina, assunto e tópico nos filtros acima para visualizar as questões disponíveis. Você também pode usar a busca hierárquica para encontrar conteúdos específicos.</p>
+              </div>
               <div className="flex flex-wrap justify-center gap-6">
                 <div className="flex items-center space-x-3 bg-gradient-to-r from-indigo-50 to-indigo-100 p-4 rounded-xl border border-indigo-200 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
                   <Filter className="h-6 w-6 text-indigo-600" />
