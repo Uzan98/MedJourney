@@ -13,8 +13,10 @@ export interface AIGeneratedExplanation {
 }
 
 export class AIExplanationGeneratorService {
-  // Chama a rota interna protegida do Groq
-  private static async callGroqAPI(prompt: string): Promise<string> {
+  // Chama a rota interna protegida do Groq com retry automático
+  private static async callGroqAPI(prompt: string, retryCount = 0): Promise<string> {
+    const maxRetries = 2;
+    
     try {
       // Obter token de acesso para autenticação
       const accessToken = await getAccessToken();
@@ -38,6 +40,13 @@ export class AIExplanationGeneratorService {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
         
+        // Se for timeout (504) e ainda temos tentativas, retry automaticamente
+        if (response.status === 504 && retryCount < maxRetries) {
+          console.log(`Timeout na tentativa ${retryCount + 1}, tentando novamente...`);
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Aguarda 1 segundo
+          return this.callGroqAPI(prompt, retryCount + 1);
+        }
+        
         // Tratar erros específicos de permissão e limite
         if (response.status === 401) {
           throw new Error('Você precisa estar logado para gerar explicações com IA.');
@@ -57,12 +66,23 @@ export class AIExplanationGeneratorService {
           throw new Error('Muitas requisições. Tente novamente em alguns minutos.');
         }
         
+        if (response.status === 504) {
+          throw new Error('A requisição demorou demais para ser processada. Tente novamente.');
+        }
+        
         throw new Error(errorData.error || `Erro na API: ${response.status}`);
       }
       
       const data = await response.json();
       return data.result;
-    } catch (error) {
+    } catch (error: any) {
+      // Se for erro de rede/timeout e ainda temos tentativas, retry automaticamente
+      if ((error.name === 'TypeError' || error.message?.includes('fetch')) && retryCount < maxRetries) {
+        console.log(`Erro de rede na tentativa ${retryCount + 1}, tentando novamente...`);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Aguarda 1 segundo
+        return this.callGroqAPI(prompt, retryCount + 1);
+      }
+      
       console.error('Erro ao chamar a API Groq para explicação:', error);
       throw error;
     }
