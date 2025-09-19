@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     // --- chamada Groq com timeout ---
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90000); // 90s para dar mais tempo à API Groq
+    const timeout = setTimeout(() => controller.abort(), 120000); // 120s para dar mais tempo à API Groq
 
     let completion;
     try {

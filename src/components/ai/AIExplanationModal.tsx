@@ -49,7 +49,17 @@ export function AIExplanationModal({
       toast.success('Explicação gerada com sucesso!');
     } catch (error: any) {
       console.error('Erro ao gerar explicação:', error);
-      toast.error(error.message || 'Erro ao gerar explicação');
+      
+      // Tratamento específico para diferentes tipos de erro
+      if (error.message?.includes('demorou demais')) {
+        toast.error('A geração da explicação está demorando mais que o esperado. Tente novamente em alguns minutos.');
+      } else if (error.message?.includes('Limite diário')) {
+        toast.error('Limite diário de explicações atingido. Tente novamente amanhã ou faça upgrade para Pro+.');
+      } else if (error.message?.includes('rate_limit_exceeded')) {
+        toast.error('Muitas solicitações. Aguarde alguns minutos antes de tentar novamente.');
+      } else {
+        toast.error(error.message || 'Erro ao gerar explicação. Tente novamente.');
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -127,12 +137,37 @@ export function AIExplanationModal({
           </div>
 
           {/* Generated Explanation */}
-          {generatedExplanation ? (
+          {isGenerating ? (
+            <div className="text-center py-12">
+              <div className="p-4 bg-purple-50 rounded-lg inline-block mb-4">
+                <Loader2 className="h-8 w-8 text-purple-600 mx-auto animate-spin" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Gerando explicação...
+              </h3>
+              <p className="text-gray-600 mb-2">
+                A IA está analisando a questão e criando uma explicação detalhada.
+              </p>
+              <p className="text-sm text-gray-500">
+                Isso pode levar até 2 minutos. Por favor, aguarde...
+              </p>
+            </div>
+          ) : generatedExplanation ? (
             <div className="mb-6">
               <h3 className="font-medium text-gray-900 mb-3">Explicação Gerada:</h3>
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                  {generatedExplanation}
+                <div 
+                  className="prose prose-sm max-w-none text-gray-700 prose-headings:text-gray-800 prose-strong:text-gray-800 prose-p:leading-relaxed prose-ul:my-2 prose-li:my-1"
+                  dangerouslySetInnerHTML={{ __html: generatedExplanation }}
+                />
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-xs text-yellow-700 flex items-center gap-1">
+                    <span className="text-yellow-600">⚠️</span>
+                    <span>
+                      <strong>Aviso:</strong> Esta explicação foi gerada por IA (ChatGPT - OpenAI) e pode conter imprecisões. 
+                      Sempre verifique as informações com fontes confiáveis.
+                    </span>
+                  </p>
                 </div>
               </div>
             </div>
