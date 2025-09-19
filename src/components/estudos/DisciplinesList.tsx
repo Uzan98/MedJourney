@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { DisciplinesRestService } from '@/lib/supabase-rest';
 import { Discipline } from '@/lib/supabase';
-import { Plus, Book, ChevronRight, AlertCircle, Bookmark, Clock, Calendar, FileText, Trash2, MoreVertical, Edit } from 'lucide-react';
+import { Plus, Book, ChevronRight, AlertCircle, Bookmark, Clock, Calendar, FileText, Trash2, MoreVertical, Edit, Target } from 'lucide-react';
 import DisciplineModal from './DisciplineModal';
+import TopicModal from './TopicModal';
 import { toast } from '../ui/toast-interface';
 import Link from 'next/link';
 
@@ -133,6 +134,8 @@ export default function DisciplinesList() {
   const [editingDiscipline, setEditingDiscipline] = useState<Discipline | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
+  const [selectedDisciplineForTopics, setSelectedDisciplineForTopics] = useState<Discipline | null>(null);
 
   // Função para carregar disciplinas
   const loadDisciplines = async () => {
@@ -232,6 +235,16 @@ export default function DisciplinesList() {
   const cancelDelete = () => {
     setShowDeleteConfirm(false);
     setDeletingDisciplineId(null);
+  };
+
+  // Função para abrir o modal de tópicos
+  const handleTopicsClick = (e: React.MouseEvent, discipline: Discipline) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setSelectedDisciplineForTopics(discipline);
+    setIsTopicModalOpen(true);
+    setOpenMenuId(null);
   };
 
   // Função para gerenciar o menu de opções
@@ -383,6 +396,14 @@ export default function DisciplinesList() {
                         Editar disciplina
                       </button>
                       <button
+                        onClick={(e) => handleTopicsClick(e, discipline)}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                        data-options-button="true"
+                      >
+                        <Target className="h-5 w-5 mr-2" />
+                        Gerenciar tópicos
+                      </button>
+                      <button
                         onClick={(e) => handleDeleteClick(e, discipline.id)}
                         className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-gray-100 flex items-center"
                         data-options-button="true"
@@ -443,6 +464,23 @@ export default function DisciplinesList() {
           </div>
         </div>
       )}
+
+      {/* Modal de gerenciamento de tópicos */}
+      {isTopicModalOpen && selectedDisciplineForTopics && (
+        <TopicModal
+          isOpen={isTopicModalOpen}
+          onClose={() => {
+            setIsTopicModalOpen(false);
+            setSelectedDisciplineForTopics(null);
+          }}
+          disciplineId={selectedDisciplineForTopics.id}
+          disciplineName={selectedDisciplineForTopics.name}
+          onSuccess={() => {
+            // Opcional: recarregar dados se necessário
+            console.log('Tópicos atualizados com sucesso');
+          }}
+        />
+      )}
     </div>
   );
-} 
+}
