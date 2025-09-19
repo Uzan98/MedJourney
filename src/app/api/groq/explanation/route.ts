@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     // --- chamada Groq com timeout ---
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90000); // 90s para dar mais tempo à API Groq
+    const timeout = setTimeout(() => controller.abort(), 120000); // 120s para dar mais tempo à API Groq
 
     let completion;
     try {
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
         messages: [
           { 
             role: 'system', 
-            content: 'Você é um professor especialista em educação médica com vasta experiência em ensino e avaliação. Sua função é criar explicações didáticas, claras e precisas para questões de medicina, sempre mantendo rigor científico e linguagem acessível aos estudantes.' 
+            content: 'Você é um professor especialista em educação médica com vasta experiência em ensino e avaliação. Sua função é criar explicações didáticas, claras e precisas para questões de medicina, sempre mantendo rigor científico e linguagem acessível aos estudantes.\n\nIMPORTANTE: Formate sua resposta usando HTML para melhor apresentação visual:\n- Use <h3> para títulos principais\n- Use <h4> para subtítulos\n- Use <p> para parágrafos\n- Use <strong> para destacar pontos importantes\n- Use <em> para ênfase\n- Use <ul> e <li> para listas\n- Use <br> para quebras de linha quando necessário\n\nEstruture a explicação de forma organizada e visualmente atrativa.' 
           },
           { role: 'user', content: prompt }
         ],
