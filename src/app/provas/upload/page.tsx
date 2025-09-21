@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { FaArrowLeft, FaCheck, FaFileExport, FaListOl, FaEye, FaEdit, FaImage, FaTrash, FaUpload } from 'react-icons/fa';
+import { FaArrowLeft, FaCheck, FaCheckCircle, FaFileExport, FaListOl, FaEye, FaEdit, FaImage, FaTrash, FaUpload, FaSpinner } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { ExamsService } from '@/services/exams.service';
 import { QuestionsBankService } from '@/services/questions-bank.service';
@@ -144,6 +144,13 @@ export default function UploadProvaPage() {
   const [newValidationResults, setNewValidationResults] = useState<{[questionNumber: number]: ValidationResult}>({});
   const [showNewMetadataParser, setShowNewMetadataParser] = useState(false);
   
+  // Estados para upload em lote de imagens
+  const [bulkImages, setBulkImages] = useState<File[]>([]);
+  const [processingBulkImages, setProcessingBulkImages] = useState(false);
+  
+  // Ref para controlar inicialização
+  const initializedRef = useRef(false);
+  
   useEffect(() => {
     if (!user) {
       router.push('/auth/login');
@@ -156,8 +163,12 @@ export default function UploadProvaPage() {
       return;
     }
     
-    loadExamTypes();
-    loadDisciplines();
+    // Só executa uma vez após a autenticação
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      loadExamTypes();
+      loadDisciplines();
+    }
   }, [user, router, isAdmin]);
 
   // Cleanup das URLs de objeto quando o componente for desmontado
@@ -1028,8 +1039,171 @@ export default function UploadProvaPage() {
     toast.success('Imagem removida!');
   };
 
-
+  // Funções para upload em lote de imagens
+  const handleBulkImageUpload = (files: FileList | null) => {
+    if (!files) return;
+    
+    const validFiles: File[] = [];
+    const invalidFiles: string[] = [];
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    
+    Array.from(files).forEach(file => {
+      if (!allowedTypes.includes(file.type)) {
+        invalidFiles.push(`${file.name} (tipo não suportado)`);
+        return;
+      }
+      
+      if (file.size > maxSize) {
+        invalidFiles.push(`${file.name} (muito grande - máx 5MB)`);
+        return;
+      }
+      
+      validFiles.push(file);
+    });
+    
+    setBulkImages(validFiles);
+    
+    if (validFiles.length > 0) {
+      toast.success(`${validFiles.length} imagem(ns) válida(s) selecionada(s)!`);
+    }
+    
+    if (invalidFiles.length > 0) {
+      toast.error(`Arquivos inválidos: ${invalidFiles.slice(0, 3).join(', ')}${invalidFiles.length > 3 ? '...' : ''}`);
+    }
+  };
   
+  const processBulkImages = async () => {
+    if (bulkImages.length === 0) {
+      toast.error('Nenhuma imagem selecionada.');
+      return;
+    }
+    
+    if (parsedQuestions.length === 0) {
+      toast.error('Nenhuma questão disponível para associar imagens.');
+      return;
+    }
+    
+    setProcessingBulkImages(true);
+    
+    try {
+      let associatedCount = 0;
+      let notFoundCount = 0;
+      const processedFiles: string[] = [];
+      const unprocessedFiles: string[] = [];
+      
+      // Função inteligente para extrair número da questão
+      const extractQuestionNumber = (fileName: string): number | null => {
+        const name = fileName.toLowerCase().replace(/\.(jpg|jpeg|png|gif|webp)$/i, '');
+        
+        // Padrões suportados (em ordem de prioridade):
+        const patterns = [
+          /^q(\d+)$/i,                    // Q1, Q2, q1, q2
+          /^questao[_\s]*(\d+)$/i,        // questao1, questao_1, questao 1
+          /^question[_\s]*(\d+)$/i,       // question1, question_1, question 1
+          /^(\d+)$/,                      // 1, 2, 3 (apenas números)
+          /^img[_\s]*(\d+)$/i,           // img1, img_1, img 1
+          /^image[_\s]*(\d+)$/i,          // image1, image_1, image 1
+          /^figura[_\s]*(\d+)$/i,         // figura1, figura_1, figura 1
+          /^fig[_\s]*(\d+)$/i,            // fig1, fig_1, fig 1
+          /(\d+)[_\s]*questao/i,          // 1questao, 1_questao, 1 questao
+          /(\d+)[_\s]*question/i,         // 1question, 1_question, 1 question
+          /questao[_\s]*(\d+)[_\s]*img/i, // questao1img, questao_1_img
+          /q[_\s]*(\d+)[_\s]*img/i,       // q1img, q_1_img
+          /.*[_\s](\d+)$/,                // qualquer_coisa_1, arquivo 1
+          /^(\d+)[_\s]*.*/,               // 1_qualquer_coisa, 1 arquivo
+        ];
+        
+        for (const pattern of patterns) {
+          const match = name.match(pattern);
+          if (match && match[1]) {
+            const num = parseInt(match[1]);
+            if (num > 0 && num <= 999) { // Limite razoável
+              return num;
+            }
+          }
+        }
+        
+        return null;
+      };
+      
+      // Processar cada arquivo
+      bulkImages.forEach((file) => {
+        const questionNumber = extractQuestionNumber(file.name);
+        
+        if (questionNumber !== null) {
+          const questionIndex = questionNumber - 1; // Array é 0-indexed
+          
+          if (questionIndex >= 0 && questionIndex < parsedQuestions.length) {
+            // Verificar se a questão já tem imagem
+            const currentQuestion = parsedQuestions[questionIndex];
+            const hasExistingImage = currentQuestion.image || currentQuestion.imageUrl;
+            
+            const imageUrl = URL.createObjectURL(file);
+            editQuestion(questionIndex, 'image', file);
+            editQuestion(questionIndex, 'imageUrl', imageUrl);
+            
+            associatedCount++;
+            const status = hasExistingImage ? '(substituída)' : '(nova)';
+            processedFiles.push(`${file.name} → Questão ${questionNumber} ${status}`);
+          } else {
+            notFoundCount++;
+            unprocessedFiles.push(`${file.name} (questão ${questionNumber} não existe)`);
+          }
+        } else {
+          notFoundCount++;
+          unprocessedFiles.push(`${file.name} (padrão não reconhecido)`);
+        }
+      });
+      
+      // Feedback detalhado
+      if (associatedCount > 0) {
+        const successMessage = `✅ ${associatedCount} imagem(ns) distribuída(s) com sucesso!`;
+        const details = processedFiles.slice(0, 5).join('\n');
+        const moreInfo = processedFiles.length > 5 ? `\n... e mais ${processedFiles.length - 5}` : '';
+        
+        toast.success(successMessage + '\n\n' + details + moreInfo, {
+          duration: 6000,
+          style: {
+            maxWidth: '500px',
+            whiteSpace: 'pre-line'
+          }
+        });
+      }
+      
+      if (notFoundCount > 0) {
+        const errorMessage = `❌ ${notFoundCount} arquivo(s) não processado(s):`;
+        const details = unprocessedFiles.slice(0, 3).join('\n');
+        const moreInfo = unprocessedFiles.length > 3 ? `\n... e mais ${unprocessedFiles.length - 3}` : '';
+        const helpText = '\n\n💡 Padrões suportados: Q1, questao1, 1.jpg, img1, etc.';
+        
+        toast.error(errorMessage + '\n\n' + details + moreInfo + helpText, {
+          duration: 8000,
+          style: {
+            maxWidth: '500px',
+            whiteSpace: 'pre-line'
+          }
+        });
+      }
+      
+      // Limpar apenas se pelo menos uma imagem foi processada
+      if (associatedCount > 0) {
+        setBulkImages([]);
+      }
+      
+    } catch (error) {
+      console.error('Erro ao processar imagens:', error);
+      toast.error('❌ Erro interno ao processar imagens. Tente novamente.');
+    } finally {
+      setProcessingBulkImages(false);
+    }
+  };
+  
+  const clearBulkImages = () => {
+    setBulkImages([]);
+    toast.success('Imagens em lote removidas.');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -1918,7 +2092,216 @@ Sub-assunto: Porfiria`}
               </div>
             </div>
           </div>
-        )}
+        )}        
+        
+        {/* Upload Automático de Imagens por Nomenclatura */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl shadow-lg p-6 mb-6">
+            <div className="flex items-center mb-4">
+              <FaUpload className="text-blue-600 mr-2" />
+              <h2 className="text-xl font-semibold text-gray-900">
+                Upload Automático de Imagens por Nomenclatura
+              </h2>
+            </div>
+            
+            <div className="mb-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                  <FaImage className="mr-2" />
+                  Padrões de Nomenclatura Suportados
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-blue-700">
+                  <div>
+                    <strong>Padrões Principais:</strong>
+                    <ul className="mt-1 space-y-1">
+                      <li>• <code className="bg-blue-100 px-1 rounded">Q1.jpg</code>, <code className="bg-blue-100 px-1 rounded">Q2.png</code></li>
+                      <li>• <code className="bg-blue-100 px-1 rounded">questao1.jpg</code>, <code className="bg-blue-100 px-1 rounded">questao_2.png</code></li>
+                      <li>• <code className="bg-blue-100 px-1 rounded">1.jpg</code>, <code className="bg-blue-100 px-1 rounded">2.png</code> (apenas números)</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <strong>Padrões Alternativos:</strong>
+                    <ul className="mt-1 space-y-1">
+                      <li>• <code className="bg-blue-100 px-1 rounded">img1.jpg</code>, <code className="bg-blue-100 px-1 rounded">image_1.png</code></li>
+                      <li>• <code className="bg-blue-100 px-1 rounded">figura1.jpg</code>, <code className="bg-blue-100 px-1 rounded">fig_1.png</code></li>
+                      <li>• <code className="bg-blue-100 px-1 rounded">arquivo_1.jpg</code>, <code className="bg-blue-100 px-1 rounded">1_questao.png</code></li>
+                    </ul>
+                  </div>
+                </div>
+                <p className="text-xs text-blue-600 mt-3 font-medium">
+                  💡 O sistema é inteligente e reconhece automaticamente o número da questão em diversos formatos!
+                </p>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Selecionar Imagens (padrão Q + número):
+                </label>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => handleBulkImageUpload(e.target.files)}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors"
+                />
+              </div>
+              
+              {/* Mensagem quando há questões mas não há imagens */}
+              {parsedQuestions.length > 0 && bulkImages.length === 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <FaCheckCircle className="h-5 w-5 text-green-400" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-green-800">
+                        ✅ {parsedQuestions.length} questão{parsedQuestions.length !== 1 ? 'ões' : ''} processada{parsedQuestions.length !== 1 ? 's' : ''} - Pronto para receber imagens!
+                      </h3>
+                      <div className="mt-2 text-sm text-green-700">
+                        <p>
+                          Suas questões foram processadas com sucesso. Agora você pode:
+                        </p>
+                        <ul className="mt-2 ml-4 list-disc">
+                          <li><strong>Selecionar imagens</strong> usando o campo acima</li>
+                          <li><strong>Nomear as imagens</strong> seguindo os padrões (Q1.jpg, Q2.png, etc.)</li>
+                          <li><strong>Distribuir automaticamente</strong> as imagens para as questões correspondentes</li>
+                        </ul>
+                        <p className="mt-2 font-medium text-green-800">
+                          💡 Dica: O sistema reconhece automaticamente o número da questão no nome do arquivo!
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Mensagem quando há imagens mas não há questões */}
+              {bulkImages.length > 0 && parsedQuestions.length === 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-yellow-800">
+                        ⚠️ Imagens selecionadas, mas nenhuma questão foi processada
+                      </h3>
+                      <div className="mt-2 text-sm text-yellow-700">
+                        <p>
+                          Você selecionou <strong>{bulkImages.length} imagem{bulkImages.length !== 1 ? 's' : ''}</strong>, mas ainda não processou nenhuma questão.
+                          <br />
+                          <strong>Para distribuir as imagens:</strong>
+                        </p>
+                        <ol className="mt-2 ml-4 list-decimal">
+                          <li>Cole o texto das questões na seção acima</li>
+                          <li>Cole o gabarito das questões</li>
+                          <li>Clique em "Processar Questões"</li>
+                          <li>Depois volte aqui para distribuir as imagens</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {bulkImages.length > 0 && parsedQuestions.length > 0 && (
+                <div className="bg-white rounded-lg p-4 border">
+                  <p className="text-sm font-medium text-gray-700 mb-2">
+                    Imagens selecionadas ({bulkImages.length}):
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {bulkImages.map((file, index) => (
+                      <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                        {file.name}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                      type="button"
+                      onClick={processBulkImages}
+                      disabled={processingBulkImages}
+                      className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                        processingBulkImages
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transform hover:scale-105'
+                      }`}
+                    >
+                      {processingBulkImages ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Processando Imagens...</span>
+                        </>
+                      ) : (
+                        <>
+                          <FaUpload className="text-lg" />
+                          <span>🚀 Distribuir {bulkImages.length} Imagem{bulkImages.length !== 1 ? 's' : ''}</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={clearBulkImages}
+                      disabled={processingBulkImages}
+                      className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                        processingBulkImages
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 shadow-lg hover:shadow-xl transform hover:scale-105'
+                      }`}
+                    >
+                      <FaTrash className="text-lg" />
+                      <span>🗑️ Limpar Seleção</span>
+                    </button>
+                    
+                    <div className="flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-lg">
+                      <FaCheck className="text-green-600" />
+                      <span className="text-sm font-medium text-green-800">
+                        ✅ {bulkImages.length} arquivo{bulkImages.length !== 1 ? 's' : ''} pronto{bulkImages.length !== 1 ? 's' : ''} para distribuição
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Estatísticas de Distribuição */}
+              {parsedQuestions.length > 0 && bulkImages.length > 0 && (
+                <div className="mt-6 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-purple-800 mb-3 flex items-center">
+                    <FaImage className="mr-2" />
+                    📊 Estatísticas de Distribuição Inteligente
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div className="bg-white rounded-lg p-3 border border-purple-100">
+                      <div className="text-purple-600 font-medium">Questões Disponíveis</div>
+                      <div className="text-2xl font-bold text-purple-800">{parsedQuestions.length}</div>
+                      <div className="text-xs text-purple-500">questões prontas para receber imagens</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 border border-purple-100">
+                      <div className="text-indigo-600 font-medium">Imagens Selecionadas</div>
+                      <div className="text-2xl font-bold text-indigo-800">{bulkImages.length}</div>
+                      <div className="text-xs text-indigo-500">arquivos aguardando distribuição</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 border border-purple-100">
+                      <div className="text-green-600 font-medium">Potencial de Match</div>
+                      <div className="text-2xl font-bold text-green-800">
+                        {Math.min(parsedQuestions.length, bulkImages.length)}
+                      </div>
+                      <div className="text-xs text-green-500">possíveis associações automáticas</div>
+                    </div>
+                  </div>
+                  <div className="mt-3 p-3 bg-white rounded-lg border border-purple-100">
+                    <div className="text-xs text-purple-700">
+                      💡 <strong>Dica:</strong> O sistema tentará associar automaticamente as imagens às questões baseado nos padrões de nomenclatura. 
+                      Imagens não associadas serão listadas para revisão manual.
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         
         {/* Preview das Questões Parseadas */}
         {parsedQuestions.length > 0 && (
