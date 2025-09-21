@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { FaArrowLeft, FaArrowRight, FaFlag, FaClock, FaCheckCircle, FaCut, FaBrain } from 'react-icons/fa';
+import { FaArrowLeft, FaArrowRight, FaFlag, FaClock, FaCheckCircle, FaCut, FaBrain, FaTimes, FaEye } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Exam, ExamQuestion, ExamAttempt, ExamAnswer, ExamsService } from '@/services/exams.service';
@@ -13,6 +13,7 @@ import { ImageUploadService, QuestionImage } from '@/services/image-upload.servi
 import Loading from '@/components/Loading';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import { AIExplanationModal } from '@/components/ai/AIExplanationModal';
+
 
 export default function IniciarSimuladoPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -38,6 +39,8 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
   const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(new Set());
   const [showAIExplanationModal, setShowAIExplanationModal] = useState(false);
   const [selectedQuestionForAI, setSelectedQuestionForAI] = useState<any>(null);
+  const [showExamModeModal, setShowExamModeModal] = useState(false);
+  const [selectedMode, setSelectedMode] = useState<'normal' | 'exercise'>('normal');
   
   // Inicialização
   useEffect(() => {
@@ -162,8 +165,20 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
     }
   };
   
-  const startExam = async () => {
+  const handleOpenExamModeModal = () => {
+    setShowExamModeModal(true);
+  };
+
+  const startExam = async (mode?: 'normal' | 'exercise') => {
     if (starting) return;
+    
+    // Definir o modo se fornecido
+    if (mode) {
+      setExamMode(mode);
+    }
+    
+    // Fechar o modal
+    setShowExamModeModal(false);
     
     // Verificar limite de tentativas de simulados
     if (hasReachedLimit('exam_attempts_per_week')) {
@@ -585,58 +600,141 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
                   </ul>
                 </div>
                 
-                {/* Seleção do modo de simulado */}
-                <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <h3 className="font-medium text-gray-800 mb-3">Modo de Simulado</h3>
-                  <div className="space-y-3">
-                    <label className="flex items-start cursor-pointer">
-                      <input
-                        type="radio"
-                        name="examMode"
-                        value="normal"
-                        checked={examMode === 'normal'}
-                        onChange={(e) => setExamMode(e.target.value as 'normal' | 'exercise')}
-                        className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      />
-                      <div className="ml-3">
-                        <div className="font-medium text-gray-700">Modo Normal</div>
-                        <div className="text-sm text-gray-500">
-                          Responda todas as questões e veja o resultado apenas no final
+                {/* Call to action para escolher modo */}
+                <div className="mt-6 bg-gradient-to-r from-blue-50 to-green-50 border-2 border-dashed border-gray-300 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2 text-center">Pronto para começar?</h3>
+                  <p className="text-gray-600 mb-4 text-center">
+                    Escolha como deseja estudar:
+                  </p>
+                  
+                  {!showExamModeModal ? (
+                    <div className="text-center">
+                      <button
+                        onClick={handleOpenExamModeModal}
+                        className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                      >
+                        <FaBrain className="mr-2" />
+                        Escolher Modo de Estudo
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Informações do simulado */}
+                      <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold text-gray-800">{exam?.title || 'Simulado'}</h4>
+                          <button
+                            onClick={() => setShowExamModeModal(false)}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            <FaTimes />
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <div className="flex items-center gap-1">
+                            <FaCheckCircle className="text-blue-500" />
+                            <span>{questions.length} questões</span>
+                          </div>
+                          {exam?.time_limit && (
+                            <div className="flex items-center gap-1">
+                              <FaClock className="text-orange-500" />
+                              <span>{exam.time_limit} minutos</span>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </label>
-                    
-                    <label className="flex items-start cursor-pointer">
-                      <input
-                        type="radio"
-                        name="examMode"
-                        value="exercise"
-                        checked={examMode === 'exercise'}
-                        onChange={(e) => setExamMode(e.target.value as 'normal' | 'exercise')}
-                        className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      />
-                      <div className="ml-3">
-                        <div className="font-medium text-gray-700">Lista de Exercícios</div>
-                        <div className="text-sm text-gray-500">
-                          Veja a resposta correta e explicação imediatamente após cada questão
+
+                      {/* Opções de modo */}
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         {/* Modo Normal */}
+                         <div 
+                           onClick={() => setSelectedMode('normal')}
+                           className={`bg-white rounded-lg border-2 p-4 cursor-pointer transition-colors ${
+                             selectedMode === 'normal' 
+                               ? 'border-blue-500 bg-blue-50' 
+                               : 'border-blue-200 hover:border-blue-400'
+                           }`}
+                         >
+                           <div className="flex items-start gap-3">
+                             <div className="flex-shrink-0 mt-1">
+                               <div className={`w-4 h-4 rounded-full border-2 ${
+                                 selectedMode === 'normal'
+                                   ? 'border-blue-500 bg-blue-500'
+                                   : 'border-blue-300 bg-white'
+                               }`}></div>
+                             </div>
+                             <div className="flex-1">
+                               <div className="flex items-center gap-2 mb-2">
+                                 <FaClock className="text-blue-500" />
+                                 <h5 className="font-semibold text-gray-800">Modo Simulado</h5>
+                               </div>
+                               <p className="text-sm text-gray-600 mb-3">
+                                 Simule uma prova real com tempo cronometrado e feedback apenas no final.
+                               </p>
+                               <div className="flex flex-wrap gap-2">
+                                 <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Cronômetro ativo</span>
+                                 <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Feedback no final</span>
+                               </div>
+                             </div>
+                           </div>
+                         </div>
+ 
+                         {/* Modo Exercício */}
+                         <div 
+                           onClick={() => setSelectedMode('exercise')}
+                           className={`bg-white rounded-lg border-2 p-4 cursor-pointer transition-colors ${
+                             selectedMode === 'exercise' 
+                               ? 'border-green-500 bg-green-50' 
+                               : 'border-gray-200 hover:border-green-400'
+                           }`}
+                         >
+                           <div className="flex items-start gap-3">
+                             <div className="flex-shrink-0 mt-1">
+                               <div className={`w-4 h-4 rounded-full border-2 ${
+                                 selectedMode === 'exercise'
+                                   ? 'border-green-500 bg-green-500'
+                                   : 'border-gray-300 bg-white'
+                               }`}></div>
+                             </div>
+                             <div className="flex-1">
+                               <div className="flex items-center gap-2 mb-2">
+                                 <FaEye className="text-green-500" />
+                                 <h5 className="font-semibold text-gray-800">Modo Exercício</h5>
+                               </div>
+                               <p className="text-sm text-gray-600 mb-3">
+                                 Estude com feedback imediato após cada questão para aprender durante a prática.
+                               </p>
+                               <div className="flex flex-wrap gap-2">
+                                 <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Sem cronômetro</span>
+                                 <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Feedback imediato</span>
+                               </div>
+                             </div>
+                           </div>
+                         </div>
+                       </div>
+
+                      {/* Botão de ação */}
+                        <div className="flex justify-center pt-4">
+                          <button
+                            onClick={() => startExam(selectedMode)}
+                            className={`px-8 py-3 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 ${
+                              selectedMode === 'normal'
+                                ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
+                                : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              {selectedMode === 'normal' ? <FaClock /> : <FaEye />}
+                              Iniciar {selectedMode === 'normal' ? 'Simulado' : 'Exercício'}
+                            </div>
+                          </button>
                         </div>
-                      </div>
-                    </label>
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
               
-              <div className="flex justify-center">
-                <button
-                  onClick={startExam}
-                  disabled={starting}
-                  className={`inline-flex items-center px-6 py-3 ${
-                    starting ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-                  } text-white font-medium rounded-lg transition-colors duration-300`}
-                >
-                  {starting ? 'Iniciando...' : 'Iniciar Simulado'}
-                </button>
-              </div>
+
             </div>
           </div>
         </div>
@@ -803,6 +901,8 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
         onClose={() => setShowAIExplanationModal(false)}
         questionData={selectedQuestionForAI}
       />
+
+
     </div>
   );
 }
