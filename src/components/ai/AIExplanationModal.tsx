@@ -8,29 +8,33 @@ import { toast } from 'react-hot-toast';
 interface AIExplanationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  questionContent: string;
-  alternatives: string[];
-  correctAnswer: string;
-  discipline?: string;
-  subject?: string;
+  questionData: any;
   onExplanationGenerated?: (explanation: string) => void;
 }
 
 export function AIExplanationModal({
   isOpen,
   onClose,
-  questionContent,
-  alternatives,
-  correctAnswer,
-  discipline,
-  subject,
+  questionData,
   onExplanationGenerated
 }: AIExplanationModalProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedExplanation, setGeneratedExplanation] = useState<string>('');
 
+  // Extrair dados da questão
+  const questionContent = questionData?.question?.content || questionData?.content || questionData?.question_text || '';
+  const options = questionData?.options || questionData?.answer_options || questionData?.question?.answer_options || [];
+  const alternatives = options.map((opt: any) => opt.content || opt.text || '');
+  
+  // Encontrar a resposta correta
+  const correctOption = options.find((opt: any) => opt.is_correct);
+  const correctAnswerLetter = correctOption ? String.fromCharCode(65 + options.findIndex((opt: any) => opt.id === correctOption.id)) : '';
+  
+  const discipline = questionData?.discipline || questionData?.subject?.name || '';
+  const subject = questionData?.subject?.name || questionData?.topic || '';
+
   const handleGenerateExplanation = async () => {
-    if (!questionContent || !alternatives.length || !correctAnswer) {
+    if (!questionContent || !alternatives.length || !correctAnswerLetter) {
       toast.error('Dados da questão incompletos para gerar explicação');
       return;
     }
@@ -40,7 +44,7 @@ export function AIExplanationModal({
       const result = await AIExplanationGeneratorService.generateExplanation({
         questionContent,
         alternatives,
-        correctAnswer,
+        correctAnswer: correctAnswerLetter,
         discipline,
         subject
       });
@@ -117,7 +121,7 @@ export function AIExplanationModal({
             <div className="space-y-2">
               {alternatives?.map((alt, index) => {
                 const letter = String.fromCharCode(65 + index);
-                const isCorrect = letter === correctAnswer;
+                const isCorrect = letter === correctAnswerLetter;
                 return (
                   <div 
                     key={index} 

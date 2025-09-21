@@ -20,13 +20,15 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
 
   useEffect(() => {
     setIsClient(true);
-    
+  }, []);
+
+  useEffect(() => {
     // Se não estiver carregando e não tiver usuário, redirecionar para login
     if (!isLoading && !user && isClient) {
       console.log('ProtectedLayout: Não autenticado, redirecionando para login');
       router.push('/auth/login?redirectTo=/dashboard');
     }
-  }, [isLoading, user, router, isClient]);
+  }, [isLoading, user?.id, isClient]); // Usar user?.id ao invés de user completo
 
   // Mostrar carregamento enquanto verifica
   if (isLoading || !isClient) {
@@ -45,4 +47,4 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
 
   // Se tiver usuário, mostra o layout com as crianças
   return <AppLayout>{children}</AppLayout>;
-} 
+}
