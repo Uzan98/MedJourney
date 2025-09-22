@@ -163,14 +163,14 @@ export default function ProvasPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="container mx-auto px-4 py-8">
         {/* Hero Header */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-3xl p-8 mb-8 shadow-2xl">
+        <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 mb-6 md:mb-8 shadow-2xl">
           <div className="absolute inset-0 bg-black/10"></div>
-          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
             <div className="text-white">
-              <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-3 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
                 Provas e Simulados
               </h1>
-              <p className="text-blue-100 text-lg max-w-2xl">
+              <p className="text-blue-100 text-sm sm:text-base md:text-lg max-w-2xl leading-relaxed">
                 Acesse uma vasta coleção de provas de residência médica, ENEM, concursos públicos e vestibulares. 
                 Prepare-se com qualidade e conquiste seus objetivos.
               </p>
@@ -179,10 +179,11 @@ export default function ProvasPage() {
             {isAdmin && (
               <Link 
                 href="/provas/upload"
-                className="group inline-flex items-center px-8 py-4 bg-white text-blue-600 font-bold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-out"
+                className="group inline-flex items-center px-4 sm:px-6 md:px-8 py-3 md:py-4 bg-white text-blue-600 font-bold rounded-xl md:rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-out text-sm md:text-base"
               >
-                <Plus className="mr-3 h-5 w-5 group-hover:rotate-90 transition-transform duration-300" /> 
-                Adicionar Prova
+                <Plus className="mr-2 md:mr-3 h-4 md:h-5 w-4 md:w-5 group-hover:rotate-90 transition-transform duration-300" /> 
+                <span className="hidden sm:inline">Adicionar Prova</span>
+                <span className="sm:hidden">Adicionar</span>
               </Link>
             )}
           </div>
@@ -193,7 +194,7 @@ export default function ProvasPage() {
         </div>
 
         {/* Estatísticas por Categoria */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-10">
           {categoryStats.map((stat, index) => (
             <Card 
               key={stat.category}
@@ -205,25 +206,25 @@ export default function ProvasPage() {
               style={{ animationDelay: `${index * 100}ms` }}
               onClick={() => setSelectedCategory(stat.category)}
             >
-              <CardContent className="p-6 relative overflow-hidden">
+              <CardContent className="p-4 md:p-6 relative overflow-hidden">
                 <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${stat.category === 'residencia' ? 'from-blue-100 to-blue-200' : stat.category === 'concursos' ? 'from-purple-100 to-purple-200' : stat.category === 'enem' ? 'from-green-100 to-green-200' : 'from-orange-100 to-orange-200'} rounded-full -translate-y-10 translate-x-10 opacity-50 group-hover:opacity-70 transition-opacity`}></div>
                 
                 <div className="relative z-10">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${CATEGORY_GRADIENTS[stat.category] || 'from-gray-500 to-gray-600'} flex items-center justify-center text-white text-xl font-bold shadow-lg`}>
+                  <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
+                    <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-gradient-to-br ${CATEGORY_GRADIENTS[stat.category] || 'from-gray-500 to-gray-600'} flex items-center justify-center text-white text-xl font-bold shadow-lg`}>
                       {(() => {
                         const IconComponent = getCategoryIcon(stat.category);
-                        return <IconComponent className="h-6 w-6" />;
+                        return <IconComponent className="h-5 w-5 md:h-6 md:w-6" />;
                       })()}
                     </div>
-                    <h3 className="font-bold text-gray-900 text-lg">
+                    <h3 className="font-bold text-gray-900 text-base md:text-lg">
                       {stat.category === 'residencia' ? 'Residência' : 
                        stat.category === 'concursos' ? 'Concursos' :
                        stat.category === 'enem' ? 'ENEM' : 'Vestibulares'}
                     </h3>
                   </div>
                   
-                  <p className="text-sm text-gray-600 mb-4 leading-relaxed">{stat.description}</p>
+                  <p className="text-xs md:text-sm text-gray-600 mb-3 md:mb-4 leading-relaxed">{stat.description}</p>
                   
                   <div className="flex items-center justify-between">
                     <Badge className={`px-3 py-1 bg-gradient-to-r ${getCategoryGradient(stat.category)} text-white border-0 font-semibold shadow-md`}>
@@ -240,37 +241,38 @@ export default function ProvasPage() {
         </div>
 
         {/* Filtros e Busca */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 mb-8">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
+        <div className="bg-white/70 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 shadow-lg border border-white/20 mb-6 md:mb-8">
+          <div className="flex flex-col gap-3 md:gap-4">
+            <div className="w-full">
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Search className="absolute left-3 md:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 md:h-5 md:w-5" />
                 <Input
                   placeholder="Buscar provas por título ou descrição..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 h-12 border-0 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm focus:shadow-md transition-shadow text-gray-700 placeholder:text-gray-400"
+                  className="pl-10 md:pl-12 h-10 md:h-12 border-0 bg-white/80 backdrop-blur-sm rounded-lg md:rounded-xl shadow-sm focus:shadow-md transition-shadow text-gray-700 placeholder:text-gray-400 text-sm md:text-base"
                 />
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-2 md:gap-3">
               <Button
                 variant={selectedCategory === 'all' ? 'default' : 'outline'}
                 onClick={() => setSelectedCategory('all')}
-                className={`whitespace-nowrap h-12 px-6 rounded-xl font-semibold transition-all duration-300 ${
+                className={`whitespace-nowrap h-9 md:h-12 px-3 md:px-6 rounded-lg md:rounded-xl font-semibold transition-all duration-300 text-sm md:text-base ${
                   selectedCategory === 'all' 
                     ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl' 
                     : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-white hover:shadow-md'
                 }`}
               >
-                <Filter className="h-4 w-4 mr-2" />
+                <Filter className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                 Todas
               </Button>
               {isAdmin && (
                 <Link href="/simulados/novo">
-                  <Button className="whitespace-nowrap h-12 px-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nova Prova
+                  <Button className="whitespace-nowrap h-9 md:h-12 px-3 md:px-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg md:rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 text-sm md:text-base">
+                    <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                    <span className="hidden sm:inline">Nova Prova</span>
+                    <span className="sm:hidden">Nova</span>
                   </Button>
                 </Link>
               )}
@@ -279,12 +281,12 @@ export default function ProvasPage() {
         </div>
 
       {/* Lista de Provas */}
-      <div className="space-y-4">
+      <div className="space-y-3 md:space-y-4">
         {loadingExams ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {[1, 2, 3, 4, 5, 6].map(i => (
               <div key={i} className="animate-pulse">
-                <div className="h-48 bg-gray-200 rounded-lg"></div>
+                <div className="h-40 md:h-48 bg-gray-200 rounded-lg"></div>
               </div>
             ))}
           </div>
@@ -314,26 +316,26 @@ export default function ProvasPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
             {filteredExams.map((exam, index) => (
               <Card 
                 key={exam.id} 
-                className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 border-0 bg-white/90 backdrop-blur-sm overflow-hidden"
+                className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 md:hover:-translate-y-3 border-0 bg-white/90 backdrop-blur-sm overflow-hidden"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${exam.exam_type ? (exam.exam_type.name === 'residencia' ? 'from-blue-50 via-white to-blue-100' : exam.exam_type.name === 'concursos' ? 'from-purple-50 via-white to-purple-100' : exam.exam_type.name === 'enem' ? 'from-green-50 via-white to-green-100' : 'from-orange-50 via-white to-orange-100') : 'from-gray-50 via-white to-gray-100'} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
                 
-                <CardHeader className="relative z-10 pb-4">
-                  <div className="flex items-start justify-between mb-3">
+                <CardHeader className="relative z-10 pb-3 md:pb-4 p-4 md:p-6">
+                  <div className="flex items-start justify-between mb-2 md:mb-3">
                     <div className="flex-1">
-                      <CardTitle className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-700 transition-colors line-clamp-2">
+                      <CardTitle className="text-lg md:text-xl font-bold text-gray-900 mb-2 md:mb-3 group-hover:text-blue-700 transition-colors line-clamp-2">
                         {exam.title}
                       </CardTitle>
                       {exam.exam_type && (
-                        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r ${CATEGORY_GRADIENTS[exam.exam_type.name] || 'from-gray-500 to-gray-600'} text-white text-sm font-semibold shadow-md`}>
+                        <div className={`inline-flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 rounded-full bg-gradient-to-r ${CATEGORY_GRADIENTS[exam.exam_type.name] || 'from-gray-500 to-gray-600'} text-white text-xs md:text-sm font-semibold shadow-md`}>
                           {(() => {
                             const IconComponent = getCategoryIcon(exam.exam_type.name);
-                            return <IconComponent className="h-4 w-4" />;
+                            return <IconComponent className="h-3 w-3 md:h-4 md:w-4" />;
                           })()}
                           {exam.exam_type.description}
                         </div>
@@ -341,36 +343,36 @@ export default function ProvasPage() {
                     </div>
                   </div>
                   {exam.description && (
-                    <CardDescription className="text-gray-600 leading-relaxed line-clamp-3">
+                    <CardDescription className="text-gray-600 leading-relaxed line-clamp-3 text-sm md:text-base">
                       {exam.description}
                     </CardDescription>
                   )}
                 </CardHeader>
                 
-                <CardContent className="relative z-10 pt-0">
-                  <div className="flex items-center gap-6 text-sm text-gray-500 mb-6">
+                <CardContent className="relative z-10 pt-0 p-4 md:p-6">
+                  <div className="flex items-center gap-3 md:gap-6 text-xs md:text-sm text-gray-500 mb-4 md:mb-6 flex-wrap">
                     {exam.time_limit && (
-                      <div className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-lg">
-                        <Clock className="h-4 w-4 text-blue-500" />
+                      <div className="flex items-center gap-1 md:gap-2 bg-gray-50 px-2 md:px-3 py-1 rounded-lg">
+                        <Clock className="h-3 w-3 md:h-4 md:w-4 text-blue-500" />
                         <span className="font-medium">{exam.time_limit} min</span>
                       </div>
                     )}
-                    <div className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-lg">
-                      <Users className="h-4 w-4 text-green-500" />
+                    <div className="flex items-center gap-1 md:gap-2 bg-gray-50 px-2 md:px-3 py-1 rounded-lg">
+                      <Users className="h-3 w-3 md:h-4 md:w-4 text-green-500" />
                       <span className="font-medium">{exam.creator_name || 'Anônimo'}</span>
                     </div>
                   </div>
                   
-                  <div className="flex gap-3">
+                  <div className="flex gap-2 md:gap-3">
                     <Button 
-                      className="flex-1 h-11 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
+                      className="flex-1 h-9 md:h-11 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg md:rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 text-sm md:text-base"
                       onClick={() => router.push(`/simulados/${exam.id}/iniciar`)}
                     >
                       Iniciar Prova
                     </Button>
                     <Button 
                       variant="outline"
-                      className="h-11 px-4 border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:shadow-md transition-all duration-300"
+                      className="h-9 md:h-11 px-3 md:px-4 border-gray-200 text-gray-700 rounded-lg md:rounded-xl hover:bg-gray-50 hover:shadow-md transition-all duration-300 text-sm md:text-base"
                       onClick={() => router.push(`/simulados/${exam.id}`)}
                     >
                       Detalhes

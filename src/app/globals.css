@@ -128,6 +128,9 @@ body {
   padding: 0;
   background: white;
   overflow-x: hidden; /* Prevenir scroll horizontal em toda a aplicação */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
 }
 
 /* Permitir rotação de tela e responsividade */
@@ -298,6 +301,9 @@ body {
     margin: 0;
     padding: 0;
     overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: manipulation;
   }
   
   #__next, 
