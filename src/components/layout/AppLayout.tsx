@@ -436,10 +436,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
   return (
     <NotificationProvider>
-      <div className="flex h-screen">
+      <div className="min-h-screen overflow-x-hidden">
       {/* Sidebar - Desktop */}
       <div 
-        className={`bg-blue-600 text-white flex flex-col transition-all duration-300 ease-in-out relative ${
+        className={`bg-blue-600 text-white flex flex-col transition-all duration-300 ease-in-out fixed left-0 top-0 h-full z-30 ${
           isSidebarOpen ? 'w-64' : 'w-20'
         } hidden md:flex`}
       >
@@ -479,7 +479,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         </div>
         
         {/* Menu container com scroll próprio */}
-        <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="flex flex-col flex-1">
           {/* Nav links com scroll - Usando o novo componente SidebarMenu */}
           <SidebarMenu 
             collapsed={!isSidebarOpen} 
@@ -549,7 +549,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             </div>
             
             {/* Menu container com scroll próprio - Mobile */}
-            <div className="flex flex-col flex-1 overflow-hidden">
+            <div className="flex flex-col flex-1">
               {/* Mobile Nav com scroll - Usando o novo componente SidebarMenu */}
               <SidebarMenu 
                 onToggleSubmenu={toggleSubmenu} 
@@ -572,7 +572,9 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       )}
       
       {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className={`min-h-screen flex flex-col overflow-x-hidden transition-all duration-300 ease-in-out ${
+        isSidebarOpen ? 'md:ml-64' : 'md:ml-20'
+      }`}>
         {/* Header */}
         <header className="bg-white shadow-sm py-4 px-6 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center">
@@ -693,7 +695,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         </header>
         
         {/* Page content */}
-        <main className="flex-1 overflow-auto px-3 py-0 sm:px-6 sm:py-6 lg:px-8 bg-gray-50 max-w-full w-full pb-20 md:pb-6">
+        <main className="flex-1 px-3 py-0 sm:px-6 sm:py-6 lg:px-8 bg-gray-50 max-w-full w-full pb-20 md:pb-6 overflow-x-hidden">
           {children}
         </main>
       </div>

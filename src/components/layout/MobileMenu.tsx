@@ -54,7 +54,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
   // Check if we should render the menu
   // Only render on protected routes (authenticated pages) unless forceShow is true
   useEffect(() => {
-    const protectedPaths = ['/dashboard', '/estudos', '/banco-questoes', '/simulados', '/provas', '/comunidade', '/planejamento', '/planner', '/configuracoes', '/disciplinas', '/minha-faculdade', '/perfil', '/mais', '/hub-estudos', '/flashcards', '/cronometro', '/estatisticas', '/desempenho', '/tarefas', '/faltas'];
+    const protectedPaths = ['/dashboard', '/estudos', '/banco-questoes', '/simulados', '/provas', '/comunidade', '/planejamento', '/planner', '/configuracoes', '/disciplinas', '/minha-faculdade', '/perfil', '/mais', '/hub-estudos', '/flashcards', '/cronometro', '/estatisticas', '/desempenho', '/tarefas', '/faltas', '/genomed-bank'];
     
     // Check if current path is a protected path or a subpath of one
     const isProtectedRoute = protectedPaths.some(path => 

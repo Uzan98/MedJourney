@@ -47,9 +47,9 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
     loadExamData();
   }, [examId]);
   
-  // Timer
+  // Timer (apenas no modo normal)
   useEffect(() => {
-    if (timeRemaining === null || timeRemaining <= 0) return;
+    if (timeRemaining === null || timeRemaining <= 0 || examMode === 'exercise') return;
     
     const timer = setInterval(() => {
       setTimeRemaining(prev => {
@@ -62,15 +62,15 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
     }, 1000);
     
     return () => clearInterval(timer);
-  }, [timeRemaining]);
+  }, [timeRemaining, examMode]);
   
-  // Verifique se o tempo acabou
+  // Verifique se o tempo acabou (apenas no modo normal)
   useEffect(() => {
-    if (timeRemaining === 0) {
+    if (timeRemaining === 0 && examMode !== 'exercise') {
       toast.error('O tempo acabou! Suas respostas serão enviadas automaticamente.');
       handleFinishExam();
     }
-  }, [timeRemaining]);
+  }, [timeRemaining, examMode]);
   
   const loadExamData = async () => {
     setLoading(true);
@@ -85,8 +85,8 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
       
       setExam(examData);
       
-      // Definir o tempo restante, se houver um limite
-      if (examData.time_limit) {
+      // Definir o tempo restante, se houver um limite (apenas no modo normal)
+      if (examData.time_limit && examMode !== 'exercise') {
         setTimeRemaining(examData.time_limit * 60); // Converter minutos para segundos
       }
       
@@ -175,6 +175,13 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
     // Definir o modo se fornecido
     if (mode) {
       setExamMode(mode);
+      // Se for modo de exercício, remover o cronômetro
+      if (mode === 'exercise') {
+        setTimeRemaining(null);
+      } else if (exam?.time_limit) {
+        // Se for modo normal e há limite de tempo, definir o cronômetro
+        setTimeRemaining(exam.time_limit * 60);
+      }
     }
     
     // Fechar o modal
@@ -435,7 +442,7 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
             <h2 className="text-xl font-semibold text-gray-800">
               Questão {currentQuestionIndex + 1} de {questions.length}
             </h2>
-            {exam?.time_limit && timeRemaining !== null && (
+            {exam?.time_limit && timeRemaining !== null && examMode !== 'exercise' && (
               <div className={`flex items-center ${timeRemaining < 300 ? 'text-red-600' : 'text-gray-700'}`}>
                 <FaClock className="mr-1" />
                 <span className="font-medium">{formatTime(timeRemaining)}</span>
@@ -799,7 +806,7 @@ export default function IniciarSimuladoPage({ params }: { params: { id: string }
                   </div>
                 </div>
                 
-                {exam?.time_limit && timeRemaining !== null && (
+                {exam?.time_limit && timeRemaining !== null && examMode !== 'exercise' && (
                   <div className={`mt-6 p-3 rounded-lg ${timeRemaining < 300 ? 'bg-red-50 text-red-800' : 'bg-blue-50 text-blue-800'}`}>
                     <div className="flex items-center justify-center">
                       <FaClock className="mr-2" />

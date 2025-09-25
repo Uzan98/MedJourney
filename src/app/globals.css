@@ -127,7 +127,12 @@ body {
   margin: 0;
   padding: 0;
   background: white;
+  width: 100%;
+  max-width: 100vw;
   overflow-x: hidden; /* Prevenir scroll horizontal em toda a aplicação */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
 }
 
 /* Permitir rotação de tela e responsividade */
@@ -143,7 +148,9 @@ body {
 @media screen and (orientation: landscape) {
   body {
     min-height: 100vh;
-    width: 100vw;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 }
 
@@ -151,7 +158,9 @@ body {
 @media screen and (orientation: portrait) {
   body {
     min-height: 100vh;
-    width: 100vw;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 }
 
@@ -298,6 +307,9 @@ body {
     margin: 0;
     padding: 0;
     overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: manipulation;
   }
   
   #__next, 

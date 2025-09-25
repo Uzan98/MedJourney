@@ -20,7 +20,8 @@ import {
   School,
   CalendarDays,
   UserX,
-  FileCheck
+  FileCheck,
+  Database
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -123,6 +124,14 @@ export default function MaisPage() {
       description: "Gerencie seu perfil",
       bgColor: "bg-pink-50",
       iconColor: "text-pink-600"
+    },
+    {
+      path: "/genomed-bank",
+      label: "Genomed Bank",
+      icon: <Database className="h-6 w-6" />,
+      description: "Banco de dados médicos",
+      bgColor: "bg-cyan-50",
+      iconColor: "text-cyan-600"
     }
   ];
 

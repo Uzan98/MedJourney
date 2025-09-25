@@ -136,13 +136,20 @@ export default function ResultadoSimulado({ params }: { params: { id: string } }
     }
   };
 
-  const handleOpenAIExplanation = (questionData: any) => {
+  const handleOpenAIExplanation = (questionData: any, questionId: number) => {
     if (!isProOrHigher()) {
       showUpgradeModal('pro', 'Explicações com IA estão disponíveis apenas para assinantes dos planos Pro e Pro+.');
       return;
     }
     
-    setSelectedQuestionForAI(questionData);
+    // Combinar dados da questão com as opções carregadas
+    const questionWithOptions = {
+      ...questionData,
+      options: questionDetails[questionId]?.options || [],
+      answer_options: questionDetails[questionId]?.options || []
+    };
+    
+    setSelectedQuestionForAI(questionWithOptions);
     setShowAIExplanationModal(true);
   };
 
@@ -378,7 +385,7 @@ export default function ResultadoSimulado({ params }: { params: { id: string } }
                 <h4 className="font-medium text-gray-700">Explicação:</h4>
                 {!questionData.explanation && (
                   <button
-                    onClick={() => handleOpenAIExplanation(questionData)}
+                    onClick={() => handleOpenAIExplanation(questionData, questionId)}
                     className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-lg transition-colors ${
                       isProOrHigher()
                         ? 'bg-purple-600 hover:bg-purple-700 text-white'
@@ -589,16 +596,7 @@ export default function ResultadoSimulado({ params }: { params: { id: string } }
         <AIExplanationModal
           isOpen={showAIExplanationModal}
           onClose={handleCloseAIExplanation}
-          questionContent={selectedQuestionForAI.content || ''}
-          alternatives={selectedQuestionForAI.answer_options?.map(opt => opt.text) || []}
-          correctAnswer={
-            selectedQuestionForAI.answer_options?.find(opt => opt.is_correct)?.text ||
-            (selectedQuestionForAI.correct_answer && selectedQuestionForAI.answer_options ? 
-              selectedQuestionForAI.answer_options[parseInt(selectedQuestionForAI.correct_answer) - 1]?.text : '') ||
-            selectedQuestionForAI.correct_answer || ''
-          }
-          discipline={selectedQuestionForAI.discipline_name}
-          subject={selectedQuestionForAI.subject_name}
+          questionData={selectedQuestionForAI}
           onExplanationGenerated={handleSaveAIExplanation}
         />
       )}
