@@ -195,6 +195,7 @@ export class QuestionsBankService {
             question_images(*)
           `)
           .eq('user_id', userIdToUse)
+          .range(0, 9999) // Buscar todas as questões (até 10000 para evitar problemas de performance)
           .order('created_at', { ascending: false });
         
         // Aplicar filtros básicos
@@ -268,6 +269,9 @@ export class QuestionsBankService {
       // Aplicar paginação apenas se limit for especificado
       if (limit !== undefined) {
         query = query.range(offset, offset + limit - 1);
+      } else {
+        // Se não há limite especificado, buscar todas as questões (até 10000 para evitar problemas de performance)
+        query = query.range(0, 9999);
       }
       
       // Aplicar filtros se fornecidos
