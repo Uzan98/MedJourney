@@ -213,62 +213,119 @@ export default function BancoQuestoesPage() {
     }
   };
   
-  const filterQuestions = () => {
-    let filtered = [...questions];
-    
-    // Filtrar por termo de busca
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(q => 
-        q.content.toLowerCase().includes(term) || 
-        q.tags?.some(tag => tag.toLowerCase().includes(term))
-      );
-    }
-    
-    // Filtrar por disciplina
-    if (selectedDiscipline) {
-      filtered = filtered.filter(q => q.discipline_id === selectedDiscipline);
-    }
-    
-    // Filtrar por assunto
-    if (selectedSubject) {
-      filtered = filtered.filter(q => q.subject_id === selectedSubject);
-    }
-    
-    // Filtrar por dificuldade
-    if (selectedDifficulty) {
-      // Normalizar a dificuldade para lidar com 'média' e 'media'
-      filtered = filtered.filter(q => {
-        const qDiff = q.difficulty?.toLowerCase();
-        const filterDiff = selectedDifficulty.toLowerCase();
-        
-        return qDiff === filterDiff ||
-              (qDiff === 'média' && filterDiff === 'media') ||
-              (qDiff === 'media' && filterDiff === 'média');
-      });
-    }
-    
-    // Filtrar por tipo de questão
-    if (selectedType) {
-      filtered = filtered.filter(q => q.question_type === selectedType);
-    }
-    
-    // Filtrar apenas questões do Genoma Bank
-    if (showFromGenomaOnly) {
-      filtered = filtered.filter(q => q.from_genoma_bank === true);
-    }
-    
-    // Ordenar por data
-    filtered = filtered.sort((a, b) => {
-      const dateA = new Date(a.created_at || 0).getTime();
-      const dateB = new Date(b.created_at || 0).getTime();
+  const filterQuestions = async () => {
+    setLoading(true);
+    try {
+      // Preparar filtros para busca no banco de dados
+      const filters: any = {};
       
-      return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
-    });
-    
-    setFilteredQuestions(filtered);
-    // Resetar para a primeira página quando os filtros mudarem
-    setCurrentPage(1);
+      if (selectedDiscipline) {
+        filters.disciplineId = selectedDiscipline;
+      }
+      
+      if (selectedSubject) {
+        filters.subjectId = selectedSubject;
+      }
+      
+      if (selectedDifficulty) {
+        filters.difficulty = selectedDifficulty;
+      }
+      
+      if (selectedType) {
+        filters.questionType = selectedType;
+      }
+      
+      if (searchTerm) {
+        filters.searchTerm = searchTerm;
+      }
+      
+      // Buscar questões diretamente no banco de dados com os filtros aplicados
+      const questionsData = await QuestionsBankService.getUserQuestions(
+        undefined, // userId (será obtido automaticamente)
+        undefined, // limit (buscar todas)
+        0, // offset
+        filters
+      );
+      
+      let filtered = questionsData || [];
+      
+      // Aplicar filtro do Genoma Bank (não está implementado no serviço)
+      if (showFromGenomaOnly) {
+        filtered = filtered.filter(q => q.from_genoma_bank === true);
+      }
+      
+      // Ordenar por data
+      filtered = filtered.sort((a, b) => {
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        
+        return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+      });
+      
+      setFilteredQuestions(filtered);
+      // Resetar para a primeira página quando os filtros mudarem
+      setCurrentPage(1);
+    } catch (error) {
+      console.error('Erro ao filtrar questões:', error);
+      toast.error('Erro ao buscar questões');
+      // Em caso de erro, usar filtro local como fallback
+      let filtered = [...questions];
+      
+      // Filtrar por termo de busca
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        filtered = filtered.filter(q => 
+          q.content.toLowerCase().includes(term) || 
+          q.tags?.some(tag => tag.toLowerCase().includes(term))
+        );
+      }
+      
+      // Filtrar por disciplina
+      if (selectedDiscipline) {
+        filtered = filtered.filter(q => q.discipline_id === selectedDiscipline);
+      }
+      
+      // Filtrar por assunto
+      if (selectedSubject) {
+        filtered = filtered.filter(q => q.subject_id === selectedSubject);
+      }
+      
+      // Filtrar por dificuldade
+      if (selectedDifficulty) {
+        // Normalizar a dificuldade para lidar com 'média' e 'media'
+        filtered = filtered.filter(q => {
+          const qDiff = q.difficulty?.toLowerCase();
+          const filterDiff = selectedDifficulty.toLowerCase();
+          
+          return qDiff === filterDiff ||
+                (qDiff === 'média' && filterDiff === 'media') ||
+                (qDiff === 'media' && filterDiff === 'média');
+        });
+      }
+      
+      // Filtrar por tipo de questão
+      if (selectedType) {
+        filtered = filtered.filter(q => q.question_type === selectedType);
+      }
+      
+      // Filtrar apenas questões do Genoma Bank
+      if (showFromGenomaOnly) {
+        filtered = filtered.filter(q => q.from_genoma_bank === true);
+      }
+      
+      // Ordenar por data
+      filtered = filtered.sort((a, b) => {
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        
+        return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+      });
+      
+      setFilteredQuestions(filtered);
+      setCurrentPage(1);
+    } finally {
+      setLoading(false);
+    }
   };
   
   // Função para alternar ordenação
