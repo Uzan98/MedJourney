@@ -162,16 +162,26 @@ export default function ResultadoSimulado({ params }: { params: { id: string } }
     if (!selectedQuestionForAI) return;
     
     try {
-      // Atualizar a explicação da questão no banco de dados
-      await QuestionsBankService.updateQuestion(selectedQuestionForAI.id, {
-        explanation: explanation
-      });
-      
-      // Recarregar os dados para mostrar a nova explicação
-      await loadResultData();
-      
-      toast.success('Explicação salva com sucesso!');
-      handleCloseAIExplanation();
+      // Usar a nova função específica para atualizar apenas explicações
+      const success = await QuestionsBankService.updateQuestionExplanation(
+        selectedQuestionForAI.id,
+        explanation
+      );
+
+      if (success) {
+        // Atualizar o estado local
+        setSelectedQuestionForAI(prev => prev ? { ...prev, explanation } : null);
+        
+        // Atualizar também a lista de questões se necessário
+        setQuestions(prev => prev.map(q => 
+          q.id === selectedQuestionForAI.id 
+            ? { ...q, explanation } 
+            : q
+        ));
+        
+        toast.success('Explicação salva com sucesso!');
+        handleCloseAIExplanation();
+      }
     } catch (error) {
       console.error('Erro ao salvar explicação:', error);
       toast.error('Erro ao salvar explicação');

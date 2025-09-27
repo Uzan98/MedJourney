@@ -536,6 +536,59 @@ export class QuestionsBankService {
   }
 
   /**
+   * Atualiza apenas a explicação de uma questão (sem tocar nas answer_options)
+   */
+  static async updateQuestionExplanation(id: number, explanation: string): Promise<boolean> {
+    try {
+      if (!supabase) {
+        console.error('Supabase client is not initialized');
+        return false;
+      }
+
+      // Verificar se o usuário atual é o proprietário da questão
+      const { data: user } = await supabase.auth.getUser();
+      if (!user || !user.user) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      // Buscar a questão para verificar o proprietário
+      const { data: existingQuestion, error: fetchError } = await supabase
+        .from('questions')
+        .select('user_id')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      // Verificar se o usuário atual é o proprietário da questão
+      if (!existingQuestion || existingQuestion.user_id !== user.user.id) {
+        throw new Error('Você não tem permissão para editar esta questão');
+      }
+
+      // Atualiza apenas a explicação da questão
+      const { error } = await supabase
+        .from('questions')
+        .update({
+          explanation: explanation,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error(`Erro ao atualizar explicação da questão ${id}:`, error);
+      toast.error('Erro ao atualizar explicação: ' + (error as any).message);
+      return false;
+    }
+  }
+
+  /**
    * Atualiza uma questão existente
    */
   static async updateQuestion(id: number, question: Question, answerOptions?: AnswerOption[]): Promise<boolean> {
@@ -581,6 +634,7 @@ export class QuestionsBankService {
       }
       
       // Se houver opções de resposta e for uma questão de múltipla escolha ou V/F
+      // Só atualiza as alternativas se elas foram explicitamente fornecidas e não estão vazias
       if (answerOptions && answerOptions.length > 0 && 
           (question.question_type === 'multiple_choice' || question.question_type === 'true_false')) {
         
