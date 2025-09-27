@@ -271,7 +271,7 @@ export class QuestionsBankService {
         query = query.range(offset, offset + limit - 1);
       } else {
         // Se não há limite especificado, buscar todas as questões (até 10000 para evitar problemas de performance)
-        query = query.range(0, 9999);
+        query = query.range(0, 9999).limit(10000);
       }
       
       // Aplicar filtros se fornecidos
