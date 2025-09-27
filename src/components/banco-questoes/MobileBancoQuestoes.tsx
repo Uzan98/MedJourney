@@ -32,6 +32,8 @@ interface MobileBancoQuestoesProps {
   totalQuestionCount: number;
   searchTerm: string;
   setSearchTerm: (term: string) => void;
+  searchById: string;
+  setSearchById: (id: string) => void;
   selectedDiscipline: number | null;
   setSelectedDiscipline: (id: number | null) => void;
   selectedSubject: number | null;
@@ -66,6 +68,8 @@ export default function MobileBancoQuestoes({
   totalQuestionCount,
   searchTerm,
   setSearchTerm,
+  searchById,
+  setSearchById,
   selectedDiscipline,
   setSelectedDiscipline,
   selectedSubject,
@@ -166,17 +170,32 @@ export default function MobileBancoQuestoes({
         </div>
 
         {/* Search Bar */}
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-gray-400" />
+        <div className="space-y-3">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Pesquisar questões..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-3 w-full border-0 rounded-xl bg-white/90 backdrop-blur-sm focus:ring-2 focus:ring-white focus:bg-white transition-all text-gray-900 placeholder-gray-500"
+            />
           </div>
-          <input
-            type="text"
-            placeholder="Pesquisar questões..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-3 w-full border-0 rounded-xl bg-white/90 backdrop-blur-sm focus:ring-2 focus:ring-white focus:bg-white transition-all text-gray-900 placeholder-gray-500"
-          />
+          
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FileText className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Buscar por ID da questão..."
+              value={searchById}
+              onChange={(e) => setSearchById(e.target.value)}
+              className="pl-10 pr-4 py-3 w-full border-0 rounded-xl bg-white/90 backdrop-blur-sm focus:ring-2 focus:ring-white focus:bg-white transition-all text-gray-900 placeholder-gray-500"
+            />
+          </div>
         </div>
       </div>
 

@@ -152,6 +152,64 @@ export class QuestionsBankService {
   }
 
   /**
+   * Busca uma questão específica por ID
+   */
+  static async getQuestionById(
+    questionId: number,
+    userId?: string
+  ): Promise<Question | null> {
+    try {
+      if (!supabase) {
+        console.error('Supabase client is not initialized');
+        return null;
+      }
+      
+      // Se userId não for fornecido, obter o usuário atual
+      let userIdToUse = userId;
+      if (!userIdToUse) {
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData?.user?.id) {
+          console.error('Usuário não autenticado');
+          return null;
+        }
+        userIdToUse = userData.user.id;
+      }
+      
+      const { data, error } = await supabase
+        .from('questions')
+        .select(`
+          *,
+          answer_options (*),
+          question_images(*),
+          disciplines (name),
+          subjects (name)
+        `)
+        .eq('id', questionId)
+        .eq('user_id', userIdToUse)
+        .single();
+      
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // Questão não encontrada
+          return null;
+        }
+        console.error('Erro ao buscar questão por ID:', error);
+        throw error;
+      }
+      
+      // Mapear question_images para images para manter compatibilidade
+      if (data.question_images) {
+        data.images = data.question_images;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Erro ao buscar questão por ID:', error);
+      return null;
+    }
+  }
+
+  /**
    * Busca as questões do usuário
    */
   static async getUserQuestions(
@@ -271,7 +329,7 @@ export class QuestionsBankService {
         query = query.range(offset, offset + limit - 1);
       } else {
         // Se não há limite especificado, buscar todas as questões (até 10000 para evitar problemas de performance)
-        query = query.range(0, 9999);
+        query = query.range(0, 9999).limit(10000);
       }
       
       // Aplicar filtros se fornecidos
