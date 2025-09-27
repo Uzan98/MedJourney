@@ -275,6 +275,7 @@ export default function GenomedBankPage() {
           )
         `)
         .eq('topic_id', topicId)
+        .range(0, 9999) // Permitir até 10.000 questões por tópico
         .order('created_at', { ascending: false });
 
       if (error) throw error;
