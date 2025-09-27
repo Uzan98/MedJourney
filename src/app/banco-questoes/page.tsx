@@ -42,6 +42,7 @@ export default function BancoQuestoesPage() {
   
   // Estados para filtros e pesquisa
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchById, setSearchById] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedDiscipline, setSelectedDiscipline] = useState<number | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<number | null>(null);
@@ -95,6 +96,7 @@ export default function BancoQuestoesPage() {
   }, [
     questions,
     searchTerm,
+    searchById,
     selectedDiscipline,
     selectedSubject,
     selectedDifficulty,
@@ -213,7 +215,36 @@ export default function BancoQuestoesPage() {
     }
   };
   
-  const filterQuestions = () => {
+  const filterQuestions = async () => {
+    // Se há busca por ID, fazer busca direta no banco
+    if (searchById && searchById.trim()) {
+      const questionId = parseInt(searchById.trim());
+      if (!isNaN(questionId)) {
+        try {
+          setLoading(true);
+          const question = await QuestionsBankService.getQuestionById(questionId);
+          if (question) {
+            setFilteredQuestions([question]);
+          } else {
+            setFilteredQuestions([]);
+            toast.error('Questão não encontrada com o ID informado');
+          }
+          setCurrentPage(1);
+          return;
+        } catch (error) {
+          console.error('Erro ao buscar questão por ID:', error);
+          toast.error('Erro ao buscar questão por ID');
+          setFilteredQuestions([]);
+          return;
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        toast.error('Por favor, insira um ID válido (número)');
+        return;
+      }
+    }
+    
     let filtered = [...questions];
     
     // Filtrar por termo de busca
@@ -452,38 +483,40 @@ export default function BancoQuestoesPage() {
   if (isMobile) {
     return (
       <MobileBancoQuestoes
-        questions={questions}
-        paginatedQuestions={paginatedQuestions}
-        filteredQuestions={filteredQuestions}
-        loading={loading}
-        disciplines={disciplines}
-        subjects={subjects}
-        totalQuestionCount={totalQuestionCount}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        selectedDiscipline={selectedDiscipline}
-        setSelectedDiscipline={setSelectedDiscipline}
-        selectedSubject={selectedSubject}
-        setSelectedSubject={setSelectedSubject}
-        selectedDifficulty={selectedDifficulty}
-        setSelectedDifficulty={setSelectedDifficulty}
-        selectedType={selectedType}
-        setSelectedType={setSelectedType}
-        showFromGenomaOnly={showFromGenomaOnly}
-        setShowFromGenomaOnly={setShowFromGenomaOnly}
-        sortOrder={sortOrder}
-        toggleSortOrder={toggleSortOrder}
-        loadData={loadData}
-        handleDeleteQuestion={handleDeleteQuestion}
-        getDisciplineName={getDisciplineName}
-        handleQuestionAccess={handleQuestionAccess}
-        handleQuestionCreated={loadData}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        changePage={changePage}
-        nextPage={nextPage}
-        prevPage={prevPage}
-      />
+          questions={questions}
+          filteredQuestions={filteredQuestions}
+          paginatedQuestions={paginatedQuestions}
+          loading={loading}
+          disciplines={disciplines}
+          subjects={subjects}
+          totalQuestionCount={totalQuestionCount}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          searchById={searchById}
+          setSearchById={setSearchById}
+          selectedDiscipline={selectedDiscipline}
+          setSelectedDiscipline={setSelectedDiscipline}
+          selectedSubject={selectedSubject}
+          setSelectedSubject={setSelectedSubject}
+          selectedDifficulty={selectedDifficulty}
+          setSelectedDifficulty={setSelectedDifficulty}
+          selectedType={selectedType}
+          setSelectedType={setSelectedType}
+          showFromGenomaOnly={showFromGenomaOnly}
+          setShowFromGenomaOnly={setShowFromGenomaOnly}
+          sortOrder={sortOrder}
+          toggleSortOrder={toggleSortOrder}
+          loadData={loadData}
+          handleDeleteQuestion={handleDeleteQuestion}
+          getDisciplineName={getDisciplineName}
+          handleQuestionAccess={handleQuestionAccess}
+          handleQuestionCreated={handleQuestionCreated}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          changePage={changePage}
+          nextPage={nextPage}
+          prevPage={prevPage}
+        />
     );
   }
 
@@ -562,6 +595,19 @@ export default function BancoQuestoesPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-12 pr-4 py-3 w-full border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              />
+            </div>
+
+            <div className="flex-1 relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <FileText className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Buscar por ID da questão..."
+                value={searchById}
+                onChange={(e) => setSearchById(e.target.value)}
+                className="pl-12 pr-4 py-3 w-full border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
               />
             </div>
 
