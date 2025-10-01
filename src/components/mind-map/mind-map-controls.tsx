@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Plus, Minus, RotateCcw, Download, Share2, Home, Palette, ChevronRight, ChevronLeft, ZoomIn, ZoomOut } from 'lucide-react'
+import { Plus, Minus, RotateCcw, Download, Share2, Home, Palette, ChevronRight, ChevronLeft, ZoomIn, ZoomOut, Bold, Italic, Underline, List, AlignLeft, AlignCenter, AlignRight, Type } from 'lucide-react'
 
 interface MindMapControlsProps {
   onAddNode: () => void
@@ -18,6 +18,22 @@ interface MindMapControlsProps {
   colors: string[]
   showColorPalette: boolean
   onToggleColorPalette: () => void
+  // Rich text formatting props
+  onBold?: () => void
+  onItalic?: () => void
+  onUnderline?: () => void
+  onBulletList?: () => void
+  onAlignLeft?: () => void
+  onAlignCenter?: () => void
+  onAlignRight?: () => void
+  onFontSize?: (size: string) => void
+  selectedFormats?: {
+    bold: boolean
+    italic: boolean
+    underline: boolean
+    align: 'left' | 'center' | 'right'
+    fontSize: string
+  }
 }
 
 const MindMapControls: React.FC<MindMapControlsProps> = ({
@@ -34,9 +50,22 @@ const MindMapControls: React.FC<MindMapControlsProps> = ({
   selectedColor,
   colors,
   showColorPalette,
-  onToggleColorPalette
+  onToggleColorPalette,
+  // Rich text formatting handlers
+  onBold,
+  onItalic,
+  onUnderline,
+  onBulletList,
+  onAlignLeft,
+  onAlignCenter,
+  onAlignRight,
+  onFontSize,
+  selectedFormats
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [showRichTextOptions, setShowRichTextOptions] = useState(false)
+
+  const fontSizes = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px']
 
   return (
     <div className={`absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200 p-3 transition-all duration-300 ease-in-out ${
@@ -80,6 +109,149 @@ const MindMapControls: React.FC<MindMapControlsProps> = ({
           >
             <RotateCcw size={16} />
           </button>
+          
+          <div className="w-px h-6 bg-gray-300 mx-1" />
+          
+          {/* Rich Text Formatting Options */}
+          <div className="relative">
+            <button
+              onClick={() => setShowRichTextOptions(!showRichTextOptions)}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-all duration-200 w-10 h-10 flex items-center justify-center hover:scale-105"
+              title="Opções de Formatação"
+            >
+              <Type size={16} />
+            </button>
+            
+            {showRichTextOptions && (
+              <div className="absolute top-full mt-2 right-0 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200 p-3 z-20 min-w-[300px]">
+                <div className="space-y-3">
+                  {/* Formatação de Texto */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-700 w-16">Texto:</span>
+                    <div className="flex gap-1">
+                      {onBold && (
+                        <button
+                          onClick={onBold}
+                          className={`p-2 rounded-lg transition-all duration-200 w-8 h-8 flex items-center justify-center hover:scale-105 ${
+                            selectedFormats?.bold 
+                              ? 'bg-blue-500 text-white shadow-md' 
+                              : 'bg-gray-100 hover:bg-gray-200'
+                          }`}
+                          title="Negrito"
+                        >
+                          <Bold size={14} />
+                        </button>
+                      )}
+                      {onItalic && (
+                        <button
+                          onClick={onItalic}
+                          className={`p-2 rounded-lg transition-all duration-200 w-8 h-8 flex items-center justify-center hover:scale-105 ${
+                            selectedFormats?.italic 
+                              ? 'bg-blue-500 text-white shadow-md' 
+                              : 'bg-gray-100 hover:bg-gray-200'
+                          }`}
+                          title="Itálico"
+                        >
+                          <Italic size={14} />
+                        </button>
+                      )}
+                      {onUnderline && (
+                        <button
+                          onClick={onUnderline}
+                          className={`p-2 rounded-lg transition-all duration-200 w-8 h-8 flex items-center justify-center hover:scale-105 ${
+                            selectedFormats?.underline 
+                              ? 'bg-blue-500 text-white shadow-md' 
+                              : 'bg-gray-100 hover:bg-gray-200'
+                          }`}
+                          title="Sublinhado"
+                        >
+                          <Underline size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Alinhamento */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-700 w-16">Alinhar:</span>
+                    <div className="flex gap-1">
+                      {onAlignLeft && (
+                        <button
+                          onClick={onAlignLeft}
+                          className={`p-2 rounded-lg transition-all duration-200 w-8 h-8 flex items-center justify-center hover:scale-105 ${
+                            selectedFormats?.align === 'left' 
+                              ? 'bg-blue-500 text-white shadow-md' 
+                              : 'bg-gray-100 hover:bg-gray-200'
+                          }`}
+                          title="Alinhar à Esquerda"
+                        >
+                          <AlignLeft size={14} />
+                        </button>
+                      )}
+                      {onAlignCenter && (
+                        <button
+                          onClick={onAlignCenter}
+                          className={`p-2 rounded-lg transition-all duration-200 w-8 h-8 flex items-center justify-center hover:scale-105 ${
+                            selectedFormats?.align === 'center' 
+                              ? 'bg-blue-500 text-white shadow-md' 
+                              : 'bg-gray-100 hover:bg-gray-200'
+                          }`}
+                          title="Centralizar"
+                        >
+                          <AlignCenter size={14} />
+                        </button>
+                      )}
+                      {onAlignRight && (
+                        <button
+                          onClick={onAlignRight}
+                          className={`p-2 rounded-lg transition-all duration-200 w-8 h-8 flex items-center justify-center hover:scale-105 ${
+                            selectedFormats?.align === 'right' 
+                              ? 'bg-blue-500 text-white shadow-md' 
+                              : 'bg-gray-100 hover:bg-gray-200'
+                          }`}
+                          title="Alinhar à Direita"
+                        >
+                          <AlignRight size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Lista */}
+                  {onBulletList && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700 w-16">Lista:</span>
+                      <button
+                        onClick={onBulletList}
+                        className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200 w-8 h-8 flex items-center justify-center hover:scale-105"
+                        title="Lista com Marcadores"
+                      >
+                        <List size={14} />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Tamanho da Fonte */}
+                  {onFontSize && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700 w-16">Tamanho:</span>
+                      <select
+                        onChange={(e) => onFontSize(e.target.value)}
+                        value={selectedFormats?.fontSize || '16px'}
+                        className="px-2 py-1 text-sm border border-gray-300 rounded-lg bg-white hover:border-gray-400 focus:border-blue-500 focus:outline-none"
+                      >
+                        {fontSizes.map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           
           <div className="w-px h-6 bg-gray-300 mx-1" />
           

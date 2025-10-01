@@ -4,7 +4,6 @@ import React, { useState, useRef, useCallback, useEffect } from 'react'
 import MindMapNode from './mind-map-node'
 import MindMapConnection from './mind-map-connection'
 import MindMapControls from './mind-map-controls'
-import InlineEditor from './mind-map-editor-inline'
 
 // Tipos e interfaces
 export interface MindMapNode {
@@ -57,9 +56,64 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
   const [selectedColor, setSelectedColor] = useState('#3B82F6')
   const [showColorPalette, setShowColorPalette] = useState(false)
 
+  // Estados para rich text
+  const [selectedFormats, setSelectedFormats] = useState({
+    bold: false,
+    italic: false,
+    underline: false,
+    align: 'left' as 'left' | 'center' | 'right',
+    fontSize: '16px'
+  })
+
   // Referências
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  
+  // Função para aplicar formatação ao nó em edição
+  const applyFormatToEditingNode = (format: string, value?: string) => {
+    if (!editingNodeId) return
+    
+    // Encontrar o elemento editável do nó em edição
+    const editableElement = document.querySelector(`[data-node-id="${editingNodeId}"] [contenteditable="true"]`) as HTMLElement
+    if (!editableElement) return
+    
+    // Focar no elemento se não estiver focado
+    if (document.activeElement !== editableElement) {
+      editableElement.focus()
+    }
+    
+    // Aplicar formatação usando execCommand
+    switch (format) {
+      case 'bold':
+        document.execCommand('bold', false)
+        break
+      case 'italic':
+        document.execCommand('italic', false)
+        break
+      case 'underline':
+        document.execCommand('underline', false)
+        break
+      case 'list':
+        if (value === 'bullet') {
+          document.execCommand('insertUnorderedList', false)
+        }
+        break
+      case 'align':
+        if (value === 'left') {
+          document.execCommand('justifyLeft', false)
+        } else if (value === 'center') {
+          document.execCommand('justifyCenter', false)
+        } else if (value === 'right') {
+          document.execCommand('justifyRight', false)
+        }
+        break
+      case 'size':
+        if (value) {
+          document.execCommand('fontSize', false, value)
+        }
+        break
+    }
+  }
 
   // Cores predefinidas
   const colors = [
@@ -67,6 +121,46 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
     '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16',
     '#F97316', '#6366F1', '#14B8A6', '#F43F5E'
   ]
+
+  // Handlers para rich text
+  const handleBold = () => {
+    applyFormatToEditingNode('bold')
+    setSelectedFormats(prev => ({ ...prev, bold: !prev.bold }))
+  }
+
+  const handleItalic = () => {
+    applyFormatToEditingNode('italic')
+    setSelectedFormats(prev => ({ ...prev, italic: !prev.italic }))
+  }
+
+  const handleUnderline = () => {
+    applyFormatToEditingNode('underline')
+    setSelectedFormats(prev => ({ ...prev, underline: !prev.underline }))
+  }
+
+  const handleBulletList = () => {
+    applyFormatToEditingNode('list', 'bullet')
+  }
+
+  const handleAlignLeft = () => {
+    applyFormatToEditingNode('align', 'left')
+    setSelectedFormats(prev => ({ ...prev, align: 'left' }))
+  }
+
+  const handleAlignCenter = () => {
+    applyFormatToEditingNode('align', 'center')
+    setSelectedFormats(prev => ({ ...prev, align: 'center' }))
+  }
+
+  const handleAlignRight = () => {
+    applyFormatToEditingNode('align', 'right')
+    setSelectedFormats(prev => ({ ...prev, align: 'right' }))
+  }
+
+  const handleFontSize = (size: string) => {
+    applyFormatToEditingNode('size', size)
+    setSelectedFormats(prev => ({ ...prev, fontSize: size }))
+  }
 
   // Funções auxiliares
   const generateId = () => Math.random().toString(36).substr(2, 9)
@@ -288,7 +382,6 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
       return node
     })
     updateData({ ...data, nodes: newNodes })
-    setEditingNodeId(null)
   }
 
   const handleExportJSON = () => {
@@ -426,7 +519,60 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
     }
   }, [isDragging, isPanning, handleMouseMove, handleMouseUp])
 
-  // Event listener para wheel zoom
+  // Função para calcular o viewBox baseado nos nós
+  const calculateViewBox = useCallback(() => {
+    if (data.nodes.length === 0) {
+      return '0 0 800 600' // viewBox padrão se não houver nós
+    }
+
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+
+    // Encontrar os limites de todos os nós
+    data.nodes.forEach(node => {
+      const nodeMinX = node.x
+      const nodeMinY = node.y
+      const nodeMaxX = node.x + node.width
+      const nodeMaxY = node.y + node.height
+
+      minX = Math.min(minX, nodeMinX)
+      minY = Math.min(minY, nodeMinY)
+      maxX = Math.max(maxX, nodeMaxX)
+      maxY = Math.max(maxY, nodeMaxY)
+    })
+
+    // Adicionar padding ao redor dos nós
+    const padding = 100
+    minX -= padding
+    minY -= padding
+    maxX += padding
+    maxY += padding
+
+    const width = maxX - minX
+    const height = maxY - minY
+
+    return `${minX} ${minY} ${width} ${height}`
+  }, [data.nodes])
+
+  // Converter coordenadas do SVG para coordenadas da tela
+  const convertSVGToScreenCoordinates = useCallback((svgX: number, svgY: number) => {
+    if (!svgRef.current || !containerRef.current) return { x: svgX, y: svgY }
+
+    const containerRect = containerRef.current.getBoundingClientRect()
+    
+    // Aplicar as transformações de zoom e pan
+    const transformedX = (svgX * zoom) + panOffset.x
+    const transformedY = (svgY * zoom) + panOffset.y
+    
+    // Converter para coordenadas absolutas da tela
+    const screenX = transformedX + containerRect.left
+    const screenY = transformedY + containerRect.top
+    
+    return { x: screenX, y: screenY }
+  }, [zoom, panOffset])
+
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
@@ -466,12 +612,24 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
         colors={colors}
         showColorPalette={showColorPalette}
         onToggleColorPalette={() => setShowColorPalette(!showColorPalette)}
+        // Rich text props
+        onBold={handleBold}
+        onItalic={handleItalic}
+        onUnderline={handleUnderline}
+        onBulletList={handleBulletList}
+        onAlignLeft={handleAlignLeft}
+        onAlignCenter={handleAlignCenter}
+        onAlignRight={handleAlignRight}
+        onFontSize={handleFontSize}
+        selectedFormats={selectedFormats}
       />
 
       {/* Canvas SVG */}
       <svg
         ref={svgRef}
         className="w-full h-full"
+        viewBox={calculateViewBox()}
+        preserveAspectRatio="xMidYMid meet"
         style={{
           transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom})`,
           transformOrigin: '0 0'
@@ -515,28 +673,11 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
               onNodeEdit={setEditingNodeId}
               onAddChild={handleAddChild}
               onToggleExpansion={handleToggleExpansion}
+              onTextUpdate={handleUpdateNodeText}
+              editingNodeId={editingNodeId}
             />
           ))}
       </svg>
-
-      {/* Editor inline */}
-      {editingNodeId && (() => {
-        const node = data.nodes.find(n => n.id === editingNodeId)
-        if (!node) return null
-        
-        return (
-          <InlineEditor
-            nodeId={editingNodeId}
-            initialText={node.text}
-            onSave={(text) => handleUpdateNodeText(editingNodeId, text)}
-            onCancel={() => setEditingNodeId(null)}
-            position={{
-              x: node.x * zoom + panOffset.x + (node.width * zoom) / 2 - 100,
-              y: node.y * zoom + panOffset.y + (node.height * zoom) / 2 - 20
-            }}
-          />
-        )
-      })()}
     </div>
   )
 }

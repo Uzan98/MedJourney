@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { MindMapNode as MindMapNodeType } from './native-mind-map'
 
 interface MindMapNodeProps {
@@ -15,6 +15,8 @@ interface MindMapNodeProps {
   onNodeEdit: (nodeId: string) => void
   onAddChild: (parentId: string) => void
   onToggleExpansion: (nodeId: string) => void
+  onTextUpdate?: (nodeId: string, text: string) => void
+  editingNodeId?: string | null
 }
 
 const MindMapNode: React.FC<MindMapNodeProps> = ({
@@ -28,11 +30,69 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
   onNodeDrag,
   onNodeEdit,
   onAddChild,
-  onToggleExpansion
+  onToggleExpansion,
+  onTextUpdate,
+  editingNodeId
 }) => {
   const [isDragging, setIsDragging] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const editableRef = useRef<HTMLDivElement>(null)
   
-  // Função para obter estilo do nó baseado no nível
+  // Verificar se este nó está sendo editado
+  const isCurrentlyEditing = editingNodeId === node.id
+  
+  // useEffect para focar no elemento quando entrar em modo de edição
+  useEffect(() => {
+    if (isCurrentlyEditing && editableRef.current) {
+      editableRef.current.focus()
+      
+      // Definir o conteúdo inicial para edição
+      const textContent = node.text.includes('<') ? 
+        editableRef.current.textContent || node.text.replace(/<[^>]*>/g, '') : 
+        node.text
+      editableRef.current.textContent = textContent
+      
+      // Selecionar todo o texto
+      const range = document.createRange()
+      range.selectNodeContents(editableRef.current)
+      const selection = window.getSelection()
+      selection?.removeAllRanges()
+      selection?.addRange(range)
+    }
+  }, [isCurrentlyEditing, node.text])
+  // Função para lidar com a edição de texto
+  const handleTextEdit = () => {
+    if (!isCurrentlyEditing) {
+      setIsEditing(true)
+      onNodeEdit(node.id)
+    }
+  }
+
+  // Função para salvar o texto editado
+  const handleTextSave = () => {
+    if (editableRef.current && isCurrentlyEditing) {
+      const newText = editableRef.current.textContent || ''
+      onTextUpdate(node.id, newText)
+      setIsEditing(false)
+    }
+  }
+
+  // Função para lidar com teclas pressionadas
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleTextSave()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      setIsEditing(false)
+      if (editableRef.current) {
+        const textContent = node.text.includes('<') ? 
+          node.text.replace(/<[^>]*>/g, '') : 
+          node.text
+        editableRef.current.textContent = textContent
+      }
+    }
+  }
   const getNodeStyle = () => {
     const baseStyle = {
       fill: node.color,
@@ -200,7 +260,11 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
   }
 
   return (
-    <g style={{ opacity: nodeStyle.opacity }}>
+    <g 
+      className={`mind-map-node ${isSelected ? 'selected' : ''}`}
+      data-node-id={node.id}
+      style={{ opacity: nodeStyle.opacity }}
+    >
       {/* Forma do nó baseada no nível */}
       {renderNodeShape()}
 
@@ -217,20 +281,46 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
         />
       )}
 
-      {/* Texto do nó com estilo baseado no nível */}
-      <text
-        x={node.x + node.width / 2}
-        y={node.y + node.height / 2}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fill={textStyle.fill}
-        fontSize={textStyle.fontSize}
-        fontFamily="Inter, system-ui, sans-serif"
-        fontWeight={textStyle.fontWeight}
-        className="pointer-events-none select-none"
+      {/* Texto do nó com suporte a edição inline */}
+      <foreignObject
+        x={node.x + 5}
+        y={node.y + 5}
+        width={node.width - 10}
+        height={node.height - 10}
+        className={isCurrentlyEditing ? "pointer-events-auto" : "pointer-events-none"}
       >
-        {node.text}
-      </text>
+        <div
+          ref={editableRef}
+          contentEditable={isCurrentlyEditing}
+          suppressContentEditableWarning={true}
+          onDoubleClick={handleTextEdit}
+          onBlur={handleTextSave}
+          onKeyDown={handleKeyDown}
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: textStyle.fontSize,
+            fontFamily: 'Inter, system-ui, sans-serif',
+            fontWeight: textStyle.fontWeight,
+            color: textStyle.fill,
+            textAlign: 'center',
+            overflow: 'hidden',
+            wordWrap: 'break-word',
+            outline: isCurrentlyEditing ? '2px solid #3b82f6' : 'none',
+            borderRadius: '4px',
+            padding: '2px',
+            cursor: isCurrentlyEditing ? 'text' : 'default'
+          }}
+        >
+          {isCurrentlyEditing ? '' : (node.text.includes('<') ? 
+            <span dangerouslySetInnerHTML={{ __html: node.text }} /> : 
+            node.text
+          )}
+        </div>
+      </foreignObject>
 
       {/* Botão de adicionar filho com design moderno */}
       {isSelected && !isReadOnly && (
