@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Plus, Minus, RotateCcw, Download, Share2, Home, Palette, ChevronRight, ChevronLeft, ZoomIn, ZoomOut, Bold, Italic, Underline, List, AlignLeft, AlignCenter, AlignRight, Type } from 'lucide-react'
+import { Plus, Minus, RotateCcw, Download, Share2, Home, Palette, ChevronRight, ChevronLeft, ZoomIn, ZoomOut, Bold, Italic, Underline, List, AlignLeft, AlignCenter, AlignRight, Type, Image } from 'lucide-react'
 
 interface MindMapControlsProps {
   onAddNode: () => void
@@ -9,6 +9,7 @@ interface MindMapControlsProps {
   onAutoOrganize: () => void
   onExportJSON: () => void
   onExportSVG: () => void
+  onExportPNG: () => void
   onShare: () => void
   onCenterRoot: () => void
   onZoomIn: () => void
@@ -42,6 +43,7 @@ const MindMapControls: React.FC<MindMapControlsProps> = ({
   onAutoOrganize,
   onExportJSON,
   onExportSVG,
+  onExportPNG,
   onShare,
   onCenterRoot,
   onZoomIn,
@@ -261,6 +263,14 @@ const MindMapControls: React.FC<MindMapControlsProps> = ({
             title="Exportar JSON"
           >
             <Download size={16} />
+          </button>
+          
+          <button
+            onClick={onExportPNG}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-all duration-200 w-10 h-10 flex items-center justify-center hover:scale-105"
+            title="Baixar PNG"
+          >
+            <Image size={16} />
           </button>
           
           <button

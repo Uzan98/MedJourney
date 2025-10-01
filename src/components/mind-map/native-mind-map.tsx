@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useCallback, useEffect } from 'react'
+import html2canvas from 'html2canvas'
 import MindMapNode from './mind-map-node'
 import MindMapConnection from './mind-map-connection'
 import MindMapControls from './mind-map-controls'
@@ -407,6 +408,57 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
     URL.revokeObjectURL(url)
   }
 
+  const handleExportPNG = async () => {
+    if (!svgRef.current) return
+    
+    try {
+      // Criar um container temporário para o SVG
+      const container = document.createElement('div')
+      container.style.position = 'absolute'
+      container.style.left = '-9999px'
+      container.style.top = '-9999px'
+      container.style.width = '2000px'
+      container.style.height = '1500px'
+      container.style.backgroundColor = 'white'
+      document.body.appendChild(container)
+
+      // Clonar o SVG
+      const svgClone = svgRef.current.cloneNode(true) as SVGSVGElement
+      svgClone.style.width = '100%'
+      svgClone.style.height = '100%'
+      svgClone.setAttribute('width', '2000')
+      svgClone.setAttribute('height', '1500')
+      
+      container.appendChild(svgClone)
+
+      // Capturar com html2canvas
+      const canvas = await html2canvas(container, {
+        backgroundColor: 'white',
+        scale: 2,
+        useCORS: true,
+        allowTaint: true
+      })
+
+      // Remover container temporário
+      document.body.removeChild(container)
+
+      // Fazer download
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = 'mapa-mental.png'
+          link.click()
+          URL.revokeObjectURL(url)
+        }
+      }, 'image/png')
+    } catch (error) {
+      console.error('Erro ao exportar PNG:', error)
+      alert('Erro ao gerar imagem PNG. Tente novamente.')
+    }
+  }
+
   const handleShare = () => {
     const shareData = {
       title: 'Mapa Mental',
@@ -603,6 +655,7 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
         onAutoOrganize={organizeNodesAutomatically}
         onExportJSON={handleExportJSON}
         onExportSVG={handleExportSVG}
+        onExportPNG={handleExportPNG}
         onShare={handleShare}
         onCenterRoot={handleCenterRoot}
         onZoomIn={handleZoomIn}
