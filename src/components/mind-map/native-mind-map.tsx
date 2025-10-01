@@ -358,6 +358,54 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
     }
   }
 
+  const handleZoomIn = () => {
+    const newZoom = Math.min(zoom * 1.2, 3) // Máximo de 3x zoom
+    setZoom(newZoom)
+  }
+
+  const handleZoomOut = () => {
+    const newZoom = Math.max(zoom / 1.2, 0.3) // Mínimo de 0.3x zoom
+    setZoom(newZoom)
+  }
+
+  // Função para zoom com mouse wheel
+  const handleWheel = useCallback((e: WheelEvent) => {
+    e.preventDefault()
+    
+    if (!containerRef.current) return
+    
+    const rect = containerRef.current.getBoundingClientRect()
+    const mouseX = e.clientX - rect.left
+    const mouseY = e.clientY - rect.top
+    
+    // Calcular posição do mouse no espaço do SVG antes do zoom
+    const svgMouseX = (mouseX - panOffset.x) / zoom
+    const svgMouseY = (mouseY - panOffset.y) / zoom
+    
+    // Determinar direção do zoom
+    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1
+    const newZoom = Math.min(Math.max(zoom * zoomFactor, 0.3), 3)
+    
+    // Calcular novo pan offset para manter o mouse na mesma posição
+    const newPanX = mouseX - svgMouseX * newZoom
+    const newPanY = mouseY - svgMouseY * newZoom
+    
+    setZoom(newZoom)
+    setPanOffset({ x: newPanX, y: newPanY })
+  }, [zoom, panOffset])
+
+  // Função para iniciar pan com mouse
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Verificar se o clique foi no SVG (não em um nó)
+    if (e.target === svgRef.current || (e.target as Element).closest('svg') === svgRef.current) {
+      setIsPanning(true)
+      setDragOffset({
+        x: e.clientX - panOffset.x,
+        y: e.clientY - panOffset.y
+      })
+    }
+  }, [panOffset])
+
   // Event listeners
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => {
@@ -378,11 +426,23 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
     }
   }, [isDragging, isPanning, handleMouseMove, handleMouseUp])
 
+  // Event listener para wheel zoom
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    container.addEventListener('wheel', handleWheel, { passive: false })
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel)
+    }
+  }, [handleWheel])
+
   // Render
   return (
     <div 
       ref={containerRef}
-      className={`relative w-full h-full overflow-hidden bg-gray-50 ${className}`}
+      className={`relative w-full h-full overflow-hidden bg-gray-50 pt-20 ${className}`}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) {
           setIsPanning(true)
@@ -399,6 +459,8 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
         onExportSVG={handleExportSVG}
         onShare={handleShare}
         onCenterRoot={handleCenterRoot}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
         onColorSelect={handleColorSelect}
         selectedColor={selectedColor}
         colors={colors}

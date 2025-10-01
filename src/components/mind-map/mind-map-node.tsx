@@ -112,8 +112,8 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
       const rect = svgRef.current?.getBoundingClientRect()
       if (rect) {
         const offset = {
-          x: (e.clientX - rect.left) / zoom - pan.x - node.x,
-          y: (e.clientY - rect.top) / zoom - pan.y - node.y
+          x: (e.clientX - rect.left - pan.x) / zoom - node.x,
+          y: (e.clientY - rect.top - pan.y) / zoom - node.y
         }
         onNodeDrag(node.id, offset)
       }
