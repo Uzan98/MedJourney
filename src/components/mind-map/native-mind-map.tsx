@@ -5,6 +5,7 @@ import html2canvas from 'html2canvas'
 import MindMapNode from './mind-map-node'
 import MindMapConnection from './mind-map-connection'
 import MindMapControls from './mind-map-controls'
+import { MindMapTheme, mindMapThemes, getThemeById, getDefaultTheme } from '@/constants/mind-map-themes'
 
 // Tipos e interfaces
 export interface MindMapNode {
@@ -56,6 +57,10 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null)
   const [selectedColor, setSelectedColor] = useState('#3B82F6')
   const [showColorPalette, setShowColorPalette] = useState(false)
+  
+  // Estados para temas
+  const [selectedTheme, setSelectedTheme] = useState<MindMapTheme>(getDefaultTheme())
+  const [showThemeSelector, setShowThemeSelector] = useState(false)
 
   // Estados para rich text
   const [selectedFormats, setSelectedFormats] = useState({
@@ -69,6 +74,42 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
   // Referências
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // useEffect para detectar cliques fora da área de edição
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (editingNodeId) {
+        const target = event.target as HTMLElement
+        
+        // Verificar se o clique foi fora da área de edição
+        const editableElement = document.querySelector(`[data-node-id="${editingNodeId}"] [contenteditable="true"]`) as HTMLElement
+        const nodeElement = document.querySelector(`[data-node-id="${editingNodeId}"]`) as HTMLElement
+        
+        // Se o clique não foi no elemento editável nem em seu nó pai, finalizar edição
+        if (editableElement && nodeElement && 
+            !editableElement.contains(target) && 
+            !nodeElement.contains(target)) {
+          
+          // Salvar o texto antes de sair da edição
+          const newText = editableElement.textContent || ''
+          if (newText.trim() !== '') {
+            handleUpdateNodeText(editingNodeId, newText)
+          }
+          
+          // Finalizar edição
+          setEditingNodeId(null)
+        }
+      }
+    }
+
+    // Adicionar listener global
+    document.addEventListener('mousedown', handleClickOutside)
+    
+    // Cleanup
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [editingNodeId])
   
   // Função para aplicar formatação ao nó em edição
   const applyFormatToEditingNode = (format: string, value?: string) => {
@@ -116,12 +157,24 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
     }
   }
 
-  // Cores predefinidas
-  const colors = [
-    '#3B82F6', '#EF4444', '#10B981', '#F59E0B',
-    '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16',
-    '#F97316', '#6366F1', '#14B8A6', '#F43F5E'
-  ]
+  // Cores do tema selecionado
+  const colors = selectedTheme.nodeColors
+
+  // Handlers para temas
+  const handleThemeSelect = (theme: MindMapTheme) => {
+    setSelectedTheme(theme)
+    setShowThemeSelector(false)
+    // Atualizar cor selecionada para a cor primária do tema
+    setSelectedColor(theme.primary)
+  }
+
+  const handleToggleThemeSelector = () => {
+    setShowThemeSelector(!showThemeSelector)
+    // Fechar seletor de cores se estiver aberto
+    if (showColorPalette) {
+      setShowColorPalette(false)
+    }
+  }
 
   // Handlers para rich text
   const handleBold = () => {
@@ -166,16 +219,88 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
   // Funções auxiliares
   const generateId = () => Math.random().toString(36).substr(2, 9)
 
-  const calculateTextDimensions = (text: string): { width: number; height: number } => {
+  const calculateTextDimensions = (text: string, fontSize: number = 14, level: number = 0): { width: number; height: number } => {
     const canvas = document.createElement('canvas')
     const context = canvas.getContext('2d')
-    if (!context) return { width: 100, height: 30 }
+    if (!context) return { width: 120, height: 50 }
     
-    context.font = '14px Arial'
-    const metrics = context.measureText(text)
+    // Ajustar fonte baseado no nível hierárquico
+    let adjustedFontSize = fontSize
+    let fontWeight = 'normal'
+    
+    if (level === 0) { // Nó raiz
+      adjustedFontSize = Math.max(20, fontSize + 6)
+      fontWeight = '900'
+    } else if (level === 1) { // Primeiro nível
+      adjustedFontSize = Math.max(16, fontSize + 2)
+      fontWeight = 'bold'
+    } else if (level === 2) { // Segundo nível
+      adjustedFontSize = Math.max(14, fontSize)
+      fontWeight = '600'
+    } else { // Níveis subsequentes
+      adjustedFontSize = Math.max(12, fontSize - 1)
+      fontWeight = '500'
+    }
+    
+    context.font = `${fontWeight} ${adjustedFontSize}px Inter, system-ui, sans-serif`
+    
+    // Dividir texto em linhas (quebras manuais ou automáticas)
+    const lines = text.split('\n')
+    const maxCharsPerLine = Math.max(15, 40 - level * 5) // Menos caracteres por linha em níveis mais profundos
+    
+    let processedLines: string[] = []
+    
+    lines.forEach(line => {
+      if (line.length <= maxCharsPerLine) {
+        processedLines.push(line)
+      } else {
+        // Quebrar linha longa em múltiplas linhas
+        const words = line.split(' ')
+        let currentLine = ''
+        
+        words.forEach(word => {
+          if ((currentLine + ' ' + word).length <= maxCharsPerLine) {
+            currentLine = currentLine ? currentLine + ' ' + word : word
+          } else {
+            if (currentLine) {
+              processedLines.push(currentLine)
+              currentLine = word
+            } else {
+              // Palavra muito longa, forçar quebra
+              processedLines.push(word.substring(0, maxCharsPerLine))
+              currentLine = word.substring(maxCharsPerLine)
+            }
+          }
+        })
+        
+        if (currentLine) {
+          processedLines.push(currentLine)
+        }
+      }
+    })
+    
+    // Calcular largura máxima das linhas
+    let maxWidth = 0
+    processedLines.forEach(line => {
+      const metrics = context.measureText(line)
+      maxWidth = Math.max(maxWidth, metrics.width)
+    })
+    
+    // Calcular altura baseada no número de linhas
+    const lineHeight = adjustedFontSize * 1.4 // 1.4 é um bom line-height
+    const totalTextHeight = processedLines.length * lineHeight
+    
+    // Padding baseado no nível
+    const horizontalPadding = level === 0 ? 40 : (level === 1 ? 30 : 20)
+    const verticalPadding = level === 0 ? 30 : (level === 1 ? 20 : 15)
+    
+    // Tamanhos mínimos baseados no nível
+    const minWidth = level === 0 ? 150 : (level === 1 ? 120 : 100)
+    const minHeight = level === 0 ? 60 : (level === 1 ? 50 : 40)
+    
     return {
-      width: Math.max(metrics.width + 20, 80),
-      height: 30
+      width: Math.max(maxWidth + horizontalPadding, minWidth),
+      height: Math.max(totalTextHeight + verticalPadding, minHeight)
     }
   }
 
@@ -202,6 +327,7 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
     }))
   }
 
+  // Algoritmo melhorado de posicionamento automático
   const organizeNodesAutomatically = () => {
     const newNodes = [...data.nodes]
     const rootNode = newNodes.find(n => n.id === data.rootNodeId)
@@ -211,7 +337,7 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
     rootNode.x = 400
     rootNode.y = 300
 
-    // Organizar nós por nível
+    // Organizar nós por nível hierárquico
     const nodesByLevel: { [level: number]: MindMapNode[] } = {}
     newNodes.forEach(node => {
       const level = calculateNodeLevel(node.id, newNodes)
@@ -219,23 +345,130 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
       nodesByLevel[level].push(node)
     })
 
-    // Posicionar nós de cada nível
+    // Posicionar nós usando layout hierárquico inteligente
     Object.keys(nodesByLevel).forEach(levelStr => {
       const level = parseInt(levelStr)
       if (level === 0) return // Pular nó raiz
 
       const levelNodes = nodesByLevel[level]
-      const angleStep = (2 * Math.PI) / levelNodes.length
-      const radius = 150 * level
+      
+      if (level === 1) {
+        // Primeiro nível: distribuir em círculo ao redor da raiz
+        const angleStep = (2 * Math.PI) / levelNodes.length
+        const radius = 180
 
-      levelNodes.forEach((node, index) => {
-        const angle = index * angleStep
-        node.x = rootNode.x + Math.cos(angle) * radius
-        node.y = rootNode.y + Math.sin(angle) * radius
-      })
+        levelNodes.forEach((node, index) => {
+          const angle = index * angleStep - Math.PI / 2 // Começar do topo
+          node.x = rootNode.x + Math.cos(angle) * radius
+          node.y = rootNode.y + Math.sin(angle) * radius
+        })
+      } else {
+        // Níveis subsequentes: posicionar em relação ao nó pai
+        levelNodes.forEach(node => {
+          const parentNode = newNodes.find(n => n.id === node.parentId)
+          if (!parentNode) return
+
+          // Encontrar irmãos (nós com mesmo pai)
+          const siblings = levelNodes.filter(n => n.parentId === node.parentId)
+          const siblingIndex = siblings.findIndex(n => n.id === node.id)
+          const siblingCount = siblings.length
+
+          // Calcular posição baseada no pai e irmãos
+          const baseDistance = 120 + (level - 1) * 40
+          const spreadAngle = Math.PI / 3 // 60 graus de espalhamento
+          
+          let angle: number
+          if (siblingCount === 1) {
+            // Único filho: posicionar diretamente abaixo/ao lado do pai
+            const parentToRoot = Math.atan2(parentNode.y - rootNode.y, parentNode.x - rootNode.x)
+            angle = parentToRoot
+          } else {
+            // Múltiplos filhos: distribuir em leque
+            const startAngle = Math.atan2(parentNode.y - rootNode.y, parentNode.x - rootNode.x) - spreadAngle / 2
+            angle = startAngle + (siblingIndex / (siblingCount - 1)) * spreadAngle
+          }
+
+          node.x = parentNode.x + Math.cos(angle) * baseDistance
+          node.y = parentNode.y + Math.sin(angle) * baseDistance
+        })
+      }
     })
 
+    // Aplicar detecção de colisões e ajustes
+    applyCollisionDetection(newNodes)
+    
     updateData({ ...data, nodes: newNodes })
+  }
+
+  // Função para detectar e resolver colisões entre nós
+  const applyCollisionDetection = (nodes: MindMapNode[]) => {
+    const minDistance = 100 // Distância mínima entre nós
+    const maxIterations = 10
+    
+    for (let iteration = 0; iteration < maxIterations; iteration++) {
+      let hasCollisions = false
+      
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const nodeA = nodes[i]
+          const nodeB = nodes[j]
+          
+          const dx = nodeB.x - nodeA.x
+          const dy = nodeB.y - nodeA.y
+          const distance = Math.sqrt(dx * dx + dy * dy)
+          
+          if (distance < minDistance && distance > 0) {
+            hasCollisions = true
+            
+            // Calcular força de repulsão
+            const force = (minDistance - distance) / distance
+            const forceX = dx * force * 0.5
+            const forceY = dy * force * 0.5
+            
+            // Aplicar força (afastar os nós)
+            nodeA.x -= forceX
+            nodeA.y -= forceY
+            nodeB.x += forceX
+            nodeB.y += forceY
+          }
+        }
+      }
+      
+      if (!hasCollisions) break
+    }
+  }
+
+  // Função para posicionar automaticamente novos nós
+  const getOptimalPositionForNewNode = (parentId: string): { x: number, y: number } => {
+    const parentNode = data.nodes.find(n => n.id === parentId)
+    if (!parentNode) return { x: 400, y: 300 }
+
+    const rootNode = data.nodes.find(n => n.id === data.rootNodeId)
+    if (!rootNode) return { x: parentNode.x + 150, y: parentNode.y }
+
+    // Encontrar filhos existentes do pai
+    const existingChildren = data.nodes.filter(n => n.parentId === parentId)
+    const childCount = existingChildren.length
+
+    // Calcular ângulo base (direção do pai em relação à raiz)
+    const parentToRoot = Math.atan2(parentNode.y - rootNode.y, parentNode.x - rootNode.x)
+    const baseDistance = 120 + (calculateNodeLevel(parentId, data.nodes)) * 40
+
+    let angle: number
+    if (childCount === 0) {
+      // Primeiro filho: posicionar na direção oposta à raiz
+      angle = parentToRoot
+    } else {
+      // Filhos subsequentes: distribuir em leque
+      const spreadAngle = Math.PI / 3
+      const startAngle = parentToRoot - spreadAngle / 2
+      angle = startAngle + (childCount / Math.max(childCount, 1)) * spreadAngle
+    }
+
+    const newX = parentNode.x + Math.cos(angle) * baseDistance
+    const newY = parentNode.y + Math.sin(angle) * baseDistance
+
+    return { x: newX, y: newY }
   }
 
   // Handlers de eventos
@@ -286,13 +519,17 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
     if (!parentNode) return
 
     const newNodeId = generateId()
-    const dimensions = calculateTextDimensions('Novo Nó')
+    const parentLevel = calculateNodeLevel(parentId, data.nodes)
+    const dimensions = calculateTextDimensions('Novo Nó', 14, parentLevel + 1)
+    
+    // Usar posicionamento automático inteligente
+    const optimalPosition = getOptimalPositionForNewNode(parentId)
     
     const newNode: MindMapNode = {
       id: newNodeId,
       text: 'Novo Nó',
-      x: parentNode.x + 150,
-      y: parentNode.y + 50,
+      x: optimalPosition.x,
+      y: optimalPosition.y,
       width: dimensions.width,
       height: dimensions.height,
       color: selectedColor,
@@ -318,6 +555,9 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
 
     const newNodes = data.nodes.map(n => n.id === parentId ? updatedParent : n)
     newNodes.push(newNode)
+
+    // Aplicar detecção de colisões para o novo layout
+    applyCollisionDetection(newNodes)
 
     updateData({
       ...data,
@@ -370,17 +610,22 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
   }
 
   const handleUpdateNodeText = (nodeId: string, newText: string) => {
-    const dimensions = calculateTextDimensions(newText)
-    const newNodes = data.nodes.map(node => {
-      if (node.id === nodeId) {
+    const node = data.nodes.find(n => n.id === nodeId)
+    if (!node) return
+    
+    const nodeLevel = calculateNodeLevel(nodeId, data.nodes)
+    const dimensions = calculateTextDimensions(newText, 14, nodeLevel)
+    
+    const newNodes = data.nodes.map(n => {
+      if (n.id === nodeId) {
         return {
-          ...node,
+          ...n,
           text: newText,
           width: dimensions.width,
           height: dimensions.height
         }
       }
-      return node
+      return n
     })
     updateData({ ...data, nodes: newNodes })
   }
@@ -640,7 +885,10 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
   return (
     <div 
       ref={containerRef}
-      className={`relative w-full h-full overflow-hidden bg-gray-50 pt-20 ${className}`}
+      className={`relative w-full h-full overflow-hidden pt-20 ${className}`}
+      style={{
+        background: selectedTheme.background
+      }}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) {
           setIsPanning(true)
@@ -665,6 +913,12 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
         colors={colors}
         showColorPalette={showColorPalette}
         onToggleColorPalette={() => setShowColorPalette(!showColorPalette)}
+        // Theme props
+        onThemeSelect={handleThemeSelect}
+        selectedTheme={selectedTheme}
+        availableThemes={mindMapThemes}
+        showThemeSelector={showThemeSelector}
+        onToggleThemeSelector={handleToggleThemeSelector}
         // Rich text props
         onBold={handleBold}
         onItalic={handleItalic}
@@ -728,6 +982,7 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
               onToggleExpansion={handleToggleExpansion}
               onTextUpdate={handleUpdateNodeText}
               editingNodeId={editingNodeId}
+              theme={selectedTheme}
             />
           ))}
       </svg>

@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Plus, Minus, RotateCcw, Download, Share2, Home, Palette, ChevronRight, ChevronLeft, ZoomIn, ZoomOut, Bold, Italic, Underline, List, AlignLeft, AlignCenter, AlignRight, Type, Image } from 'lucide-react'
+import { Plus, Minus, RotateCcw, Download, Share2, Home, Palette, ChevronRight, ChevronLeft, ZoomIn, ZoomOut, Bold, Italic, Underline, List, AlignLeft, AlignCenter, AlignRight, Type, Image, Paintbrush } from 'lucide-react'
+import { MindMapTheme } from '@/constants/mind-map-themes'
 
 interface MindMapControlsProps {
   onAddNode: () => void
@@ -19,6 +20,12 @@ interface MindMapControlsProps {
   colors: string[]
   showColorPalette: boolean
   onToggleColorPalette: () => void
+  // Theme props
+  onThemeSelect?: (theme: MindMapTheme) => void
+  selectedTheme?: MindMapTheme
+  availableThemes?: MindMapTheme[]
+  showThemeSelector?: boolean
+  onToggleThemeSelector?: () => void
   // Rich text formatting props
   onBold?: () => void
   onItalic?: () => void
@@ -53,6 +60,12 @@ const MindMapControls: React.FC<MindMapControlsProps> = ({
   colors,
   showColorPalette,
   onToggleColorPalette,
+  // Theme handlers
+  onThemeSelect,
+  selectedTheme,
+  availableThemes = [],
+  showThemeSelector = false,
+  onToggleThemeSelector,
   // Rich text formatting handlers
   onBold,
   onItalic,
@@ -70,9 +83,16 @@ const MindMapControls: React.FC<MindMapControlsProps> = ({
   const fontSizes = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px']
 
   return (
-    <div className={`absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200 p-3 transition-all duration-300 ease-in-out ${
-      isExpanded ? 'right-4' : 'w-auto'
-    }`}>
+    <div 
+      className={`absolute top-4 left-4 z-10 rounded-xl shadow-xl border p-3 transition-all duration-300 ease-in-out ${
+        isExpanded ? 'right-4' : 'w-auto'
+      }`}
+      style={{
+        backgroundColor: selectedTheme?.controlsBackground || 'rgba(255, 255, 255, 0.95)',
+        borderColor: selectedTheme?.shadowColor || 'rgba(0, 0, 0, 0.1)',
+        color: selectedTheme?.controlsText || '#374151'
+      }}
+    >
       <div className="flex items-center gap-2">
         {/* Botão de toggle sempre visível */}
         <button
@@ -340,6 +360,56 @@ const MindMapControls: React.FC<MindMapControlsProps> = ({
               </div>
             )}
           </div>
+
+          {/* Theme Selector */}
+          {onToggleThemeSelector && (
+            <div className="relative">
+              <button
+                onClick={onToggleThemeSelector}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-all duration-200 w-10 h-10 flex items-center justify-center hover:scale-105"
+                title="Selecionar Tema"
+              >
+                <div className="relative">
+                  <Paintbrush size={16} />
+                  <div
+                    className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border border-white shadow-sm"
+                    style={{ backgroundColor: selectedTheme?.nodeColors?.[0] || '#3B82F6' }}
+                  />
+                </div>
+              </button>
+              
+              {showThemeSelector && (
+                <div className="absolute top-full mt-2 right-0 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200 p-3 z-20 min-w-[200px]">
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">Selecionar Tema</h3>
+                    {availableThemes.map((theme) => (
+                      <button
+                        key={theme.id}
+                        onClick={() => onThemeSelect?.(theme)}
+                        className={`w-full p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105 ${
+                          selectedTheme?.id === theme.id 
+                            ? 'border-blue-500 ring-2 ring-blue-200' 
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                        style={{
+                          background: `linear-gradient(135deg, ${theme.nodeColors[0]}, ${theme.nodeColors[1] || theme.nodeColors[0]})`
+                        }}
+                      >
+                        <div className="text-left">
+                          <div className="text-sm font-medium text-white drop-shadow-sm">
+                            {theme.name}
+                          </div>
+                          <div className="text-xs text-white/80 mt-1">
+                            {theme.nodeColors.length} cores disponíveis
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
