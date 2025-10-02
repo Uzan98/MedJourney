@@ -14,7 +14,7 @@ interface MindMapNodeProps {
   onNodeSelect: (nodeId: string) => void
   onNodeDrag: (nodeId: string, offset: { x: number; y: number }) => void
   onNodeEdit: (nodeId: string) => void
-  onAddChild: (parentId: string) => void
+  onAddChild: (parentId: string, side?: 'left' | 'right') => void
   onToggleExpansion: (nodeId: string) => void
   onTextUpdate?: (nodeId: string, text: string) => void
   editingNodeId?: string | null
@@ -200,9 +200,9 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
     }
   }
 
-  const handleAddChild = (e: React.MouseEvent) => {
+  const handleAddChild = (e: React.MouseEvent, side: 'left' | 'right' = 'right') => {
     e.stopPropagation()
-    onAddChild(node.id)
+    onAddChild(node.id, side)
   }
 
   const handleToggleExpansion = (e: React.MouseEvent) => {
@@ -475,9 +475,9 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
         </div>
       </foreignObject>
 
-      {/* Botão de adicionar filho com design ultra-moderno */}
+      {/* Botão de adicionar filho com design ultra-moderno - LADO DIREITO */}
       {isSelected && !isReadOnly && (
-        <g className="add-child-button">
+        <g className="add-child-button-right">
           {/* Sombra do botão */}
           <circle
             cx={node.width + 24}
@@ -493,11 +493,11 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
             cx={node.width + 24}
             cy={node.height / 2}
             r={16}
-            fill="url(#gradient-add-button)"
+            fill="url(#gradient-add-button-right)"
             stroke="rgba(255, 255, 255, 0.3)"
             strokeWidth={2}
             className="cursor-pointer transition-all duration-200 hover:scale-110"
-            onClick={handleAddChild}
+            onClick={(e) => handleAddChild(e, 'right')}
             filter="drop-shadow(0 4px 12px rgba(16, 185, 129, 0.4))"
           />
           
@@ -523,12 +523,71 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
             />
           </g>
           
-          {/* Gradiente aprimorado para o botão */}
+          {/* Gradiente aprimorado para o botão direito */}
           <defs>
-            <linearGradient id="gradient-add-button" x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient id="gradient-add-button-right" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#10b981" />
               <stop offset="50%" stopColor="#059669" />
               <stop offset="100%" stopColor="#047857" />
+            </linearGradient>
+          </defs>
+        </g>
+      )}
+
+      {/* Botão de adicionar filho com design ultra-moderno - LADO ESQUERDO */}
+      {isSelected && !isReadOnly && (
+        <g className="add-child-button-left">
+          {/* Sombra do botão */}
+          <circle
+            cx={-24}
+            cy={node.height / 2 + 2}
+            r={16}
+            fill="#000000"
+            opacity="0.15"
+            className="pointer-events-none"
+          />
+          
+          {/* Botão principal */}
+          <circle
+            cx={-24}
+            cy={node.height / 2}
+            r={16}
+            fill="url(#gradient-add-button-left)"
+            stroke="rgba(255, 255, 255, 0.3)"
+            strokeWidth={2}
+            className="cursor-pointer transition-all duration-200 hover:scale-110"
+            onClick={(e) => handleAddChild(e, 'left')}
+            filter="drop-shadow(0 4px 12px rgba(59, 130, 246, 0.4))"
+          />
+          
+          {/* Ícone + ultra-moderno */}
+          <g className="pointer-events-none">
+            <line
+              x1={-30}
+              y1={node.height / 2}
+              x2={-18}
+              y2={node.height / 2}
+              stroke="#ffffff"
+              strokeWidth={3}
+              strokeLinecap="round"
+            />
+            <line
+              x1={-24}
+              y1={node.height / 2 - 6}
+              x2={-24}
+              y2={node.height / 2 + 6}
+              stroke="#ffffff"
+              strokeWidth={3}
+              strokeLinecap="round"
+            />
+          </g>
+          
+          {/* Gradiente aprimorado para o botão esquerdo */}
+          <defs>
+            <linearGradient id="gradient-add-button-left" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#3b82f6" />
+              <stop offset="50%" stopColor="#2563eb" />
+              <stop offset="100%" stopColor="#1d4ed8" />
             </linearGradient>
           </defs>
         </g>
@@ -539,8 +598,8 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
         <g className="expand-collapse-button">
           {/* Sombra do botão */}
           <circle
-            cx={-22}
-            cy={node.height / 2 + 2}
+            cx={node.width / 2}
+            cy={-22}
             r={14}
             fill="#000000"
             opacity="0.15"
@@ -549,8 +608,8 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
           
           {/* Botão principal */}
           <circle
-            cx={-22}
-            cy={node.height / 2}
+            cx={node.width / 2}
+            cy={-20}
             r={14}
             fill={node.isExpanded ? "url(#gradient-collapse)" : "url(#gradient-expand)"}
             stroke="rgba(255, 255, 255, 0.3)"
@@ -568,10 +627,10 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
             {node.isExpanded ? (
               // Ícone de menos ultra-moderno
               <line
-                x1={-28}
-                y1={node.height / 2}
-                x2={-16}
-                y2={node.height / 2}
+                x1={node.width / 2 - 6}
+                y1={-20}
+                x2={node.width / 2 + 6}
+                y2={-20}
                 stroke="#ffffff"
                 strokeWidth={3}
                 strokeLinecap="round"
@@ -581,19 +640,19 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
               // Ícone de mais ultra-moderno
               <g className="transition-all duration-200">
                 <line
-                  x1={-28}
-                  y1={node.height / 2}
-                  x2={-16}
-                  y2={node.height / 2}
+                  x1={node.width / 2 - 6}
+                  y1={-20}
+                  x2={node.width / 2 + 6}
+                  y2={-20}
                   stroke="#ffffff"
                   strokeWidth={3}
                   strokeLinecap="round"
                 />
                 <line
-                  x1={-22}
-                  y1={node.height / 2 - 6}
-                  x2={-22}
-                  y2={node.height / 2 + 6}
+                  x1={node.width / 2}
+                  y1={-26}
+                  x2={node.width / 2}
+                  y2={-14}
                   stroke="#ffffff"
                   strokeWidth={3}
                   strokeLinecap="round"

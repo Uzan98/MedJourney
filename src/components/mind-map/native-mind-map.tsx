@@ -20,6 +20,7 @@ export interface MindMapNode {
   parentId?: string
   isExpanded: boolean
   children: string[]
+  side?: 'left' | 'right' // Propriedade para definir o lado do nó
 }
 
 export interface MindMapConnection {
@@ -159,6 +160,13 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
 
   // Cores do tema selecionado
   const colors = selectedTheme.nodeColors
+
+  // Função para obter cor do nó baseada no nível
+  const getNodeColor = (level: number): string => {
+    // Usar cores do tema selecionado, ciclando através das cores disponíveis
+    const colorIndex = (level - 1) % colors.length
+    return colors[colorIndex] || colors[0] || '#3B82F6'
+  }
 
   // Handlers para temas
   const handleThemeSelect = (theme: MindMapTheme) => {
@@ -327,7 +335,7 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
     }))
   }
 
-  // Algoritmo melhorado de posicionamento automático
+  // Sistema simétrico de posicionamento automático
   const organizeNodesAutomatically = () => {
     const newNodes = [...data.nodes]
     const rootNode = newNodes.find(n => n.id === data.rootNodeId)
@@ -337,65 +345,70 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
     rootNode.x = 400
     rootNode.y = 300
 
-    // Organizar nós por nível hierárquico
-    const nodesByLevel: { [level: number]: MindMapNode[] } = {}
-    newNodes.forEach(node => {
-      const level = calculateNodeLevel(node.id, newNodes)
-      if (!nodesByLevel[level]) nodesByLevel[level] = []
-      nodesByLevel[level].push(node)
-    })
+    // Separar nós filhos diretos do nó raiz por lado
+    const childNodes = newNodes.filter(node => node.parentId === data.rootNodeId)
+    const leftNodes: MindMapNode[] = []
+    const rightNodes: MindMapNode[] = []
 
-    // Posicionar nós usando layout hierárquico inteligente
-    Object.keys(nodesByLevel).forEach(levelStr => {
-      const level = parseInt(levelStr)
-      if (level === 0) return // Pular nó raiz
-
-      const levelNodes = nodesByLevel[level]
-      
-      if (level === 1) {
-        // Primeiro nível: distribuir em círculo ao redor da raiz
-        const angleStep = (2 * Math.PI) / levelNodes.length
-        const radius = 180
-
-        levelNodes.forEach((node, index) => {
-          const angle = index * angleStep - Math.PI / 2 // Começar do topo
-          node.x = rootNode.x + Math.cos(angle) * radius
-          node.y = rootNode.y + Math.sin(angle) * radius
-        })
+    // Classificar nós por lado baseado na propriedade 'side' ou posição atual
+    childNodes.forEach(node => {
+      if (node.side === 'left' || (node.x < rootNode.x && !node.side)) {
+        leftNodes.push(node)
       } else {
-        // Níveis subsequentes: posicionar em relação ao nó pai
-        levelNodes.forEach(node => {
-          const parentNode = newNodes.find(n => n.id === node.parentId)
-          if (!parentNode) return
-
-          // Encontrar irmãos (nós com mesmo pai)
-          const siblings = levelNodes.filter(n => n.parentId === node.parentId)
-          const siblingIndex = siblings.findIndex(n => n.id === node.id)
-          const siblingCount = siblings.length
-
-          // Calcular posição baseada no pai e irmãos
-          const baseDistance = 120 + (level - 1) * 40
-          const spreadAngle = Math.PI / 3 // 60 graus de espalhamento
-          
-          let angle: number
-          if (siblingCount === 1) {
-            // Único filho: posicionar diretamente abaixo/ao lado do pai
-            const parentToRoot = Math.atan2(parentNode.y - rootNode.y, parentNode.x - rootNode.x)
-            angle = parentToRoot
-          } else {
-            // Múltiplos filhos: distribuir em leque
-            const startAngle = Math.atan2(parentNode.y - rootNode.y, parentNode.x - rootNode.x) - spreadAngle / 2
-            angle = startAngle + (siblingIndex / (siblingCount - 1)) * spreadAngle
-          }
-
-          node.x = parentNode.x + Math.cos(angle) * baseDistance
-          node.y = parentNode.y + Math.sin(angle) * baseDistance
-        })
+        rightNodes.push(node)
       }
     })
 
-    // Aplicar detecção de colisões e ajustes
-    applyCollisionDetection(newNodes)
+    // Configurações de layout
+    const horizontalDistance = 250 // Distância horizontal do centro
+    const verticalSpacing = 80 // Espaçamento vertical entre nós
+    const startY = rootNode.y - ((Math.max(leftNodes.length, rightNodes.length) - 1) * verticalSpacing) / 2
+
+    // Posicionar nós do lado esquerdo (empilhados verticalmente)
+    leftNodes.forEach((node, index) => {
+      node.x = rootNode.x - horizontalDistance
+      node.y = startY + (index * verticalSpacing)
+      node.side = 'left' // Garantir que a propriedade side está definida
+    })
+
+    // Posicionar nós do lado direito (empilhados verticalmente)
+    rightNodes.forEach((node, index) => {
+      node.x = rootNode.x + horizontalDistance
+      node.y = startY + (index * verticalSpacing)
+      node.side = 'right' // Garantir que a propriedade side está definida
+    })
+
+    // Posicionar nós de níveis mais profundos (netos, bisnetos, etc.)
+    const organizeDeepNodes = (parentNodes: MindMapNode[], level: number) => {
+      parentNodes.forEach(parentNode => {
+        const children = newNodes.filter(node => node.parentId === parentNode.id)
+        if (children.length === 0) return
+
+        const isLeftSide = parentNode.side === 'left'
+        const childHorizontalDistance = 200 + (level * 50)
+        const childVerticalSpacing = 60
+
+        children.forEach((child, index) => {
+          if (isLeftSide) {
+            child.x = parentNode.x - childHorizontalDistance
+          } else {
+            child.x = parentNode.x + childHorizontalDistance
+          }
+          
+          // Centralizar filhos verticalmente em relação ao pai
+          const totalHeight = (children.length - 1) * childVerticalSpacing
+          const startChildY = parentNode.y - totalHeight / 2
+          child.y = startChildY + (index * childVerticalSpacing)
+          child.side = parentNode.side // Herdar o lado do pai
+        })
+
+        // Recursivamente organizar próximos níveis
+        organizeDeepNodes(children, level + 1)
+      })
+    }
+
+    // Organizar nós de níveis mais profundos
+    organizeDeepNodes([...leftNodes, ...rightNodes], 1)
     
     updateData({ ...data, nodes: newNodes })
   }
@@ -514,57 +527,71 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
     setEditingNodeId(nodeId)
   }
 
-  const handleAddChild = (parentId: string) => {
+  const handleAddChild = useCallback((parentId: string, side: 'left' | 'right' = 'right') => {
     const parentNode = data.nodes.find(n => n.id === parentId)
     if (!parentNode) return
 
-    const newNodeId = generateId()
+    const newNodeId = `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     const parentLevel = calculateNodeLevel(parentId, data.nodes)
     const dimensions = calculateTextDimensions('Novo Nó', 14, parentLevel + 1)
     
-    // Usar posicionamento automático inteligente
-    const optimalPosition = getOptimalPositionForNewNode(parentId)
+    // Calcular posição baseada no lado especificado
+    const baseX = side === 'right' ? parentNode.x + parentNode.width + 150 : parentNode.x - 150 - dimensions.width
+    
+    // Contar nós filhos existentes no mesmo lado para posicionamento vertical
+    const existingChildrenOnSide = data.nodes.filter(node => {
+      if (node.parentId !== parentId) return false
+      // Determinar o lado baseado na posição relativa ao pai
+      const isOnRight = node.x > parentNode.x
+      return side === 'right' ? isOnRight : !isOnRight
+    })
+
+    const verticalOffset = existingChildrenOnSide.length * (dimensions.height + 20)
+    const newY = parentNode.y + verticalOffset
     
     const newNode: MindMapNode = {
       id: newNodeId,
       text: 'Novo Nó',
-      x: optimalPosition.x,
-      y: optimalPosition.y,
+      x: baseX,
+      y: newY,
       width: dimensions.width,
       height: dimensions.height,
-      color: selectedColor,
-      level: parentNode.level + 1,
+      color: getNodeColor(parentLevel + 1),
+      level: parentLevel + 1,
       parentId: parentId,
+      children: [],
       isExpanded: true,
-      children: []
+      isRoot: false,
+      fontSize: 14
     }
 
     const newConnection: MindMapConnection = {
-      id: generateId(),
+      id: `connection-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       fromNodeId: parentId,
       toNodeId: newNodeId,
-      color: '#666666',
-      width: 2
+      type: 'curved'
     }
 
-    const updatedParent = {
-      ...parentNode,
-      children: [...parentNode.children, newNodeId],
-      isExpanded: true
-    }
-
-    const newNodes = data.nodes.map(n => n.id === parentId ? updatedParent : n)
-    newNodes.push(newNode)
-
-    // Aplicar detecção de colisões para o novo layout
-    applyCollisionDetection(newNodes)
+    // Atualizar o nó pai para incluir o novo filho
+    const updatedNodes = data.nodes.map(node => {
+      if (node.id === parentId) {
+        return {
+          ...node,
+          children: [...(node.children || []), newNodeId],
+          isExpanded: true
+        }
+      }
+      return node
+    })
 
     updateData({
       ...data,
-      nodes: updateHierarchy(newNodes),
+      nodes: [...updatedNodes, newNode],
       connections: [...data.connections, newConnection]
     })
-  }
+
+    setSelectedNodeId(newNodeId)
+  }, [data, updateData])
 
   const handleToggleExpansion = (nodeId: string) => {
     const newNodes = data.nodes.map(node => {
