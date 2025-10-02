@@ -110,25 +110,25 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
       opacity: isDragging ? 0.8 : 1,
     }
 
-    // Adicionar gradiente moderno baseado no nível
+    // Adicionar gradiente moderno baseado no nível com glassmorphism vibrante
     if (node.level === 0) {
       return {
         ...baseStyle,
         fill: 'url(#gradient-root)',
         strokeWidth: 4,
-        filter: 'drop-shadow(0 12px 24px rgba(0, 0, 0, 0.2))',
+        filter: 'drop-shadow(0 12px 24px rgba(0, 0, 0, 0.2)) brightness(1.2)',
       }
     } else if (node.level === 1) {
       return {
         ...baseStyle,
         fill: 'url(#gradient-level1)',
-        filter: 'drop-shadow(0 6px 12px rgba(0, 0, 0, 0.15))',
+        filter: 'drop-shadow(0 6px 12px rgba(0, 0, 0, 0.15)) saturate(1.5)',
       }
     } else {
       return {
         ...baseStyle,
         fill: 'url(#gradient-default)',
-        filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1))',
+        filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1)) contrast(1.1)',
       }
     }
   }
@@ -226,20 +226,77 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
       ? theme.nodeColors[0] 
       : '#E91E63'
 
-    // Cores mais vibrantes e modernas baseadas no nível
+    // Cores neon vibrantes e modernas baseadas no nível com glassmorphism intenso
     const getModernColors = () => {
-      if (node.level === 0) {
-        return {
-          primary: rootColor,
-          secondary: `${rootColor}CC`,
-          accent: `${rootColor}1A`
+      const levelColors = {
+        0: { // Nó raiz - azul neon vibrante
+          primary: '#0066FF', // Azul neon
+          secondary: '#3388FF', // Azul claro
+          accent: '#66AAFF', // Azul suave
+          glass: 'rgba(0, 102, 255, 0.3)',
+          glow: '#0066FF'
+        },
+        1: { // Primeiro nível - roxo neon intenso
+          primary: '#8A2BE2', // Roxo neon
+          secondary: '#9932CC', // Roxo médio
+          accent: '#BA55D3', // Roxo claro
+          glass: 'rgba(138, 43, 226, 0.25)',
+          glow: '#8A2BE2'
+        },
+        2: { // Segundo nível - verde neon brilhante
+          primary: '#00FF7F', // Verde neon
+          secondary: '#32CD32', // Verde lima
+          accent: '#7FFF00', // Verde chartreuse
+          glass: 'rgba(0, 255, 127, 0.25)',
+          glow: '#00FF7F'
+        },
+        3: { // Terceiro nível - laranja neon vibrante
+          primary: '#FF6600', // Laranja neon
+          secondary: '#FF8C00', // Laranja escuro
+          accent: '#FFA500', // Laranja
+          glass: 'rgba(255, 102, 0, 0.25)',
+          glow: '#FF6600'
+        },
+        4: { // Quarto nível - rosa neon intenso
+          primary: '#FF1493', // Rosa neon
+          secondary: '#FF69B4', // Rosa quente
+          accent: '#FFB6C1', // Rosa claro
+          glass: 'rgba(255, 20, 147, 0.25)',
+          glow: '#FF1493'
+        },
+        5: { // Quinto nível - ciano neon
+          primary: '#00FFFF', // Ciano neon
+          secondary: '#40E0D0', // Turquesa
+          accent: '#7FFFD4', // Aquamarine
+          glass: 'rgba(0, 255, 255, 0.25)',
+          glow: '#00FFFF'
+        },
+        6: { // Sexto nível - amarelo neon
+          primary: '#FFFF00', // Amarelo neon
+          secondary: '#FFD700', // Dourado
+          accent: '#FFFF99', // Amarelo claro
+          glass: 'rgba(255, 255, 0, 0.25)',
+          glow: '#FFFF00'
         }
       }
-      return {
-        primary: nodeColor,
-        secondary: `${nodeColor}CC`,
-        accent: `${nodeColor}1A`
+      
+      // Usar cores do tema se disponível, senão usar esquema de cores por nível
+      if (theme && theme.nodeColors.length > 0) {
+        const themeColor = theme.nodeColors[node.level % theme.nodeColors.length]
+        return {
+          primary: themeColor,
+          secondary: `${themeColor}CC`,
+          accent: `${themeColor}80`,
+          glass: `${themeColor}40`,
+          glow: `${themeColor}60`
+        }
       }
+      
+      // Usar esquema de cores por nível ou repetir ciclicamente
+      const levelColor = levelColors[node.level as keyof typeof levelColors] || 
+                        levelColors[(node.level % 7) as keyof typeof levelColors]
+      
+      return levelColor
     }
 
     const colors = getModernColors()
@@ -325,7 +382,7 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
           className="pointer-events-none"
         />
 
-        {/* Nó principal com gradiente moderno e animação */}
+        {/* Base do nó com glassmorphism elegante */}
         <rect
            x={0}
            y={0}
@@ -333,12 +390,12 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
            height={node.height}
            rx={node.level === 0 ? 28 : 24}
            ry={node.level === 0 ? 28 : 24}
-           fill={`url(#gradient-${nodeId})`}
-           stroke={`url(#border-${nodeId})`}
-           strokeWidth={isSelected ? 3 : 2}
-           filter={isSelected ? `url(#glow-${nodeId})` : `url(#shadow-${nodeId})`}
-           className={`cursor-pointer transition-all duration-300 ease-out hover:scale-105 ${
-             isSelected ? 'ring-2 ring-blue-400' : 'hover:brightness-110'
+           fill={`url(#glassmorphism-base-${nodeId})`}
+           stroke={`url(#glassmorphism-border-${nodeId})`}
+           strokeWidth={isSelected ? 2.5 : 1.5}
+           filter={`url(#glassmorphism-filter-${nodeId})`}
+           className={`cursor-pointer transition-all duration-500 ease-out hover:scale-105 ${
+             isSelected ? 'drop-shadow-2xl' : 'hover:brightness-110'
            }`}
            style={{
              transformOrigin: `${node.width / 2}px ${node.height / 2}px`,
@@ -349,41 +406,96 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
            onDoubleClick={handleDoubleClick}
          />
 
-        {/* Camada de glassmorphism */}
+        {/* Camada de glassmorphism com blur */}
         <rect
-          x={1}
-          y={1}
-          width={node.width - 2}
-          height={node.height - 2}
-          rx={node.level === 0 ? 27 : 23}
-          ry={node.level === 0 ? 27 : 23}
-          fill="rgba(255,255,255,0.1)"
-          stroke="rgba(255,255,255,0.2)"
-          strokeWidth="0.5"
-          className="pointer-events-none transition-all duration-300 ease"
-          style={{
-            backdropFilter: 'blur(10px)'
-          }}
+          x={2}
+          y={2}
+          width={node.width - 4}
+          height={node.height - 4}
+          rx={node.level === 0 ? 26 : 22}
+          ry={node.level === 0 ? 26 : 22}
+          fill={`url(#glassmorphism-overlay-${nodeId})`}
+          className="pointer-events-none"
+          opacity="0.8"
         />
 
-         {/* Highlight superior para efeito de vidro */}
+         {/* Highlight superior para efeito de vidro premium */}
          <rect
-           x={4}
-           y={4}
-           width={node.width - 8}
-           height={node.height * 0.3}
-           rx={node.level === 0 ? 24 : 20}
-           ry={node.level === 0 ? 24 : 20}
-           fill="url(#glass-highlight)"
-           className="pointer-events-none transition-opacity duration-300 ease"
+           x={3}
+           y={3}
+           width={node.width - 6}
+           height={node.height * 0.4}
+           rx={node.level === 0 ? 25 : 21}
+           ry={node.level === 0 ? 25 : 21}
+           fill={`url(#glass-highlight-${nodeId})`}
+           className="pointer-events-none transition-opacity duration-500 ease"
          />
 
-         {/* Definição do highlight de vidro */}
+         {/* Reflexo lateral esquerdo */}
+         <rect
+           x={3}
+           y={node.height * 0.2}
+           width={node.width * 0.15}
+           height={node.height * 0.6}
+           rx={node.level === 0 ? 20 : 16}
+           ry={node.level === 0 ? 20 : 16}
+           fill={`url(#glass-side-highlight-${nodeId})`}
+           className="pointer-events-none"
+           opacity="0.6"
+         />
+
+         {/* Definições dos gradientes glassmorphism vibrantes */}
          <defs>
-           <linearGradient id="glass-highlight" x1="0%" y1="0%" x2="0%" y2="100%">
-             <stop offset="0%" stopColor="#ffffff" stopOpacity="0.4" />
-             <stop offset="100%" stopColor="#ffffff" stopOpacity="0.1" />
+           {/* Base glassmorphism com cores vibrantes */}
+           <linearGradient id={`glassmorphism-base-${nodeId}`} x1="0%" y1="0%" x2="100%" y2="100%">
+             <stop offset="0%" stopColor={colors.primary} stopOpacity="0.9" />
+             <stop offset="30%" stopColor={colors.secondary} stopOpacity="0.8" />
+             <stop offset="70%" stopColor={colors.accent} stopOpacity="0.7" />
+             <stop offset="100%" stopColor={colors.primary} stopOpacity="0.6" />
            </linearGradient>
+
+           {/* Overlay glassmorphism intenso */}
+           <radialGradient id={`glassmorphism-overlay-${nodeId}`} cx="30%" cy="30%">
+             <stop offset="0%" stopColor="#ffffff" stopOpacity="0.4" />
+             <stop offset="40%" stopColor={colors.glow} stopOpacity="0.3" />
+             <stop offset="80%" stopColor={colors.primary} stopOpacity="0.2" />
+             <stop offset="100%" stopColor="#000000" stopOpacity="0.1" />
+           </radialGradient>
+
+           {/* Borda glassmorphism vibrante */}
+           <linearGradient id={`glassmorphism-border-${nodeId}`} x1="0%" y1="0%" x2="100%" y2="100%">
+             <stop offset="0%" stopColor={colors.glow} stopOpacity="0.8" />
+             <stop offset="50%" stopColor="#ffffff" stopOpacity="0.6" />
+             <stop offset="100%" stopColor={colors.primary} stopOpacity="0.7" />
+           </linearGradient>
+
+           {/* Highlight principal */}
+           <linearGradient id={`glass-highlight-${nodeId}`} x1="0%" y1="0%" x2="0%" y2="100%">
+             <stop offset="0%" stopColor="#ffffff" stopOpacity="0.6" />
+             <stop offset="50%" stopColor="#ffffff" stopOpacity="0.3" />
+             <stop offset="100%" stopColor="#ffffff" stopOpacity="0.05" />
+           </linearGradient>
+
+           {/* Highlight lateral */}
+           <linearGradient id={`glass-side-highlight-${nodeId}`} x1="0%" y1="0%" x2="100%" y2="0%">
+             <stop offset="0%" stopColor="#ffffff" stopOpacity="0.4" />
+             <stop offset="100%" stopColor="#ffffff" stopOpacity="0.0" />
+           </linearGradient>
+
+           {/* Filtro glassmorphism com brilho intenso */}
+           <filter id={`glassmorphism-filter-${nodeId}`} x="-50%" y="-50%" width="200%" height="200%">
+             <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+             <feColorMatrix type="saturate" values="1.8"/>
+             <feDropShadow dx="0" dy="4" stdDeviation="8" floodColor={colors.glow} floodOpacity="0.4"/>
+             <feDropShadow dx="0" dy="0" stdDeviation="12" floodColor={colors.primary} floodOpacity="0.3"/>
+           </filter>
+           
+           {/* Gradiente de brilho neon */}
+           <radialGradient id={`neon-glow-${nodeId}`} cx="50%" cy="50%" r="60%">
+             <stop offset="0%" stopColor={colors.glow} stopOpacity="0.6" />
+             <stop offset="70%" stopColor={colors.primary} stopOpacity="0.4" />
+             <stop offset="100%" stopColor="transparent" stopOpacity="0" />
+           </radialGradient>
          </defs>
       </>
     )

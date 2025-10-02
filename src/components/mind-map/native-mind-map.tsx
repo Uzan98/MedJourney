@@ -969,6 +969,55 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
           transformOrigin: '0 0'
         }}
       >
+        {/* Definições para efeitos glassmorphism globais vibrantes */}
+        <defs>
+          {/* Gradiente de fundo glassmorphism vibrante */}
+          <radialGradient id="glassmorphism-background" cx="50%" cy="50%" r="70%">
+            <stop offset="0%" stopColor={selectedTheme.nodeColors[0]} stopOpacity="0.2" />
+            <stop offset="30%" stopColor={selectedTheme.nodeColors[1] || selectedTheme.nodeColors[0]} stopOpacity="0.15" />
+            <stop offset="60%" stopColor={selectedTheme.nodeColors[2] || selectedTheme.nodeColors[0]} stopOpacity="0.1" />
+            <stop offset="100%" stopColor={selectedTheme.background} stopOpacity="0.05" />
+          </radialGradient>
+          
+          {/* Gradiente animado para fundo dinâmico */}
+          <radialGradient id="dynamic-background" cx="50%" cy="50%" r="100%">
+            <stop offset="0%" stopColor="#FF6B6B" stopOpacity="0.1">
+              <animate attributeName="stop-color" 
+                values="#FF6B6B;#4ECDC4;#45B7D1;#96CEB4;#FFEAA7;#DDA0DD;#FF6B6B" 
+                dur="10s" repeatCount="indefinite"/>
+            </stop>
+            <stop offset="50%" stopColor="#4ECDC4" stopOpacity="0.08">
+              <animate attributeName="stop-color" 
+                values="#4ECDC4;#45B7D1;#96CEB4;#FFEAA7;#DDA0DD;#FF6B6B;#4ECDC4" 
+                dur="12s" repeatCount="indefinite"/>
+            </stop>
+            <stop offset="100%" stopColor="#45B7D1" stopOpacity="0.05">
+              <animate attributeName="stop-color" 
+                values="#45B7D1;#96CEB4;#FFEAA7;#DDA0DD;#FF6B6B;#4ECDC4;#45B7D1" 
+                dur="8s" repeatCount="indefinite"/>
+            </stop>
+          </radialGradient>
+          
+          {/* Filtro de blur intenso para fundo */}
+          <filter id="background-blur" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+            <feColorMatrix type="saturate" values="1.5"/>
+            <feComponentTransfer>
+              <feFuncA type="gamma" amplitude="1" exponent="0.8"/>
+            </feComponentTransfer>
+          </filter>
+          
+          {/* Padrão de ruído vibrante para textura de fundo */}
+          <filter id="background-noise">
+            <feTurbulence baseFrequency="0.03" numOctaves="4" result="noise"/>
+            <feColorMatrix in="noise" type="saturate" values="0.3"/>
+            <feComponentTransfer>
+              <feFuncA type="discrete" tableValues="0 0.02 0.04 0.06 0.08"/>
+            </feComponentTransfer>
+            <feComposite operator="overlay" in2="SourceGraphic"/>
+          </filter>
+        </defs>
+
         {/* Renderizar conexões */}
         {data.connections.map(connection => {
           const fromNode = data.nodes.find(n => n.id === connection.fromNodeId)
