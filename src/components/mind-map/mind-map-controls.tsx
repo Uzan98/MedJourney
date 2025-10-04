@@ -15,6 +15,7 @@ interface MindMapControlsProps {
   onCenterRoot: () => void
   onZoomIn: () => void
   onZoomOut: () => void
+  onResetView?: () => void
   onColorSelect: (color: string) => void
   selectedColor: string
   colors: string[]
@@ -55,6 +56,7 @@ const MindMapControls: React.FC<MindMapControlsProps> = ({
   onCenterRoot,
   onZoomIn,
   onZoomOut,
+  onResetView,
   onColorSelect,
   selectedColor,
   colors,
@@ -326,6 +328,16 @@ const MindMapControls: React.FC<MindMapControlsProps> = ({
           >
             <ZoomOut size={16} />
           </button>
+          
+          {onResetView && (
+            <button
+              onClick={onResetView}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-all duration-200 w-10 h-10 flex items-center justify-center hover:scale-105"
+              title="Resetar Visualização"
+            >
+              <RotateCcw size={16} />
+            </button>
+          )}
           
           <div className="w-px h-6 bg-gray-300 mx-1" />
           

@@ -162,7 +162,7 @@ IMPORTANTE:
           }
         ],
         temperature: 0.8,
-          max_completion_tokens: 3000,
+          max_completion_tokens: 5000,
       }, {
         signal: controller.signal
       });
@@ -191,29 +191,59 @@ IMPORTANTE:
         result = jsonMatch[0];
       }
 
-      // Tentar corrigir strings não terminadas
+      // Tentar corrigir strings não terminadas e arrays truncados
       let sanitizedResult = result;
       
-      // Contar aspas para detectar strings não terminadas
-      const quotes = (result.match(/"/g) || []).length;
-      if (quotes % 2 !== 0) {
-        // Número ímpar de aspas - string não terminada
-        console.warn('Detectada string não terminada no JSON, tentando corrigir...');
+      // Função para corrigir JSON truncado
+      function fixTruncatedJson(jsonStr: string): string {
+        let fixed = jsonStr.trim();
         
-        // Encontrar a última posição válida antes da string não terminada
-        let lastValidPos = result.lastIndexOf('",');
-        if (lastValidPos === -1) {
-          lastValidPos = result.lastIndexOf('}');
-        }
-        
-        if (lastValidPos > 0) {
-          // Truncar na última posição válida e fechar o JSON
-          sanitizedResult = result.substring(0, lastValidPos);
-          if (!sanitizedResult.endsWith('}')) {
-            sanitizedResult += '\n    }\n  ]\n}';
+        // Contar aspas para detectar strings não terminadas
+        const quotes = (fixed.match(/"/g) || []).length;
+        if (quotes % 2 !== 0) {
+          console.warn('Detectada string não terminada no JSON, tentando corrigir...');
+          
+          // Encontrar a última posição válida antes da string não terminada
+          let lastValidPos = fixed.lastIndexOf('",');
+          if (lastValidPos === -1) {
+            lastValidPos = fixed.lastIndexOf('"');
+            if (lastValidPos > 0) {
+              // Se encontrou uma aspa, adicionar a aspa de fechamento
+              fixed = fixed.substring(0, lastValidPos + 1);
+            }
+          } else {
+            fixed = fixed.substring(0, lastValidPos + 2);
           }
         }
+        
+        // Verificar se o JSON está truncado no meio de um array
+        const openBrackets = (fixed.match(/\[/g) || []).length;
+        const closeBrackets = (fixed.match(/\]/g) || []).length;
+        const openBraces = (fixed.match(/\{/g) || []).length;
+        const closeBraces = (fixed.match(/\}/g) || []).length;
+        
+        // Fechar arrays não fechados
+        for (let i = 0; i < openBrackets - closeBrackets; i++) {
+          // Remover vírgula pendente se existir
+          if (fixed.trim().endsWith(',')) {
+            fixed = fixed.trim().slice(0, -1);
+          }
+          fixed += '\n  ]';
+        }
+        
+        // Fechar objetos não fechados
+        for (let i = 0; i < openBraces - closeBraces; i++) {
+          // Remover vírgula pendente se existir
+          if (fixed.trim().endsWith(',')) {
+            fixed = fixed.trim().slice(0, -1);
+          }
+          fixed += '\n}';
+        }
+        
+        return fixed;
       }
+      
+      sanitizedResult = fixTruncatedJson(result);
 
       // Tentar fazer o parse do JSON sanitizado
       const parsedResult = JSON.parse(sanitizedResult);

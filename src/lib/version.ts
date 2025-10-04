@@ -1,9 +1,9 @@
 // Arquivo gerado automaticamente - NÃO EDITAR MANUALMENTE
-// Última atualização: 2025-10-02T21:05:22.986Z
+// Última atualização: 2025-10-03T22:38:02.316Z
 
-export const APP_VERSION = '2025.10.02.1805';
-export const BUILD_TIMESTAMP = 1759439122986;
-export const BUILD_DATE = '2025-10-02T21:05:22.986Z';
+export const APP_VERSION = '2025.10.03.1938';
+export const BUILD_TIMESTAMP = 1759531082316;
+export const BUILD_DATE = '2025-10-03T22:38:02.316Z';
 
 // Função para verificar se uma nova versão está disponível
 export function isNewerVersion(currentVersion: string, newVersion: string): boolean {

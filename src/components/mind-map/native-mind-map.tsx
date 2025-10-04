@@ -5,6 +5,7 @@ import html2canvas from 'html2canvas'
 import MindMapNode from './mind-map-node'
 import MindMapConnection from './mind-map-connection'
 import MindMapControls from './mind-map-controls'
+import MiniMap from './mini-map'
 import { MindMapTheme, mindMapThemes, getThemeById, getDefaultTheme } from '@/constants/mind-map-themes'
 
 // Tipos e interfaces
@@ -75,6 +76,33 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
   // Referências
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // useEffect para organizar automaticamente quando dados são carregados
+  useEffect(() => {
+    // Organizar automaticamente quando há nós e eles não estão organizados
+    if (data.nodes.length > 1) {
+      // Verificar se os nós precisam ser organizados (se não estão em posições organizadas)
+      const rootNode = data.nodes.find(n => n.id === data.rootNodeId)
+      if (rootNode) {
+        const childNodes = data.nodes.filter(node => node.parentId === data.rootNodeId)
+        
+        // Se há nós filhos e eles não estão organizados simetricamente
+        if (childNodes.length > 0) {
+          const needsOrganization = childNodes.some(node => 
+            Math.abs(node.x - rootNode.x) < 200 || // Muito próximo do centro
+            !node.side // Não tem propriedade side definida
+          )
+          
+          if (needsOrganization) {
+            // Usar setTimeout para evitar loops infinitos
+            setTimeout(() => {
+              organizeNodesAutomatically()
+            }, 100)
+          }
+        }
+      }
+    }
+  }, [data.nodes.length, data.rootNodeId]) // Executar quando o número de nós ou rootNodeId mudar
 
   // useEffect para detectar cliques fora da área de edição
   useEffect(() => {
@@ -484,7 +512,7 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
     return { x: newX, y: newY }
   }
 
-  // Handlers de eventos
+  // Handlers de eventos - melhorados
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (isDragging && selectedNodeId) {
       const rect = svgRef.current?.getBoundingClientRect()
@@ -505,16 +533,28 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
         updateData({ ...data, nodes: newNodes })
       }
     } else if (isPanning) {
-      setPanOffset({
+      // Pan suave e responsivo
+      const newPanOffset = {
         x: e.clientX - dragOffset.x,
         y: e.clientY - dragOffset.y
-      })
+      }
+      setPanOffset(newPanOffset)
+      
+      // Feedback visual durante o pan
+      if (containerRef.current) {
+        containerRef.current.style.cursor = 'grabbing'
+      }
     }
   }, [isDragging, selectedNodeId, isPanning, dragOffset, data, updateData, zoom, panOffset])
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false)
     setIsPanning(false)
+    
+    // Restaurar cursor padrão
+    if (containerRef.current) {
+      containerRef.current.style.cursor = 'default'
+    }
   }, [])
 
   const handleNodeDragStart = (nodeId: string, offset: { x: number; y: number }) => {
@@ -775,17 +815,23 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
     }
   }
 
-  const handleZoomIn = () => {
-    const newZoom = Math.min(zoom * 1.2, 3) // Máximo de 3x zoom
+  const handleZoomIn = useCallback(() => {
+    const newZoom = Math.min(zoom * 1.2, 5) // Aumentado limite máximo para 5x
     setZoom(newZoom)
-  }
+  }, [zoom])
 
-  const handleZoomOut = () => {
-    const newZoom = Math.max(zoom / 1.2, 0.3) // Mínimo de 0.3x zoom
+  const handleZoomOut = useCallback(() => {
+    const newZoom = Math.max(zoom / 1.2, 0.2) // Diminuído limite mínimo para 0.2x
     setZoom(newZoom)
-  }
+  }, [zoom])
 
-  // Função para zoom com mouse wheel
+  // Função para resetar zoom e pan
+  const handleResetView = useCallback(() => {
+    setZoom(1)
+    setPanOffset({ x: 0, y: 0 })
+  }, [])
+
+  // Função para zoom com mouse wheel - melhorada
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault()
     
@@ -799,9 +845,11 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
     const svgMouseX = (mouseX - panOffset.x) / zoom
     const svgMouseY = (mouseY - panOffset.y) / zoom
     
-    // Determinar direção do zoom
-    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1
-    const newZoom = Math.min(Math.max(zoom * zoomFactor, 0.3), 3)
+    // Determinar direção do zoom com sensibilidade melhorada
+    const zoomSensitivity = 0.1
+    const zoomDirection = e.deltaY > 0 ? -zoomSensitivity : zoomSensitivity
+    const zoomFactor = 1 + zoomDirection
+    const newZoom = Math.min(Math.max(zoom * zoomFactor, 0.2), 5) // Ampliado range: 0.2x a 5x
     
     // Calcular novo pan offset para manter o mouse na mesma posição
     const newPanX = mouseX - svgMouseX * newZoom
@@ -811,15 +859,29 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
     setPanOffset({ x: newPanX, y: newPanY })
   }, [zoom, panOffset])
 
-  // Função para iniciar pan com mouse
+  // Função para iniciar pan com mouse - melhorada
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    // Verificar se o clique foi no SVG (não em um nó)
-    if (e.target === svgRef.current || (e.target as Element).closest('svg') === svgRef.current) {
+    // Verificar se o clique foi no SVG ou no container (não em um nó ou controle)
+    const target = e.target as Element
+    const isClickOnBackground = (
+      target === svgRef.current || 
+      target === containerRef.current ||
+      target.tagName === 'svg' ||
+      (target.closest('svg') === svgRef.current && !target.closest('[data-node]') && !target.closest('[data-control]'))
+    )
+    
+    if (isClickOnBackground) {
+      e.preventDefault()
       setIsPanning(true)
       setDragOffset({
         x: e.clientX - panOffset.x,
         y: e.clientY - panOffset.y
       })
+      
+      // Adicionar cursor de pan
+      if (containerRef.current) {
+        containerRef.current.style.cursor = 'grabbing'
+      }
     }
   }, [panOffset])
 
@@ -912,9 +974,11 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
   return (
     <div 
       ref={containerRef}
-      className={`relative w-full h-full overflow-hidden pt-20 ${className}`}
+      className={`relative w-full h-full overflow-hidden pt-20 cursor-grab active:cursor-grabbing ${className}`}
       style={{
-        background: selectedTheme.background
+        background: selectedTheme.background,
+        touchAction: 'none',
+        userSelect: 'none'
       }}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) {
@@ -935,6 +999,7 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
         onCenterRoot={handleCenterRoot}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
+        onResetView={handleResetView}
         onColorSelect={handleColorSelect}
         selectedColor={selectedColor}
         colors={colors}
@@ -1062,6 +1127,15 @@ const NativeMindMap: React.FC<NativeMindMapProps> = ({
             />
           ))}
       </svg>
+
+      {/* Mini-mapa */}
+      <MiniMap
+        data={data}
+        zoom={zoom}
+        panOffset={panOffset}
+        onPanChange={setPanOffset}
+        theme={selectedTheme}
+      />
     </div>
   )
 }

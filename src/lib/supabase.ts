@@ -183,7 +183,7 @@ try {
   }
 }
 
-export { supabase };
+export { supabase, supabaseClient };
 
 // Função para criar um cliente mock que implementa a API do Supabase
 function createMockClient(): SupabaseClient {

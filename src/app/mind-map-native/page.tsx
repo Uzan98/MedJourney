@@ -104,14 +104,6 @@ export default function NativeMindMapPage() {
             </div>
             <div className="flex items-center space-x-3">
               <button
-                onClick={() => setShowAIModal(true)}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
-              >
-                <Sparkles className="h-4 w-4" />
-                <span>Gerar com IA</span>
-              </button>
-              
-              <button
                 onClick={() => setShowInstructions(!showInstructions)}
                 className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
               >
