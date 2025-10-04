@@ -12,7 +12,8 @@ import {
   ChevronRight,
   BookOpen,
   Calendar,
-  CreditCard
+  CreditCard,
+  Wand2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { FlashcardsService } from '@/services/flashcards.service';
@@ -23,6 +24,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import CreateDeckModal from '@/components/flashcards/CreateDeckModal';
+import AIFlashcardGeneratorModal from '@/components/flashcards/AIFlashcardGeneratorModal';
 import MobileFlashcards from '@/components/flashcards/MobileFlashcards';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useIsMobile } from '@/hooks/useIsMobile';
@@ -38,6 +40,7 @@ export default function FlashcardsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateDeckModal, setShowCreateDeckModal] = useState(false);
+  const [showAIGeneratorModal, setShowAIGeneratorModal] = useState(false);
 
   // Função para ajustar a cor para criar um gradiente
   const adjustColor = (color: string, amount: number): string => {
@@ -80,6 +83,22 @@ export default function FlashcardsPage() {
 
     fetchData();
   }, [user]);
+
+  // Função para recarregar os decks
+  const loadDecks = async () => {
+    if (user) {
+      try {
+        const [userDecks, userStats] = await Promise.all([
+          FlashcardsService.getDecks(user.id),
+          FlashcardsService.getUserStats(user.id)
+        ]);
+        setDecks(userDecks);
+        setStats(userStats);
+      } catch (error) {
+        console.error('Erro ao recarregar dados de flashcards:', error);
+      }
+    }
+  };
 
   const filteredDecks = decks.filter(deck => {
     return deck.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -148,6 +167,18 @@ export default function FlashcardsPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <Button 
+            onClick={() => setShowAIGeneratorModal(true)} 
+            className="relative flex items-center gap-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-0"
+          >
+            <div className="relative">
+              <Wand2 className="h-4 w-4 text-white" />
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full opacity-80"></div>
+            </div>
+            <span className="bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent font-bold">
+              ✨ Gerar com IA
+            </span>
+          </Button>
           <Button onClick={handleCreateDeck} className="flex items-center gap-2">
             <PlusCircle className="h-4 w-4" />
             <span>Criar Deck</span>
@@ -341,6 +372,16 @@ export default function FlashcardsPage() {
         isOpen={showCreateDeckModal} 
         onClose={() => setShowCreateDeckModal(false)}
         onSuccess={handleDeckCreated}
+      />
+
+      {/* Modal de geração de flashcards com IA */}
+      <AIFlashcardGeneratorModal
+        isOpen={showAIGeneratorModal}
+        onClose={() => setShowAIGeneratorModal(false)}
+        onFlashcardsGenerated={() => {
+          setShowAIGeneratorModal(false);
+          loadDecks(); // Recarregar a lista de decks
+        }}
       />
     </div>
   );

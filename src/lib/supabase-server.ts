@@ -30,11 +30,24 @@ export function createServerSupabaseClient() {
 
 /**
  * Cria um cliente Supabase específico para requests em middlewares e rotas API
- * que mantém a sessão do usuário através dos cookies da requisição
+ * que mantém a sessão do usuário através dos cookies da requisição e Authorization header
  */
 export function createRequestSupabaseClient(request: NextRequest) {
   // Obter cookies do request
   const cookieHeader = request.headers.get('cookie') || '';
+  
+  // Obter Authorization header do request
+  const authHeader = request.headers.get('authorization') || '';
+  
+  // Preparar headers para o cliente Supabase
+  const headers: Record<string, string> = {
+    cookie: cookieHeader,
+  };
+  
+  // Incluir Authorization header se presente
+  if (authHeader) {
+    headers.authorization = authHeader;
+  }
   
   return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
@@ -43,9 +56,7 @@ export function createRequestSupabaseClient(request: NextRequest) {
       detectSessionInUrl: false,
     },
     global: {
-      headers: {
-        cookie: cookieHeader,
-      },
+      headers,
     },
   });
-} 
+}

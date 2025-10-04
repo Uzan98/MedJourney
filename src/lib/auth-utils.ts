@@ -1,26 +1,40 @@
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseClient } from '@/lib/supabase';
 
 /**
  * Obtém o token de acesso do usuário autenticado
  * @returns Promise<string | null> - Token de acesso ou null se não autenticado
  */
 export async function getAccessToken(): Promise<string | null> {
-  if (!supabase) {
-    console.error('Supabase client not initialized');
-    return null;
-  }
-
   try {
-    const { data: { session }, error } = await supabase.auth.getSession();
+    console.log('🔍 getAccessToken: Iniciando obtenção do token...');
     
-    if (error) {
-      console.error('Error getting session:', error);
+    const client = supabase || supabaseClient;
+    
+    if (!client) {
+      console.error('❌ getAccessToken: Cliente Supabase não inicializado');
       return null;
     }
 
-    return session?.access_token || null;
+    console.log('✅ getAccessToken: Cliente Supabase inicializado');
+
+    const { data: { session }, error } = await client.auth.getSession();
+    
+    if (error) {
+      console.error('❌ getAccessToken: Erro ao obter sessão:', error);
+      return null;
+    }
+
+    if (!session) {
+      console.error('❌ getAccessToken: Nenhuma sessão ativa encontrada');
+      return null;
+    }
+
+    console.log('✅ getAccessToken: Sessão encontrada, user ID:', session.user?.id);
+    console.log('✅ getAccessToken: Token obtido com sucesso');
+
+    return session.access_token;
   } catch (error) {
-    console.error('Error getting access token:', error);
+    console.error('❌ getAccessToken: Erro ao obter token de acesso:', error);
     return null;
   }
 }
@@ -39,13 +53,16 @@ export async function isAuthenticated(): Promise<boolean> {
  * @returns Promise<string | null> - ID do usuário ou null se não autenticado
  */
 export async function getCurrentUserId(): Promise<string | null> {
-  if (!supabase) {
+  // Usar supabaseClient como fallback se supabase for null
+  const client = supabase || supabaseClient;
+  
+  if (!client) {
     console.error('Supabase client not initialized');
     return null;
   }
 
   try {
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const { data: { session }, error } = await client.auth.getSession();
     
     if (error) {
       console.error('Error getting session:', error);
