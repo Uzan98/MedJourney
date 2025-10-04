@@ -24,13 +24,21 @@ export interface AIFlashcardResponse {
   flashcards: AIGeneratedFlashcard[];
 }
 
+export interface FlashcardJob {
+  id: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  result_data?: AIFlashcardResponse;
+  error_message?: string;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string;
+}
+
 export class AIFlashcardGeneratorService {
-  // Chama a rota interna protegida do Groq com retry automático
-  private static async callGroqAPI(prompt: string, retryCount = 0): Promise<string> {
-    const maxRetries = 2;
-    
+  // Cria um job assíncrono para processamento de flashcards
+  private static async createJob(prompt: string): Promise<{ jobId: string; status: string; message: string }> {
     try {
-      console.log('🚀 AIFlashcardGeneratorService: Iniciando chamada para API Groq...');
+      console.log('🚀 AIFlashcardGeneratorService: Criando job assíncrono...');
       
       // Obter token de acesso para autenticação
       const accessToken = await getAccessToken();
@@ -52,7 +60,7 @@ export class AIFlashcardGeneratorService {
       const response = await fetch('/api/groq/flashcards', {
         method: 'POST',
         headers,
-        credentials: 'include', // Importante para enviar cookies de sessão
+        credentials: 'include',
         body: JSON.stringify({ prompt }),
       });
       
@@ -65,13 +73,6 @@ export class AIFlashcardGeneratorService {
           status: response.status,
           errorData
         });
-        
-        // Se for timeout (504) e ainda temos tentativas, retry automaticamente
-        if (response.status === 504 && retryCount < maxRetries) {
-          console.log(`Timeout na tentativa ${retryCount + 1}, tentando novamente...`);
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Aguarda 1 segundo
-          return this.callGroqAPI(prompt, retryCount + 1);
-        }
         
         // Tratar erros específicos de permissão e limite
         if (response.status === 401) {
@@ -92,30 +93,154 @@ export class AIFlashcardGeneratorService {
           throw new Error('Muitas requisições. Tente novamente em alguns minutos.');
         }
         
-        if (response.status === 504) {
-          throw new Error('A requisição demorou demais para ser processada. Tente novamente.');
+        if (response.status === 400) {
+          throw new Error(errorData.error || 'Dados inválidos enviados para a API.');
         }
         
         throw new Error(errorData.error || `Erro na API: ${response.status}`);
       }
       
       const data = await response.json();
-      return data.result;
+      return data;
     } catch (error: any) {
-      // Se for erro de rede/timeout e ainda temos tentativas, retry automaticamente
-      if ((error.name === 'TypeError' || error.message?.includes('fetch')) && retryCount < maxRetries) {
-        console.log(`Erro de rede na tentativa ${retryCount + 1}, tentando novamente...`);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Aguarda 1 segundo
-        return this.callGroqAPI(prompt, retryCount + 1);
+      console.error('Erro ao criar job de flashcards:', error);
+      throw error;
+    }
+  }
+
+  // Consulta o status de um job
+  private static async getJobStatus(jobId: string): Promise<FlashcardJob> {
+    try {
+      const accessToken = await getAccessToken();
+      
+      if (!accessToken) {
+        throw new Error('Você precisa estar logado para consultar o status do job');
+      }
+
+      const headers: Record<string, string> = {
+        'Authorization': `Bearer ${accessToken}`,
+      };
+
+      const response = await fetch(`/api/jobs/flashcards/${jobId}`, {
+        method: 'GET',
+        headers,
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
+        throw new Error(errorData.error || `Erro ao consultar job: ${response.status}`);
       }
       
-      console.error('Erro ao chamar a API Groq para flashcards:', error);
+      const data = await response.json();
+      return data;
+    } catch (error: any) {
+      console.error('Erro ao consultar status do job:', error);
+      throw error;
+    }
+  }
+
+  // Aguarda a conclusão de um job com polling
+  private static async waitForJobCompletion(jobId: string, onProgress?: (status: string) => void): Promise<AIFlashcardResponse> {
+    const maxAttempts = 120; // 10 minutos (5 segundos * 120)
+    let attempts = 0;
+    
+    while (attempts < maxAttempts) {
+      try {
+        const job = await this.getJobStatus(jobId);
+        
+        if (onProgress) {
+          onProgress(job.status);
+        }
+        
+        if (job.status === 'completed') {
+          if (job.result_data) {
+            // Garantir que result_data seja um objeto, não uma string
+            let resultData = job.result_data;
+            
+            // Se result_data for uma string, fazer parse
+            if (typeof resultData === 'string') {
+              try {
+                console.log('Tentando fazer parse do JSON. Tamanho:', resultData.length);
+                console.log('Primeiros 200 caracteres:', resultData.substring(0, 200));
+                console.log('Últimos 200 caracteres:', resultData.substring(resultData.length - 200));
+                
+                resultData = JSON.parse(resultData);
+              } catch (error) {
+                console.error('Erro ao fazer parse do result_data:', error);
+                console.error('JSON malformado. Tamanho:', resultData.length);
+                
+                // Mostrar contexto ao redor do erro se possível
+                if (error instanceof SyntaxError && error.message.includes('position')) {
+                  const match = error.message.match(/position (\d+)/);
+                  if (match) {
+                    const position = parseInt(match[1]);
+                    const start = Math.max(0, position - 100);
+                    const end = Math.min(resultData.length, position + 100);
+                    console.error('Contexto do erro (posição', position, '):', resultData.substring(start, end));
+                  }
+                }
+                
+                throw new Error(`Erro ao processar dados do resultado: ${error.message}`);
+              }
+            }
+            
+            return resultData;
+          } else {
+            throw new Error('Job concluído mas sem dados de resultado');
+          }
+        }
+        
+        if (job.status === 'failed') {
+          throw new Error(job.error_message || 'Falha no processamento dos flashcards');
+        }
+        
+        // Aguardar 5 segundos antes da próxima verificação
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        attempts++;
+        
+      } catch (error: any) {
+        console.error('Erro ao verificar status do job:', error);
+        
+        // Se for erro de rede, tentar novamente
+        if (error.message?.includes('fetch') || error.name === 'TypeError') {
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          attempts++;
+          continue;
+        }
+        
+        throw error;
+      }
+    }
+    
+    throw new Error('Timeout: O processamento está demorando mais que o esperado. Tente novamente mais tarde.');
+  }
+
+  // Método principal para chamar a API com sistema assíncrono
+  private static async callGroqAPI(prompt: string, onProgress?: (status: string) => void): Promise<AIFlashcardResponse> {
+    try {
+      // Criar o job
+      const jobResponse = await this.createJob(prompt);
+      console.log('📋 Job criado:', jobResponse);
+      
+      if (onProgress) {
+        onProgress('processing');
+      }
+      
+      // Aguardar conclusão do job
+      const result = await this.waitForJobCompletion(jobResponse.jobId, onProgress);
+      
+      // Retornar o resultado diretamente
+      return result;
+      
+    } catch (error: any) {
+      console.error('Erro no processamento assíncrono:', error);
       throw error;
     }
   }
 
   // Gerar flashcards a partir de um tema
-  static async generateFromTheme(params: AIFlashcardParams): Promise<AIFlashcardResponse> {
+  static async generateFromTheme(params: AIFlashcardParams, onProgress?: (status: string) => void): Promise<AIFlashcardResponse> {
     if (!params.theme) {
       throw new Error('Tema é obrigatório para gerar flashcards');
     }
@@ -125,53 +250,85 @@ export class AIFlashcardGeneratorService {
     const language = params.language || 'português brasileiro';
 
     const prompt = `
-Você é um especialista em educação e criação de flashcards educacionais. Sua tarefa é criar flashcards de alta qualidade sobre o tema: "${params.theme}".
+Você é um especialista em educação e criação de flashcards educacionais otimizados para máximo aprendizado. Sua missão é criar os ${numberOfCards} MELHORES flashcards possíveis sobre "${params.theme}" que maximizem a retenção e compreensão do estudante.
+
+ESTRATÉGIA PEDAGÓGICA AVANÇADA:
+- Aplique a técnica de REPETIÇÃO ESPAÇADA: crie flashcards que se complementem e reforcem conceitos
+- Use o princípio da RECUPERAÇÃO ATIVA: formule perguntas que exijam recordação, não apenas reconhecimento
+- Implemente CONEXÕES CONCEITUAIS: relacione conceitos entre si para criar uma rede de conhecimento
+- Aplique a PIRÂMIDE DE BLOOM: varie entre memorização, compreensão, aplicação, análise e síntese
+
+DISTRIBUIÇÃO INTELIGENTE DOS ${numberOfCards} FLASHCARDS:
+- 30% Conceitos fundamentais e definições essenciais
+- 25% Aplicações práticas e exemplos reais
+- 20% Relações entre conceitos e comparações
+- 15% Casos específicos e detalhes importantes
+- 10% Perguntas de síntese e pensamento crítico
 
 INSTRUÇÕES ESPECÍFICAS:
-- Crie exatamente ${numberOfCards} flashcards
 - Nível de dificuldade: ${difficulty}
 - Idioma: ${language}
-- Foque nos conceitos mais importantes e fundamentais do tema
-- Cada flashcard deve ter uma pergunta clara na frente e uma resposta completa no verso
-- Inclua dicas quando apropriado
-- Adicione tags relevantes para categorização
+- PRIORIZE os conceitos mais impactantes para o aprendizado do tema
+- Cada flashcard deve ser ÚNICO e complementar os outros
+- Varie os tipos de pergunta: "O que é?", "Como funciona?", "Por que?", "Quando usar?", "Compare X e Y"
+- Use técnicas mnemônicas quando apropriado
+- Inclua contexto suficiente para evitar ambiguidade
 
 FORMATO DE RESPOSTA (JSON válido):
 {
-  "deckName": "Nome do deck baseado no tema",
-  "description": "Descrição breve do deck",
+  "deckName": "Nome educativo e motivador do deck",
+  "description": "Descrição que destaque o valor educacional",
   "flashcards": [
     {
-      "front": "Pergunta ou conceito a ser testado",
-      "back": "Resposta completa e explicativa",
-      "hint": "Dica opcional para ajudar na resposta",
-      "tags": ["tag1", "tag2", "tag3"],
+      "front": "Pergunta estratégica que promove recuperação ativa",
+      "back": "Resposta completa com explicação clara e contexto",
+      "hint": "Dica pedagógica que guia o raciocínio sem dar a resposta",
+      "tags": ["conceito-chave", "categoria", "aplicação"],
       "difficulty": "${difficulty}"
     }
   ]
 }
 
-REGRAS IMPORTANTES:
+REGRAS CRÍTICAS:
 1. Retorne APENAS o JSON válido, sem texto adicional
-2. Certifique-se de que todas as perguntas sejam claras e específicas
-3. As respostas devem ser completas mas concisas
-4. Use linguagem apropriada para o nível de dificuldade especificado
-5. Varie os tipos de perguntas (definições, aplicações, comparações, etc.)
-6. Inclua pelo menos 3 tags relevantes por flashcard
+2. Cada flashcard deve ser ESSENCIAL para dominar o tema
+3. Evite redundância - cada card deve ensinar algo único
+4. Use linguagem precisa e educativa para o nível ${difficulty}
+5. Crie uma progressão lógica do básico ao avançado
+6. Inclua pelo menos 3 tags estratégicas por flashcard
+7. As dicas devem estimular o pensamento, não dar respostas diretas
 
-Tema: ${params.theme}
+TEMA PARA DOMINAR: ${params.theme}
 `;
 
     try {
-      const response = await this.callGroqAPI(prompt);
-      const parsedResponse = JSON.parse(response) as AIFlashcardResponse;
+      const response = await this.callGroqAPI(prompt, onProgress);
       
-      // Validar a resposta
-      if (!parsedResponse.flashcards || !Array.isArray(parsedResponse.flashcards)) {
-        throw new Error('Resposta da IA inválida: flashcards não encontrados');
+      // Debug: Log da resposta completa
+      console.log('🔍 DEBUG - Resposta completa da IA:', JSON.stringify(response, null, 2));
+      console.log('🔍 DEBUG - Tipo da resposta:', typeof response);
+      console.log('🔍 DEBUG - response.flashcards existe?', 'flashcards' in response);
+      console.log('🔍 DEBUG - response.flashcards é array?', Array.isArray(response.flashcards));
+      console.log('🔍 DEBUG - Propriedades da resposta:', Object.keys(response));
+      
+      // Validar a resposta com logs mais específicos
+      if (!response) {
+        throw new Error('Resposta da IA inválida: resposta é null ou undefined');
+      }
+      
+      if (!response.flashcards) {
+        throw new Error('Resposta da IA inválida: propriedade flashcards não encontrada');
+      }
+      
+      if (!Array.isArray(response.flashcards)) {
+        throw new Error(`Resposta da IA inválida: flashcards não é um array (tipo: ${typeof response.flashcards})`);
+      }
+      
+      if (response.flashcards.length === 0) {
+        throw new Error('Resposta da IA inválida: array de flashcards está vazio');
       }
 
-      return parsedResponse;
+      return response;
     } catch (error: any) {
       if (error.message?.includes('JSON')) {
         throw new Error('Erro ao processar resposta da IA. Tente novamente.');
@@ -181,7 +338,7 @@ Tema: ${params.theme}
   }
 
   // Gerar flashcards a partir de texto
-  static async generateFromText(params: AIFlashcardParams): Promise<AIFlashcardResponse> {
+  static async generateFromText(params: AIFlashcardParams, onProgress?: (status: string) => void): Promise<AIFlashcardResponse> {
     if (!params.text) {
       throw new Error('Texto é obrigatório para gerar flashcards');
     }
@@ -191,54 +348,87 @@ Tema: ${params.theme}
     const language = params.language || 'português brasileiro';
 
     const prompt = `
-Você é um especialista em educação e criação de flashcards educacionais. Sua tarefa é analisar o texto fornecido e criar flashcards de alta qualidade baseados no conteúdo.
+Você é um especialista em educação e criação de flashcards educacionais otimizados para máximo aprendizado. Sua missão é criar os ${numberOfCards} MELHORES flashcards possíveis baseados no texto fornecido que maximizem a retenção e compreensão do estudante.
 
-TEXTO PARA ANÁLISE:
+TEXTO PARA ANÁLISE E OTIMIZAÇÃO:
 "${params.text}"
 
+ESTRATÉGIA PEDAGÓGICA AVANÇADA:
+- Aplique a técnica de EXTRAÇÃO INTELIGENTE: identifique os conceitos mais valiosos do texto
+- Use o princípio da RECUPERAÇÃO ATIVA: transforme informações passivas em perguntas ativas
+- Implemente CONEXÕES CONCEITUAIS: relacione diferentes partes do texto entre si
+- Aplique a PIRÂMIDE DE BLOOM: varie entre memorização, compreensão, aplicação, análise e síntese
+
+DISTRIBUIÇÃO INTELIGENTE DOS ${numberOfCards} FLASHCARDS:
+- 35% Conceitos-chave e definições extraídas do texto
+- 25% Aplicações e exemplos mencionados no texto
+- 20% Relações causais e processos descritos
+- 15% Detalhes importantes e dados específicos
+- 5% Perguntas de síntese que conectam todo o conteúdo
+
 INSTRUÇÕES ESPECÍFICAS:
-- Crie exatamente ${numberOfCards} flashcards baseados no texto fornecido
 - Nível de dificuldade: ${difficulty}
 - Idioma: ${language}
-- Extraia os conceitos mais importantes do texto
-- Cada flashcard deve testar a compreensão do conteúdo
-- Inclua dicas quando apropriado
-- Adicione tags relevantes baseadas no conteúdo
+- EXTRAIA apenas os conceitos mais impactantes do texto fornecido
+- Cada flashcard deve testar uma compreensão única do conteúdo
+- Transforme informações declarativas em perguntas desafiadoras
+- Use o contexto do texto para criar perguntas precisas
+- Varie os tipos: definições, causas/efeitos, comparações, aplicações
 
 FORMATO DE RESPOSTA (JSON válido):
 {
-  "deckName": "Nome do deck baseado no conteúdo do texto",
-  "description": "Descrição breve do deck baseada no texto",
+  "deckName": "Nome educativo baseado no conteúdo principal do texto",
+  "description": "Descrição que destaque os principais aprendizados do texto",
   "flashcards": [
     {
-      "front": "Pergunta baseada no texto",
-      "back": "Resposta extraída ou inferida do texto",
-      "hint": "Dica opcional relacionada ao conteúdo",
-      "tags": ["tag1", "tag2", "tag3"],
+      "front": "Pergunta estratégica baseada no texto que promove recuperação ativa",
+      "back": "Resposta extraída/inferida do texto com explicação clara",
+      "hint": "Dica que referencia o contexto do texto sem dar a resposta",
+      "tags": ["conceito-do-texto", "categoria", "aplicação"],
       "difficulty": "${difficulty}"
     }
   ]
 }
 
-REGRAS IMPORTANTES:
+REGRAS CRÍTICAS:
 1. Retorne APENAS o JSON válido, sem texto adicional
-2. Base todas as perguntas e respostas no texto fornecido
-3. Não invente informações que não estejam no texto
-4. Varie os tipos de perguntas (definições, relações, aplicações, etc.)
-5. Use citações diretas quando apropriado
-6. Inclua pelo menos 3 tags relevantes por flashcard baseadas no conteúdo
+2. Cada flashcard deve ser ESSENCIAL para dominar o conteúdo do texto
+3. Evite redundância - cada card deve testar uma compreensão única
+4. Use linguagem precisa e educativa para o nível ${difficulty}
+5. Mantenha fidelidade ao conteúdo original do texto
+6. Inclua pelo menos 3 tags estratégicas baseadas no texto
+7. As dicas devem referenciar o contexto sem revelar respostas
+8. Priorize informações que o estudante DEVE saber sobre este texto
 `;
 
     try {
-      const response = await this.callGroqAPI(prompt);
-      const parsedResponse = JSON.parse(response) as AIFlashcardResponse;
+      const response = await this.callGroqAPI(prompt, onProgress);
       
-      // Validar a resposta
-      if (!parsedResponse.flashcards || !Array.isArray(parsedResponse.flashcards)) {
-        throw new Error('Resposta da IA inválida: flashcards não encontrados');
+      // Debug: Log da resposta completa
+      console.log('🔍 DEBUG - Resposta completa da IA (generateFromText):', JSON.stringify(response, null, 2));
+      console.log('🔍 DEBUG - Tipo da resposta:', typeof response);
+      console.log('🔍 DEBUG - response.flashcards existe?', 'flashcards' in response);
+      console.log('🔍 DEBUG - response.flashcards é array?', Array.isArray(response.flashcards));
+      console.log('🔍 DEBUG - Propriedades da resposta:', Object.keys(response));
+      
+      // Validar a resposta com logs mais específicos
+      if (!response) {
+        throw new Error('Resposta da IA inválida: resposta é null ou undefined');
+      }
+      
+      if (!response.flashcards) {
+        throw new Error('Resposta da IA inválida: propriedade flashcards não encontrada');
+      }
+      
+      if (!Array.isArray(response.flashcards)) {
+        throw new Error(`Resposta da IA inválida: flashcards não é um array (tipo: ${typeof response.flashcards})`);
+      }
+      
+      if (response.flashcards.length === 0) {
+        throw new Error('Resposta da IA inválida: array de flashcards está vazio');
       }
 
-      return parsedResponse;
+      return response;
     } catch (error: any) {
       if (error.message?.includes('JSON')) {
         throw new Error('Erro ao processar resposta da IA. Tente novamente.');
@@ -248,7 +438,7 @@ REGRAS IMPORTANTES:
   }
 
   // Gerar flashcards a partir de PDF (conteúdo extraído)
-  static async generateFromPDF(params: AIFlashcardParams): Promise<AIFlashcardResponse> {
+  static async generateFromPDF(params: AIFlashcardParams, onProgress?: (status: string) => void): Promise<AIFlashcardResponse> {
     if (!params.pdfContent) {
       throw new Error('Conteúdo do PDF é obrigatório para gerar flashcards');
     }
@@ -258,56 +448,88 @@ REGRAS IMPORTANTES:
     const language = params.language || 'português brasileiro';
 
     const prompt = `
-Você é um especialista em educação e criação de flashcards educacionais. Sua tarefa é analisar o conteúdo extraído de um PDF e criar flashcards de alta qualidade baseados no material.
+Você é um especialista em educação e criação de flashcards educacionais otimizados para máximo aprendizado. Sua missão é criar os ${numberOfCards} MELHORES flashcards possíveis baseados no conteúdo do PDF que maximizem a retenção e compreensão do estudante.
 
-CONTEÚDO DO PDF:
+CONTEÚDO DO PDF PARA ANÁLISE E OTIMIZAÇÃO:
 "${params.pdfContent}"
 
+ESTRATÉGIA PEDAGÓGICA AVANÇADA:
+- Aplique a técnica de MINERAÇÃO DE CONHECIMENTO: extraia os conceitos mais valiosos do documento
+- Use o princípio da RECUPERAÇÃO ATIVA: transforme informações passivas em perguntas desafiadoras
+- Implemente CONEXÕES CONCEITUAIS: relacione diferentes seções do documento
+- Aplique a PIRÂMIDE DE BLOOM: varie entre memorização, compreensão, aplicação, análise e síntese
+
+DISTRIBUIÇÃO INTELIGENTE DOS ${numberOfCards} FLASHCARDS:
+- 30% Conceitos fundamentais e definições-chave do documento
+- 25% Processos, procedimentos e metodologias descritas
+- 20% Fórmulas, dados específicos e informações técnicas
+- 15% Aplicações práticas e exemplos mencionados
+- 10% Perguntas de síntese que integram todo o conteúdo
+
 INSTRUÇÕES ESPECÍFICAS:
-- Crie exatamente ${numberOfCards} flashcards baseados no conteúdo do PDF
 - Nível de dificuldade: ${difficulty}
 - Idioma: ${language}
-- Identifique e extraia os conceitos mais importantes do documento
-- Foque em definições, processos, fórmulas, e conceitos-chave
-- Cada flashcard deve testar a compreensão do material
-- Inclua dicas quando apropriado
-- Adicione tags relevantes baseadas no conteúdo
+- IDENTIFIQUE e extraia apenas os conceitos mais impactantes do documento
+- Cada flashcard deve testar uma compreensão única do material
+- Priorize definições, processos, fórmulas e conceitos-chave
+- Use terminologia técnica apropriada quando presente no documento
+- Varie os tipos: definições, procedimentos, cálculos, aplicações
 
 FORMATO DE RESPOSTA (JSON válido):
 {
-  "deckName": "Nome do deck baseado no conteúdo do PDF",
-  "description": "Descrição breve do deck baseada no documento",
+  "deckName": "Nome educativo baseado no conteúdo principal do PDF",
+  "description": "Descrição que destaque os principais aprendizados do documento",
   "flashcards": [
     {
-      "front": "Pergunta baseada no conteúdo do PDF",
-      "back": "Resposta extraída do documento",
-      "hint": "Dica opcional relacionada ao conteúdo",
-      "tags": ["tag1", "tag2", "tag3"],
+      "front": "Pergunta estratégica baseada no PDF que promove recuperação ativa",
+      "back": "Resposta extraída do documento com explicação clara e contexto",
+      "hint": "Dica que referencia o material sem revelar a resposta",
+      "tags": ["conceito-do-pdf", "categoria", "aplicação"],
       "difficulty": "${difficulty}"
     }
   ]
 }
 
-REGRAS IMPORTANTES:
+REGRAS CRÍTICAS:
 1. Retorne APENAS o JSON válido, sem texto adicional
-2. Base todas as perguntas e respostas no conteúdo do PDF
-3. Não invente informações que não estejam no documento
-4. Priorize conceitos fundamentais e definições importantes
-5. Se houver fórmulas ou processos, inclua-os nos flashcards
-6. Inclua pelo menos 3 tags relevantes por flashcard baseadas no conteúdo
-7. Organize as informações de forma didática e clara
+2. Cada flashcard deve ser ESSENCIAL para dominar o conteúdo do PDF
+3. Evite redundância - cada card deve testar uma compreensão única
+4. Use linguagem precisa e técnica apropriada para o nível ${difficulty}
+5. Mantenha fidelidade absoluta ao conteúdo original do documento
+6. Inclua pelo menos 3 tags estratégicas baseadas no conteúdo
+7. As dicas devem referenciar o contexto do documento
+8. Priorize informações que o estudante DEVE dominar deste material
+9. Se houver fórmulas ou dados técnicos, inclua-os estrategicamente
 `;
 
     try {
-      const response = await this.callGroqAPI(prompt);
-      const parsedResponse = JSON.parse(response) as AIFlashcardResponse;
+      const response = await this.callGroqAPI(prompt, onProgress);
       
-      // Validar a resposta
-      if (!parsedResponse.flashcards || !Array.isArray(parsedResponse.flashcards)) {
-        throw new Error('Resposta da IA inválida: flashcards não encontrados');
+      // Debug: Log da resposta completa
+      console.log('🔍 DEBUG - Resposta completa da IA (generateFromPDF):', JSON.stringify(response, null, 2));
+      console.log('🔍 DEBUG - Tipo da resposta:', typeof response);
+      console.log('🔍 DEBUG - response.flashcards existe?', 'flashcards' in response);
+      console.log('🔍 DEBUG - response.flashcards é array?', Array.isArray(response.flashcards));
+      console.log('🔍 DEBUG - Propriedades da resposta:', Object.keys(response));
+      
+      // Validar a resposta com logs mais específicos
+      if (!response) {
+        throw new Error('Resposta da IA inválida: resposta é null ou undefined');
+      }
+      
+      if (!response.flashcards) {
+        throw new Error('Resposta da IA inválida: propriedade flashcards não encontrada');
+      }
+      
+      if (!Array.isArray(response.flashcards)) {
+        throw new Error(`Resposta da IA inválida: flashcards não é um array (tipo: ${typeof response.flashcards})`);
+      }
+      
+      if (response.flashcards.length === 0) {
+        throw new Error('Resposta da IA inválida: array de flashcards está vazio');
       }
 
-      return parsedResponse;
+      return response;
     } catch (error: any) {
       if (error.message?.includes('JSON')) {
         throw new Error('Erro ao processar resposta da IA. Tente novamente.');

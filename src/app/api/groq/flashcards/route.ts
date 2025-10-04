@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { SubscriptionService } from '@/services/subscription.service';
 import { SubscriptionTier } from '@/types/subscription';
-import { Groq } from 'groq-sdk';
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(request: NextRequest) {
   try {
@@ -69,75 +66,47 @@ export async function POST(request: NextRequest) {
     const { prompt } = await request.json();
     if (!prompt) return NextResponse.json({ error: 'Prompt é obrigatório' }, { status: 400 });
 
-    // --- chamada Groq com timeout ---
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 120000); // 120s para dar mais tempo à API Groq
-
-    let completion;
-    try {
-      completion = await groq.chat.completions.create({
-        model: 'openai/gpt-oss-120b', // Modelo correto usado no projeto
-        messages: [
-          {
-            role: 'system',
-            content: `Você é um especialista brasileiro em educação e criação de flashcards educacionais com vasta experiência em pedagogia e técnicas de memorização. Sua missão é criar flashcards EDUCATIVOS, CLAROS, PRECISOS e PEDAGOGICAMENTE EFICAZES em PORTUGUÊS BRASILEIRO.
-
-PRINCÍPIOS FUNDAMENTAIS:
-1. CLAREZA: Perguntas diretas e respostas completas mas concisas
-2. PRECISÃO: Informações corretas e atualizadas
-3. PEDAGOGIA: Estrutura que facilita o aprendizado e memorização
-4. PROGRESSÃO: Dificuldade adequada ao nível especificado
-5. RELEVÂNCIA: Foco nos conceitos mais importantes
-
-ESTRUTURA DOS FLASHCARDS:
-- FRENTE: Pergunta clara, específica e direta
-- VERSO: Resposta completa mas concisa, com explicação quando necessário
-- DICA: Pista útil para ajudar na memorização (quando apropriado)
-- TAGS: Categorização para organização e busca
-- DIFICULDADE: Adequada ao nível solicitado
-
-TIPOS DE PERGUNTAS A INCLUIR:
-- Definições e conceitos fundamentais
-- Aplicações práticas
-- Relações entre conceitos
-- Processos e procedimentos
-- Fórmulas e cálculos (quando aplicável)
-- Comparações e contrastes
-
-QUALIDADE EXIGIDA:
-- Linguagem apropriada ao nível educacional
-- Informações verificáveis e confiáveis
-- Estrutura que promove retenção de longo prazo
-- Variedade nos tipos de questões
-- Cobertura abrangente do tópico
-
-FORMATO DE RESPOSTA:
-Retorne SEMPRE um JSON válido seguindo exatamente a estrutura solicitada no prompt do usuário.`
-          },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7,
-        max_completion_tokens: 3000
-      }, { signal: controller.signal });
-    } catch (err: any) {
-      if (err.name === 'AbortError') return NextResponse.json({ error: 'A requisição demorou demais. Tente novamente.' }, { status: 504 });
-      if (err?.message?.includes('rate_limit_exceeded')) return NextResponse.json({ error: 'Limite diário da Groq atingido. Tente mais tarde.' }, { status: 429 });
-      return NextResponse.json({ error: err.message || 'Erro desconhecido na Groq' }, { status: 500 });
-    } finally {
-      clearTimeout(timeout);
+    // Validar limite de caracteres
+    if (prompt.length > 80000) {
+      return NextResponse.json({ 
+        error: `Texto muito longo. Máximo permitido: 80000 caracteres. Atual: ${prompt.length} caracteres.` 
+      }, { status: 400 });
     }
 
-    const result = completion.choices[0]?.message?.content || '';
-    
-    // Incrementar o contador de uso de flashcards
-    try {
-      await SubscriptionService.incrementFeatureUsage(userId, 'flashcardsPerDay', adminSupabase);
-    } catch (error) {
-      console.error('Erro ao incrementar contador de uso:', error);
-      // Não falhar a requisição por causa do contador
+    // Criar job no Supabase para processamento assíncrono
+    const { data: job, error: jobError } = await adminSupabase
+      .from('flashcard_jobs')
+      .insert({
+        user_id: userId,
+        status: 'pending',
+        input_data: { prompt }
+      })
+      .select()
+      .single();
+
+    if (jobError) {
+      console.error('Erro ao criar job:', jobError);
+      return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
     }
-    
-    return NextResponse.json({ result });
+
+    // Disparar processamento assíncrono (não aguardar)
+    fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/workers/flashcards`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+      },
+      body: JSON.stringify({ jobId: job.id })
+    }).catch(error => {
+      console.error('Erro ao disparar worker:', error);
+    });
+
+    // Retornar resposta imediata com ID do job
+    return NextResponse.json({ 
+      jobId: job.id,
+      status: 'processing',
+      message: 'Estamos processando seus flashcards! Aguarde alguns instantes...'
+    });
   } catch (error: any) {
     console.error('Erro na API de flashcards:', error);
     return NextResponse.json({ error: error.message || 'Erro desconhecido' }, { status: 500 });
