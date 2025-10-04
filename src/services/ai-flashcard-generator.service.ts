@@ -142,18 +142,35 @@ export class AIFlashcardGeneratorService {
 
   // Aguarda a conclusão de um job com polling
   private static async waitForJobCompletion(jobId: string, onProgress?: (status: string) => void): Promise<AIFlashcardResponse> {
-    const maxAttempts = 120; // 10 minutos (5 segundos * 120)
+    const maxAttempts = 60; // 5 minutos (5 segundos * 60) - reduzido de 10 para 5 minutos
+    const pollInterval = 5000; // 5 segundos
+    const startTime = Date.now();
+    const maxDuration = 5 * 60 * 1000; // 5 minutos em millisegundos
     let attempts = 0;
+    let consecutiveErrors = 0;
+    const maxConsecutiveErrors = 3;
+    
+    console.log(`🔄 Iniciando polling para job ${jobId} (máximo ${maxAttempts} tentativas)`);
     
     while (attempts < maxAttempts) {
       try {
+        // Verificar timeout por tempo absoluto também
+        if (Date.now() - startTime > maxDuration) {
+          console.error(`⏰ Timeout absoluto atingido para job ${jobId} após ${Math.round((Date.now() - startTime) / 1000)}s`);
+          throw new Error('Timeout: O processamento excedeu o tempo limite de 5 minutos.');
+        }
+
         const job = await this.getJobStatus(jobId);
+        consecutiveErrors = 0; // Reset contador de erros consecutivos
+        
+        console.log(`📊 Job ${jobId} - Status: ${job.status}, Tentativa: ${attempts + 1}/${maxAttempts}`);
         
         if (onProgress) {
           onProgress(job.status);
         }
         
         if (job.status === 'completed') {
+          console.log(`✅ Job ${jobId} concluído com sucesso`);
           if (job.result_data) {
             // Garantir que result_data seja um objeto, não uma string
             let resultData = job.result_data;
@@ -192,27 +209,38 @@ export class AIFlashcardGeneratorService {
         }
         
         if (job.status === 'failed') {
+          console.error(`❌ Job ${jobId} falhou: ${job.error_message}`);
           throw new Error(job.error_message || 'Falha no processamento dos flashcards');
         }
         
-        // Aguardar 5 segundos antes da próxima verificação
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        // Aguardar antes da próxima verificação
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
         attempts++;
         
       } catch (error: any) {
-        console.error('Erro ao verificar status do job:', error);
+        consecutiveErrors++;
+        console.error(`❌ Erro ao verificar status do job ${jobId} (tentativa ${attempts + 1}, erro consecutivo ${consecutiveErrors}):`, error);
         
-        // Se for erro de rede, tentar novamente
+        // Se muitos erros consecutivos, parar
+        if (consecutiveErrors >= maxConsecutiveErrors) {
+          console.error(`🚫 Muitos erros consecutivos (${consecutiveErrors}) para job ${jobId}, parando polling`);
+          throw new Error(`Muitos erros consecutivos ao verificar status do job. Último erro: ${error.message}`);
+        }
+        
+        // Se for erro de rede, tentar novamente após um delay maior
         if (error.message?.includes('fetch') || error.name === 'TypeError') {
-          await new Promise(resolve => setTimeout(resolve, 5000));
+          console.log(`🔄 Erro de rede para job ${jobId}, tentando novamente em 10s...`);
+          await new Promise(resolve => setTimeout(resolve, 10000)); // 10 segundos para erros de rede
           attempts++;
           continue;
         }
         
+        // Para outros erros, falhar imediatamente
         throw error;
       }
     }
     
+    console.error(`⏰ Timeout por tentativas para job ${jobId} após ${attempts} tentativas`);
     throw new Error('Timeout: O processamento está demorando mais que o esperado. Tente novamente mais tarde.');
   }
 
