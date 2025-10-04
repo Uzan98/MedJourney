@@ -100,14 +100,16 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         // If Edge Function fails or doesn't exist, use direct database queries
         // Get user subscription
-        const { data: userSubscription } = await supabase
+        const { data: userSubscriptions } = await supabase
           .from('user_subscriptions')
           .select(`
             *,
             subscription_plans:plan_id(*)
           `)
           .eq('user_id', session.user.id)
-          .single();
+          .eq('status', 'active');
+        
+        const userSubscription = userSubscriptions?.[0] || null;
         
         // Get usage data
         const { data: usageData } = await supabase
@@ -307,15 +309,16 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       // If Edge Function fails or doesn't exist, use direct database queries (same as above)
       // Get user subscription
-      const { data: userSubscription } = await supabase
+      const { data: userSubscriptions } = await supabase
         .from('user_subscriptions')
         .select(`
           *,
           subscription_plans:plan_id(*)
         `)
         .eq('user_id', session.user.id)
-        .eq('status', 'active')
-        .single();
+        .eq('status', 'active');
+      
+      const userSubscription = userSubscriptions?.[0] || null;
       
       // Get usage data
       const { data: usageData } = await supabase

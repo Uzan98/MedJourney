@@ -1,86 +1,69 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { createAdminSupabaseClient } from '@/lib/supabase-admin';
 import { SubscriptionService } from '@/services/subscription.service';
 import { SubscriptionTier } from '@/types/subscription';
-import { AIFlashcardGeneratorService } from '@/services/ai-flashcard-generator.service';
 import { Groq } from 'groq-sdk';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(request: NextRequest) {
-  console.log('🚀 API Flashcards: Iniciando processamento...');
-  
   try {
-    // Extrair token do Authorization header
-    const authHeader = request.headers.get('authorization');
-    console.log('📋 API Flashcards: Authorization header:', {
-      hasAuthHeader: !!authHeader,
-      authHeaderLength: authHeader?.length
-    });
+    // Configuração do cliente Supabase
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('❌ API Flashcards: Token de autorização não encontrado');
-      return NextResponse.json({ error: 'Token de autorização necessário' }, { status: 401 });
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      console.error('Variáveis de ambiente do Supabase não encontradas');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
+
+    // Validar token de autenticação
+    let userId = '';
+    const authHeader = request.headers.get('authorization');
     
-    // Extrair o token JWT
-     const token = authHeader.replace('Bearer ', '');
-     console.log('🔑 API Flashcards: Token extraído, comprimento:', token.length);
-     
-     // Criar cliente Supabase com configuração adequada para JWT
-     const supabase = createClient(
-       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-     );
-     
-     // Validar token JWT
-     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
-    console.log('🔐 API Flashcards: Status da autenticação:', {
-      hasUser: !!user,
-      userId: user?.id,
-      userError: userError?.message
-    });
-    
-    if (userError) {
-      console.error('❌ API Flashcards: Erro na validação do token:', userError);
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      console.log('Token extraído:', token.substring(0, 20) + '...');
+      
+      // Usar cliente com anon key para validar o token do usuário
+      const authClient = createClient(supabaseUrl, supabaseAnonKey);
+      const { data: userData, error } = await authClient.auth.getUser(token);
+      
+      if (error || !userData?.user) {
+        console.error('Erro ao verificar token:', error);
+        return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
+      }
+      
+      userId = userData.user.id;
+      console.log('Usuário validado:', userId);
+    } else {
+      console.error('Token de autorização não encontrado ou formato inválido');
       return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
     }
-    
-    if (!user) {
-      console.log('❌ API Flashcards: Usuário não encontrado');
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
-    }
-    
-    console.log('✅ API Flashcards: Autenticação bem-sucedida para usuário:', user.id);
+
+    // Cliente com service role key para operações administrativas
+    const adminSupabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     // --- verificação de plano ---
-    const adminSupabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
-    const userId = user.id;
     const userSubscription = await SubscriptionService.getUserSubscription(userId, adminSupabase);
     const userTier = userSubscription?.tier as SubscriptionTier;
-    
     if (![SubscriptionTier.PRO, SubscriptionTier.PRO_PLUS].includes(userTier)) {
       return NextResponse.json({
-        error: 'Somente usuários Pro/Pro+ podem gerar flashcards com IA.',
+        error: 'Somente usuários Pro/Pro+ podem gerar flashcards.',
         requiresUpgrade: true,
         requiredTier: 'pro'
       }, { status: 403 });
     }
 
     // --- verificação de limite diário ---
-    // Usando o mesmo limite de questões para flashcards
-    const hasReachedLimit = await SubscriptionService.hasReachedFeatureLimit(userId, 'questionsPerDay', adminSupabase);
+    const hasReachedLimit = await SubscriptionService.hasReachedFeatureLimit(userId, 'flashcardsPerDay', adminSupabase);
     if (hasReachedLimit) {
       return NextResponse.json({
         error: 'Você atingiu o limite diário de flashcards. Tente novamente amanhã ou faça upgrade para Pro+.',
-        limitReached: true
-      }, { status: 429 });
+        requiresUpgrade: true,
+        requiredTier: 'pro_plus'
+      }, { status: 403 });
     }
 
     const { prompt } = await request.json();
@@ -146,9 +129,9 @@ Retorne SEMPRE um JSON válido seguindo exatamente a estrutura solicitada no pro
 
     const result = completion.choices[0]?.message?.content || '';
     
-    // Incrementar o contador de uso (usando o mesmo contador de questões)
+    // Incrementar o contador de uso de flashcards
     try {
-      await SubscriptionService.incrementFeatureUsage(userId, 'questionsPerDay', adminSupabase);
+      await SubscriptionService.incrementFeatureUsage(userId, 'flashcardsPerDay', adminSupabase);
     } catch (error) {
       console.error('Erro ao incrementar contador de uso:', error);
       // Não falhar a requisição por causa do contador
