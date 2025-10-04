@@ -84,14 +84,6 @@ export async function POST(request: NextRequest) {
 
     const result = completion.choices[0]?.message?.content || '';
     
-    // Incrementar o contador de uso (usando o mesmo contador de questões)
-    try {
-      await SubscriptionService.incrementFeatureUsage(userId, 'questionsPerDay', supabase);
-    } catch (error) {
-      console.error('Erro ao incrementar contador de uso:', error);
-      // Não falhar a requisição por causa do contador
-    }
-    
     return NextResponse.json({ result });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Erro desconhecido' }, { status: 500 });

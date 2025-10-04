@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { X, Wand2, Loader2, FileText, Type, Upload, Sparkles } from 'lucide-react';
+import { X, Wand2, Loader2, FileText, Type, Upload, Sparkles, Clock, CheckCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { AIFlashcardGeneratorService, AIFlashcardParams, AIFlashcardResponse } from '@/services/ai-flashcard-generator.service';
 import { FlashcardsService } from '@/services/flashcards.service';
@@ -33,6 +33,7 @@ export default function AIFlashcardGeneratorModal({
   const [mode, setMode] = useState<GenerationMode>('theme');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExtractingPdf, setIsExtractingPdf] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState<string>('');
   
   // Estados para diferentes modos
   const [theme, setTheme] = useState('');
@@ -55,7 +56,40 @@ export default function AIFlashcardGeneratorModal({
       setDeckName('');
       setNumberOfCards(10);
       setDifficulty('medium');
+      setProcessingStatus('');
       onClose();
+    }
+  };
+
+  // Função para mapear status para mensagens amigáveis
+  const getStatusMessage = (status: string): string => {
+    switch (status) {
+      case 'pending':
+        return 'Aguardando processamento...';
+      case 'processing':
+        return 'Gerando flashcards com IA...';
+      case 'completed':
+        return 'Flashcards gerados com sucesso!';
+      case 'failed':
+        return 'Erro no processamento';
+      default:
+        return 'Processando...';
+    }
+  };
+
+  // Função para obter ícone baseado no status
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Clock className="h-4 w-4 text-yellow-500" />;
+      case 'processing':
+        return <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />;
+      case 'completed':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'failed':
+        return <X className="h-4 w-4 text-red-500" />;
+      default:
+        return <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />;
     }
   };
 
@@ -139,8 +173,14 @@ export default function AIFlashcardGeneratorModal({
     }
 
     setIsGenerating(true);
+    setProcessingStatus('pending');
 
     try {
+      // Callback para atualizar o progresso
+      const onProgress = (status: string) => {
+        setProcessingStatus(status);
+      };
+
       // Gerar flashcards com IA baseado no modo
       let response: AIFlashcardResponse;
       
@@ -150,21 +190,21 @@ export default function AIFlashcardGeneratorModal({
           deckName: deckName.trim(),
           numberOfCards,
           difficulty
-        });
+        }, onProgress);
       } else if (mode === 'text') {
         response = await AIFlashcardGeneratorService.generateFromText({
           text: text.trim(),
           deckName: deckName.trim(),
           numberOfCards,
           difficulty
-        });
+        }, onProgress);
       } else { // mode === 'pdf'
         response = await AIFlashcardGeneratorService.generateFromPDF({
           pdfContent: pdfContent.trim(),
           deckName: deckName.trim(),
           numberOfCards,
           difficulty
-        });
+        }, onProgress);
       }
 
       if (!response.flashcards || response.flashcards.length === 0) {
@@ -213,6 +253,7 @@ export default function AIFlashcardGeneratorModal({
 
     } catch (error: any) {
       console.error('Erro ao gerar flashcards:', error);
+      setProcessingStatus('failed');
       toast.error(error.message || 'Erro ao gerar flashcards. Tente novamente.');
     } finally {
       setIsGenerating(false);
@@ -489,23 +530,25 @@ export default function AIFlashcardGeneratorModal({
                   className="relative bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-0"
                 >
                   {isGenerating ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      <span className="bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
-                        Gerando com IA...
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-center">
-                        <div className="relative mr-2">
-                          <Wand2 className="h-4 w-4 text-white" />
-                          <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full opacity-80"></div>
-                        </div>
-                        <span className="bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent font-bold">
-                          ✨ Gerar com IA
+                    <div className="flex flex-col items-center">
+                      <div className="flex items-center mb-1">
+                        {getStatusIcon(processingStatus)}
+                        <span className="ml-2 bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
+                          {getStatusMessage(processingStatus)}
                         </span>
                       </div>
+                      {processingStatus === 'processing' && (
+                        <div className="text-xs text-purple-100 opacity-75">
+                          Isso pode levar alguns minutos...
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <Wand2 className="h-4 w-4 mr-2" />
+                      <span className="bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
+                        Gerar Flashcards
+                      </span>
                     </>
                   )}
                 </Button>

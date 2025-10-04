@@ -278,14 +278,6 @@ IMPORTANTE:
       }, { status: 500 });
     }
 
-    // --- incrementar contador de uso ---
-    try {
-      await SubscriptionService.incrementFeatureUsage(userId, 'questionsPerDay', supabase);
-    } catch (error) {
-      console.error('Erro ao incrementar contador de uso:', error);
-      // Não falhar a requisição por causa disso
-    }
-
     return NextResponse.json({ 
       result,
       usage: {
