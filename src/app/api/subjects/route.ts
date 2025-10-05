@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withApiAuth } from '@/lib/api-auth';
-import { supabase } from '@/lib/supabase';
 
 // POST - Criar novo assunto
 export const POST = withApiAuth(async (request: Request, { userId, session, supabase: authSupabase }) => {
@@ -144,4 +143,4 @@ export const GET = withApiAuth(async (request: NextRequest, { userId, supabase: 
       { status: 500 }
     );
   }
-}); 
+});

@@ -90,16 +90,37 @@ export async function POST(request: NextRequest) {
     }
 
     // Disparar processamento assíncrono (não aguardar)
-    fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/workers/flashcards`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
-      },
-      body: JSON.stringify({ jobId: job.id })
-    }).catch(error => {
-      console.error('Erro ao disparar worker:', error);
-    });
+    try {
+      // Preferir a origem da requisição para evitar inconsistências de host/porta
+      const origin = request.nextUrl?.origin || `${request.headers.get('x-forwarded-proto') || 'http'}://${request.headers.get('host') || 'localhost:3000'}`;
+      const workerUrl = `${origin}/api/workers/flashcards`;
+
+      console.log('[Flashcards API] Disparando worker:', workerUrl, 'para job:', job.id);
+
+      await fetch(workerUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+        },
+        body: JSON.stringify({ jobId: job.id })
+      });
+    } catch (workerError: any) {
+      console.error('[Flashcards API] Erro ao disparar worker pela origem:', workerError?.message || workerError);
+      // Fallback para variável de ambiente pública
+      const fallbackUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/workers/flashcards`;
+      console.log('[Flashcards API] Tentando fallback para worker:', fallbackUrl);
+      fetch(fallbackUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+        },
+        body: JSON.stringify({ jobId: job.id })
+      }).catch(error => {
+        console.error('[Flashcards API] Erro no fallback do worker:', error);
+      });
+    }
 
     // Retornar resposta imediata com ID do job
     return NextResponse.json({ 
