@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.genomastudy.com.br';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://genoma.vercel.app';
 
 // Rotas estáticas principais da aplicação
 const staticRoutes = [

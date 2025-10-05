@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Disparar processamento assíncrono (não aguardar)
-    fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/workers/flashcards`, {
+    fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/workers/flashcards`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
