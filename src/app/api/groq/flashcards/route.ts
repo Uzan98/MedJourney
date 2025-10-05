@@ -89,24 +89,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
     }
 
-    // Disparar processamento assíncrono (não aguardar)
-    try {
-      // Preferir a origem da requisição para evitar inconsistências de host/porta
-      const origin = request.nextUrl?.origin || `${request.headers.get('x-forwarded-proto') || 'http'}://${request.headers.get('host') || 'localhost:3000'}`;
-      const workerUrl = `${origin}/api/workers/flashcards`;
+    // Disparar processamento assíncrono (NÃO aguardar a resposta do worker)
+    // Preferir a origem da requisição para evitar inconsistências de host/porta
+    const origin = request.nextUrl?.origin || `${request.headers.get('x-forwarded-proto') || 'http'}://${request.headers.get('host') || 'localhost:3000'}`;
+    const workerUrl = `${origin}/api/workers/flashcards`;
 
-      console.log('[Flashcards API] Disparando worker:', workerUrl, 'para job:', job.id);
+    console.log('[Flashcards API] Disparando worker (fire-and-forget):', workerUrl, 'para job:', job.id);
 
-      await fetch(workerUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
-        },
-        body: JSON.stringify({ jobId: job.id })
-      });
-    } catch (workerError: any) {
-      console.error('[Flashcards API] Erro ao disparar worker pela origem:', workerError?.message || workerError);
+    // Fire-and-forget: não usamos await aqui para não bloquear esta rota
+    fetch(workerUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+      },
+      body: JSON.stringify({ jobId: job.id })
+    }).catch((error: any) => {
+      console.error('[Flashcards API] Erro ao disparar worker pela origem:', error?.message || error);
       // Fallback para variável de ambiente pública
       const fallbackUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/workers/flashcards`;
       console.log('[Flashcards API] Tentando fallback para worker:', fallbackUrl);
@@ -117,10 +116,10 @@ export async function POST(request: NextRequest) {
           'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
         },
         body: JSON.stringify({ jobId: job.id })
-      }).catch(error => {
-        console.error('[Flashcards API] Erro no fallback do worker:', error);
+      }).catch((fallbackError: any) => {
+        console.error('[Flashcards API] Erro no fallback do worker:', fallbackError?.message || fallbackError);
       });
-    }
+    });
 
     // Retornar resposta imediata com ID do job
     return NextResponse.json({ 
