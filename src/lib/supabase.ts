@@ -4,13 +4,15 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-// Verificar se estamos em ambiente de build
-const isBuild = process.env.NEXT_PHASE === 'phase-production-build' || typeof window === 'undefined';
+// Verificar se estamos em ambiente de build (apenas durante o build do Next.js)
+const isBuild = process.env.NEXT_PHASE === 'phase-production-build';
 
-// Log para depuração apenas se não estivermos em build
+// Log para depuração (exceto durante build)
 if (!isBuild) {
   console.log('Supabase URL configurado:', supabaseUrl);
   console.log('Supabase Anon Key existe:', !!supabaseAnonKey);
+  console.log('Ambiente:', process.env.NODE_ENV);
+  console.log('É build?', isBuild);
 }
 
 // Verificação adicional para garantir que a URL é válida antes de criar o cliente
@@ -32,7 +34,15 @@ if (!isBuild && supabaseUrl && supabaseAnonKey) {
 }
 
 try {
-  if (!isBuild && supabaseUrl && supabaseAnonKey) {
+  if (!isBuild) {
+    // Verificar se as variáveis de ambiente estão presentes
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Variáveis de ambiente do Supabase ausentes:');
+      console.error('NEXT_PUBLIC_SUPABASE_URL:', !!supabaseUrl);
+      console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY:', !!supabaseAnonKey);
+      throw new Error('Variáveis de ambiente do Supabase não configuradas');
+    }
+
     // Criar e exportar o cliente com configuração para autenticação por cookies
     // De acordo com a documentação mais recente do Supabase:
     // https://supabase.com/docs/guides/auth/quickstarts/nextjs
