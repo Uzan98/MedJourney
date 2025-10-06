@@ -2,9 +2,10 @@
 
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { AuthRestService } from '@/lib/auth-rest';
 import { toast } from 'react-hot-toast';
 import { performCompleteDataCleanup, forceCleanRedirect } from '@/utils/data-cleanup';
+import { supabase } from '@/lib/supabase';
 
 // Tipo para o contexto de autenticação
 type AuthContextType = {
@@ -87,13 +88,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!user) return false;
     
     try {
-      const { data, error } = await supabase
-        .from('admin_users')
-        .select('user_id')
-        .eq('user_id', user.id)
-        .single();
-      
-      const adminStatus = !!data;
+      const adminStatus = await AuthRestService.checkAdminStatus(user.id);
       setIsAdmin(adminStatus);
       return adminStatus;
     } catch (error) {
@@ -107,13 +102,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const refreshSession = async () => {
     try {
       setIsLoading(true);
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const { user: sessionUser, session, error } = await AuthRestService.getSession();
       
       if (error) {
         console.error('Erro ao atualizar sessão:', error);
-      } else if (session) {
+      } else if (session && sessionUser) {
         setSession(session);
-        setUser(session.user);
+        setUser(sessionUser);
         // Verificar status de administrador quando a sessão é atualizada
         await checkAdminStatus();
       } else {
@@ -135,60 +130,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     console.log('AuthContext: Verificando sessão ativa no mount');
     refreshSession();
 
-    // Assinar para mudanças de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('AuthContext: Evento de autenticação:', event, 'User ID:', session?.user?.id);
-        
-        // Atualizar estado da sessão
-        setSession(session);
-        setUser(session?.user || null);
-        
-        // Verificar status de administrador quando o estado de autenticação muda
-        if (session?.user) {
-          await checkAdminStatus();
-        } else {
-          setIsAdmin(false);
-        }
-        
-        setIsLoading(false);
-        
-        // Log detalhado do evento
-        if (event === 'SIGNED_IN') {
-          console.log('AuthContext: Usuário logado com sucesso. Email:', session?.user?.email);
-          
-          // Mostrar toast apenas se o usuário não estava autenticado anteriormente
-          // E se a página estiver visível
-          // E se ainda não anunciamos o login para este usuário
-          if (!wasAuthenticated.current && isPageVisibleRef.current && !loginAnnouncedRef.current) {
-          toast.success('Login realizado com sucesso!');
-            loginAnnouncedRef.current = true;
-          }
-        } else if (event === 'SIGNED_OUT') {
-          console.log('AuthContext: Usuário deslogado com sucesso');
-          toast.success('Logout realizado com sucesso!');
-          // Resetar o estado de anúncio de login
-          loginAnnouncedRef.current = false;
-        } else if (event === 'TOKEN_REFRESHED') {
-          console.log('AuthContext: Token de autenticação atualizado');
-        }
-      }
-    );
+    // Verificar sessão periodicamente (a cada 5 minutos)
+    const sessionCheckInterval = setInterval(() => {
+      console.log('AuthContext: Verificação periódica de sessão');
+      refreshSession();
+    }, 5 * 60 * 1000); // 5 minutos
 
-    // Desinscrever ao desmontar
     return () => {
-      console.log('AuthContext: Cleanup - Removendo subscription de auth');
-      subscription.unsubscribe();
+      clearInterval(sessionCheckInterval);
     };
   }, []);
 
   // Login com email e senha
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { user, session, error } = await AuthRestService.signIn(email, password);
       
       if (error) {
         console.error('Erro no login:', error.message);
@@ -198,8 +154,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         };
       }
       
-      // Atualizar sessão imediatamente após login
-      await refreshSession();
+      // Atualizar estado imediatamente após login
+      if (user && session) {
+        setUser(user);
+        setSession(session);
+        await checkAdminStatus();
+        
+        // Mostrar toast de sucesso
+        if (isPageVisibleRef.current && !loginAnnouncedRef.current) {
+          toast.success('Login realizado com sucesso!');
+          loginAnnouncedRef.current = true;
+        }
+      }
       
       return {
         success: true,
@@ -217,6 +183,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Login com Google
   const signInWithGoogle = async () => {
     try {
+      // Para OAuth, ainda precisamos usar o cliente Supabase
+      // Mas vamos manter a funcionalidade mínima
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -248,46 +216,40 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Registrar novo usuário
   const signUp = async (email: string, password: string, name: string, additionalData?: Record<string, any>) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name: name,
-            ...additionalData,
-          },
-        },
-      });
-
+      const { user, session, error } = await AuthRestService.signUp(email, password, name, additionalData);
+      
       if (error) {
-        console.error('Erro no cadastro:', error.message);
+        console.error('Erro no registro:', error.message);
         return {
           success: false,
           error: error,
         };
       }
-
-      // Quando o usuário se registra automaticamente 
-      // o Supabase envia um email de confirmação
+      
+      // Atualizar estado imediatamente após registro
+      if (user && session) {
+        setUser(user);
+        setSession(session);
+        await checkAdminStatus();
+      }
+      
       return {
         success: true,
         error: null,
-        user: data.user,
       };
     } catch (error) {
-      console.error('Erro ao cadastrar:', error);
+      console.error('Erro ao registrar usuário:', error);
       return {
         success: false,
-        error: error instanceof Error ? error : new Error('Erro desconhecido ao cadastrar'),
+        error: error instanceof Error ? error : new Error('Erro desconhecido ao registrar usuário'),
       };
     }
   };
-
   // Logout com limpeza completa
   const signOut = async () => {
     try {
-      // 1. Fazer logout no Supabase
-      await supabase.auth.signOut();
+      // 1. Fazer logout via REST API
+      await AuthRestService.signOut();
       
       // 2. Resetar estados imediatamente
       setUser(null);
@@ -300,7 +262,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       console.log('Logout completo: dados locais limpos');
       
-      // 4. Forçar redirecionamento limpo para login
+      // 4. Mostrar toast de sucesso
+      toast.success('Logout realizado com sucesso!');
+      
+      // 5. Forçar redirecionamento limpo para login
       setTimeout(() => {
         forceCleanRedirect('/auth/login');
       }, 100);

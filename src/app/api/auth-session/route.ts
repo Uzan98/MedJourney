@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
-import { createRequestSupabaseClient } from '@/lib/supabase-server';
+import { createServerSupabaseClient, createRequestSupabaseClient } from '@/lib/supabase-server';
 
 // Configurar esta rota como dinâmica para evitar erros de renderização estática
 export const dynamic = 'force-dynamic';
@@ -11,8 +10,15 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   try {
-    // Verificar sessão via cliente Supabase padrão
-    const { data: { session: clientSession }, error: clientError } = await supabase.auth.getSession();
+    console.log('=== DEBUG AUTH SESSION ===');
+    console.log('Timestamp:', new Date().toISOString());
+    console.log('Environment:', process.env.NODE_ENV);
+    console.log('Supabase URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log('Supabase Anon Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+    
+    // Verificar sessão via cliente Supabase do servidor
+    const serverClient = createServerSupabaseClient();
+    const { data: { session: serverSession }, error: serverError } = await serverClient.auth.getSession();
     
     // Tentar obter a sessão através do cliente de middleware (para comparação)
     const middlewareClient = createRequestSupabaseClient(request);
@@ -25,12 +31,13 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       timestamp: new Date().toISOString(),
-      clientAuth: {
-        isAuthenticated: !!clientSession,
-        userId: clientSession?.user?.id,
-        email: clientSession?.user?.email,
-        hasSession: !!clientSession,
-        error: clientError?.message
+      environment: process.env.NODE_ENV,
+      serverAuth: {
+        isAuthenticated: !!serverSession,
+        userId: serverSession?.user?.id,
+        email: serverSession?.user?.email,
+        hasSession: !!serverSession,
+        error: serverError?.message
       },
       middlewareAuth: {
         isAuthenticated: !!middlewareSession,
@@ -47,6 +54,10 @@ export async function GET(request: NextRequest) {
       request: {
         url: request.url,
         method: request.method
+      },
+      debug: {
+        supabaseUrlExists: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        supabaseAnonKeyExists: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
       }
     });
   } catch (error: any) {
@@ -58,4 +69,4 @@ export async function GET(request: NextRequest) {
       stack: error.stack
     }, { status: 500 });
   }
-} 
+}
