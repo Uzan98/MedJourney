@@ -1,86 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { SubscriptionService } from '@/services/subscription.service';
-import { SubscriptionTier } from '@/types/subscription';
-import { Groq } from 'groq-sdk';
+import Groq from 'groq-sdk';
+import { randomUUID } from 'crypto';
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+// Configurar Supabase Admin
+const adminSupabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+// Configurar Groq
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY!
+});
 
 export async function POST(request: NextRequest) {
   try {
-    // Configuração do cliente Supabase
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-    
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      console.error('Variáveis de ambiente do Supabase não encontradas');
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    // Verificar autenticação
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Token de acesso necessário' }, { status: 401 });
     }
 
-    // Validar token de autenticação
-    let userId = '';
-    const authHeader = request.headers.get('authorization');
+    const token = authHeader.split(' ')[1];
+    const { data: { user }, error: authError } = await adminSupabase.auth.getUser(token);
     
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      console.log('Token extraído:', token.substring(0, 20) + '...');
-      
-      // Usar cliente com anon key para validar o token do usuário
-      const authClient = createClient(supabaseUrl, supabaseAnonKey);
-      const { data: userData, error } = await authClient.auth.getUser(token);
-      
-      if (error || !userData?.user) {
-        console.error('Erro ao verificar token:', error);
-        return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-      }
-      
-      userId = userData.user.id;
-      console.log('Usuário validado:', userId);
-    } else {
-      console.error('Token de autorização não encontrado ou formato inválido');
+    if (authError || !user) {
       return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
     }
 
-    // Cliente com service role key para operações administrativas
-    const adminSupabase = createClient(supabaseUrl, supabaseServiceRoleKey);
-
-    // --- verificação de plano ---
-    const userSubscription = await SubscriptionService.getUserSubscription(userId, adminSupabase);
-    const userTier = userSubscription?.tier as SubscriptionTier;
-    if (![SubscriptionTier.PRO, SubscriptionTier.PRO_PLUS].includes(userTier)) {
-      return NextResponse.json({
-        error: 'Somente usuários Pro/Pro+ podem gerar flashcards.',
-        requiresUpgrade: true,
-        requiredTier: 'pro'
-      }, { status: 403 });
-    }
-
-    // --- verificação de limite diário ---
-    const hasReachedLimit = await SubscriptionService.hasReachedFeatureLimit(userId, 'flashcardsPerDay', adminSupabase);
-    if (hasReachedLimit) {
-      return NextResponse.json({
-        error: 'Você atingiu o limite diário de flashcards. Tente novamente amanhã ou faça upgrade para Pro+.',
-        requiresUpgrade: true,
-        requiredTier: 'pro_plus'
-      }, { status: 403 });
-    }
-
+    const userId = user.id;
     const { prompt } = await request.json();
-    if (!prompt) return NextResponse.json({ error: 'Prompt é obrigatório' }, { status: 400 });
+    
+    if (!prompt) {
+      return NextResponse.json({ error: 'Prompt é obrigatório' }, { status: 400 });
+    }
 
-    // --- chamada Groq com timeout ---
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 120000); // 120s para dar mais tempo à API Groq
+    // Gerar ID único para a sessão
+    const sessionId = randomUUID();
 
-    let completion;
-    try {
-      completion = await groq.chat.completions.create({
-        model: 'openai/gpt-oss-120b', // Modelo correto usado no projeto
-        messages: [
-          {
-            role: 'system',
-            content: `Você é um especialista brasileiro em educação e criação de flashcards educacionais com vasta experiência em pedagogia e técnicas de memorização. Sua missão é criar flashcards EDUCATIVOS, CLAROS, PRECISOS e PEDAGOGICAMENTE EFICAZES em PORTUGUÊS BRASILEIRO.
+    console.log(`Processando conteúdo (${prompt.length} caracteres)...`);
+    
+    // Se o texto for muito grande, vamos truncar para evitar problemas
+    const MAX_CONTENT_SIZE = 80000; // 80k caracteres
+    let processedPrompt = prompt;
+    
+    if (prompt.length > MAX_CONTENT_SIZE) {
+      console.log(`Texto muito grande (${prompt.length} chars), truncando para ${MAX_CONTENT_SIZE} chars`);
+      processedPrompt = prompt.substring(0, MAX_CONTENT_SIZE) + "\n\n[CONTEÚDO TRUNCADO - FOQUE NOS CONCEITOS PRINCIPAIS APRESENTADOS]";
+    }
+
+    const systemPrompt = `Você é um especialista brasileiro em educação e criação de flashcards educacionais com vasta experiência em pedagogia e técnicas de memorização. Sua missão é criar flashcards EDUCATIVOS, CLAROS, PRECISOS e PEDAGOGICAMENTE EFICAZES em PORTUGUÊS BRASILEIRO.
 
 PRINCÍPIOS FUNDAMENTAIS:
 1. CLAREZA: Perguntas diretas e respostas completas mas concisas
@@ -104,42 +74,236 @@ TIPOS DE PERGUNTAS A INCLUIR:
 - Fórmulas e cálculos (quando aplicável)
 - Comparações e contrastes
 
-QUALIDADE EXIGIDA:
-- Linguagem apropriada ao nível educacional
-- Informações verificáveis e confiáveis
-- Estrutura que promove retenção de longo prazo
-- Variedade nos tipos de questões
-- Cobertura abrangente do tópico
-
-FORMATO DE RESPOSTA:
-Retorne SEMPRE um JSON válido seguindo exatamente a estrutura solicitada no prompt do usuário.`
-          },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7,
-        max_completion_tokens: 3000
-      }, { signal: controller.signal });
-    } catch (err: any) {
-      if (err.name === 'AbortError') return NextResponse.json({ error: 'A requisição demorou demais. Tente novamente.' }, { status: 504 });
-      if (err?.message?.includes('rate_limit_exceeded')) return NextResponse.json({ error: 'Limite diário da Groq atingido. Tente mais tarde.' }, { status: 429 });
-      return NextResponse.json({ error: err.message || 'Erro desconhecido na Groq' }, { status: 500 });
-    } finally {
-      clearTimeout(timeout);
+FORMATO DE RESPOSTA OBRIGATÓRIO (JSON válido):
+{
+  "deckName": "Nome do Deck",
+  "description": "Descrição breve do conteúdo",
+  "flashcards": [
+    {
+      "front": "Pergunta clara e direta",
+      "back": "Resposta completa e precisa",
+      "hint": "Dica opcional para memorização",
+      "tags": ["tag1", "tag2"],
+      "difficulty": "easy|medium|hard"
     }
+  ]
+}
 
-    const result = completion.choices[0]?.message?.content || '';
-    
-    // Incrementar o contador de uso de flashcards
+REGRAS IMPORTANTES:
+- Crie entre 8-15 flashcards por sessão
+- Use APENAS português brasileiro
+- Mantenha perguntas concisas (máx. 100 caracteres)
+- Respostas devem ser informativas mas não extensas (máx. 300 caracteres)
+- Tags devem ser relevantes e específicas
+- Dificuldade deve refletir a complexidade do conceito
+- SEMPRE retorne JSON válido
+- NÃO inclua texto adicional fora do JSON`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 300000); // 5 minutos timeout
+
     try {
-      await SubscriptionService.incrementFeatureUsage(userId, 'flashcardsPerDay', adminSupabase);
-    } catch (error) {
-      console.error('Erro ao incrementar contador de uso:', error);
-      // Não falhar a requisição por causa do contador
+      console.log('Enviando requisição para Groq...');
+      
+      const completion = await groq.chat.completions.create({
+        messages: [
+          { 
+            role: 'system', 
+            content: systemPrompt
+          },
+          { role: 'user', content: processedPrompt }
+        ],
+        model: 'openai/gpt-oss-120b',
+        max_completion_tokens: 10000,
+        temperature: 0.3,
+        top_p: 0.9
+      }, { signal: controller.signal });
+
+      clearTimeout(timeout);
+      
+      const rawResponse = completion.choices[0]?.message?.content || '';
+      console.log('=== RESPOSTA BRUTA ===');
+      console.log(rawResponse.substring(0, 500) + '...');
+      console.log('=== FIM DO CONTEÚDO BRUTO ===');
+
+      // Tentar extrair flashcards usando múltiplas estratégias
+      let extractedFlashcards: any[] = [];
+      
+      try {
+        // Estratégia 1: JSON parsing direto
+        const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const jsonStr = jsonMatch[0];
+          const parsed = JSON.parse(jsonStr);
+          if (parsed.flashcards && Array.isArray(parsed.flashcards)) {
+            extractedFlashcards = parsed.flashcards;
+            console.log(`✅ JSON parsing bem-sucedido, encontrados ${extractedFlashcards.length} flashcards`);
+          }
+        }
+      } catch (jsonError) {
+        console.log('❌ Falha no JSON parsing, tentando extração por regex...');
+        
+        // Estratégia 2: Extração por regex
+        const flashcardPattern = /"front":\s*"([^"]+)"[\s\S]*?"back":\s*"([^"]+)"(?:[\s\S]*?"hint":\s*"([^"]*)")?(?:[\s\S]*?"tags":\s*\[([^\]]*)\])?(?:[\s\S]*?"difficulty":\s*"([^"]*)")?/g;
+        let match;
+        
+        while ((match = flashcardPattern.exec(rawResponse)) !== null) {
+          const [, front, back, hint, tagsStr, difficulty] = match;
+          
+          let tags: string[] = [];
+          if (tagsStr) {
+            tags = tagsStr.split(',').map(tag => tag.replace(/"/g, '').trim()).filter(tag => tag.length > 0);
+          }
+          
+          extractedFlashcards.push({
+            front: front.trim(),
+            back: back.trim(),
+            hint: hint?.trim() || '',
+            tags: tags.length > 0 ? tags : ['geral'],
+            difficulty: difficulty?.trim() || 'medium'
+          });
+        }
+        
+        if (extractedFlashcards.length > 0) {
+          console.log(`✅ Extração por regex bem-sucedida, encontrados ${extractedFlashcards.length} flashcards`);
+        } else {
+          // Estratégia 3: Extração por blocos de texto
+          const lines = rawResponse.split('\n');
+          let currentFlashcard: any = {};
+          
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            
+            if (trimmedLine.includes('front') || trimmedLine.includes('Pergunta') || trimmedLine.includes('Front')) {
+              if (currentFlashcard.front && currentFlashcard.back) {
+                extractedFlashcards.push({
+                  ...currentFlashcard,
+                  tags: currentFlashcard.tags || ['geral'],
+                  difficulty: currentFlashcard.difficulty || 'medium'
+                });
+              }
+              currentFlashcard = { front: trimmedLine.replace(/.*?[:"]/, '').replace(/[",].*/, '').trim() };
+            } else if (trimmedLine.includes('back') || trimmedLine.includes('Resposta') || trimmedLine.includes('Back')) {
+              currentFlashcard.back = trimmedLine.replace(/.*?[:"]/, '').replace(/[",].*/, '').trim();
+            } else if (trimmedLine.includes('hint') || trimmedLine.includes('Dica')) {
+              currentFlashcard.hint = trimmedLine.replace(/.*?[:"]/, '').replace(/[",].*/, '').trim();
+            } else if (trimmedLine.includes('tags') || trimmedLine.includes('Tags')) {
+              const tagsMatch = trimmedLine.match(/\[(.*?)\]/);
+              if (tagsMatch) {
+                currentFlashcard.tags = tagsMatch[1].split(',').map(tag => tag.replace(/"/g, '').trim());
+              }
+            }
+          }
+          
+          // Adicionar o último flashcard se válido
+          if (currentFlashcard.front && currentFlashcard.back) {
+            extractedFlashcards.push({
+              ...currentFlashcard,
+              tags: currentFlashcard.tags || ['geral'],
+              difficulty: currentFlashcard.difficulty || 'medium'
+            });
+          }
+          
+          if (extractedFlashcards.length > 0) {
+            console.log(`✅ Extração por blocos bem-sucedida, encontrados ${extractedFlashcards.length} flashcards`);
+          }
+        }
+      }
+
+      // Validar e filtrar flashcards
+      const validFlashcards = extractedFlashcards.filter(card => 
+        card.front && 
+        card.back && 
+        card.front.trim().length > 0 && 
+        card.back.trim().length > 0 &&
+        card.front.trim().length < 500 &&
+        card.back.trim().length < 1000
+      );
+
+      if (validFlashcards.length === 0) {
+        console.warn('Nenhum flashcard válido extraído');
+        return NextResponse.json({ 
+          error: 'Não foi possível extrair flashcards válidos do conteúdo fornecido' 
+        }, { status: 400 });
+      }
+
+      // Primeiro, criar um deck para os flashcards
+      const deckName = `Flashcards Gerados - ${new Date().toLocaleDateString('pt-BR')}`;
+      const deckDescription = `Deck gerado automaticamente a partir do conteúdo fornecido`;
+      
+      const { data: deckData, error: deckError } = await adminSupabase
+        .from('flashcard_decks')
+        .insert({
+          id: sessionId,
+          user_id: userId,
+          name: deckName,
+          description: deckDescription,
+          cover_color: '#6366f1',
+          is_public: false,
+          tags: ['IA', 'Gerado automaticamente']
+        })
+        .select()
+        .single();
+
+      if (deckError) {
+        console.error('Erro ao criar deck:', deckError);
+        return NextResponse.json({ 
+          error: 'Erro ao criar deck para os flashcards' 
+        }, { status: 500 });
+      }
+
+      // Agora salvar os flashcards no deck criado
+      const flashcardsToSave = validFlashcards.map(flashcard => ({
+        user_id: userId,
+        deck_id: sessionId,
+        front: flashcard.front,
+        back: flashcard.back,
+        hint: flashcard.hint || null,
+        tags: flashcard.tags || ['geral'],
+        difficulty: flashcard.difficulty || 'medium'
+      }));
+
+      const { error: insertError } = await adminSupabase
+        .from('flashcards')
+        .insert(flashcardsToSave);
+
+      if (insertError) {
+        console.error('Erro ao salvar flashcards:', insertError);
+        return NextResponse.json({ 
+          error: 'Erro ao salvar flashcards no banco de dados' 
+        }, { status: 500 });
+      }
+
+      console.log(`✅ ${validFlashcards.length} flashcards salvos com sucesso`);
+
+      // Retornar resposta com os flashcards
+      return NextResponse.json({
+        sessionId,
+        status: 'completed',
+        flashcards: validFlashcards,
+        totalFlashcards: validFlashcards.length,
+        message: `${validFlashcards.length} flashcards gerados com sucesso!`
+      });
+
+    } catch (error: any) {
+      clearTimeout(timeout);
+      console.error('Erro no processamento:', error);
+      
+      if (error.name === 'AbortError') {
+        return NextResponse.json({ 
+          error: 'Timeout: O processamento demorou muito tempo' 
+        }, { status: 408 });
+      }
+      
+      return NextResponse.json({ 
+        error: 'Erro interno do servidor durante o processamento' 
+      }, { status: 500 });
     }
-    
-    return NextResponse.json({ result });
+
   } catch (error: any) {
-    console.error('Erro na API de flashcards:', error);
-    return NextResponse.json({ error: error.message || 'Erro desconhecido' }, { status: 500 });
+    console.error('Erro geral na API:', error);
+    return NextResponse.json({ 
+      error: 'Erro interno do servidor' 
+    }, { status: 500 });
   }
 }

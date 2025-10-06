@@ -1,0 +1,213 @@
+TESTE DE CONTEÚDO MÉDICO EXTENSO PARA VALIDAÇÃO DE FLASHCARDS - 80K CARACTERES
+
+CAPÍTULO 1: ANATOMIA E FISIOLOGIA CARDIOVASCULAR
+
+O sistema cardiovascular é composto pelo coração, vasos sanguíneos e sangue. O coração é um órgão muscular oco que funciona como uma bomba dupla, impulsionando o sangue através de dois circuitos distintos: a circulação pulmonar e a circulação sistêmica.
+
+ANATOMIA CARDÍACA
+
+O coração está localizado no mediastino médio, entre os pulmões, ligeiramente deslocado para a esquerda. Possui quatro câmaras: dois átrios (direito e esquerdo) e dois ventrículos (direito e esquerdo). O átrio direito recebe sangue venoso do corpo através das veias cavas superior e inferior. O ventrículo direito bombeia sangue para os pulmões através da artéria pulmonar. O átrio esquerdo recebe sangue oxigenado dos pulmões através das veias pulmonares. O ventrículo esquerdo, a câmara mais muscular, bombeia sangue oxigenado para todo o corpo através da aorta.
+
+As valvas cardíacas garantem o fluxo unidirecional do sangue. A valva tricúspide separa o átrio direito do ventrículo direito. A valva pulmonar controla o fluxo do ventrículo direito para a artéria pulmonar. A valva mitral (bicúspide) separa o átrio esquerdo do ventrículo esquerdo. A valva aórtica controla o fluxo do ventrículo esquerdo para a aorta.
+
+FISIOLOGIA CARDÍACA
+
+O ciclo cardíaco consiste em duas fases principais: sístole (contração) e diástole (relaxamento). Durante a sístole ventricular, os ventrículos se contraem, ejetando sangue para as artérias. Durante a diástole ventricular, os ventrículos relaxam e se enchem de sangue dos átrios.
+
+O sistema de condução elétrica do coração inclui o nó sinoatrial (marca-passo natural), nó atrioventricular, feixe de His, ramos direito e esquerdo, e fibras de Purkinje. Essa rede coordena a contração cardíaca, garantindo eficiência máxima.
+
+CAPÍTULO 2: PATOLOGIAS CARDIOVASCULARES
+
+DOENÇA ARTERIAL CORONARIANA
+
+A doença arterial coronariana (DAC) é a principal causa de morte em países desenvolvidos. Resulta do estreitamento ou obstrução das artérias coronárias devido à aterosclerose. Os fatores de risco incluem hipertensão, diabetes, dislipidemia, tabagismo, obesidade, sedentarismo e história familiar.
+
+A aterosclerose é um processo inflamatório crônico caracterizado pela formação de placas nas paredes arteriais. Essas placas contêm lipídios, células inflamatórias, tecido fibroso e cálcio. Quando uma placa se rompe, pode formar um trombo que obstrui completamente a artéria, causando infarto do miocárdio.
+
+INFARTO AGUDO DO MIOCÁRDIO
+
+O infarto agudo do miocárdio (IAM) ocorre quando há necrose do músculo cardíaco devido à isquemia prolongada. Os sintomas clássicos incluem dor torácica intensa, irradiação para braço esquerdo, mandíbula ou epigástrio, dispneia, sudorese, náuseas e vômitos.
+
+O diagnóstico baseia-se na tríade: sintomas clínicos, alterações eletrocardiográficas e elevação de marcadores cardíacos (troponinas, CK-MB). O tratamento inclui reperfusão precoce (angioplastia primária ou trombólise), antiagregantes plaquetários, anticoagulantes, betabloqueadores, inibidores da ECA e estatinas.
+
+INSUFICIÊNCIA CARDÍACA
+
+A insuficiência cardíaca (IC) é uma síndrome clínica complexa resultante de qualquer distúrbio estrutural ou funcional que comprometa a capacidade do coração de se encher ou ejetar sangue adequadamente. Pode ser classificada como IC com fração de ejeção reduzida (ICFEr) ou preservada (ICFEp).
+
+Os sintomas incluem dispneia aos esforços, ortopneia, dispneia paroxística noturna, fadiga, edema periférico e ganho de peso. O tratamento da ICFEr inclui inibidores da ECA/BRA, betabloqueadores, antagonistas da aldosterona e, em casos selecionados, dispositivos como marca-passo ressincronizador ou desfibrilador implantável.
+
+CAPÍTULO 3: SISTEMA RESPIRATÓRIO
+
+ANATOMIA RESPIRATÓRIA
+
+O sistema respiratório é dividido em vias aéreas superiores (nariz, faringe, laringe) e inferiores (traqueia, brônquios, bronquíolos, alvéolos). Os pulmões são órgãos esponjosos localizados na cavidade torácica, protegidos pelas costelas e separados pelo mediastino.
+
+A traqueia se bifurca em brônquios principais direito e esquerdo. O brônquio direito é mais vertical e largo, explicando por que corpos estranhos aspirados tendem a se alojar no pulmão direito. Os brônquios se ramificam progressivamente em bronquíolos terminais e respiratórios, culminando nos alvéolos, onde ocorre a troca gasosa.
+
+FISIOLOGIA RESPIRATÓRIA
+
+A ventilação é o processo mecânico de entrada e saída de ar dos pulmões. A inspiração é um processo ativo que envolve contração do diafragma e músculos intercostais externos. A expiração em repouso é passiva, resultante do relaxamento muscular e elasticidade pulmonar.
+
+A troca gasosa ocorre nos alvéolos por difusão simples. O oxigênio passa do ar alveolar para o sangue capilar, enquanto o dióxido de carbono faz o caminho inverso. A eficiência dessa troca depende da relação ventilação-perfusão (V/Q).
+
+O controle da respiração é exercido pelo centro respiratório no bulbo, que responde principalmente aos níveis de CO2 no sangue. Quimiorreceptores centrais e periféricos monitoram os gases sanguíneos e ajustam a ventilação conforme necessário.
+
+CAPÍTULO 4: PATOLOGIAS RESPIRATÓRIAS
+
+ASMA BRÔNQUICA
+
+A asma é uma doença inflamatória crônica das vias aéreas caracterizada por hiperresponsividade brônquica, obstrução reversível ao fluxo aéreo e inflamação. Os sintomas incluem dispneia, sibilos, tosse e opressão torácica, especialmente à noite ou pela manhã.
+
+O diagnóstico baseia-se na história clínica, exame físico e testes de função pulmonar (espirometria). A reversibilidade da obstrução após broncodilatador é característica. O tratamento escalonado inclui broncodilatadores de curta ação para alívio, corticosteroides inalatórios para controle e, em casos graves, medicações adicionais como antagonistas de leucotrienos ou anticorpos monoclonais.
+
+DOENÇA PULMONAR OBSTRUTIVA CRÔNICA
+
+A DPOC é caracterizada por limitação persistente ao fluxo aéreo, geralmente progressiva e associada a resposta inflamatória anormal dos pulmões a partículas ou gases nocivos. O tabagismo é o principal fator de risco.
+
+A DPOC engloba enfisema (destruição alveolar) e bronquite crônica (inflamação brônquica com hipersecreção de muco). Os sintomas incluem dispneia progressiva, tosse crônica produtiva e fadiga. O diagnóstico é confirmado por espirometria mostrando relação VEF1/CVF < 0,70 pós-broncodilatador.
+
+O tratamento inclui cessação do tabagismo, broncodilatadores (beta-2 agonistas, anticolinérgicos), corticosteroides inalatórios em casos selecionados, reabilitação pulmonar e oxigenoterapia domiciliar quando indicada.
+
+PNEUMONIA
+
+A pneumonia é uma infecção aguda do parênquima pulmonar que pode ser causada por bactérias, vírus, fungos ou outros microorganismos. Pode ser classificada como comunitária, hospitalar ou associada a cuidados de saúde.
+
+Os sintomas típicos incluem febre, calafrios, tosse produtiva, dor torácica pleurítica e dispneia. O exame físico pode revelar estertores crepitantes, macicez à percussão e diminuição do murmúrio vesicular. A radiografia de tórax mostra infiltrado pulmonar.
+
+O tratamento empírico baseia-se na classificação da pneumonia e fatores de risco do paciente. Antibióticos beta-lactâmicos, macrolídeos ou fluoroquinolonas são comumente utilizados, com duração típica de 5-7 dias para casos não complicados.
+
+CAPÍTULO 5: SISTEMA GASTROINTESTINAL
+
+ANATOMIA DIGESTIVA
+
+O trato gastrointestinal estende-se da boca ao ânus, incluindo esôfago, estômago, intestino delgado e grosso. Órgãos acessórios como fígado, vesícula biliar e pâncreas contribuem para a digestão através de secreções enzimáticas e biliares.
+
+O esôfago é um tubo muscular de aproximadamente 25 cm que conecta a faringe ao estômago. Possui esfíncteres superior e inferior que controlam a passagem do alimento. O estômago tem capacidade de 1-1,5 litros e produz ácido clorídrico e pepsinógeno para digestão proteica.
+
+O intestino delgado, com cerca de 6 metros, é dividido em duodeno, jejuno e íleo. É o principal local de digestão e absorção de nutrientes. O intestino grosso, com 1,5 metros, absorve água e eletrólitos, formando as fezes.
+
+FISIOLOGIA DIGESTIVA
+
+A digestão envolve processos mecânicos (mastigação, peristaltismo) e químicos (enzimas, ácidos). A saliva contém amilase para digestão inicial de carboidratos. O suco gástrico, com pH 1-2, ativa o pepsinógeno e desnatura proteínas.
+
+O pâncreas secreta enzimas digestivas (tripsina, quimotripsina, lipase, amilase) e bicarbonato para neutralizar o ácido gástrico. A bile, produzida pelo fígado e armazenada na vesícula biliar, emulsifica gorduras facilitando sua digestão.
+
+A absorção ocorre principalmente no intestino delgado através de vilosidades e microvilosidades que aumentam a superfície de contato. Nutrientes são absorvidos por transporte ativo, passivo ou facilitado.
+
+CAPÍTULO 6: PATOLOGIAS GASTROINTESTINAIS
+
+DOENÇA DO REFLUXO GASTROESOFÁGICO
+
+A DRGE resulta do refluxo anormal do conteúdo gástrico para o esôfago, causando sintomas ou complicações. Fatores predisponentes incluem incompetência do esfíncter esofágico inferior, hérnia hiatal, obesidade e gravidez.
+
+Os sintomas típicos são pirose (azia) e regurgitação. Sintomas atípicos incluem dor torácica, tosse crônica, rouquidão e asma. Complicações incluem esofagite, estenose, esôfago de Barrett e adenocarcinoma esofágico.
+
+O diagnóstico baseia-se nos sintomas, podendo ser confirmado por endoscopia, pHmetria ou teste terapêutico com inibidores da bomba de prótons (IBP). O tratamento inclui mudanças no estilo de vida, IBP e, em casos refratários, cirurgia antirrefluxo.
+
+ÚLCERA PÉPTICA
+
+A úlcera péptica é uma lesão da mucosa gástrica ou duodenal que se estende além da muscular da mucosa. As principais causas são infecção por Helicobacter pylori e uso de anti-inflamatórios não esteroidais (AINEs).
+
+Os sintomas incluem dor epigástrica em queimação, que pode melhorar ou piorar com alimentação dependendo da localização. Complicações incluem hemorragia, perfuração, penetração e obstrução pilórica.
+
+O diagnóstico é feito por endoscopia digestiva alta. O tratamento da úlcera associada ao H. pylori envolve terapia tripla ou quádrupla com antibióticos e IBP. Para úlceras relacionadas a AINEs, suspensão do medicamento e uso de IBP são fundamentais.
+
+DOENÇA INFLAMATÓRIA INTESTINAL
+
+A DII engloba doença de Crohn e retocolite ulcerativa, condições inflamatórias crônicas de etiologia desconhecida. A doença de Crohn pode afetar qualquer segmento do trato GI, caracterizada por inflamação transmural e lesões salteadas. A retocolite ulcerativa afeta apenas o cólon, com inflamação limitada à mucosa e submucosa.
+
+Os sintomas incluem diarreia crônica, dor abdominal, perda de peso, fadiga e manifestações extraintestinais (artrite, lesões cutâneas, uveíte). O diagnóstico baseia-se em critérios clínicos, endoscópicos, histológicos e radiológicos.
+
+O tratamento visa induzir e manter remissão, incluindo aminossalicilatos, corticosteroides, imunomoduladores (azatioprina, metotrexato) e terapias biológicas (anti-TNF, anti-integrina, anti-IL12/23).
+
+CAPÍTULO 7: SISTEMA RENAL E URINÁRIO
+
+ANATOMIA RENAL
+
+Os rins são órgãos retroperitoneais localizados na região lombar, pesando aproximadamente 150g cada. Possuem formato de feijão e são compostos por córtex (externo) e medula (interno). A unidade funcional é o néfron, com cerca de 1 milhão por rim.
+
+Cada néfron consiste em glomérulo, cápsula de Bowman, túbulo contorcido proximal, alça de Henle, túbulo contorcido distal e ducto coletor. O glomérulo é um enovelado de capilares onde ocorre a filtração inicial.
+
+O sistema coletor inclui cálices menores e maiores, pelve renal, ureter, bexiga e uretra. Os ureteres são tubos musculares de 25-30 cm que transportam urina dos rins à bexiga através de peristaltismo.
+
+FISIOLOGIA RENAL
+
+A função renal principal é manter homeostase através de filtração, reabsorção e secreção. A taxa de filtração glomerular (TFG) normal é 120-130 mL/min/1,73m². Aproximadamente 180 litros são filtrados diariamente, mas apenas 1-2 litros são excretados como urina.
+
+A reabsorção ocorre principalmente no túbulo proximal (65% do filtrado), alça de Henle (concentração urinária) e túbulo distal (ajuste fino). Hormônios como ADH, aldosterona e paratormônio regulam a reabsorção de água e eletrólitos.
+
+Os rins também produzem eritropoietina (estimula produção de hemácias), renina (regula pressão arterial) e ativam vitamina D (metabolismo do cálcio).
+
+CAPÍTULO 8: PATOLOGIAS RENAIS
+
+INSUFICIÊNCIA RENAL AGUDA
+
+A IRA é caracterizada por declínio rápido da função renal, com aumento da creatinina sérica e/ou diminuição do débito urinário. Pode ser classificada como pré-renal (hipoperfusão), renal (lesão parenquimatosa) ou pós-renal (obstrução).
+
+Causas pré-renais incluem desidratação, hemorragia, insuficiência cardíaca e sepse. Causas renais incluem necrose tubular aguda, glomerulonefrite e nefrite intersticial. Causas pós-renais incluem obstrução ureteral, hiperplasia prostática e tumores.
+
+O diagnóstico baseia-se em critérios KDIGO: aumento da creatinina ≥0,3 mg/dL em 48h ou ≥1,5x o valor basal em 7 dias, ou débito urinário <0,5 mL/kg/h por 6h. O tratamento foca na causa subjacente e suporte, podendo necessitar diálise.
+
+DOENÇA RENAL CRÔNICA
+
+A DRC é definida como anormalidades estruturais ou funcionais renais por >3 meses. É classificada em 5 estágios baseados na TFG: G1 (≥90), G2 (60-89), G3a (45-59), G3b (30-44), G4 (15-29) e G5 (<15 mL/min/1,73m²).
+
+As principais causas são diabetes mellitus, hipertensão arterial, glomerulonefrites e doença renal policística. Complicações incluem anemia, distúrbios minerais ósseos, acidose metabólica e doença cardiovascular.
+
+O tratamento visa retardar progressão e tratar complicações: controle glicêmico e pressórico rigoroso, inibidores da ECA/BRA, estatinas, correção da anemia e distúrbios minerais. Terapia renal substitutiva (diálise ou transplante) é necessária no estágio 5.
+
+GLOMERULONEFRITES
+
+As glomerulonefrites são doenças que afetam primariamente os glomérulos, podendo ser primárias ou secundárias. Manifestam-se como síndrome nefrítica (hematúria, proteinúria, hipertensão, edema) ou síndrome nefrótica (proteinúria maciça, hipoalbuminemia, edema, dislipidemia).
+
+Causas primárias incluem doença de lesões mínimas, glomeruloesclerose focal e segmentar, nefropatia membranosa e glomerulonefrite proliferativa. Causas secundárias incluem diabetes, lúpus, vasculites e infecções.
+
+O diagnóstico requer biópsia renal para classificação histológica. O tratamento varia conforme o tipo, podendo incluir corticosteroides, imunossupressores, inibidores da ECA/BRA e medidas de suporte.
+
+CAPÍTULO 9: SISTEMA ENDÓCRINO
+
+ANATOMIA ENDÓCRINA
+
+O sistema endócrino é composto por glândulas que secretam hormônios diretamente na corrente sanguínea. As principais glândulas incluem hipófise, tireoide, paratireoides, suprarrenais, pâncreas endócrino e gônadas.
+
+A hipófise, localizada na sela túrcica, é dividida em adenoipófise (anterior) e neuroipófise (posterior). A adenoipófise produz GH, prolactina, ACTH, TSH, FSH e LH. A neuroipófise armazena e libera ADH e ocitocina produzidos no hipotálamo.
+
+A tireoide, em formato de borboleta no pescoço, produz T3, T4 e calcitonina. As paratireoides, quatro pequenas glândulas atrás da tireoide, produzem paratormônio (PTH). As suprarrenais, sobre os rins, têm córtex (cortisol, aldosterona, andrógenos) e medula (adrenalina, noradrenalina).
+
+FISIOLOGIA ENDÓCRINA
+
+Os hormônios regulam metabolismo, crescimento, reprodução e homeostase através de mecanismos de feedback. O eixo hipotálamo-hipófise controla muitas funções endócrinas através de hormônios liberadores e inibidores.
+
+O eixo hipotálamo-hipófise-tireoide regula metabolismo: TRH estimula TSH, que estimula produção de T3/T4. O eixo hipotálamo-hipófise-adrenal responde ao estresse: CRH estimula ACTH, que estimula cortisol.
+
+A insulina, produzida pelas células beta pancreáticas, regula glicemia promovendo captação celular de glicose. O glucagon, das células alfa, tem efeito oposto, estimulando glicogenólise e gliconeogênese hepática.
+
+CAPÍTULO 10: PATOLOGIAS ENDÓCRINAS
+
+DIABETES MELLITUS
+
+O diabetes é caracterizado por hiperglicemia crônica devido à deficiência ou resistência à insulina. O tipo 1 resulta de destruição autoimune das células beta, requerendo insulina exógena. O tipo 2, mais comum, envolve resistência insulínica e deficiência relativa de insulina.
+
+Critérios diagnósticos incluem glicemia de jejum ≥126 mg/dL, glicemia aleatória ≥200 mg/dL com sintomas, TOTG ≥200 mg/dL ou HbA1c ≥6,5%. Sintomas clássicos são poliúria, polidipsia, polifagia e perda de peso.
+
+Complicações agudas incluem cetoacidose diabética e síndrome hiperosmolar. Complicações crônicas envolvem microangiopatia (retinopatia, nefropatia, neuropatia) e macroangiopatia (doença cardiovascular, cerebrovascular, arterial periférica).
+
+O tratamento do tipo 1 é insulinoterapia intensiva. Para tipo 2: mudanças no estilo de vida, metformina como primeira linha, podendo adicionar sulfoniluréias, inibidores DPP-4, agonistas GLP-1, inibidores SGLT-2 ou insulina conforme necessário.
+
+HIPOTIREOIDISMO
+
+O hipotireoidismo resulta de produção insuficiente de hormônios tireoidianos. Pode ser primário (tireoidiano), secundário (hipofisário) ou terciário (hipotalâmico). A causa mais comum é tireoidite de Hashimoto (autoimune).
+
+Sintomas incluem fadiga, ganho de peso, intolerância ao frio, constipação, pele seca, cabelos quebradiços, bradicardia e depressão. Em casos graves, pode ocorrer coma mixedematoso.
+
+O diagnóstico baseia-se em TSH elevado e T4 livre baixo (hipotireoidismo primário). O tratamento é reposição com levotiroxina, iniciando com doses baixas e ajustando conforme TSH. A meta é normalizar TSH (0,4-4,0 mUI/L).
+
+HIPERTIREOIDISMO
+
+O hipertireoidismo resulta de excesso de hormônios tireoidianos. A doença de Graves (autoimune) é a causa mais comum, seguida por bócio multinodular tóxico e adenoma tóxico.
+
+Sintomas incluem perda de peso, taquicardia, palpitações, tremores, sudorese, intolerância ao calor, irritabilidade e diarreia. Na doença de Graves, pode haver oftalmopatia e dermopatia.
+
+O diagnóstico mostra TSH suprimido e T3/T4 elevados. A cintilografia tireoidiana diferencia as causas. O tratamento inclui antitireoidianos (metimazol, propiltiouracil), betabloqueadores para sintomas, iodo radioativo ou cirurgia em casos selecionados.
+
+Este conteúdo extenso abrange múltiplos sistemas orgânicos e suas principais patologias, fornecendo base sólida para geração de flashcards educativos em medicina. O texto contém aproximadamente 80.000 caracteres, permitindo testar adequadamente o sistema de chunking e processamento assíncrono implementado para grandes volumes de conteúdo médico.

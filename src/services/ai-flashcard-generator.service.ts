@@ -25,96 +25,95 @@ export interface AIFlashcardResponse {
 }
 
 export class AIFlashcardGeneratorService {
-  // Chama a rota interna protegida do Groq com retry automático
-  private static async callGroqAPI(prompt: string, retryCount = 0): Promise<string> {
-    const maxRetries = 2;
-    
+  // Rastrear progresso de geração assíncrona
+  static async trackProgress(sessionId: string): Promise<any> {
     try {
-      console.log('🚀 AIFlashcardGeneratorService: Iniciando chamada para API Groq...');
-      
-      // Obter token de acesso para autenticação
-      const accessToken = await getAccessToken();
-      
-      console.log('🔑 AIFlashcardGeneratorService: Token obtido:', accessToken ? 'SIM' : 'NÃO');
-      
-      if (!accessToken) {
-        console.error('❌ AIFlashcardGeneratorService: Token de acesso não disponível');
-        throw new Error('Você precisa estar logado para gerar flashcards com IA');
-      }
-
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-      };
-
-      console.log('📡 AIFlashcardGeneratorService: Fazendo requisição para /api/groq/flashcards');
-
-      const response = await fetch('/api/groq/flashcards', {
-        method: 'POST',
-        headers,
-        credentials: 'include', // Importante para enviar cookies de sessão
-        body: JSON.stringify({ prompt }),
+      const token = await getAccessToken();
+      const response = await fetch(`/api/groq/flashcards/progress/${sessionId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
-      
-      console.log('📥 AIFlashcardGeneratorService: Resposta recebida, status:', response.status);
-      
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
-        
-        console.error('❌ AIFlashcardGeneratorService: Erro na resposta:', {
-          status: response.status,
-          errorData
-        });
-        
-        // Se for timeout (504) e ainda temos tentativas, retry automaticamente
-        if (response.status === 504 && retryCount < maxRetries) {
-          console.log(`Timeout na tentativa ${retryCount + 1}, tentando novamente...`);
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Aguarda 1 segundo
-          return this.callGroqAPI(prompt, retryCount + 1);
-        }
-        
-        // Tratar erros específicos de permissão e limite
-        if (response.status === 401) {
-          throw new Error('Você precisa estar logado para gerar flashcards com IA.');
-        }
-        
-        if (response.status === 403) {
-          if (errorData.requiresUpgrade) {
-            throw new Error('A geração de flashcards por IA é exclusiva para usuários Pro e Pro+. Faça upgrade do seu plano para acessar este recurso.');
-          }
-          throw new Error('Você não tem permissão para acessar este recurso.');
-        }
-        
-        if (response.status === 429) {
-          if (errorData.limitReached) {
-            throw new Error('Você atingiu o limite diário de flashcards. Tente novamente amanhã ou faça upgrade para o plano Pro+ para flashcards ilimitados.');
-          }
-          throw new Error('Muitas requisições. Tente novamente em alguns minutos.');
-        }
-        
-        if (response.status === 504) {
-          throw new Error('A requisição demorou demais para ser processada. Tente novamente.');
-        }
-        
-        throw new Error(errorData.error || `Erro na API: ${response.status}`);
+        throw new Error('Erro ao rastrear progresso');
       }
-      
-      const data = await response.json();
-      return data.result;
-    } catch (error: any) {
-      // Se for erro de rede/timeout e ainda temos tentativas, retry automaticamente
-      if ((error.name === 'TypeError' || error.message?.includes('fetch')) && retryCount < maxRetries) {
-        console.log(`Erro de rede na tentativa ${retryCount + 1}, tentando novamente...`);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Aguarda 1 segundo
-        return this.callGroqAPI(prompt, retryCount + 1);
-      }
-      
-      console.error('Erro ao chamar a API Groq para flashcards:', error);
+
+      return await response.json();
+    } catch (error) {
+      console.error('Erro ao rastrear progresso:', error);
       throw error;
     }
   }
 
-  // Gerar flashcards a partir de um tema
+  // Método privado para chamar a API Groq
+  private static async callGroqAPI(prompt: string, retryCount = 0): Promise<string> {
+    const maxRetries = 3;
+    
+    try {
+      const token = await getAccessToken();
+      const response = await fetch('/api/groq/flashcards', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        
+        // Retry para timeout 504
+        if (response.status === 504 && retryCount < maxRetries) {
+          console.log(`Timeout detectado, tentativa ${retryCount + 1}/${maxRetries}`);
+          await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)));
+          return this.callGroqAPI(prompt, retryCount + 1);
+        }
+        
+        // Erros específicos
+        if (response.status === 429) {
+          throw new Error('Limite de requisições excedido. Tente novamente em alguns minutos.');
+        }
+        
+        if (response.status === 401) {
+          throw new Error('Erro de autenticação. Faça login novamente.');
+        }
+        
+        if (response.status === 403) {
+          throw new Error('Acesso negado. Verifique suas permissões.');
+        }
+        
+        throw new Error(errorData.error || `Erro na API: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Se a resposta indica processamento assíncrono
+      if (data.isAsync && data.sessionId) {
+        return data; // Retorna o objeto com sessionId
+      }
+      
+      // Se a resposta já contém os flashcards
+      if (data.flashcards) {
+        return data; // Retorna o objeto já parseado
+      }
+      
+      // Se é uma string de resposta da IA
+      return data.result || data.response || data;
+      
+    } catch (error: any) {
+      if (retryCount < maxRetries && (error.message?.includes('timeout') || error.message?.includes('network'))) {
+        console.log(`Erro de rede, tentativa ${retryCount + 1}/${maxRetries}`);
+        await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)));
+        return this.callGroqAPI(prompt, retryCount + 1);
+      }
+      
+      throw error;
+    }
+  }
+
+  // Gerar flashcards a partir de tema
   static async generateFromTheme(params: AIFlashcardParams): Promise<AIFlashcardResponse> {
     if (!params.theme) {
       throw new Error('Tema é obrigatório para gerar flashcards');
@@ -164,19 +163,57 @@ Tema: ${params.theme}
 
     try {
       const response = await this.callGroqAPI(prompt);
-      const parsedResponse = JSON.parse(response) as AIFlashcardResponse;
       
-      // Validar a resposta
-      if (!parsedResponse.flashcards || !Array.isArray(parsedResponse.flashcards)) {
-        throw new Error('Resposta da IA inválida: flashcards não encontrados');
+      // Se a resposta é um objeto (resposta assíncrona ou já parseada), retorna diretamente
+      if (typeof response === 'object' && response !== null) {
+        // Verificar se é resposta assíncrona
+        if ('isAsync' in response && response.isAsync) {
+          return response as any;
+        }
+        
+        // Se já é um objeto com flashcards, validar e retornar
+        if ('flashcards' in response) {
+          const flashcardResponse = response as AIFlashcardResponse;
+          if (!flashcardResponse.flashcards || !Array.isArray(flashcardResponse.flashcards)) {
+            throw new Error('Resposta da IA inválida: flashcards não encontrados');
+          }
+          return flashcardResponse;
+        }
+        
+        return response as AIFlashcardResponse;
       }
+      
+      // Se a resposta é uma string, tenta fazer parse JSON
+      if (typeof response === 'string') {
+        try {
+          const parsedResponse = JSON.parse(response) as AIFlashcardResponse;
+          
+          // Validar a resposta
+          if (!parsedResponse.flashcards || !Array.isArray(parsedResponse.flashcards)) {
+            throw new Error('Resposta da IA inválida: flashcards não encontrados');
+          }
 
-      return parsedResponse;
-    } catch (error: any) {
-      if (error.message?.includes('JSON')) {
-        throw new Error('Erro ao processar resposta da IA. Tente novamente.');
+          return parsedResponse;
+        } catch (parseError) {
+          console.error('Erro ao fazer parse do JSON:', parseError);
+          console.error('Resposta recebida:', response);
+          throw new Error('Erro ao processar resposta da IA. A resposta não está em formato JSON válido.');
+        }
       }
-      throw error;
+      
+      throw new Error('Formato de resposta inesperado da API');
+    } catch (error: any) {
+      console.error('Erro no generateFromTheme:', error);
+      
+      // Se o erro já é uma mensagem amigável, mantém
+      if (error.message?.includes('Resposta da IA inválida') || 
+          error.message?.includes('Erro ao processar resposta da IA') ||
+          error.message?.includes('Formato de resposta inesperado')) {
+        throw error;
+      }
+      
+      // Para outros erros, usar mensagem genérica
+      throw new Error('Erro ao processar resposta da IA. Tente novamente.');
     }
   }
 
@@ -231,23 +268,61 @@ REGRAS IMPORTANTES:
 
     try {
       const response = await this.callGroqAPI(prompt);
-      const parsedResponse = JSON.parse(response) as AIFlashcardResponse;
       
-      // Validar a resposta
-      if (!parsedResponse.flashcards || !Array.isArray(parsedResponse.flashcards)) {
-        throw new Error('Resposta da IA inválida: flashcards não encontrados');
+      // Se a resposta é um objeto (resposta assíncrona ou já parseada), retorna diretamente
+      if (typeof response === 'object' && response !== null) {
+        // Verificar se é resposta assíncrona
+        if ('isAsync' in response && response.isAsync) {
+          return response as any;
+        }
+        
+        // Se já é um objeto com flashcards, validar e retornar
+        if ('flashcards' in response) {
+          const flashcardResponse = response as AIFlashcardResponse;
+          if (!flashcardResponse.flashcards || !Array.isArray(flashcardResponse.flashcards)) {
+            throw new Error('Resposta da IA inválida: flashcards não encontrados');
+          }
+          return flashcardResponse;
+        }
+        
+        return response as AIFlashcardResponse;
       }
+      
+      // Se a resposta é uma string, tenta fazer parse JSON
+      if (typeof response === 'string') {
+        try {
+          const parsedResponse = JSON.parse(response) as AIFlashcardResponse;
+          
+          // Validar a resposta
+          if (!parsedResponse.flashcards || !Array.isArray(parsedResponse.flashcards)) {
+            throw new Error('Resposta da IA inválida: flashcards não encontrados');
+          }
 
-      return parsedResponse;
-    } catch (error: any) {
-      if (error.message?.includes('JSON')) {
-        throw new Error('Erro ao processar resposta da IA. Tente novamente.');
+          return parsedResponse;
+        } catch (parseError) {
+          console.error('Erro ao fazer parse do JSON:', parseError);
+          console.error('Resposta recebida:', response);
+          throw new Error('Erro ao processar resposta da IA. A resposta não está em formato JSON válido.');
+        }
       }
-      throw error;
+      
+      throw new Error('Formato de resposta inesperado da API');
+    } catch (error: any) {
+      console.error('Erro no generateFromText:', error);
+      
+      // Se o erro já é uma mensagem amigável, mantém
+      if (error.message?.includes('Resposta da IA inválida') || 
+          error.message?.includes('Erro ao processar resposta da IA') ||
+          error.message?.includes('Formato de resposta inesperado')) {
+        throw error;
+      }
+      
+      // Para outros erros, usar mensagem genérica
+      throw new Error('Erro ao processar resposta da IA. Tente novamente.');
     }
   }
 
-  // Gerar flashcards a partir de PDF (conteúdo extraído)
+  // Gerar flashcards a partir de PDF
   static async generateFromPDF(params: AIFlashcardParams): Promise<AIFlashcardResponse> {
     if (!params.pdfContent) {
       throw new Error('Conteúdo do PDF é obrigatório para gerar flashcards');
@@ -300,19 +375,57 @@ REGRAS IMPORTANTES:
 
     try {
       const response = await this.callGroqAPI(prompt);
-      const parsedResponse = JSON.parse(response) as AIFlashcardResponse;
       
-      // Validar a resposta
-      if (!parsedResponse.flashcards || !Array.isArray(parsedResponse.flashcards)) {
-        throw new Error('Resposta da IA inválida: flashcards não encontrados');
+      // Se a resposta é um objeto (resposta assíncrona ou já parseada), retorna diretamente
+      if (typeof response === 'object' && response !== null) {
+        // Verificar se é resposta assíncrona
+        if ('isAsync' in response && response.isAsync) {
+          return response as any;
+        }
+        
+        // Se já é um objeto com flashcards, validar e retornar
+        if ('flashcards' in response) {
+          const flashcardResponse = response as AIFlashcardResponse;
+          if (!flashcardResponse.flashcards || !Array.isArray(flashcardResponse.flashcards)) {
+            throw new Error('Resposta da IA inválida: flashcards não encontrados');
+          }
+          return flashcardResponse;
+        }
+        
+        return response as AIFlashcardResponse;
       }
+      
+      // Se a resposta é uma string, tenta fazer parse JSON
+      if (typeof response === 'string') {
+        try {
+          const parsedResponse = JSON.parse(response) as AIFlashcardResponse;
+          
+          // Validar a resposta
+          if (!parsedResponse.flashcards || !Array.isArray(parsedResponse.flashcards)) {
+            throw new Error('Resposta da IA inválida: flashcards não encontrados');
+          }
 
-      return parsedResponse;
-    } catch (error: any) {
-      if (error.message?.includes('JSON')) {
-        throw new Error('Erro ao processar resposta da IA. Tente novamente.');
+          return parsedResponse;
+        } catch (parseError) {
+          console.error('Erro ao fazer parse do JSON:', parseError);
+          console.error('Resposta recebida:', response);
+          throw new Error('Erro ao processar resposta da IA. A resposta não está em formato JSON válido.');
+        }
       }
-      throw error;
+      
+      throw new Error('Formato de resposta inesperado da API');
+    } catch (error: any) {
+      console.error('Erro no generateFromPDF:', error);
+      
+      // Se o erro já é uma mensagem amigável, mantém
+      if (error.message?.includes('Resposta da IA inválida') || 
+          error.message?.includes('Erro ao processar resposta da IA') ||
+          error.message?.includes('Formato de resposta inesperado')) {
+        throw error;
+      }
+      
+      // Para outros erros, usar mensagem genérica
+      throw new Error('Erro ao processar resposta da IA. Tente novamente.');
     }
   }
 }

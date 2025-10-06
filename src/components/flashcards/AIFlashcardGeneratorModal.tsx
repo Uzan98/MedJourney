@@ -34,6 +34,11 @@ export default function AIFlashcardGeneratorModal({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExtractingPdf, setIsExtractingPdf] = useState(false);
   
+  // Estados para processamento assíncrono
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [progress, setProgress] = useState<any>(null);
+  const [isPolling, setIsPolling] = useState(false);
+  
   // Estados para diferentes modos
   const [theme, setTheme] = useState('');
   const [text, setText] = useState('');
@@ -46,7 +51,7 @@ export default function AIFlashcardGeneratorModal({
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
 
   const handleClose = () => {
-    if (!isGenerating && !isExtractingPdf) {
+    if (!isGenerating && !isExtractingPdf && !isPolling) {
       setMode('theme');
       setTheme('');
       setText('');
@@ -55,6 +60,9 @@ export default function AIFlashcardGeneratorModal({
       setDeckName('');
       setNumberOfCards(10);
       setDifficulty('medium');
+      setSessionId(null);
+      setProgress(null);
+      setIsPolling(false);
       onClose();
     }
   };
@@ -142,7 +150,7 @@ export default function AIFlashcardGeneratorModal({
 
     try {
       // Gerar flashcards com IA baseado no modo
-      let response: AIFlashcardResponse;
+      let response: any;
       
       if (mode === 'theme') {
         response = await AIFlashcardGeneratorService.generateFromTheme({
@@ -167,9 +175,37 @@ export default function AIFlashcardGeneratorModal({
         });
       }
 
+      // Verificar se é processamento assíncrono
+      if (response.isAsync && response.sessionId) {
+        setSessionId(response.sessionId);
+        setIsGenerating(false);
+        setIsPolling(true);
+        
+        toast.success(`Processamento iniciado! ${response.totalChunks} partes serão processadas. Tempo estimado: ${response.estimatedTime}`);
+        
+        // Iniciar polling para acompanhar o progresso
+        startProgressPolling(response.sessionId);
+        return;
+      }
+
+      // Processamento síncrono (textos pequenos)
       if (!response.flashcards || response.flashcards.length === 0) {
         throw new Error('Nenhum flashcard foi gerado');
       }
+
+      await createDeckWithFlashcards(response);
+
+    } catch (error: any) {
+      console.error('Erro ao gerar flashcards:', error);
+      toast.error(error.message || 'Erro ao gerar flashcards');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Função para criar deck e flashcards
+  const createDeckWithFlashcards = async (response: AIFlashcardResponse) => {
+    try {
 
       // Criar o deck primeiro
       const deck = await FlashcardsService.createDeck({
@@ -212,11 +248,47 @@ export default function AIFlashcardGeneratorModal({
       handleClose();
 
     } catch (error: any) {
-      console.error('Erro ao gerar flashcards:', error);
-      toast.error(error.message || 'Erro ao gerar flashcards. Tente novamente.');
-    } finally {
-      setIsGenerating(false);
+      console.error('Erro ao criar deck e flashcards:', error);
+      toast.error(error.message || 'Erro ao criar deck e flashcards. Tente novamente.');
     }
+  };
+
+  // Função para fazer polling do progresso
+  const startProgressPolling = async (sessionId: string) => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const progressData = await AIFlashcardGeneratorService.trackProgress(sessionId);
+        setProgress(progressData);
+        
+        if (progressData.status === 'completed') {
+          clearInterval(pollInterval);
+          setIsPolling(false);
+          
+          // Criar deck com os flashcards gerados
+          if (progressData.flashcards && progressData.flashcards.length > 0) {
+            await createDeckWithFlashcards({ flashcards: progressData.flashcards });
+          } else {
+            toast.error('Nenhum flashcard foi gerado durante o processamento.');
+          }
+        } else if (progressData.status === 'error') {
+          clearInterval(pollInterval);
+          setIsPolling(false);
+          toast.error(progressData.error || 'Erro durante o processamento.');
+        }
+      } catch (error) {
+        console.error('Erro ao verificar progresso:', error);
+        // Continuar tentando por um tempo
+      }
+    }, 3000); // Verificar a cada 3 segundos
+    
+    // Timeout de segurança (15 minutos)
+    setTimeout(() => {
+      clearInterval(pollInterval);
+      if (isPolling) {
+        setIsPolling(false);
+        toast.error('Timeout: O processamento demorou mais que o esperado.');
+      }
+    }, 15 * 60 * 1000);
   };
 
   // Verificar se tem acesso Pro
@@ -240,12 +312,42 @@ export default function AIFlashcardGeneratorModal({
           </div>
           <button
             onClick={handleClose}
-            disabled={isGenerating || isExtractingPdf}
+            disabled={isGenerating || isExtractingPdf || isPolling}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
           >
             <X className="h-5 w-5 text-gray-500" />
           </button>
         </div>
+
+        {/* Progress Indicator */}
+        {isPolling && progress && (
+          <div className="p-6 border-b border-gray-200 bg-blue-50">
+            <div className="flex items-center space-x-3 mb-3">
+              <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+              <span className="font-medium text-blue-900">Processando flashcards...</span>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm text-blue-700">
+                <span>Progresso: {progress.processedChunks || 0} de {progress.totalChunks || 0} partes</span>
+                <span>{progress.flashcardsGenerated || 0} flashcards gerados</span>
+              </div>
+              
+              <div className="w-full bg-blue-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ 
+                    width: `${progress.totalChunks ? (progress.processedChunks / progress.totalChunks) * 100 : 0}%` 
+                  }}
+                />
+              </div>
+              
+              <p className="text-xs text-blue-600">
+                Status: {progress.status === 'processing' ? 'Processando...' : progress.status}
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="p-6">
           {!hasProAccess ? (
@@ -479,13 +581,13 @@ export default function AIFlashcardGeneratorModal({
                 <Button
                   variant="outline"
                   onClick={handleClose}
-                  disabled={isGenerating || isExtractingPdf}
+                  disabled={isGenerating || isExtractingPdf || isPolling}
                 >
                   Cancelar
                 </Button>
                 <Button
                   onClick={generateFlashcards}
-                  disabled={isGenerating || isExtractingPdf || (mode === 'pdf' && !pdfContent)}
+                  disabled={isGenerating || isExtractingPdf || isPolling || (mode === 'pdf' && !pdfContent)}
                   className="relative bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-0"
                 >
                   {isGenerating ? (
