@@ -90,4 +90,25 @@ export interface StudySettings {
   include_mastered: boolean;
   prioritize_due_cards: boolean;
   review_new_cards_same_day: boolean;
-} 
+}
+
+export interface AIFlashcardResponse {
+  jobId?: string;
+  isAsync?: boolean;
+  flashcards: Flashcard[];
+  totalGenerated?: number;
+  deckName?: string;
+  description?: string;
+  deckId?: string;
+}
+
+// Parâmetros para geração de flashcards por IA
+export interface AIFlashcardParams {
+  theme?: string;
+  text?: string;
+  pdfContent?: string;
+  deckName: string;
+  numberOfCards: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+  coverColor?: string;
+}
